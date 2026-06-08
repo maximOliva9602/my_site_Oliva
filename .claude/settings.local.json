@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/roman/site_design_message/**)",
+      "Read(//Users/roman/**)",
+      "WebFetch(domain:massage-solomyanskyi.com.ua)",
+      "WebFetch(domain:imaginative-cat-cbaa60.netlify.app)",
+      "Read(//private/tmp/**)",
+      "Bash(curl -sL https://imaginative-cat-cbaa60.netlify.app/ -o oliva_ref.html)"
+    ]
+  }
+}
