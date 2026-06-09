@@ -234,6 +234,72 @@
   </div>
 </div>
 
+<!-- ============ SERVICES CAROUSEL ============ -->
+<section class="srv-carousel-section">
+  <div class="srv-carousel-header container">
+    <div class="section-label reveal">Наші послуги</div>
+    <h2 class="section-title reveal">Оберіть свій сеанс</h2>
+  </div>
+  <div class="srv-carousel-wrap">
+    <div class="srv-carousel" id="srvCarousel">
+
+      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener">
+        <img src="assets/img/srv-parni.jpg" alt="Парний масаж Київ" loading="lazy">
+        <div class="srv-slide-overlay"></div>
+        <div class="srv-slide-content">
+          <div class="srv-slide-name">Парний масаж</div>
+          <div class="srv-slide-price">від 2 700 грн</div>
+          <div class="srv-slide-btn">Записатися →</div>
+        </div>
+      </a>
+
+      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener">
+        <img src="assets/img/srv-ozdorovchuy.jpg" alt="Загально-оздоровчий масаж Київ" loading="lazy">
+        <div class="srv-slide-overlay"></div>
+        <div class="srv-slide-content">
+          <div class="srv-slide-name">Загально-оздоровчий масаж</div>
+          <div class="srv-slide-price">від 700 грн</div>
+          <div class="srv-slide-btn">Записатися →</div>
+        </div>
+      </a>
+
+      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener">
+        <img src="assets/img/srv-spa.jpg" alt="SPA ритуали Київ" loading="lazy">
+        <div class="srv-slide-overlay"></div>
+        <div class="srv-slide-content">
+          <div class="srv-slide-name">SPA-ритуали</div>
+          <div class="srv-slide-price">від 2 150 грн</div>
+          <div class="srv-slide-btn">Записатися →</div>
+        </div>
+      </a>
+
+      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener">
+        <img src="assets/img/srv-shudnenia.jpg" alt="Обгортання для схуднення Київ" loading="lazy">
+        <div class="srv-slide-overlay"></div>
+        <div class="srv-slide-content">
+          <div class="srv-slide-name">Обгортання для схуднення</div>
+          <div class="srv-slide-price">від 1 600 грн</div>
+          <div class="srv-slide-btn">Записатися →</div>
+        </div>
+      </a>
+
+      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener">
+        <img src="assets/img/srv-aparatni.jpg" alt="Апаратний масаж Київ" loading="lazy">
+        <div class="srv-slide-overlay"></div>
+        <div class="srv-slide-content">
+          <div class="srv-slide-name">Апаратні масажі</div>
+          <div class="srv-slide-price">від 700 грн</div>
+          <div class="srv-slide-btn">Записатися →</div>
+        </div>
+      </a>
+
+    </div>
+    <button class="srv-carousel-arrow srv-carousel-prev" id="srvPrev" aria-label="Назад">&#8592;</button>
+    <button class="srv-carousel-arrow srv-carousel-next" id="srvNext" aria-label="Вперед">&#8594;</button>
+  </div>
+  <div class="srv-carousel-dots" id="srvDots"></div>
+</section>
+
 <!-- ============ SERVICES / PRICES ============ -->
 <section class="services-section" id="services">
   <div class="container">
@@ -537,6 +603,43 @@
   <a href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener" class="btn btn-primary" data-i18n="sticky.book">Записатися онлайн</a>
 </div>
 
+<script>
+(function(){
+  var carousel = document.getElementById('srvCarousel');
+  var dotsWrap = document.getElementById('srvDots');
+  var prev = document.getElementById('srvPrev');
+  var next = document.getElementById('srvNext');
+  if (!carousel) return;
+  var slides = carousel.querySelectorAll('.srv-slide');
+  var current = 0;
+  var slideW = function(){ return slides[0].offsetWidth + 20; };
+
+  slides.forEach(function(_,i){
+    var d = document.createElement('button');
+    d.className = 'srv-carousel-dot' + (i===0?' active':'');
+    d.setAttribute('aria-label', 'Слайд ' + (i+1));
+    d.addEventListener('click', function(){ goTo(i); });
+    dotsWrap.appendChild(d);
+  });
+
+  function goTo(n){
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    var offset = current * slideW();
+    carousel.style.transform = 'translateX(-' + offset + 'px)';
+    dotsWrap.querySelectorAll('.srv-carousel-dot').forEach(function(d,i){ d.classList.toggle('active', i===current); });
+  }
+
+  prev.addEventListener('click', function(){ goTo(current - 1); });
+  next.addEventListener('click', function(){ goTo(current + 1); });
+
+  var startX = 0;
+  carousel.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; }, {passive:true});
+  carousel.addEventListener('touchend', function(e){
+    var diff = startX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) goTo(diff > 0 ? current+1 : current-1);
+  }, {passive:true});
+})();
+</script>
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/script.js"></script>
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->

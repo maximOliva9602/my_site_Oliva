@@ -191,6 +191,33 @@ section { padding: 100px 0; }
 .marquee-item::after { content: '✦'; color: var(--olive-light); font-size: 0.6rem; }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
+/* ── SERVICES CAROUSEL ── */
+.srv-carousel-section { padding: 72px 0 48px; }
+.srv-carousel-header { margin-bottom: 36px; }
+.srv-carousel-wrap { position: relative; overflow: hidden; }
+.srv-carousel { display: flex; gap: 20px; padding: 0 48px; transition: transform .45s cubic-bezier(.4,0,.2,1); will-change: transform; }
+.srv-slide { flex: 0 0 340px; height: 480px; border-radius: 18px; overflow: hidden; position: relative; text-decoration: none; display: block; }
+.srv-slide img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.srv-slide:hover img { transform: scale(1.05); }
+.srv-slide-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.15) 55%, transparent 100%); }
+.srv-slide-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 28px 24px; }
+.srv-slide-name { font-family: 'Playfair Display', serif; font-size: 1.35rem; color: #fff; line-height: 1.2; margin-bottom: 6px; }
+.srv-slide-price { font-size: 0.9rem; color: var(--olive-light); font-weight: 500; margin-bottom: 16px; letter-spacing: 0.03em; }
+.srv-slide-btn { display: inline-block; background: rgba(122,145,86,0.25); border: 1px solid rgba(122,145,86,0.5); border-radius: 50px; padding: 8px 20px; font-size: 0.8rem; color: #fff; backdrop-filter: blur(4px); transition: background .2s; }
+.srv-slide:hover .srv-slide-btn { background: var(--olive-light); border-color: var(--olive-light); }
+.srv-carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(8,10,7,0.7); backdrop-filter: blur(8px); border: 1px solid var(--line); color: var(--cream); font-size: 18px; cursor: pointer; z-index: 10; transition: background .2s; display: flex; align-items: center; justify-content: center; }
+.srv-carousel-arrow:hover { background: var(--olive); border-color: var(--olive-light); }
+.srv-carousel-prev { left: 12px; }
+.srv-carousel-next { right: 12px; }
+.srv-carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
+.srv-carousel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); border: none; cursor: pointer; transition: background .2s, transform .2s; padding: 0; }
+.srv-carousel-dot.active { background: var(--olive-light); transform: scale(1.3); }
+@media (max-width: 900px) {
+  .srv-carousel { padding: 0 20px; gap: 14px; }
+  .srv-slide { flex: 0 0 78vw; height: 420px; }
+  .srv-carousel-arrow { display: none; }
+}
+
 /* ── SERVICES ── */
 .services-section { background: var(--black); }
 .services-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 56px; gap: 24px; }
