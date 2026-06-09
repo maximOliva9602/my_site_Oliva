@@ -112,6 +112,10 @@ app.get("/admin", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
+app.get("/tips", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "tips.html"));
+});
+
 /* ---------------- Socket.IO ---------------- */
 io.on("connection", function (socket) {
   var auth = socket.handshake.auth || {};
