@@ -171,6 +171,56 @@
     .form-group.invalid input,
     .form-group.invalid select { border-color: #e07070; }
     .form-group.invalid .field-error { display: block; }
+
+    /* ── SERVICE PICKER ── */
+    .service-picker-wrap { margin-bottom: 20px; }
+    .picker-section-label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 12px; }
+    .service-picker-wrap.invalid .field-error { display: block !important; }
+
+    .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    @media (min-width: 480px) { .cat-grid { grid-template-columns: repeat(3, 1fr); } }
+    .cat-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px; padding: 14px 10px;
+      background: rgba(242,237,228,0.04);
+      border: 1px solid rgba(122,145,86,0.2);
+      border-radius: 12px; cursor: pointer;
+      transition: all .2s; font-family: 'Inter', sans-serif;
+      color: var(--cream); text-align: center;
+    }
+    .cat-btn:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.1); }
+    .cat-btn.active { border-color: var(--olive-light); background: rgba(74,94,46,0.25); }
+    .cat-btn-icon { font-size: 1.4rem; }
+    .cat-btn-name { font-size: 12px; line-height: 1.3; }
+
+    .variants-wrap { margin-top: 16px; }
+    .variants-title { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; }
+    .variants-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .variant-btn {
+      padding: 10px 16px; border: 1px solid rgba(122,145,86,0.25);
+      border-radius: 10px; background: rgba(242,237,228,0.04);
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all .2s; text-align: left;
+    }
+    .variant-btn:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.1); }
+    .variant-btn.active { border-color: var(--olive-light); background: rgba(74,94,46,0.3); }
+    .variant-label { font-size: 13px; color: var(--cream); }
+    .variant-price { font-size: 15px; font-weight: 600; color: var(--olive-light); margin-top: 2px; }
+
+    .selected-summary {
+      background: rgba(74,94,46,0.15); border: 1px solid rgba(122,145,86,0.4);
+      border-radius: 12px; padding: 14px 16px; margin-top: 12px;
+    }
+    .selected-summary-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .selected-name { font-size: 14px; color: var(--cream); font-weight: 500; }
+    .selected-dur { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .selected-price-badge { font-size: 1.2rem; font-weight: 600; color: var(--olive-light); white-space: nowrap; }
+    .selected-change { font-size: 11px; color: var(--olive-light); text-decoration: underline; background: none; border: none; cursor: pointer; padding: 6px 0 0; }
+    .selected-change:hover { color: var(--cream); }
+
+    .custom-amount-wrap { margin-bottom: 20px; }
+    .custom-toggle-btn { font-size: 13px; color: var(--olive-light); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
+    .custom-toggle-btn:hover { color: var(--cream); }
   </style>
 </head>
 <body>
@@ -226,37 +276,48 @@
       <div class="field-error">Вкажіть ім'я отримувача</div>
     </div>
 
-    <div class="form-group" id="fg-service">
-      <label for="inp-service">Тип послуги *</label>
-      <select id="inp-service">
-        <option value="">— Оберіть послугу —</option>
-        <option value="Загально-оздоровчий масаж" data-price="700">Загально-оздоровчий масаж — від 700 грн</option>
-        <option value="Парний масаж" data-price="2700">Парний масаж — від 2 700 грн</option>
-        <option value="SPA-ритуали" data-price="2150">SPA-ритуали — від 2 150 грн</option>
-        <option value="Обгортання для схуднення" data-price="1600">Обгортання для схуднення — від 1 600 грн</option>
-        <option value="Апаратні масажі" data-price="700">Апаратні масажі — від 700 грн</option>
-        <option value="На вибір отримувача" data-price="0">На вибір отримувача (будь-яка послуга)</option>
-      </select>
-      <div class="field-error">Оберіть тип послуги</div>
+    <!-- ВИБІР ПОСЛУГИ -->
+    <div id="fg-service" class="service-picker-wrap">
+      <div class="picker-section-label">Оберіть послугу *</div>
+
+      <!-- Крок 1: категорії -->
+      <div class="cat-grid" id="catGrid"></div>
+
+      <!-- Крок 2: варіанти (тривалість + ціна) -->
+      <div class="variants-wrap" id="variantsWrap" style="display:none">
+        <div class="variants-title" id="variantsTitle"></div>
+        <div class="variants-grid" id="variantsGrid"></div>
+      </div>
+
+      <!-- Підсумок вибору -->
+      <div class="selected-summary" id="selectedSummary" style="display:none">
+        <div class="selected-summary-inner">
+          <div>
+            <div class="selected-name" id="selectedName"></div>
+            <div class="selected-dur" id="selectedDur"></div>
+          </div>
+          <div class="selected-price-badge" id="selectedPriceBadge"></div>
+        </div>
+        <button type="button" class="selected-change" id="selectedChange">Змінити</button>
+      </div>
+
+      <div class="field-error" id="serviceError" style="display:none">Оберіть послугу та тривалість</div>
+      <input type="hidden" id="inp-service" />
+      <input type="hidden" id="inp-price" />
     </div>
 
-    <!-- ЦІНА -->
-    <div class="price-calc">
-      <div class="price-calc-label">Вартість сертифіката, грн *</div>
-      <div class="price-chips">
-        <button type="button" class="price-chip" data-val="700">700</button>
-        <button type="button" class="price-chip" data-val="1500">1 500</button>
-        <button type="button" class="price-chip" data-val="2000">2 000</button>
-        <button type="button" class="price-chip" data-val="2700">2 700</button>
-        <button type="button" class="price-chip" data-val="custom">Своя сума</button>
+    <!-- СВОЯ СУМА (опційно) -->
+    <div class="custom-amount-wrap" id="customAmountWrap" style="display:none">
+      <div class="custom-amount-toggle">
+        <button type="button" class="custom-toggle-btn" id="customToggleBtn">+ Вказати іншу суму</button>
       </div>
-      <div class="price-custom" id="priceCustomWrap">
-        <div class="form-group" style="margin:12px 0 0" id="fg-amount">
-          <input type="number" id="inp-amount" placeholder="Введіть суму в гривнях" min="200" />
+      <div id="customAmountField" style="display:none">
+        <div class="form-group" id="fg-amount">
+          <label for="inp-amount">Своя сума, грн</label>
+          <input type="number" id="inp-amount" placeholder="Введіть суму (мінімум 200)" min="200" />
           <div class="field-error">Вкажіть суму (мінімум 200 грн)</div>
         </div>
       </div>
-      <input type="hidden" id="inp-price" />
     </div>
 
     <div class="form-group" id="fg-address">
@@ -289,56 +350,205 @@
 
 <script>
 (function(){
-  var form = document.getElementById('certForm');
-  var successState = document.getElementById('successState');
-  var submitBtn = document.getElementById('submitBtn');
-  var serviceSelect = document.getElementById('inp-service');
-  var priceInput = document.getElementById('inp-price');
-  var amountInput = document.getElementById('inp-amount');
-  var priceCustomWrap = document.getElementById('priceCustomWrap');
-  var chips = document.querySelectorAll('.price-chip');
-  var selectedChipVal = '';
 
-  // При виборі послуги — підставити рекомендовану ціну
-  serviceSelect.addEventListener('change', function(){
-    var opt = this.options[this.selectedIndex];
-    var price = opt.getAttribute('data-price');
-    if (price && price !== '0') {
-      selectChip(price);
-    }
+  /* ── ДАНІ ПОСЛУГ ── */
+  var SERVICES = [
+    { id:'zagalno', icon:'💆', name:'Загально-оздоровчий масаж',
+      variants:[
+        {label:'Майстер · 60 хв',           price:1200},
+        {label:'Топ Майстер · 45 хв',        price:1150},
+        {label:'Топ Майстер · 60 хв',        price:1350},
+        {label:'Топ Майстер · 90 хв',        price:1750},
+      ]},
+    { id:'antistres', icon:'🧘', name:'Антистресовий масаж',
+      variants:[
+        {label:'45 хв', price:1000},
+        {label:'60 хв', price:1200},
+        {label:'90 хв', price:1600},
+      ]},
+    { id:'rozsl', icon:'🌿', name:'Розслаблюючий масаж',
+      variants:[
+        {label:'30 хв', price:700},
+        {label:'45 хв', price:1000},
+        {label:'60 хв', price:1200},
+      ]},
+    { id:'antytsel', icon:'✨', name:'Антицелюлітний масаж',
+      variants:[
+        {label:'Топ Майстер · 60 хв', price:1450},
+      ]},
+    { id:'sport', icon:'🏃', name:'Спортивний масаж',
+      variants:[
+        {label:'Топ Майстер · 60 хв', price:1350},
+      ]},
+    { id:'oblychchya', icon:'💎', name:'Масаж обличчя',
+      variants:[
+        {label:'Майстер · 30 хв',      price:700},
+        {label:'Топ Майстер · 30 хв',  price:800},
+        {label:'Топ Майстер · 60 хв',  price:1350},
+      ]},
+    { id:'kaminnya', icon:'🪨', name:'Масаж гарячим камінням',
+      variants:[
+        {label:'60 хв', price:1400},
+      ]},
+    { id:'bambuk', icon:'🎍', name:'Бамбуковий баночний масаж',
+      variants:[
+        {label:'60 хв', price:1500},
+      ]},
+    { id:'parnyi', icon:'👫', name:'Парний масаж',
+      variants:[
+        {label:'60 хв', price:2700},
+      ]},
+    { id:'obgortannya', icon:'🔥', name:'Обгортання',
+      variants:[
+        {label:'Bruno Vassari Detox · 1 год 15 хв',          price:1600},
+        {label:'Гаряча експрес-трансформація · 2 год 10 хв', price:3500},
+        {label:'Холодне моделювання тіла · 2 год',           price:2700},
+        {label:'Гаряче моделювання тіла · 2 год',            price:2700},
+        {label:'SPA Seaweed (гаряче) · 1 год 10 хв',         price:1600},
+        {label:'Amore Shemen гаряче · 1 год',                price:1600},
+        {label:'Amore Shemen холодне · 1 год 10 хв',         price:1600},
+      ]},
+    { id:'fitobochka', icon:'🌡️', name:'Паріння у фітобочці',
+      variants:[
+        {label:'20 хв', price:600},
+        {label:'30 хв', price:800},
+        {label:'45 хв', price:900},
+        {label:'60 хв', price:1000},
+      ]},
+    { id:'spa', icon:'🌸', name:'SPA-ритуали',
+      variants:[
+        {label:'Фіто-оновлення тіла · 90 хв',  price:2150},
+        {label:'Фіто-оновлення тіла · 130 хв', price:2750},
+      ]},
+  ];
+
+  /* ── DOM ── */
+  var catGrid       = document.getElementById('catGrid');
+  var variantsWrap  = document.getElementById('variantsWrap');
+  var variantsTitle = document.getElementById('variantsTitle');
+  var variantsGrid  = document.getElementById('variantsGrid');
+  var selSummary    = document.getElementById('selectedSummary');
+  var selName       = document.getElementById('selectedName');
+  var selDur        = document.getElementById('selectedDur');
+  var selPriceBadge = document.getElementById('selectedPriceBadge');
+  var selChange     = document.getElementById('selectedChange');
+  var serviceError  = document.getElementById('serviceError');
+  var inpService    = document.getElementById('inp-service');
+  var inpPrice      = document.getElementById('inp-price');
+  var customAmountWrap = document.getElementById('customAmountWrap');
+  var customToggleBtn  = document.getElementById('customToggleBtn');
+  var customAmountField = document.getElementById('customAmountField');
+  var inpAmount     = document.getElementById('inp-amount');
+  var form          = document.getElementById('certForm');
+  var successState  = document.getElementById('successState');
+  var submitBtn     = document.getElementById('submitBtn');
+
+  var activeCatId = null;
+  var activeVariant = null; // {serviceName, label, price}
+
+  /* ── БУДУЄМО КАТЕГОРІЇ ── */
+  SERVICES.forEach(function(s){
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cat-btn';
+    btn.setAttribute('data-id', s.id);
+    btn.innerHTML = '<span class="cat-btn-icon">' + s.icon + '</span><span class="cat-btn-name">' + s.name + '</span>';
+    btn.addEventListener('click', function(){ selectCategory(s.id); });
+    catGrid.appendChild(btn);
   });
 
-  // Вибір ціни-чіпа
-  chips.forEach(function(chip){
-    chip.addEventListener('click', function(){
-      var val = this.getAttribute('data-val');
-      selectChip(val);
-    });
-  });
+  function selectCategory(id){
+    activeCatId = id;
+    activeVariant = null;
+    inpService.value = '';
+    inpPrice.value   = '';
+    serviceError.style.display = 'none';
+    document.getElementById('fg-service').classList.remove('invalid');
 
-  function selectChip(val){
-    chips.forEach(function(c){ c.classList.remove('active'); });
-    chips.forEach(function(c){
-      if (c.getAttribute('data-val') === val) c.classList.add('active');
+    // підсвічуємо кнопку
+    catGrid.querySelectorAll('.cat-btn').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-id') === id);
     });
-    if (val === 'custom') {
-      priceCustomWrap.classList.add('show');
-      priceInput.value = '';
-      amountInput.focus();
-      selectedChipVal = 'custom';
-    } else {
-      priceCustomWrap.classList.remove('show');
-      priceInput.value = val;
-      selectedChipVal = val;
+
+    var svc = SERVICES.find(function(s){ return s.id === id; });
+    if (!svc) return;
+
+    // якщо лише один варіант — вибираємо одразу
+    if (svc.variants.length === 1) {
+      selectVariant(svc.name, svc.variants[0]);
+      variantsWrap.style.display = 'none';
+      return;
     }
+
+    // показуємо варіанти
+    variantsTitle.textContent = svc.name + ' — оберіть тривалість:';
+    variantsGrid.innerHTML = '';
+    svc.variants.forEach(function(v){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'variant-btn';
+      btn.innerHTML = '<div class="variant-label">' + v.label + '</div><div class="variant-price">' + v.price.toLocaleString('uk-UA') + ' грн</div>';
+      btn.addEventListener('click', function(){
+        variantsGrid.querySelectorAll('.variant-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        selectVariant(svc.name, v);
+      });
+      variantsGrid.appendChild(btn);
+    });
+    variantsWrap.style.display = 'block';
+    selSummary.style.display   = 'none';
+    customAmountWrap.style.display = 'none';
   }
 
-  // Своя сума → оновити hidden input
-  amountInput.addEventListener('input', function(){
-    priceInput.value = this.value;
+  function selectVariant(serviceName, variant){
+    activeVariant = { serviceName: serviceName, label: variant.label, price: variant.price };
+    inpService.value = serviceName + ' · ' + variant.label;
+    inpPrice.value   = variant.price;
+
+    selName.textContent        = serviceName;
+    selDur.textContent         = variant.label;
+    selPriceBadge.textContent  = variant.price.toLocaleString('uk-UA') + ' грн';
+    selSummary.style.display   = 'block';
+    catGrid.style.display      = 'none';
+    variantsWrap.style.display = 'none';
+    customAmountWrap.style.display = 'block';
+    serviceError.style.display = 'none';
+  }
+
+  selChange.addEventListener('click', function(){
+    activeVariant = null;
+    inpService.value = '';
+    inpPrice.value   = '';
+    selSummary.style.display   = 'none';
+    catGrid.style.display      = 'grid';
+    customAmountWrap.style.display = 'none';
+    customAmountField.style.display = 'none';
+    customToggleBtn.textContent = '+ Вказати іншу суму';
+    if (inpAmount) inpAmount.value = '';
+    // показати варіанти для поточної категорії
+    if (activeCatId) {
+      var svc = SERVICES.find(function(s){ return s.id === activeCatId; });
+      if (svc && svc.variants.length > 1) variantsWrap.style.display = 'block';
+    }
   });
 
-  // Валідація
+  /* ── СВОЯ СУМА ── */
+  customToggleBtn.addEventListener('click', function(){
+    var isOpen = customAmountField.style.display !== 'none';
+    customAmountField.style.display = isOpen ? 'none' : 'block';
+    customToggleBtn.textContent = isOpen ? '+ Вказати іншу суму' : '− Скасувати';
+    if (!isOpen) { inpAmount.focus(); }
+    else { inpAmount.value = ''; inpPrice.value = activeVariant ? activeVariant.price : ''; }
+  });
+
+  if (inpAmount) {
+    inpAmount.addEventListener('input', function(){
+      if (this.value) inpPrice.value = this.value;
+      else if (activeVariant) inpPrice.value = activeVariant.price;
+    });
+  }
+
+  /* ── ВАЛІДАЦІЯ ── */
   function validateField(id, check){
     var fg = document.getElementById('fg-' + id);
     if (!fg) return true;
@@ -349,61 +559,63 @@
 
   function validate(){
     var ok = true;
-    ok = validateField('name', function(){ return document.getElementById('inp-name').value.trim().length > 1; }) && ok;
-    ok = validateField('phone', function(){ return document.getElementById('inp-phone').value.trim().length >= 9; }) && ok;
+    ok = validateField('name',      function(){ return document.getElementById('inp-name').value.trim().length > 1; }) && ok;
+    ok = validateField('phone',     function(){ return document.getElementById('inp-phone').value.trim().length >= 9; }) && ok;
     ok = validateField('recipient', function(){ return document.getElementById('inp-recipient').value.trim().length > 1; }) && ok;
-    ok = validateField('service', function(){ return serviceSelect.value !== ''; }) && ok;
-    // ціна
-    var priceOk = priceInput.value && parseInt(priceInput.value) >= 200;
-    if (selectedChipVal === 'custom') {
-      var fg = document.getElementById('fg-amount');
-      fg.classList.toggle('invalid', !priceOk);
+    ok = validateField('address',   function(){ return document.getElementById('inp-address').value.trim().length > 3; }) && ok;
+
+    var serviceOk = !!inpService.value;
+    var priceOk   = inpPrice.value && parseInt(inpPrice.value) >= 200;
+    if (!serviceOk || !priceOk) {
+      serviceError.style.display = 'block';
+      document.getElementById('fg-service').classList.add('invalid');
+      ok = false;
     }
-    if (!priceOk) ok = false;
-    ok = validateField('address', function(){ return document.getElementById('inp-address').value.trim().length > 3; }) && ok;
+    if (customAmountField.style.display !== 'none' && inpAmount.value && parseInt(inpAmount.value) < 200) {
+      document.getElementById('fg-amount').classList.add('invalid');
+      ok = false;
+    }
     return ok;
   }
 
-  // Сабміт
+  /* ── САБМІТ ── */
   form.addEventListener('submit', function(e){
     e.preventDefault();
     if (!validate()) return;
-
     submitBtn.disabled = true;
     submitBtn.textContent = 'Надсилається…';
 
-    var data = {
-      name:      document.getElementById('inp-name').value.trim(),
-      phone:     document.getElementById('inp-phone').value.trim(),
-      recipient: document.getElementById('inp-recipient').value.trim(),
-      service:   serviceSelect.value,
-      price:     priceInput.value,
-      address:   document.getElementById('inp-address').value.trim(),
-      wishes:    document.getElementById('inp-wishes').value.trim()
-    };
-
     fetch('/api/certificate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name:      document.getElementById('inp-name').value.trim(),
+        phone:     document.getElementById('inp-phone').value.trim(),
+        recipient: document.getElementById('inp-recipient').value.trim(),
+        service:   inpService.value,
+        price:     inpPrice.value,
+        address:   document.getElementById('inp-address').value.trim(),
+        wishes:    document.getElementById('inp-wishes').value.trim(),
+      })
     })
     .then(function(r){ return r.json(); })
     .then(function(res){
-      if (res.ok) {
-        form.style.display = 'none';
-        successState.classList.add('show');
-      } else {
-        submitBtn.disabled = false;
-        submitBtn.textContent = '🎁 Замовити сертифікат';
-        alert('Виникла помилка. Спробуйте ще раз або зателефонуйте: 097 434 01 12');
-      }
+      if (res.ok) { form.style.display='none'; successState.classList.add('show'); }
+      else { reset(); alert('Помилка. Зателефонуйте: 097 434 01 12'); }
     })
-    .catch(function(){
+    .catch(function(){ reset(); alert('Помилка. Зателефонуйте: 097 434 01 12'); });
+
+    function reset(){
       submitBtn.disabled = false;
       submitBtn.textContent = '🎁 Замовити сертифікат';
-      alert('Виникла помилка. Спробуйте ще раз або зателефонуйте: 097 434 01 12');
-    });
+    }
   });
+
+  /* polyfill find */
+  if (!Array.prototype.find) {
+    Array.prototype.find = function(fn){ for(var i=0;i<this.length;i++) if(fn(this[i])) return this[i]; };
+  }
+
 })();
 </script>
 
