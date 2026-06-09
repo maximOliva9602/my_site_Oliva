@@ -21,8 +21,27 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "oliva-admin";
 const IS_PROD = process.env.NODE_ENV === "production";
+const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+
 if (!process.env.ADMIN_PASSWORD) {
-  console.warn('[chat] УВАГА: ADMIN_PASSWORD не задано — використовується типовий "oliva-admin". Обовʼязково задайте його у Railway → Variables.');
+  console.warn('[chat] УВАГА: ADMIN_PASSWORD не задано — використовується типовий "oliva-admin". Задайте у Railway → Variables.');
+}
+if (!TG_TOKEN || !TG_CHAT_ID) {
+  console.warn('[telegram] TELEGRAM_BOT_TOKEN або TELEGRAM_CHAT_ID не задано — сповіщення в Telegram вимкнено.');
+}
+
+/* ---------------- Telegram-сповіщення ---------------- */
+async function sendTelegram(text) {
+  if (!TG_TOKEN || !TG_CHAT_ID) return;
+  try {
+    const url = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
+    const body = JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: "HTML" });
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+    if (!res.ok) console.error("[telegram] Помилка:", await res.text());
+  } catch (e) {
+    console.error("[telegram] fetch error:", e.message);
+  }
 }
 
 app.use(express.json());

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://site-oliva-production.up.railway.app/sitemap.xml
