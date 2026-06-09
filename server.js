@@ -116,6 +116,43 @@ app.get("/tips", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "tips.html"));
 });
 
+app.get("/certificate", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "certificate.html"));
+});
+
+/* ---------------- API: Замовлення сертифіката ---------------- */
+app.post("/api/certificate", async function (req, res) {
+  var d = req.body || {};
+  var name      = String(d.name      || "").slice(0, 100).trim();
+  var phone     = String(d.phone     || "").slice(0, 30).trim();
+  var recipient = String(d.recipient || "").slice(0, 100).trim();
+  var service   = String(d.service   || "").slice(0, 100).trim();
+  var price     = String(d.price     || "").slice(0, 20).trim();
+  var address   = String(d.address   || "").slice(0, 200).trim();
+  var wishes    = String(d.wishes    || "").slice(0, 500).trim();
+
+  if (!name || !phone || !recipient || !service || !price || !address) {
+    return res.status(400).json({ ok: false, error: "missing fields" });
+  }
+
+  var text = `🎁 <b>Нове замовлення сертифіката!</b>\n\n` +
+    `👤 <b>Замовник:</b> ${name}\n` +
+    `📞 <b>Телефон:</b> ${phone}\n` +
+    `🎀 <b>Сертифікат для:</b> ${recipient}\n` +
+    `💆 <b>Послуга:</b> ${service}\n` +
+    `💰 <b>Вартість:</b> ${price} грн\n` +
+    `📦 <b>Нова Пошта:</b> ${address}` +
+    (wishes ? `\n📝 <b>Побажання:</b> ${wishes}` : "");
+
+  try {
+    await sendTelegram(text);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("[certificate]", e.message);
+    res.status(500).json({ ok: false });
+  }
+});
+
 /* ---------------- Socket.IO ---------------- */
 io.on("connection", function (socket) {
   var auth = socket.handshake.auth || {};

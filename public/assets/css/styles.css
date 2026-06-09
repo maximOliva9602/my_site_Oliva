@@ -140,6 +140,8 @@ nav.scrolled {
 .btn-outline:hover { border-color: var(--cream); background: rgba(255,255,255,0.05); }
 .btn-dark { background: var(--black); color: var(--cream); }
 .btn-dark:hover { background: #1a1f16; transform: translateY(-2px); }
+.btn-cert { background: rgba(122,145,86,0.15); color: var(--cream); border: 1px solid rgba(122,145,86,0.5); }
+.btn-cert:hover { background: var(--olive); border-color: var(--olive-light); transform: translateY(-2px); }
 
 /* ── HERO ── */
 .hero { min-height: 100vh; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
