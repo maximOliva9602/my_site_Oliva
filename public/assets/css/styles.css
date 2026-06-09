@@ -334,6 +334,7 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
 .chat-msg { font-size: 0.86rem; line-height: 1.5; padding: 10px 14px; border-radius: 14px; max-width: 90%; }
 .chat-msg--in { background: rgba(46,61,34,0.4); border: 1px solid var(--line); color: var(--warm); align-self: flex-start; border-bottom-left-radius: 4px; }
 .chat-msg--out { background: var(--olive-light); color: var(--black); align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-msg__time { display: block; font-size: 0.64rem; opacity: 0.55; margin-top: 4px; text-align: right; }
 .chat-quick { padding: 0 16px 16px; display: flex; flex-wrap: wrap; gap: 8px; }
 .chat-q { font-size: 0.78rem; padding: 8px 14px; border-radius: 50px; border: 1px solid var(--line); color: var(--cream); transition: all .25s; }
 .chat-q:hover { transform: translateY(-1px); }
