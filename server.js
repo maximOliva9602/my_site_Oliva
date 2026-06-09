@@ -126,14 +126,20 @@ app.post("/api/certificate", async function (req, res) {
   var name      = String(d.name      || "").slice(0, 100).trim();
   var phone     = String(d.phone     || "").slice(0, 30).trim();
   var recipient = String(d.recipient || "").slice(0, 100).trim();
-  var service   = String(d.service   || "").slice(0, 100).trim();
+  var service   = String(d.service   || "").slice(0, 150).trim();
   var price     = String(d.price     || "").slice(0, 20).trim();
+  var certType  = String(d.certType  || "").slice(0, 30).trim();
+  var delivery  = String(d.delivery  || "").slice(0, 50).trim();
   var address   = String(d.address   || "").slice(0, 200).trim();
   var wishes    = String(d.wishes    || "").slice(0, 500).trim();
 
-  if (!name || !phone || !recipient || !service || !price || !address) {
+  if (!name || !phone || !recipient || !service || !price || !certType || !delivery) {
     return res.status(400).json({ ok: false, error: "missing fields" });
   }
+
+  var deliveryLine = delivery === "Отримаю у студії"
+    ? `🏠 <b>Отримання:</b> У студії`
+    : `📦 <b>Доставка:</b> ${delivery}` + (address ? ` — ${address}` : "");
 
   var text = `🎁 <b>Нове замовлення сертифіката!</b>\n\n` +
     `👤 <b>Замовник:</b> ${name}\n` +
@@ -141,7 +147,8 @@ app.post("/api/certificate", async function (req, res) {
     `🎀 <b>Сертифікат для:</b> ${recipient}\n` +
     `💆 <b>Послуга:</b> ${service}\n` +
     `💰 <b>Вартість:</b> ${price} грн\n` +
-    `📦 <b>Нова Пошта:</b> ${address}` +
+    `📄 <b>Тип:</b> ${certType}\n` +
+    deliveryLine +
     (wishes ? `\n📝 <b>Побажання:</b> ${wishes}` : "");
 
   try {
