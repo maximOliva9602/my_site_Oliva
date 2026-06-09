@@ -69,7 +69,7 @@ a.topbar__item:hover { color: var(--cream); }
 
 /* ── NAV ── */
 nav {
-  position: fixed; top: 44px; left: 0; right: 0; z-index: 100;
+  position: fixed; top: 44px; left: 0; right: 0; z-index: 200;
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 48px;
   transition: background .4s, padding .4s, top .4s;
@@ -351,7 +351,7 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
 .footer-copy { font-size: 0.78rem; color: var(--text-dim); }
 
 /* ── ONLINE CHAT ── */
-.chat { position: fixed; bottom: 24px; right: 24px; z-index: 120; }
+.chat { position: fixed; bottom: 24px; right: 24px; z-index: 180; }
 .chat-launcher { position: relative; width: 60px; height: 60px; border-radius: 50%; background: var(--olive-light); color: var(--black); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(122,145,86,0.45); transition: transform .25s, background .25s; }
 .chat-launcher:hover { transform: translateY(-3px); background: #8FA864; }
 .chat-launcher__pulse { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--olive-light); animation: pulse 2.2s ease-out infinite; }
@@ -392,7 +392,7 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
 .reveal.visible { opacity: 1; transform: none; }
 
 /* ── MOBILE NAV PANEL ── */
-.nav-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 109; opacity: 0; visibility: hidden; transition: .3s; }
+.nav-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 190; opacity: 0; visibility: hidden; transition: .3s; }
 .nav-backdrop.open { opacity: 1; visibility: visible; }
 
 /* ── RESPONSIVE ── */
@@ -409,7 +409,7 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
     position: fixed; top: 0; right: 0; bottom: 0; width: 78%; max-width: 320px;
     background: var(--black-2); border-left: 1px solid var(--line);
     flex-direction: column; justify-content: center; gap: 26px; padding: 40px;
-    transform: translateX(100%); transition: transform .35s ease; z-index: 110;
+    transform: translateX(100%); transition: transform .35s ease; z-index: 210;
   }
   .nav-links.open { transform: translateX(0); }
   .nav-links a { font-size: 1rem; }
