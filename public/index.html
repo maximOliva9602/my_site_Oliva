@@ -605,6 +605,9 @@
 
 <script>
 (function(){
+  // Карусель тільки на мобільному
+  if (window.innerWidth >= 900) return;
+
   var wrap = document.getElementById('srvCarousel').parentElement;
   var carousel = document.getElementById('srvCarousel');
   var dotsWrap = document.getElementById('srvDots');
