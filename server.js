@@ -164,6 +164,7 @@ io.on("connection", function (socket) {
     io.to("visitor:" + visitorId).emit("message", m);
     io.to("admins").emit("visitor:msg", { visitorId: visitorId, name: conv.name, message: m });
     io.to("admins").emit("conversations", summary());
+    sendTelegram(`💬 <b>Нове повідомлення з сайту</b>\n👤 ${conv.name}\n📝 ${text}`);
   });
 });
 
