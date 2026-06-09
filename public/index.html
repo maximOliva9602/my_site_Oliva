@@ -476,7 +476,7 @@
   <div class="container">
     <div class="why-grid">
       <div class="why-visual reveal">
-        <div class="why-img-main"><img src="assets/img/about-main.png" alt="Студія масажу Oliva Київ" loading="lazy"></div>
+        <div class="why-img-main"><img src="assets/img/about-main.jpg" alt="Студія масажу Oliva Київ" loading="lazy"></div>
         <div class="why-img-accent"><img src="assets/img/about-accent.jpg" alt="SPA масаж Київ" loading="lazy"></div>
         <div class="why-stat"><div class="why-stat-num">4+</div><div class="why-stat-label" data-i18n="why.stat">роки досвіду</div></div>
       </div>
@@ -607,37 +607,85 @@
 (function(){
   var carousel = document.getElementById('srvCarousel');
   var dotsWrap = document.getElementById('srvDots');
-  var prev = document.getElementById('srvPrev');
-  var next = document.getElementById('srvNext');
+  var prevBtn = document.getElementById('srvPrev');
+  var nextBtn = document.getElementById('srvNext');
   if (!carousel) return;
-  var slides = carousel.querySelectorAll('.srv-slide');
-  var current = 0;
-  var slideW = function(){ return slides[0].offsetWidth + 20; };
 
-  slides.forEach(function(_,i){
+  var origSlides = Array.from(carousel.querySelectorAll('.srv-slide'));
+  var total = origSlides.length;
+
+  // Клонуємо для зациклення: [clone_last, ...originals, clone_first]
+  var cloneLast = origSlides[total-1].cloneNode(true);
+  var cloneFirst = origSlides[0].cloneNode(true);
+  carousel.insertBefore(cloneLast, origSlides[0]);
+  carousel.appendChild(cloneFirst);
+
+  var allSlides = Array.from(carousel.querySelectorAll('.srv-slide'));
+  var current = 1; // починаємо з першого реального слайду
+  var isAnimating = false;
+
+  function slideW(){ return allSlides[0].offsetWidth + 20; }
+
+  // Крапки для оригінальних слайдів
+  origSlides.forEach(function(_,i){
     var d = document.createElement('button');
     d.className = 'srv-carousel-dot' + (i===0?' active':'');
-    d.setAttribute('aria-label', 'Слайд ' + (i+1));
-    d.addEventListener('click', function(){ goTo(i); });
+    d.setAttribute('aria-label', 'Слайд '+(i+1));
+    d.addEventListener('click', function(){ goTo(i+1); });
     dotsWrap.appendChild(d);
   });
 
-  function goTo(n){
-    current = Math.max(0, Math.min(n, slides.length - 1));
-    var offset = current * slideW();
-    carousel.style.transform = 'translateX(-' + offset + 'px)';
-    dotsWrap.querySelectorAll('.srv-carousel-dot').forEach(function(d,i){ d.classList.toggle('active', i===current); });
+  function updateDots(){
+    var realIdx = current - 1;
+    dotsWrap.querySelectorAll('.srv-carousel-dot').forEach(function(d,i){
+      d.classList.toggle('active', i===realIdx);
+    });
   }
 
-  prev.addEventListener('click', function(){ goTo(current - 1); });
-  next.addEventListener('click', function(){ goTo(current + 1); });
+  function setPos(animated){
+    carousel.style.transition = animated ? 'transform .45s cubic-bezier(.4,0,.2,1)' : 'none';
+    carousel.style.transform = 'translateX(-' + (current * slideW()) + 'px)';
+  }
 
+  // Ініціалізація без анімації
+  setPos(false);
+
+  function goTo(n, animated){
+    if (isAnimating) return;
+    isAnimating = true;
+    current = n;
+    setPos(animated !== false);
+    updateDots();
+  }
+
+  carousel.addEventListener('transitionend', function(){
+    isAnimating = false;
+    // Перескакуємо на реальний слайд без анімації якщо на клоні
+    if (current === 0) { current = total; setPos(false); }
+    if (current === total + 1) { current = 1; setPos(false); }
+  });
+
+  prevBtn.addEventListener('click', function(){ goTo(current - 1); });
+  nextBtn.addEventListener('click', function(){ goTo(current + 1); });
+
+  // Авто-прокрутка кожні 4 секунди
+  var autoTimer = setInterval(function(){ goTo(current + 1); }, 4000);
+  carousel.parentElement.addEventListener('mouseenter', function(){ clearInterval(autoTimer); });
+  carousel.parentElement.addEventListener('mouseleave', function(){
+    clearInterval(autoTimer);
+    autoTimer = setInterval(function(){ goTo(current + 1); }, 4000);
+  });
+
+  // Свайп на мобільному
   var startX = 0;
-  carousel.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; }, {passive:true});
+  carousel.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; clearInterval(autoTimer); }, {passive:true});
   carousel.addEventListener('touchend', function(e){
     var diff = startX - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 40) goTo(diff > 0 ? current+1 : current-1);
   }, {passive:true});
+
+  // Перерахунок при зміні розміру екрана
+  window.addEventListener('resize', function(){ setPos(false); });
 })();
 </script>
 <script src="assets/js/i18n.js"></script>
