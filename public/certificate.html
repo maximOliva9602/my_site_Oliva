@@ -92,6 +92,15 @@
     .cert-main { display: grid; grid-template-columns: 1fr 1fr; gap: 0; max-width: 1200px; margin: 0 auto; }
     .cert-video-side { position: sticky; top: 0; height: 100vh; overflow: hidden; }
     .cert-video-side video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mute-btn {
+      position: absolute; bottom: 20px; right: 20px; z-index: 10;
+      background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.2);
+      color: #fff; border-radius: 50%; width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; transition: background .2s;
+      backdrop-filter: blur(6px);
+    }
+    .mute-btn:hover { background: rgba(0,0,0,0.8); }
     .cert-form-side { padding: 48px 48px 80px; }
     @media (max-width: 900px) {
       .cert-main { grid-template-columns: 1fr; }
@@ -329,9 +338,10 @@
 <!-- ВІДЕО + ФОРМА -->
 <div class="cert-main">
   <div class="cert-video-side">
-    <video autoplay loop playsinline>
+    <video id="certVideo" autoplay loop playsinline muted>
       <source src="assets/video/sertificate_video.mp4" type="video/mp4" />
     </video>
+    <button class="mute-btn" id="muteBtn" title="Звук">🔇</button>
   </div>
   <div class="cert-form-side">
     <div class="form-section">
@@ -816,6 +826,14 @@
   }
 
 })();
+
+  /* ── MUTE BUTTON ── */
+  var certVideo = document.getElementById('certVideo');
+  var muteBtn   = document.getElementById('muteBtn');
+  muteBtn.addEventListener('click', function(){
+    certVideo.muted = !certVideo.muted;
+    muteBtn.textContent = certVideo.muted ? '🔇' : '🔊';
+  });
 </script>
 
 </body>
