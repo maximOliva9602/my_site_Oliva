@@ -184,6 +184,17 @@
     .btn-back { display: inline-block; padding: 14px 32px; border: 1px solid var(--olive-light); border-radius: 50px; color: var(--olive-light); text-decoration: none; font-size: 14px; transition: all .2s; }
     .btn-back:hover { background: var(--olive); color: #fff; border-color: var(--olive); }
 
+    /* CERT INFO */
+    .cert-info-section { border-top: 1px solid var(--line); padding: 60px 24px; }
+    .cert-info-inner { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+    @media (max-width: 700px) { .cert-info-inner { grid-template-columns: 1fr; gap: 32px; } }
+    .cert-info-label { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 20px; }
+    .cert-about p { font-size: 14px; color: var(--text-dim); line-height: 1.8; margin-bottom: 14px; }
+    .cert-about p:last-child { margin-bottom: 0; }
+    .cert-rules ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+    .cert-rules li { font-size: 13px; color: var(--text-dim); line-height: 1.6; padding-left: 18px; position: relative; }
+    .cert-rules li::before { content: '—'; position: absolute; left: 0; color: var(--olive-light); }
+
     /* FOOTER */
     .page-footer { border-top: 1px solid var(--line); text-align: center; padding: 24px; font-size: 12px; color: var(--text-dim); }
     .page-footer a { color: var(--olive-light); text-decoration: none; }
@@ -410,6 +421,29 @@
 </div><!-- /form-section -->
   </div><!-- /cert-form-side -->
 </div><!-- /cert-main -->
+
+<!-- ПРО СЕРТИФІКАТ + УМОВИ -->
+<div class="cert-info-section">
+  <div class="cert-info-inner">
+    <div class="cert-about">
+      <div class="cert-info-label">Про сертифікат</div>
+      <p>Подарунковий сертифікат від студії масажу Oliva — це не просто подарунок. Це турбота, відпочинок та відновлення, які залишаються в пам'яті надовго.</p>
+      <p>Даруючи сертифікат, ви даруєте близькій людині можливість зупинитися серед щоденного поспіху, відновити сили, позбутися напруги та присвятити час собі.</p>
+      <p>Сертифікат можна оформити на будь-яку суму або на конкретну послугу: загально-оздоровчий масаж, парний масаж, SPA-ритуали, фітотерапію у фітобочці, стоун-терапію та інші процедури студії.</p>
+    </div>
+    <div class="cert-rules">
+      <div class="cert-info-label">Умови використання</div>
+      <ul>
+        <li>Сертифікат не підлягає поверненню та обміну на грошові кошти</li>
+        <li>Сертифікати між собою не сумуються</li>
+        <li>При відміні запису менше ніж за 5 годин до візиту сертифікат вважається використаним</li>
+        <li>У разі втрати або пошкодження сертифікат не може бути поновлений, кошти не повертаються</li>
+        <li>При записі обов'язково повідомте адміністратора про розрахунок сертифікатом та майте його при собі — послуги без пред'явлення не надаються</li>
+        <li>Термін дії сертифікату — 2 місяці з дня купівлі</li>
+      </ul>
+    </div>
+  </div>
+</div>
 
 <div class="page-footer">
   <a href="/">Студія масажу Oliva</a> · Київ, Борщагівська 145 · <a href="tel:+380974340112">097 434 01 12</a>
