@@ -179,7 +179,7 @@
       <span>/</span>
       <button type="button" data-lang="en">EN</button>
     </div>
-    <a href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener" class="nav-cta" data-i18n="nav.book">Онлайн запис</a>
+    <a href="#" class="nav-cta" id="navBookBtn" data-i18n="nav.book">Онлайн запис</a>
     <button class="burger" id="burger" aria-label="Меню"><span></span><span></span><span></span></button>
   </div>
 </nav>
@@ -920,12 +920,6 @@
 <script src="assets/js/chat.js"></script>
 
 <!-- ============ BINOTEL BOOKING WIDGET ============ -->
-<style>
-  /* Повністю ховаємо стандартну плаваючу кнопку віджету */
-  bocrm-widget-button { display: none !important; }
-  bocrm-branch > bocrm-widget-button { display: none !important; }
-</style>
-
 <script>
 /* Завантажуємо офіційний binotel/bookon widget */
 (function (d, w, s) {
@@ -936,47 +930,63 @@
 })(document, window, 'script');
 
 (function(){
+  var widgetBranch = null;
   var pending = false;
 
-  function triggerWidget() {
-    var host = document.querySelector('bocrm-widget-button');
-    if (!host) return false;
-    /* Тимчасово показуємо, клікаємо, знову ховаємо */
-    host.style.cssText = 'display:block!important;position:fixed!important;left:-9999px!important;opacity:0!important;';
-    var btn = host.shadowRoot
-      ? host.shadowRoot.querySelector('button')
-      : host.querySelector('button');
-    if (btn) {
-      btn.click();
-      setTimeout(function(){ host.style.cssText = ''; }, 200);
-      return true;
+  /* Як тільки bocrm-branch з'являється в DOM — ховаємо його за межі екрану */
+  var domWatcher = new MutationObserver(function() {
+    var branch = document.querySelector('bocrm-branch');
+    if (branch && branch !== widgetBranch) {
+      widgetBranch = branch;
+      hideBranch();
     }
-    host.style.cssText = '';
-    return false;
+  });
+  domWatcher.observe(document.documentElement, { childList: true, subtree: true });
+
+  function hideBranch() {
+    if (!widgetBranch) return;
+    widgetBranch.style.cssText =
+      'position:fixed!important;bottom:-999px!important;right:-999px!important;' +
+      'opacity:0!important;pointer-events:none!important;z-index:-1!important;';
+  }
+
+  function triggerWidget() {
+    if (!widgetBranch) widgetBranch = document.querySelector('bocrm-branch');
+    if (!widgetBranch) return false;
+
+    var wBtn = widgetBranch.querySelector('bocrm-widget-button button');
+    if (!wBtn) return false;
+
+    /* Тимчасово повертаємо pointer-events щоб Angular-компонент прийняв клік */
+    widgetBranch.style.cssText =
+      'position:fixed!important;bottom:-999px!important;right:-999px!important;' +
+      'opacity:0!important;pointer-events:auto!important;z-index:-1!important;';
+    wBtn.click();
+    setTimeout(hideBranch, 300);
+    return true;
   }
 
   function openBooking() {
-    if (!triggerWidget()) {
-      pending = true;
-      var observer = new MutationObserver(function() {
-        if (pending && triggerWidget()) {
-          pending = false;
-          observer.disconnect();
-        }
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-      setTimeout(function(){
-        if (pending) {
-          pending = false;
-          window.open('https://bookon.ua/s/oliva_massage_studio', '_blank');
-        }
-      }, 4000);
-    }
+    if (triggerWidget()) return;
+    /* Ще не завантажився — чекаємо */
+    pending = true;
+    var waitObs = new MutationObserver(function() {
+      if (!pending) return;
+      if (triggerWidget()) { pending = false; waitObs.disconnect(); }
+    });
+    waitObs.observe(document.documentElement, { childList: true, subtree: true });
+    /* Фолбек через 5с — відкрити в новій вкладці */
+    setTimeout(function(){
+      if (pending) { pending = false; window.open('https://bookon.ua/s/oliva_massage_studio', '_blank'); }
+    }, 5000);
   }
 
-  /* Перехоплюємо всі кнопки: nav-cta, srv-card-btn, hero */
+  /* Всі кнопки «Записатися» — nav, hero, srv-cards, sticky */
+  document.getElementById('navBookBtn').addEventListener('click', function(e){
+    e.preventDefault(); openBooking();
+  });
   document.addEventListener('click', function(e) {
-    var btn = e.target.closest('a.nav-cta, a.srv-card-btn, a[href="https://bookon.ua/s/oliva_massage_studio"]');
+    var btn = e.target.closest('a.srv-card-btn, a[href="https://bookon.ua/s/oliva_massage_studio"]');
     if (btn) { e.preventDefault(); openBooking(); }
   });
 })();
