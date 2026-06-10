@@ -11,6 +11,7 @@
 const path = require("path");
 const crypto = require("crypto");
 const http = require("http");
+const fs = require("fs");
 const express = require("express");
 const { Server } = require("socket.io");
 
@@ -184,6 +185,118 @@ app.post("/api/review", async function (req, res) {
 
 app.get("/review", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "review.html"));
+});
+
+/* ============================================================
+   BLOG
+   Файл posts.json зберігається у /data/posts.json
+   На Railway: підключи Volume і змонтуй на /app/data
+   ============================================================ */
+const POSTS_FILE = process.env.POSTS_FILE || path.join(__dirname, "data", "posts.json");
+
+function readPosts() {
+  try {
+    if (!fs.existsSync(POSTS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(POSTS_FILE, "utf8")) || [];
+  } catch (e) { return []; }
+}
+function writePosts(posts) {
+  fs.mkdirSync(path.dirname(POSTS_FILE), { recursive: true });
+  fs.writeFileSync(POSTS_FILE, JSON.stringify(posts, null, 2), "utf8");
+}
+function slugify(text) {
+  return text.toLowerCase()
+    .replace(/[іїєґ]/g, function(c){ return {і:'i',ї:'i',є:'e',ґ:'g'}[c]||c; })
+    .replace(/[а-яёА-ЯЁ]/g, function(c){ var m='аáбвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'.split('');var t='aabvgdeyezhziyklmnoprstufhcchshschyieya'.split('');var i=m.indexOf(c);return i>=0?t[i]||'':c;})
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+/* Публічні ендпоінти */
+app.get("/api/posts", function (req, res) {
+  var posts = readPosts().filter(function(p){ return p.published; });
+  res.json(posts.map(function(p){ return { id: p.id, slug: p.slug, title: p.title, excerpt: p.excerpt, cover: p.cover, date: p.date }; }));
+});
+
+app.get("/api/posts/:slug", function (req, res) {
+  var posts = readPosts();
+  var post = posts.find(function(p){ return p.slug === req.params.slug && p.published; });
+  if (!post) return res.status(404).json({ ok: false });
+  res.json(post);
+});
+
+/* Адмін ендпоінти (захищені токеном) */
+function requireAdmin(req, res, next) {
+  var token = parseCookies(req.headers.cookie).oliva_admin;
+  if (!validToken(token)) return res.status(401).json({ ok: false, error: "unauthorized" });
+  next();
+}
+
+app.get("/api/admin/posts", requireAdmin, function (req, res) {
+  res.json(readPosts());
+});
+
+app.post("/api/admin/posts", requireAdmin, function (req, res) {
+  var d = req.body || {};
+  var title = String(d.title || "").slice(0, 200).trim();
+  if (!title) return res.status(400).json({ ok: false, error: "title required" });
+  var posts = readPosts();
+  var id = crypto.randomBytes(8).toString("hex");
+  var baseSlug = slugify(title) || id;
+  var slug = baseSlug;
+  var n = 1;
+  while (posts.find(function(p){ return p.slug === slug; })) { slug = baseSlug + '-' + (n++); }
+  var post = {
+    id: id, slug: slug,
+    title: title,
+    excerpt: String(d.excerpt || "").slice(0, 500).trim(),
+    body: String(d.body || "").slice(0, 20000).trim(),
+    cover: String(d.cover || "").slice(0, 500).trim(),
+    date: new Date().toISOString().slice(0, 10),
+    published: !!d.published
+  };
+  posts.unshift(post);
+  writePosts(posts);
+  res.json({ ok: true, post: post });
+});
+
+app.put("/api/admin/posts/:id", requireAdmin, function (req, res) {
+  var d = req.body || {};
+  var posts = readPosts();
+  var idx = posts.findIndex(function(p){ return p.id === req.params.id; });
+  if (idx < 0) return res.status(404).json({ ok: false });
+  var p = posts[idx];
+  if (d.title !== undefined) p.title = String(d.title).slice(0, 200).trim();
+  if (d.excerpt !== undefined) p.excerpt = String(d.excerpt).slice(0, 500).trim();
+  if (d.body !== undefined) p.body = String(d.body).slice(0, 20000).trim();
+  if (d.cover !== undefined) p.cover = String(d.cover).slice(0, 500).trim();
+  if (d.published !== undefined) p.published = !!d.published;
+  writePosts(posts);
+  res.json({ ok: true, post: p });
+});
+
+app.delete("/api/admin/posts/:id", requireAdmin, function (req, res) {
+  var posts = readPosts();
+  var newPosts = posts.filter(function(p){ return p.id !== req.params.id; });
+  writePosts(newPosts);
+  res.json({ ok: true });
+});
+
+/* Завантаження фото для посту */
+app.post("/api/admin/posts/upload", requireAdmin, express.raw({ type: "image/*", limit: "10mb" }), function (req, res) {
+  var ext = (req.headers["content-type"] || "image/jpeg").split("/")[1] || "jpg";
+  var filename = crypto.randomBytes(12).toString("hex") + "." + ext;
+  var uploadDir = path.join(__dirname, "public", "assets", "img", "blog");
+  fs.mkdirSync(uploadDir, { recursive: true });
+  fs.writeFileSync(path.join(uploadDir, filename), req.body);
+  res.json({ ok: true, url: "/assets/img/blog/" + filename });
+});
+
+/* Маршрути сторінок */
+app.get("/blog", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "blog.html"));
+});
+app.get("/blog/:slug", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "blog-post.html"));
 });
 
 /* ---------------- Socket.IO ---------------- */

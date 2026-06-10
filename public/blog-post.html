@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Блог — Studiya Oliva</title>
+  <link rel="icon" href="/assets/img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #080A07; --olive: #2E3D22; --olive-light: #7A9156;
+      --cream: #F2EDE4; --text-dim: rgba(242,237,228,0.6); --line: rgba(122,145,86,0.18);
+    }
+    html, body { min-height: 100vh; background: var(--black); color: var(--cream); font-family: 'Inter', sans-serif; }
+
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--black); z-index: 10; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .nav-logo span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); }
+    .nav-back { font-size: 13px; color: var(--olive-light); text-decoration: none; }
+    .nav-back:hover { color: var(--cream); }
+
+    .post-wrap { max-width: 720px; margin: 0 auto; padding: 56px 32px 96px; }
+    .post-date { font-size: 12px; color: var(--olive-light); letter-spacing: 0.1em; margin-bottom: 16px; }
+    .post-title { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.8rem); color: var(--cream); line-height: 1.2; margin-bottom: 20px; }
+    .post-cover { width: 100%; border-radius: 16px; object-fit: cover; max-height: 480px; margin-bottom: 36px; display: block; }
+    .post-body { font-size: 16px; line-height: 1.8; color: var(--text-dim); }
+    .post-body p { margin-bottom: 18px; }
+    .post-body h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--cream); margin: 32px 0 14px; }
+    .post-body h3 { font-size: 1.1rem; color: var(--cream); font-weight: 600; margin: 24px 0 10px; }
+    .post-body img { width: 100%; border-radius: 12px; margin: 24px 0; }
+    .post-body ul, .post-body ol { padding-left: 24px; margin-bottom: 18px; }
+    .post-body li { margin-bottom: 8px; }
+    .post-body strong { color: var(--cream); }
+    .post-body a { color: var(--olive-light); text-decoration: underline; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--olive-light); text-decoration: none; margin-bottom: 36px; }
+    .back-link:hover { color: var(--cream); }
+
+    .loading { text-align: center; padding: 80px 24px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/assets/img/logo.png" alt="Oliva" />
+    <span>Oliva.</span>
+  </a>
+  <a href="/blog" class="nav-back">← До блогу</a>
+</nav>
+
+<div class="post-wrap">
+  <div id="postContent" class="loading">Завантаження...</div>
+</div>
+
+<script>
+var slug = location.pathname.split('/').pop();
+fetch('/api/posts/' + slug)
+  .then(function(r){
+    if (!r.ok) throw new Error('not found');
+    return r.json();
+  })
+  .then(function(p){
+    document.title = p.title + ' — Studiya Oliva';
+    var months = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+    var parts = (p.date||'').split('-');
+    var dateStr = parts.length === 3 ? parseInt(parts[2]) + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0] : '';
+    document.getElementById('postContent').innerHTML =
+      '<a href="/blog" class="back-link">← До блогу</a>' +
+      '<div class="post-date">' + dateStr + '</div>' +
+      '<h1 class="post-title">' + p.title + '</h1>' +
+      (p.cover ? '<img class="post-cover" src="' + p.cover + '" alt="' + p.title + '" />' : '') +
+      '<div class="post-body">' + (p.body || '') + '</div>';
+  })
+  .catch(function(){
+    document.getElementById('postContent').innerHTML = '<p>Статтю не знайдено. <a href="/blog" style="color:var(--olive-light)">← До блогу</a></p>';
+  });
+</script>
+</body>
+</html>

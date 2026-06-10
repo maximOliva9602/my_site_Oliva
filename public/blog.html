@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Блог — Студія масажу Oliva</title>
+  <meta name="description" content="Корисні статті, поради та новини студії масажу Oliva у Києві." />
+  <link rel="icon" href="assets/img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #080A07; --olive: #2E3D22; --olive-light: #7A9156;
+      --cream: #F2EDE4; --text-dim: rgba(242,237,228,0.55); --line: rgba(122,145,86,0.18);
+    }
+    html, body { min-height: 100vh; background: var(--black); color: var(--cream); font-family: 'Inter', sans-serif; }
+
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--black); z-index: 10; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .nav-logo span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); }
+    .nav-back { font-size: 13px; color: var(--olive-light); text-decoration: none; }
+    .nav-back:hover { color: var(--cream); }
+
+    .hero { padding: 72px 32px 48px; text-align: center; border-bottom: 1px solid var(--line); }
+    .eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 14px; }
+    .title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.2rem); color: var(--cream); margin-bottom: 12px; }
+    .hero-sub { font-size: 15px; color: var(--text-dim); max-width: 480px; margin: 0 auto; line-height: 1.7; }
+
+    .blog-grid { max-width: 1100px; margin: 0 auto; padding: 56px 32px 96px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+    @media (max-width: 900px) { .blog-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .blog-grid { grid-template-columns: 1fr; } }
+
+    .post-card { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; text-decoration: none; color: inherit; transition: border-color .2s, transform .2s; display: flex; flex-direction: column; }
+    .post-card:hover { border-color: var(--olive-light); transform: translateY(-4px); }
+    .post-cover { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: rgba(255,255,255,0.05); }
+    .post-cover-placeholder { width: 100%; aspect-ratio: 16/9; background: rgba(74,94,46,0.12); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+    .post-body { padding: 20px 20px 24px; flex: 1; display: flex; flex-direction: column; }
+    .post-date { font-size: 11px; color: var(--olive-light); letter-spacing: 0.1em; margin-bottom: 10px; }
+    .post-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--cream); line-height: 1.35; margin-bottom: 10px; }
+    .post-excerpt { font-size: 13px; color: var(--text-dim); line-height: 1.65; flex: 1; }
+    .post-read { font-size: 12px; color: var(--olive-light); margin-top: 16px; }
+
+    .empty { text-align: center; padding: 80px 24px; color: var(--text-dim); font-size: 15px; }
+    .loading { text-align: center; padding: 80px 24px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="assets/img/logo.png" alt="Oliva" />
+    <span>Oliva.</span>
+  </a>
+  <a href="/" class="nav-back">← На головну</a>
+</nav>
+
+<div class="hero">
+  <div class="eyebrow">Студія масажу · Київ</div>
+  <h1 class="title">Блог</h1>
+  <p class="hero-sub">Корисні поради, статті про масаж і новини студії</p>
+</div>
+
+<div class="blog-grid" id="blogGrid">
+  <div class="loading">Завантаження...</div>
+</div>
+
+<script>
+fetch('/api/posts')
+  .then(function(r){ return r.json(); })
+  .then(function(posts){
+    var grid = document.getElementById('blogGrid');
+    if (!posts.length) {
+      grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Поки немає статей. Заходьте пізніше 🌿</div>';
+      return;
+    }
+    grid.innerHTML = '';
+    posts.forEach(function(p){
+      var card = document.createElement('a');
+      card.className = 'post-card';
+      card.href = '/blog/' + p.slug;
+      var coverHtml = p.cover
+        ? '<img class="post-cover" src="' + p.cover + '" alt="' + p.title + '" loading="lazy" />'
+        : '<div class="post-cover-placeholder">🌿</div>';
+      card.innerHTML = coverHtml +
+        '<div class="post-body">' +
+          '<div class="post-date">' + formatDate(p.date) + '</div>' +
+          '<div class="post-title">' + p.title + '</div>' +
+          (p.excerpt ? '<div class="post-excerpt">' + p.excerpt + '</div>' : '') +
+          '<div class="post-read">Читати →</div>' +
+        '</div>';
+      grid.appendChild(card);
+    });
+  })
+  .catch(function(){ document.getElementById('blogGrid').innerHTML = '<div class="empty" style="grid-column:1/-1">Помилка завантаження</div>'; });
+
+function formatDate(d) {
+  if (!d) return '';
+  var months = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+  var parts = d.split('-');
+  return parseInt(parts[2]) + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0];
+}
+</script>
+</body>
+</html>

@@ -4,3 +4,5 @@ node_modules/
 *.log
 референси/
 photo/
+# blog posts зберігаються через Railway Volume, не в git
+# data/posts.json
