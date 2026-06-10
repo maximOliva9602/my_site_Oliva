@@ -1009,26 +1009,11 @@
   var fallback = document.getElementById('bookingFallback');
   var closeBtn = document.getElementById('bookingClose');
   var BOOK_URL = 'https://bookon.ua/s/oliva_massage_studio';
-  var loaded = false;
+
+  // Pre-load iframe immediately so the form is ready when drawer opens
+  iframe.src = BOOK_URL;
 
   function openDrawer() {
-    if (!loaded) {
-      iframe.src = BOOK_URL;
-      loaded = true;
-      iframe.onerror = function() {
-        iframe.style.display = 'none';
-        fallback.style.display = 'flex';
-      };
-      // If iframe loads but is blocked (X-Frame-Options), detect via timeout
-      setTimeout(function(){
-        try {
-          var doc = iframe.contentDocument || iframe.contentWindow.document;
-          if (!doc || doc.body.innerHTML === '') throw 'blocked';
-        } catch(e) {
-          // Cross-origin or blocked — show fallback hint but don't hide iframe
-        }
-      }, 3000);
-    }
     overlay.classList.add('open');
     drawer.classList.add('open');
     document.body.style.overflow = 'hidden';
