@@ -921,12 +921,9 @@
 
 <!-- ============ BINOTEL BOOKING WIDGET ============ -->
 <style>
-  /* Ховаємо стандартну кнопку віджету — використовуємо свої */
-  bocrm-widget-button, bocrm-branch {
-    position: fixed !important;
-    left: -9999px !important;
-    opacity: 0 !important;
-  }
+  /* Повністю ховаємо стандартну плаваючу кнопку віджету */
+  bocrm-widget-button { display: none !important; }
+  bocrm-branch > bocrm-widget-button { display: none !important; }
 </style>
 
 <script>
@@ -938,21 +935,23 @@
   d.getElementsByTagName(s)[0].parentNode.insertBefore(bow, d.getElementsByTagName(s)[0]);
 })(document, window, 'script');
 
-/* Перехоплюємо кліки на всі кнопки «Записатися» */
 (function(){
   var pending = false;
 
   function triggerWidget() {
     var host = document.querySelector('bocrm-widget-button');
     if (!host) return false;
-    /* Тимчасово дозволяємо pointer-events щоб клік пройшов */
-    var origPE = host.style.pointerEvents;
-    host.style.pointerEvents = 'auto';
+    /* Тимчасово показуємо, клікаємо, знову ховаємо */
+    host.style.cssText = 'display:block!important;position:fixed!important;left:-9999px!important;opacity:0!important;';
     var btn = host.shadowRoot
       ? host.shadowRoot.querySelector('button')
       : host.querySelector('button');
-    if (btn) { btn.click(); host.style.pointerEvents = 'none'; return true; }
-    host.style.pointerEvents = origPE;
+    if (btn) {
+      btn.click();
+      setTimeout(function(){ host.style.cssText = ''; }, 200);
+      return true;
+    }
+    host.style.cssText = '';
     return false;
   }
 
@@ -975,8 +974,9 @@
     }
   }
 
+  /* Перехоплюємо всі кнопки: nav-cta, srv-card-btn, hero */
   document.addEventListener('click', function(e) {
-    var btn = e.target.closest('a.srv-card-btn, a[href="https://bookon.ua/s/oliva_massage_studio"]');
+    var btn = e.target.closest('a.nav-cta, a.srv-card-btn, a[href="https://bookon.ua/s/oliva_massage_studio"]');
     if (btn) { e.preventDefault(); openBooking(); }
   });
 })();
