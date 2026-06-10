@@ -921,17 +921,25 @@
 
 <!-- ============ BINOTEL BOOKING WIDGET ============ -->
 <style>
-/* Стилізуємо widget-кнопку під nav-cta */
-#navBookContainer bocrm-branch,
-#navBookContainer bocrm-widget-button {
-  display: block !important;
-  position: static !important;
+/* Перепозиціонуємо плаваючу кнопку в хедер */
+bocrm-branch {
+  position: fixed !important;
+  top: 14px !important;
+  right: 16px !important;
   bottom: auto !important;
-  right: auto !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
+  left: auto !important;
+  z-index: 1001 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  width: auto !important;
+  height: auto !important;
 }
-#navBookContainer button.bocrm-widget-button {
+bocrm-widget-button {
+  display: block !important;
+  background: transparent !important;
+}
+bocrm-branch button.bocrm-widget-button,
+bocrm-widget-button button.bocrm-widget-button {
   background: var(--olive) !important;
   color: var(--cream) !important;
   padding: 10px 22px !important;
@@ -939,22 +947,29 @@
   border: 1px solid var(--olive-light) !important;
   font-size: 0.8rem !important;
   letter-spacing: 0.04em !important;
-  font-family: inherit !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
   cursor: pointer !important;
-  transition: background .3s, transform .2s !important;
   white-space: nowrap !important;
   box-shadow: none !important;
   width: auto !important;
   height: auto !important;
+  min-width: unset !important;
+  min-height: unset !important;
+  border-radius: 50px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
 }
-#navBookContainer button.bocrm-widget-button:hover {
+bocrm-branch button.bocrm-widget-button:hover,
+bocrm-widget-button button.bocrm-widget-button:hover {
   background: var(--olive-mid) !important;
-  transform: translateY(-1px) !important;
 }
-/* Ховаємо іконку/зображення всередині кнопки якщо є */
-#navBookContainer button.bocrm-widget-button img,
-#navBookContainer button.bocrm-widget-button svg,
-#navBookContainer button.bocrm-widget-button::before {
+/* Ховаємо іконку/зображення якщо є */
+bocrm-branch button.bocrm-widget-button img,
+bocrm-branch button.bocrm-widget-button svg,
+bocrm-widget-button button.bocrm-widget-button img,
+bocrm-widget-button button.bocrm-widget-button svg {
   display: none !important;
 }
 </style>
@@ -968,29 +983,49 @@
   d.head.appendChild(b);
 })(document, window, 'script');
 
-/* Переміщуємо bocrm-branch у хедер як тільки він з'являється */
+/* Фіксуємо позицію кожного разу, коли widget намагається її змінити */
 (function(){
-  var container = document.getElementById('navBookContainer');
+  function pinToHeader(el) {
+    el.style.setProperty('position', 'fixed', 'important');
+    el.style.setProperty('top',    '14px',  'important');
+    el.style.setProperty('right',  '16px',  'important');
+    el.style.setProperty('bottom', 'auto',  'important');
+    el.style.setProperty('left',   'auto',  'important');
+  }
 
-  new MutationObserver(function(mutations, obs){
-    var branch = document.querySelector('bocrm-branch');
-    if (branch && branch.parentNode !== container) {
-      container.appendChild(branch);
-      obs.disconnect();
+  var branch = null;
+  var pinObs = null;
+
+  new MutationObserver(function() {
+    var el = document.querySelector('bocrm-branch');
+    if (el && el !== branch) {
+      branch = el;
+      pinToHeader(branch);
+      /* Стежимо за будь-якою зміною style/class і одразу повертаємо позицію */
+      pinObs = new MutationObserver(function(muts) {
+        for (var i=0; i<muts.length; i++) {
+          if (muts[i].attributeName === 'style' || muts[i].attributeName === 'class') {
+            pinToHeader(branch);
+            break;
+          }
+        }
+      });
+      pinObs.observe(branch, { attributes: true });
     }
   }).observe(document.documentElement, { childList: true, subtree: true });
 
-  /* Кнопки «Записатися» на сторінці — відкривають widget через клік на кнопку в хедері */
+  /* Кнопки «Записатися» на сторінці */
   document.addEventListener('click', function(e) {
     var btn = e.target.closest('a.srv-card-btn, a[href="https://bookon.ua/s/oliva_massage_studio"]');
     if (btn) {
       e.preventDefault();
-      var wb = container.querySelector('button.bocrm-widget-button');
+      var wb = document.querySelector('bocrm-branch button, bocrm-widget-button button');
       if (wb) wb.click();
       else window.open('https://bookon.ua/s/oliva_massage_studio', '_blank');
     }
   });
 })();
 </script>
+
 </body>
 </html>
