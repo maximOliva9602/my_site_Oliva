@@ -279,6 +279,20 @@
     .variant-label { font-size: 13px; color: var(--cream); }
     .variant-price { font-size: 15px; font-weight: 600; color: var(--olive-light); margin-top: 2px; }
 
+    /* Вибір майстра */
+    .master-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+    .master-btn {
+      flex: 1; min-width: 140px;
+      padding: 14px 18px; border: 1px solid rgba(122,145,86,0.25);
+      border-radius: 12px; background: rgba(242,237,228,0.04);
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all .2s; text-align: left;
+    }
+    .master-btn:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.1); }
+    .master-btn.active { border-color: var(--olive-light); background: rgba(74,94,46,0.35); }
+    .master-btn-type { font-size: 14px; font-weight: 600; color: var(--cream); }
+    .master-btn-price { font-size: 16px; font-weight: 700; color: var(--olive-light); margin-top: 4px; }
+
     .selected-summary {
       background: rgba(74,94,46,0.15); border: 1px solid rgba(122,145,86,0.4);
       border-radius: 12px; padding: 14px 16px; margin-top: 12px;
@@ -394,6 +408,12 @@
         <div class="variants-grid" id="variantsGrid"></div>
       </div>
 
+      <!-- Вибір майстра -->
+      <div class="variants-wrap" id="masterWrap" style="display:none">
+        <div class="variants-title" id="masterTitle"></div>
+        <div class="master-grid" id="masterGrid"></div>
+      </div>
+
       <!-- Підсумок вибору -->
       <div class="selected-summary" id="selectedSummary" style="display:none">
         <div class="selected-summary-inner">
@@ -492,80 +512,68 @@
 <script>
 (function(){
 
-  /* ── ДАНІ ПОСЛУГ ── */
+  /* ── ДАНІ ПОСЛУГ ──
+     variants: масив тривалостей
+     Кожен варіант: { dur, masters: [{type, price}] }
+     Якщо masters.length === 1 — крок вибору майстра пропускається
+  ── */
   var SERVICES = [
-    { id:'zagalno', icon:'💆', name:'Загально-оздоровчий масаж',
-      variants:[
-        {label:'Майстер · 60 хв',      price:1200},
-        {label:'Топ Майстер · 45 хв',  price:1150},
-        {label:'Топ Майстер · 60 хв',  price:1350},
-        {label:'Топ Майстер · 90 хв',  price:1750},
-      ]},
-    { id:'parnyi', icon:'👫', name:'Парний масаж',
-      variants:[
-        {label:'60 хв', price:2700},
-      ]},
-    { id:'antistres', icon:'🧘', name:'Антистресовий масаж',
-      variants:[
-        {label:'45 хв', price:1000},
-        {label:'60 хв', price:1200},
-        {label:'90 хв', price:1600},
-      ]},
-    { id:'antyvikovy', icon:'🌟', name:'Антивіковий масаж обличчя',
-      variants:[
-        {label:'60 хв', price:1500},
-      ]},
-    { id:'fitobochka', icon:'🌿', name:'Паріння у фітобочці',
-      variants:[
-        {label:'20 хв', price:600},
-        {label:'30 хв', price:800},
-        {label:'45 хв', price:900},
-        {label:'60 хв', price:1000},
-      ]},
-    { id:'spa_fito', icon:'🌸', name:'SPA Ритуал "Фіто-оновлення тіла"',
-      variants:[
-        {label:'90 хв',  price:2150},
-        {label:'130 хв', price:2750},
-      ]},
-    { id:'spa_dvoh', icon:'💑', name:'SPA Ритуал "Глибоке прогрівання для двох"',
-      variants:[
-        {label:'2 год', price:2700},
-      ]},
-    { id:'spyna', icon:'🫴', name:'Масаж спини',
-      variants:[
-        {label:'30 хв', price:700},
-        {label:'45 хв', price:900},
-        {label:'60 хв', price:1100},
-      ]},
-    { id:'shyya', icon:'🙆', name:'Масаж шийно-комірцевої зони',
-      variants:[
-        {label:'30 хв', price:600},
-        {label:'45 хв', price:800},
-      ]},
-    { id:'oblychchya', icon:'💎', name:'Класичний масаж обличчя',
-      variants:[
-        {label:'Майстер · 30 хв',      price:700},
-        {label:'Топ Майстер · 30 хв',  price:800},
-        {label:'Топ Майстер · 60 хв',  price:1350},
-      ]},
-    { id:'limfodrenazh', icon:'💧', name:'Лімфодренажний масаж',
-      variants:[
-        {label:'60 хв', price:1350},
-      ]},
-    { id:'antytsel', icon:'✨', name:'Антицелюлітний масаж',
-      variants:[
-        {label:'Топ Майстер · 60 хв', price:1450},
-      ]},
-    { id:'dytyachy', icon:'🧒', name:'Дитячий масаж',
-      variants:[
-        {label:'30 хв', price:700},
-        {label:'45 хв', price:900},
-      ]},
-    { id:'amore', icon:'🔥', name:'Обгортання Amore Shemen',
-      variants:[
-        {label:'Гаряче · 1 год',        price:1600},
-        {label:'Холодне · 1 год 10 хв', price:1600},
-      ]},
+    { id:'zagalno', icon:'💆', name:'Загально-оздоровчий масаж', variants:[
+      { dur:'45 хв',  masters:[{type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+      { dur:'90 хв',  masters:[{type:'Топ Майстер', price:1750}] },
+    ]},
+    { id:'parnyi', icon:'👫', name:'Парний масаж', variants:[
+      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:2700}] },
+    ]},
+    { id:'antistres', icon:'🧘', name:'Антистресовий масаж', variants:[
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+      { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
+    ]},
+    { id:'antyvikovy', icon:'🌟', name:'Антивіковий масаж обличчя', variants:[
+      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:1500}] },
+    ]},
+    { id:'fitobochka', icon:'🌿', name:'Паріння у фітобочці', variants:[
+      { dur:'20 хв',  masters:[{type:'Фітобочка', price:600}] },
+      { dur:'30 хв',  masters:[{type:'Фітобочка', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Фітобочка', price:900}] },
+      { dur:'60 хв',  masters:[{type:'Фітобочка', price:1000}] },
+    ]},
+    { id:'spa_fito', icon:'🌸', name:'SPA Ритуал "Фіто-оновлення тіла"', variants:[
+      { dur:'90 хв',  masters:[{type:'Ритуал', price:2150}] },
+      { dur:'130 хв', masters:[{type:'Ритуал', price:2750}] },
+    ]},
+    { id:'spa_dvoh', icon:'💑', name:'SPA Ритуал "Глибоке прогрівання для двох"', variants:[
+      { dur:'2 год',  masters:[{type:'Ритуал', price:2700}] },
+    ]},
+    { id:'spyna', icon:'🫴', name:'Масаж спини', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:900},  {type:'Топ Майстер', price:1050}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1100}, {type:'Топ Майстер', price:1250}] },
+    ]},
+    { id:'shyya', icon:'🙆', name:'Масаж шийно-комірцевої зони', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:600},  {type:'Топ Майстер', price:700}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:800},  {type:'Топ Майстер', price:950}] },
+    ]},
+    { id:'oblychchya', icon:'💎', name:'Класичний масаж обличчя', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:1350}] },
+    ]},
+    { id:'limfodrenazh', icon:'💧', name:'Лімфодренажний масаж', variants:[
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+    ]},
+    { id:'antytsel', icon:'✨', name:'Антицелюлітний масаж', variants:[
+      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:1450}] },
+    ]},
+    { id:'dytyachy', icon:'🧒', name:'Дитячий масаж', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:900},  {type:'Топ Майстер', price:1000}] },
+    ]},
+    { id:'amore', icon:'🔥', name:'Обгортання Amore Shemen', variants:[
+      { dur:'Гаряче · 1 год',        masters:[{type:'Ритуал', price:1600}] },
+      { dur:'Холодне · 1 год 10 хв', masters:[{type:'Ритуал', price:1600}] },
+    ]},
   ];
 
   /* ── DOM ── */
@@ -588,17 +596,18 @@
   var successState  = document.getElementById('successState');
   var submitBtn     = document.getElementById('submitBtn');
 
-  var activeCatId = null;
+  var activeCatId  = null;
+  var activeDur    = null; // обрана тривалість
   var activeVariant = null;
   var activeTab = 'popular';
 
-  /* ── ПОПУЛЯРНІ (перші 6) ── */
+  /* ── ПОПУЛЯРНІ ── */
   var POPULAR_IDS = ['zagalno','parnyi','antyvikovy','antistres','fitobochka','spa_fito','spa_dvoh'];
 
   POPULAR_IDS.forEach(function(pid){
     var s = SERVICES.find(function(s){ return s.id === pid; });
     if (!s) return;
-    var durCount = s.variants.length === 1 ? s.variants[0].label : s.variants.length + ' варіантів тривалості';
+    var durCount = s.variants.length === 1 ? s.variants[0].dur : s.variants.length + ' варіантів';
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'popular-btn';
@@ -610,7 +619,7 @@
     popularGrid.appendChild(btn);
   });
 
-  /* ── УСІ ПОСЛУГИ (список) ── */
+  /* ── УСІ ПОСЛУГИ ── */
   SERVICES.forEach(function(s){
     var row = document.createElement('div');
     row.className = 'srv-row';
@@ -633,15 +642,29 @@
     });
   });
 
+  var masterWrap  = document.getElementById('masterWrap');
+  var masterTitle = document.getElementById('masterTitle');
+  var masterGrid  = document.getElementById('masterGrid');
+
+  function hidePicker(){
+    popularPanel.style.display = 'none';
+    allPanel.style.display     = 'none';
+    document.getElementById('pickerTabs').style.display = 'none';
+  }
+
+  /* КРОК 1 — вибір послуги */
   function selectCategory(id){
-    activeCatId = id;
+    activeCatId   = id;
+    activeDur     = null;
     activeVariant = null;
     inpService.value = '';
     inpPrice.value   = '';
     serviceError.style.display = 'none';
     document.getElementById('fg-service').classList.remove('invalid');
+    selSummary.style.display = 'none';
+    masterWrap.style.display = 'none';
+    masterGrid.innerHTML = '';
 
-    // підсвічуємо обрану кнопку
     popularGrid.querySelectorAll('.popular-btn').forEach(function(b){
       b.classList.toggle('active', b.getAttribute('data-id') === id);
     });
@@ -652,57 +675,91 @@
     var svc = SERVICES.find(function(s){ return s.id === id; });
     if (!svc) return;
 
-    // якщо лише один варіант — вибираємо одразу
+    // одна тривалість — одразу до вибору майстра
     if (svc.variants.length === 1) {
-      selectVariant(svc.name, svc.variants[0]);
       variantsWrap.style.display = 'none';
+      showMasterStep(svc, svc.variants[0]);
       return;
     }
 
-    // показуємо варіанти
+    // кілька тривалостей — показуємо список
     variantsTitle.textContent = svc.name + ' — оберіть тривалість:';
     variantsGrid.innerHTML = '';
     svc.variants.forEach(function(v){
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'variant-btn';
-      btn.innerHTML = '<div class="variant-label">' + v.label + '</div><div class="variant-price">' + v.price.toLocaleString('uk-UA') + ' грн</div>';
+      btn.innerHTML = '<div class="variant-label">' + v.dur + '</div>';
       btn.addEventListener('click', function(){
         variantsGrid.querySelectorAll('.variant-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
-        selectVariant(svc.name, v);
+        showMasterStep(svc, v);
       });
       variantsGrid.appendChild(btn);
     });
     variantsWrap.style.display = 'block';
-    selSummary.style.display   = 'none';
   }
 
-  function selectVariant(serviceName, variant){
-    activeVariant = { serviceName: serviceName, label: variant.label, price: variant.price };
-    inpService.value = serviceName + ' · ' + variant.label;
-    inpPrice.value   = variant.price;
+  /* КРОК 2 — вибір майстра */
+  function showMasterStep(svc, durVariant){
+    activeDur = durVariant;
+    masterGrid.innerHTML = '';
 
-    selName.textContent        = serviceName;
-    selDur.textContent         = variant.label;
-    selPriceBadge.textContent  = variant.price.toLocaleString('uk-UA') + ' грн';
-    selSummary.style.display   = 'block';
-    popularPanel.style.display = 'none';
-    allPanel.style.display     = 'none';
-    document.getElementById('pickerTabs').style.display = 'none';
+    // один майстер без вибору — одразу фіналізуємо
+    if (durVariant.masters.length === 1) {
+      masterWrap.style.display = 'none';
+      finalize(svc.name, durVariant.dur, durVariant.masters[0]);
+      return;
+    }
+
+    masterTitle.textContent = 'Оберіть майстра:';
+    durVariant.masters.forEach(function(m){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'master-btn';
+      btn.innerHTML =
+        '<div class="master-btn-type">' + m.type + '</div>' +
+        '<div class="master-btn-price">' + m.price.toLocaleString('uk-UA') + ' грн</div>';
+      btn.addEventListener('click', function(){
+        masterGrid.querySelectorAll('.master-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        finalize(svc.name, durVariant.dur, m);
+      });
+      masterGrid.appendChild(btn);
+    });
+    masterWrap.style.display = 'block';
+    selSummary.style.display = 'none';
+  }
+
+  /* КРОК 3 — підсумок */
+  function finalize(serviceName, dur, master){
+    var label = master.type === 'Ритуал' || master.type === 'Фітобочка'
+      ? dur
+      : master.type + ' · ' + dur;
+    activeVariant = { serviceName: serviceName, label: label, price: master.price };
+    inpService.value = serviceName + ' · ' + label;
+    inpPrice.value   = master.price;
+
+    selName.textContent       = serviceName;
+    selDur.textContent        = label;
+    selPriceBadge.textContent = master.price.toLocaleString('uk-UA') + ' грн';
+    selSummary.style.display  = 'block';
+    hidePicker();
     variantsWrap.style.display = 'none';
+    masterWrap.style.display   = 'none';
     serviceError.style.display = 'none';
   }
 
   selChange.addEventListener('click', function(){
     activeVariant = null;
+    activeDur     = null;
     inpService.value = '';
     inpPrice.value   = '';
     selSummary.style.display   = 'none';
+    masterWrap.style.display   = 'none';
     document.getElementById('pickerTabs').style.display = 'flex';
     popularPanel.style.display = activeTab === 'popular' ? 'block' : 'none';
     allPanel.style.display     = activeTab === 'all' ? 'block' : 'none';
-    // показати варіанти якщо категорія вже обрана
     if (activeCatId) {
       var svc = SERVICES.find(function(s){ return s.id === activeCatId; });
       if (svc && svc.variants.length > 1) variantsWrap.style.display = 'block';
