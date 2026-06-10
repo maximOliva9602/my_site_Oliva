@@ -151,7 +151,7 @@ nav.scrolled {
   .hero-bg-photo { display: none; }
   .hero-bg-video { display: block; }
 }
-.hero-bg-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%); z-index: 1; }
+.hero-bg-overlay { display: none; }
 .hero-center {
   position: relative; z-index: 2; text-align: center;
   display: flex; flex-direction: column; align-items: center;
