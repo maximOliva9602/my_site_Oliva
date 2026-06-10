@@ -236,7 +236,7 @@
   function handlePay(e) {
     e.preventDefault();
     if (!selectedMaster || selectedAmt <= 0) return false;
-    const url = MASTERS[selectedMaster].url + "?t=" + selectedAmt;
+    const url = MASTERS[selectedMaster].url + "?a=" + (selectedAmt * 100);
     window.open(url, "_blank");
     return false;
   }
