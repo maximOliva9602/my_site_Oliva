@@ -401,19 +401,6 @@
       <input type="hidden" id="inp-price" />
     </div>
 
-    <!-- СВОЯ СУМА (опційно) -->
-    <div class="custom-amount-wrap" id="customAmountWrap" style="display:none">
-      <div class="custom-amount-toggle">
-        <button type="button" class="custom-toggle-btn" id="customToggleBtn">+ Вказати іншу суму</button>
-      </div>
-      <div id="customAmountField" style="display:none">
-        <div class="form-group" id="fg-amount">
-          <label for="inp-amount">Своя сума, грн</label>
-          <input type="number" id="inp-amount" placeholder="Введіть суму (мінімум 200)" min="200" />
-          <div class="field-error">Вкажіть суму (мінімум 200 грн)</div>
-        </div>
-      </div>
-    </div>
 
     <!-- ТИП СЕРТИФІКАТА -->
     <div class="form-group" id="fg-cert-type">
@@ -600,33 +587,25 @@
   POPULAR_IDS.forEach(function(pid){
     var s = SERVICES.find(function(s){ return s.id === pid; });
     if (!s) return;
-    var minPrice = Math.min.apply(null, s.variants.map(function(v){ return v.price; }));
-    var maxPrice = Math.max.apply(null, s.variants.map(function(v){ return v.price; }));
-    var priceStr = minPrice === maxPrice ? minPrice.toLocaleString('uk-UA') + ' грн' : 'від ' + minPrice.toLocaleString('uk-UA') + ' грн';
-    var durCount = s.variants.length === 1 ? s.variants[0].label : s.variants.length + ' варіанти тривалості';
+    var durCount = s.variants.length === 1 ? s.variants[0].label : s.variants.length + ' варіантів тривалості';
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'popular-btn';
     btn.setAttribute('data-id', s.id);
     btn.innerHTML =
       '<div class="popular-btn-top"><span class="popular-btn-icon">' + s.icon + '</span><span class="popular-btn-name">' + s.name + '</span></div>' +
-      '<div class="popular-btn-meta">' + durCount + '</div>' +
-      '<div class="popular-btn-price">' + priceStr + '</div>';
+      '<div class="popular-btn-meta">' + durCount + '</div>';
     btn.addEventListener('click', function(){ selectCategory(s.id); });
     popularGrid.appendChild(btn);
   });
 
   /* ── УСІ ПОСЛУГИ (список) ── */
   SERVICES.forEach(function(s){
-    var minPrice = Math.min.apply(null, s.variants.map(function(v){ return v.price; }));
-    var priceStr = 'від ' + minPrice.toLocaleString('uk-UA') + ' грн';
-    if (s.variants.length === 1) priceStr = s.variants[0].price.toLocaleString('uk-UA') + ' грн';
     var row = document.createElement('div');
     row.className = 'srv-row';
     row.setAttribute('data-id', s.id);
     row.innerHTML =
-      '<div class="srv-row-left"><span class="srv-row-icon">' + s.icon + '</span><span class="srv-row-name">' + s.name + '</span></div>' +
-      '<span class="srv-row-price">' + priceStr + '</span>';
+      '<div class="srv-row-left"><span class="srv-row-icon">' + s.icon + '</span><span class="srv-row-name">' + s.name + '</span></div>';
     row.addEventListener('click', function(){ selectCategory(s.id); });
     allServicesScroll.appendChild(row);
   });
