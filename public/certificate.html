@@ -512,27 +512,31 @@
 <script>
 (function(){
 
-  /* ── ДАНІ ПОСЛУГ ──
-     variants: масив тривалостей
-     Кожен варіант: { dur, masters: [{type, price}] }
-     Якщо masters.length === 1 — крок вибору майстра пропускається
-  ── */
+  /* ── ДАНІ ПОСЛУГ (ціни з bookon.ua) ── */
   var SERVICES = [
     { id:'zagalno', icon:'💆', name:'Загально-оздоровчий масаж', variants:[
-      { dur:'45 хв',  masters:[{type:'Топ Майстер', price:1150}] },
-      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
-      { dur:'90 хв',  masters:[{type:'Топ Майстер', price:1750}] },
-    ]},
-    { id:'parnyi', icon:'👫', name:'Парний масаж', variants:[
-      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:2700}] },
-    ]},
-    { id:'antistres', icon:'🧘', name:'Антистресовий масаж', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
       { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
       { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
       { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
+      { dur:'120 хв', masters:[{type:'Майстер', price:2200}, {type:'Топ Майстер', price:2300}] },
+    ]},
+    { id:'parnyi', icon:'👫', name:'Парний масаж', variants:[
+      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:2700}] },
+      { dur:'90 хв',  masters:[{type:'Топ Майстер', price:3500}] },
+      { dur:'120 хв', masters:[{type:'Топ Майстер', price:4500}] },
+    ]},
+    { id:'antistres', icon:'🧘', name:'Антистресовий масаж', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+      { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
+      { dur:'120 хв', masters:[{type:'Майстер', price:2200}, {type:'Топ Майстер', price:2300}] },
     ]},
     { id:'antyvikovy', icon:'🌟', name:'Антивіковий масаж обличчя', variants:[
-      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:1500}] },
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
     ]},
     { id:'fitobochka', icon:'🌿', name:'Паріння у фітобочці', variants:[
       { dur:'20 хв',  masters:[{type:'Фітобочка', price:600}] },
@@ -545,30 +549,42 @@
       { dur:'130 хв', masters:[{type:'Ритуал', price:2750}] },
     ]},
     { id:'spa_dvoh', icon:'💑', name:'SPA Ритуал "Глибоке прогрівання для двох"', variants:[
-      { dur:'2 год',  masters:[{type:'Ритуал', price:2700}] },
+      { dur:'130 хв', masters:[{type:'Ритуал', price:6000}] },
+      { dur:'160 хв', masters:[{type:'Ритуал', price:7500}] },
+      { dur:'220 хв', masters:[{type:'Ритуал', price:8500}] },
     ]},
     { id:'spyna', icon:'🫴', name:'Масаж спини', variants:[
-      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
-      { dur:'45 хв',  masters:[{type:'Майстер', price:900},  {type:'Топ Майстер', price:1050}] },
-      { dur:'60 хв',  masters:[{type:'Майстер', price:1100}, {type:'Топ Майстер', price:1250}] },
+      { dur:'30 хв',  masters:[{type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
     ]},
     { id:'shyya', icon:'🙆', name:'Масаж шийно-комірцевої зони', variants:[
-      { dur:'30 хв',  masters:[{type:'Майстер', price:600},  {type:'Топ Майстер', price:700}] },
-      { dur:'45 хв',  masters:[{type:'Майстер', price:800},  {type:'Топ Майстер', price:950}] },
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
     ]},
     { id:'oblychchya', icon:'💎', name:'Класичний масаж обличчя', variants:[
       { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
-      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:1350}] },
-    ]},
-    { id:'limfodrenazh', icon:'💧', name:'Лімфодренажний масаж', variants:[
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
       { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
     ]},
+    { id:'limfodrenazh', icon:'💧', name:'Лімфодренажний масаж', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+      { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
+    ]},
     { id:'antytsel', icon:'✨', name:'Антицелюлітний масаж', variants:[
-      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:1450}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1100}, {type:'Топ Майстер', price:1200}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1300}, {type:'Топ Майстер', price:1450}] },
+      { dur:'90 хв',  masters:[{type:'Майстер', price:1700}, {type:'Топ Майстер', price:1900}] },
+      { dur:'120 хв', masters:[{type:'Майстер', price:2300}, {type:'Топ Майстер', price:2400}] },
     ]},
     { id:'dytyachy', icon:'🧒', name:'Дитячий масаж', variants:[
       { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
-      { dur:'45 хв',  masters:[{type:'Майстер', price:900},  {type:'Топ Майстер', price:1000}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1100}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+      { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
     ]},
     { id:'amore', icon:'🔥', name:'Обгортання Amore Shemen', variants:[
       { dur:'Гаряче · 1 год',        masters:[{type:'Ритуал', price:1600}] },
