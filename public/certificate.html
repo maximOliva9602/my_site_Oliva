@@ -486,10 +486,14 @@
   var SERVICES = [
     { id:'zagalno', icon:'💆', name:'Загально-оздоровчий масаж',
       variants:[
-        {label:'Майстер · 60 хв',           price:1200},
-        {label:'Топ Майстер · 45 хв',        price:1150},
-        {label:'Топ Майстер · 60 хв',        price:1350},
-        {label:'Топ Майстер · 90 хв',        price:1750},
+        {label:'Майстер · 60 хв',      price:1200},
+        {label:'Топ Майстер · 45 хв',  price:1150},
+        {label:'Топ Майстер · 60 хв',  price:1350},
+        {label:'Топ Майстер · 90 хв',  price:1750},
+      ]},
+    { id:'parnyi', icon:'👫', name:'Парний масаж',
+      variants:[
+        {label:'60 хв', price:2700},
       ]},
     { id:'antistres', icon:'🧘', name:'Антистресовий масаж',
       variants:[
@@ -497,59 +501,60 @@
         {label:'60 хв', price:1200},
         {label:'90 хв', price:1600},
       ]},
-    { id:'rozsl', icon:'🌿', name:'Розслаблюючий масаж',
-      variants:[
-        {label:'30 хв', price:700},
-        {label:'45 хв', price:1000},
-        {label:'60 хв', price:1200},
-      ]},
-    { id:'antytsel', icon:'✨', name:'Антицелюлітний масаж',
-      variants:[
-        {label:'Топ Майстер · 60 хв', price:1450},
-      ]},
-    { id:'sport', icon:'🏃', name:'Спортивний масаж',
-      variants:[
-        {label:'Топ Майстер · 60 хв', price:1350},
-      ]},
-    { id:'oblychchya', icon:'💎', name:'Масаж обличчя',
-      variants:[
-        {label:'Майстер · 30 хв',      price:700},
-        {label:'Топ Майстер · 30 хв',  price:800},
-        {label:'Топ Майстер · 60 хв',  price:1350},
-      ]},
-    { id:'kaminnya', icon:'🪨', name:'Масаж гарячим камінням',
-      variants:[
-        {label:'60 хв', price:1400},
-      ]},
-    { id:'bambuk', icon:'🎍', name:'Бамбуковий баночний масаж',
+    { id:'antyvikovy', icon:'🌟', name:'Антивіковий масаж обличчя',
       variants:[
         {label:'60 хв', price:1500},
       ]},
-    { id:'parnyi', icon:'👫', name:'Парний масаж',
-      variants:[
-        {label:'60 хв', price:2700},
-      ]},
-    { id:'obgortannya', icon:'🔥', name:'Обгортання',
-      variants:[
-        {label:'Bruno Vassari Detox · 1 год 15 хв',          price:1600},
-        {label:'Гаряча експрес-трансформація · 2 год 10 хв', price:3500},
-        {label:'Холодне моделювання тіла · 2 год',           price:2700},
-        {label:'Гаряче моделювання тіла · 2 год',            price:2700},
-        {label:'SPA Seaweed (гаряче) · 1 год 10 хв',         price:1600},
-        {label:'Amore Shemen гаряче · 1 год',                price:1600},
-        {label:'Amore Shemen холодне · 1 год 10 хв',         price:1600},
-      ]},
-    { id:'fitobochka', icon:'🌡️', name:'Паріння у фітобочці',
+    { id:'fitobochka', icon:'🌿', name:'Паріння у фітобочці',
       variants:[
         {label:'20 хв', price:600},
         {label:'30 хв', price:800},
         {label:'45 хв', price:900},
         {label:'60 хв', price:1000},
       ]},
-    { id:'spa', icon:'🌸', name:'SPA-ритуали',
+    { id:'spa_fito', icon:'🌸', name:'SPA Ритуал "Фіто-оновлення тіла"',
       variants:[
-        {label:'Фіто-оновлення тіла · 90 хв',  price:2150},
-        {label:'Фіто-оновлення тіла · 130 хв', price:2750},
+        {label:'90 хв',  price:2150},
+        {label:'130 хв', price:2750},
+      ]},
+    { id:'spa_dvoh', icon:'💑', name:'SPA Ритуал "Глибоке прогрівання для двох"',
+      variants:[
+        {label:'2 год', price:2700},
+      ]},
+    { id:'spyna', icon:'🫴', name:'Масаж спини',
+      variants:[
+        {label:'30 хв', price:700},
+        {label:'45 хв', price:900},
+        {label:'60 хв', price:1100},
+      ]},
+    { id:'shyya', icon:'🙆', name:'Масаж шийно-комірцевої зони',
+      variants:[
+        {label:'30 хв', price:600},
+        {label:'45 хв', price:800},
+      ]},
+    { id:'oblychchya', icon:'💎', name:'Класичний масаж обличчя',
+      variants:[
+        {label:'Майстер · 30 хв',      price:700},
+        {label:'Топ Майстер · 30 хв',  price:800},
+        {label:'Топ Майстер · 60 хв',  price:1350},
+      ]},
+    { id:'limfodrenazh', icon:'💧', name:'Лімфодренажний масаж',
+      variants:[
+        {label:'60 хв', price:1350},
+      ]},
+    { id:'antytsel', icon:'✨', name:'Антицелюлітний масаж',
+      variants:[
+        {label:'Топ Майстер · 60 хв', price:1450},
+      ]},
+    { id:'dytyachy', icon:'🧒', name:'Дитячий масаж',
+      variants:[
+        {label:'30 хв', price:700},
+        {label:'45 хв', price:900},
+      ]},
+    { id:'amore', icon:'🔥', name:'Обгортання Amore Shemen',
+      variants:[
+        {label:'Гаряче · 1 год',        price:1600},
+        {label:'Холодне · 1 год 10 хв', price:1600},
       ]},
   ];
 
@@ -569,10 +574,6 @@
   var serviceError  = document.getElementById('serviceError');
   var inpService    = document.getElementById('inp-service');
   var inpPrice      = document.getElementById('inp-price');
-  var customAmountWrap = document.getElementById('customAmountWrap');
-  var customToggleBtn  = document.getElementById('customToggleBtn');
-  var customAmountField = document.getElementById('customAmountField');
-  var inpAmount     = document.getElementById('inp-amount');
   var form          = document.getElementById('certForm');
   var successState  = document.getElementById('successState');
   var submitBtn     = document.getElementById('submitBtn');
@@ -582,7 +583,7 @@
   var activeTab = 'popular';
 
   /* ── ПОПУЛЯРНІ (перші 6) ── */
-  var POPULAR_IDS = ['zagalno','rozsl','antistres','parnyi','spa','fitobochka'];
+  var POPULAR_IDS = ['zagalno','parnyi','antyvikovy','antistres','fitobochka','spa_fito','spa_dvoh'];
 
   POPULAR_IDS.forEach(function(pid){
     var s = SERVICES.find(function(s){ return s.id === pid; });
@@ -665,7 +666,6 @@
     });
     variantsWrap.style.display = 'block';
     selSummary.style.display   = 'none';
-    customAmountWrap.style.display = 'none';
   }
 
   function selectVariant(serviceName, variant){
@@ -681,7 +681,6 @@
     allPanel.style.display     = 'none';
     document.getElementById('pickerTabs').style.display = 'none';
     variantsWrap.style.display = 'none';
-    customAmountWrap.style.display = 'block';
     serviceError.style.display = 'none';
   }
 
@@ -693,32 +692,12 @@
     document.getElementById('pickerTabs').style.display = 'flex';
     popularPanel.style.display = activeTab === 'popular' ? 'block' : 'none';
     allPanel.style.display     = activeTab === 'all' ? 'block' : 'none';
-    customAmountWrap.style.display = 'none';
-    customAmountField.style.display = 'none';
-    customToggleBtn.textContent = '+ Вказати іншу суму';
-    if (inpAmount) inpAmount.value = '';
     // показати варіанти якщо категорія вже обрана
     if (activeCatId) {
       var svc = SERVICES.find(function(s){ return s.id === activeCatId; });
       if (svc && svc.variants.length > 1) variantsWrap.style.display = 'block';
     }
   });
-
-  /* ── СВОЯ СУМА ── */
-  customToggleBtn.addEventListener('click', function(){
-    var isOpen = customAmountField.style.display !== 'none';
-    customAmountField.style.display = isOpen ? 'none' : 'block';
-    customToggleBtn.textContent = isOpen ? '+ Вказати іншу суму' : '− Скасувати';
-    if (!isOpen) { inpAmount.focus(); }
-    else { inpAmount.value = ''; inpPrice.value = activeVariant ? activeVariant.price : ''; }
-  });
-
-  if (inpAmount) {
-    inpAmount.addEventListener('input', function(){
-      if (this.value) inpPrice.value = this.value;
-      else if (activeVariant) inpPrice.value = activeVariant.price;
-    });
-  }
 
   /* ── ТИП СЕРТИФІКАТА ── */
   var inpCertType = document.getElementById('inp-cert-type');
@@ -788,14 +767,9 @@
     }
 
     var serviceOk = !!inpService.value;
-    var priceOk   = inpPrice.value && parseInt(inpPrice.value) >= 200;
-    if (!serviceOk || !priceOk) {
+    if (!serviceOk) {
       serviceError.style.display = 'block';
       document.getElementById('fg-service').classList.add('invalid');
-      ok = false;
-    }
-    if (customAmountField.style.display !== 'none' && inpAmount.value && parseInt(inpAmount.value) < 200) {
-      document.getElementById('fg-amount').classList.add('invalid');
       ok = false;
     }
     return ok;
