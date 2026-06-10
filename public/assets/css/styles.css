@@ -233,10 +233,10 @@ section { padding: 100px 0; }
 
 /* ── SERVICES ── */
 .services-section { background: var(--black); }
-.services-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 56px; gap: 24px; }
+.services-header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 56px; gap: 24px; }
 .srv-tabs { display: flex; gap: 4px; background: rgba(46,61,34,0.3); border: 1px solid var(--line); border-radius: 50px; padding: 5px; overflow-x: auto; scrollbar-width: none; }
 .srv-tabs::-webkit-scrollbar { display: none; }
-.srv-tab { padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; color: var(--text-dim); transition: all .25s; white-space: nowrap; flex-shrink: 0; }
+.srv-tab { padding: 8px 12px; border-radius: 50px; font-size: 0.72rem; color: var(--text-dim); transition: all .25s; white-space: nowrap; flex-shrink: 0; }
 .srv-tab.active { background: var(--olive); color: var(--cream); border: 1px solid var(--olive-light); }
 .srv-panel { display: none; }
 .srv-panel.active { display: block; animation: fade .4s ease; }
