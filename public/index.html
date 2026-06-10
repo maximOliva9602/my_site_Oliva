@@ -167,6 +167,7 @@
     <li><a href="#contacts" data-i18n="nav.contacts">Контакти</a></li>
     <li><a href="/certificate.html" style="color:var(--cream);background:var(--olive);padding:6px 14px;border-radius:50px;font-size:13px;white-space:nowrap">🎁 Сертифікат</a></li>
     <li><a href="/tips.html" style="color:var(--olive-light)">🤍 Чайові</a></li>
+    <li><a href="/review" style="color:var(--olive-light)">✍️ Відгук</a></li>
   </ul>
 
   <div class="nav-right">
@@ -199,9 +200,9 @@
       Місце, де ти можеш зупинитись, видихнути і відновити своє тіло. Працюємо з напругою глибоко — щоб ти відчув легкість вже після першого сеансу.
     </p>
     <div class="hero-btns">
-      <a href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener" class="btn btn-primary"><span data-i18n="hero.cta1">Записатися онлайн</span> →</a>
+      <a href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener" class="btn btn-primary btn-pulse"><span data-i18n="hero.cta1">Записатися онлайн</span> →</a>
       <a href="#services" class="btn btn-outline" data-i18n="hero.cta2">Переглянути послуги</a>
-      <a href="/certificate.html" class="btn btn-cert">🎁 Подарунковий сертифікат</a>
+      <a href="/certificate.html" class="btn btn-cert btn-pulse">🎁 Подарунковий сертифікат</a>
     </div>
   </div>
 
@@ -545,9 +546,7 @@
 
 <!-- ============ CTA STRIP / СЕРТИФІКАТ ============ -->
 <div class="cta-strip" id="certificate">
-  <video class="cta-video" autoplay muted loop playsinline>
-    <source src="assets/video/certificate.mp4" type="video/mp4" />
-  </video>
+  <img class="cta-bg-img" src="assets/img/sertificate.jpg" alt="Подарунковий сертифікат Oliva" />
   <div class="cta-overlay"></div>
   <div class="cta-content">
     <div class="section-label" style="color:rgba(255,255,255,0.7);margin-bottom:16px;" data-i18n="cta.label">Подарунок, який відчуваєш</div>
@@ -580,23 +579,37 @@
         </div>
         <div class="contact-block">
           <div class="contact-label" data-i18n="con.email">Пошта</div>
-          <a href="mailto:admin@olivamassage.miy.link" class="contact-value">admin@olivamassage.miy.link</a>
+          <a href="mailto:olivastudio96@gmail.com" class="contact-value">olivastudio96@gmail.com</a>
         </div>
         <div class="social-row">
-          <a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener" class="social-btn" title="Instagram">IG</a>
-          <a href="https://www.tiktok.com/@oliva_massage_studio_" target="_blank" rel="noopener" class="social-btn" title="TikTok">TT</a>
-          <a href="https://wa.me/380974340112" target="_blank" rel="noopener" class="social-btn" title="WhatsApp">WA</a>
-          <a href="viber://chat?number=%2B380974340112" class="social-btn" title="Viber">VB</a>
-          <a href="#" target="_blank" rel="noopener" class="social-btn" title="Telegram" data-replace="telegram">TG</a>
-          <a href="#" target="_blank" rel="noopener" class="social-btn" title="YouTube" data-replace="youtube">YT</a>
+          <a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener" class="social-btn" title="Instagram">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          </a>
+          <a href="https://www.tiktok.com/@oliva_massage_studio_" target="_blank" rel="noopener" class="social-btn" title="TikTok">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+          </a>
+          <a href="https://wa.me/380974340112" target="_blank" rel="noopener" class="social-btn" title="WhatsApp">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+          </a>
+          <a href="viber://chat?number=%2B380974340112" class="social-btn" title="Viber">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.398.002C8.865-.03 3.73.734 1.37 5.885c-1.177 2.535-1.33 5.84-1.13 8.68.198 2.84.772 5.63 2.698 7.226 0 0 2.56 2.657 8.548 2.905v2.527s-.038.992.617.992c.803 0 1.288-.824 2.063-1.703.43-.485.98-1.154 1.4-1.648 3.87.327 6.842-.422 7.177-.533.78-.254 5.197-1.7 5.197-7.74 0-5.955-2.855-9.61-6.285-10.964-1.12-.44-2.98-.82-5.587-.863-.237-.003-.474-.004-.71-.003zM11.47 2.4c.23-.002.46 0 .687.004 2.306.038 3.982.375 4.946.762 2.817 1.104 5.127 4.146 5.127 9.265 0 5.093-3.55 6.15-4.177 6.354-.27.088-2.966.732-6.328.526 0 0-2.51 3.025-3.296 3.815-.124.125-.265.174-.36.15-.134-.034-.17-.19-.168-.42l.02-3.7s-.004 0 0 0c-4.995-.617-5.29-5.45-5.427-7.32-.136-1.872.006-4.834.994-7.006 1.933-4.163 6.197-4.434 7.98-4.43zm.194 3.217c-.327 0-.327.504 0 .508 3.09.02 4.855 1.816 4.873 4.982.003.33.51.327.507 0-.02-3.445-1.993-5.47-5.38-5.49zm-2.44 1.37c-.31-.018-.614.063-.9.24-.273.168-.443.366-.588.63l-.04.076c-.474.86-.456 1.712.007 2.706l.028.063c.393.87 1.24 2.107 2.367 3.093 1.133.99 2.552 1.882 4.01 2.155l.064.01c1.254.198 2.073-.05 2.648-.585l.012-.012c.22-.224.393-.434.545-.67.194-.3.217-.61.063-.87l-.013-.02c-.454-.706-1.264-1.358-1.714-1.533-.27-.104-.54-.06-.756.173l-.457.528c-.214.244-.534.224-.534.224-2.47-.638-3.138-3.163-3.138-3.163s-.023-.322.218-.535l.524-.46c.232-.218.274-.488.168-.757-.18-.452-.835-1.265-1.543-1.72-.19-.122-.39-.19-.592-.19-.003 0-.005 0-.007 0l-.002-.002zM12.2 7.617c-.33 0-.33.517 0 .52 1.96.016 2.917.993 2.93 2.99.003.33.52.327.516 0-.016-2.277-1.17-3.493-3.447-3.51z"/></svg>
+          </a>
+          <a href="#" target="_blank" rel="noopener" class="social-btn" title="Telegram" data-replace="telegram">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.96 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+          </a>
+          <a href="#" target="_blank" rel="noopener" class="social-btn" title="YouTube" data-replace="youtube">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+          </a>
         </div>
       </div>
       <div class="reveal">
-        <a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="map-placeholder">
-          <div class="map-icon">📍</div>
-          <div data-i18n="con.addrVal">Київ, вул. Борщагівська, 145</div>
-          <div class="map-sub" data-i18n="con.openMap">Відкрити в Google Maps →</div>
-        </a>
+        <div class="map-embed-wrap">
+          <iframe
+            src="https://maps.google.com/maps?q=Київ,+вул.+Борщагівська,+145&z=16&output=embed"
+            width="100%" height="360" style="border:0;border-radius:16px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+          <a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="map-open-link">Відкрити в Google Maps →</a>
+        </div>
       </div>
     </div>
   </div>

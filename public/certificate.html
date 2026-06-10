@@ -210,24 +210,54 @@
     .picker-section-label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 12px; }
     .service-picker-wrap.invalid .field-error { display: block !important; }
 
-    .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    @media (min-width: 480px) { .cat-grid { grid-template-columns: repeat(3, 1fr); } }
-    .cat-btn {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 6px; padding: 14px 10px;
-      background: rgba(242,237,228,0.04);
-      border: 1px solid rgba(122,145,86,0.2);
-      border-radius: 12px; cursor: pointer;
-      transition: all .2s; font-family: 'Inter', sans-serif;
-      color: var(--cream); text-align: center;
+    /* Вкладки */
+    .picker-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid rgba(122,145,86,0.18); padding-bottom: 0; }
+    .picker-tab {
+      padding: 8px 16px 10px; font-size: 13px; font-family: 'Inter', sans-serif;
+      color: var(--text-dim); background: none; border: none; cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .2s;
     }
-    .cat-btn:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.1); }
-    .cat-btn.active { border-color: var(--olive-light); background: rgba(74,94,46,0.25); }
-    .cat-btn-icon { font-size: 1.4rem; }
-    .cat-btn-name { font-size: 12px; line-height: 1.3; }
+    .picker-tab:hover { color: var(--cream); }
+    .picker-tab.active { color: var(--cream); border-bottom-color: var(--olive-light); }
 
-    .variants-wrap { margin-top: 16px; }
-    .variants-title { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; }
+    /* Популярні — великі кнопки */
+    .popular-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    @media (max-width: 400px) { .popular-grid { grid-template-columns: 1fr; } }
+    .popular-btn {
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 14px 14px; border: 1px solid rgba(122,145,86,0.22);
+      border-radius: 14px; background: rgba(242,237,228,0.04);
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      color: var(--cream); text-align: left; transition: all .2s;
+    }
+    .popular-btn:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.1); }
+    .popular-btn.active { border-color: var(--olive-light); background: rgba(74,94,46,0.25); }
+    .popular-btn-top { display: flex; align-items: center; gap: 8px; }
+    .popular-btn-icon { font-size: 1.3rem; }
+    .popular-btn-name { font-size: 13px; font-weight: 500; line-height: 1.3; }
+    .popular-btn-meta { font-size: 11px; color: var(--text-dim); padding-left: 2px; }
+    .popular-btn-price { font-size: 14px; font-weight: 600; color: var(--olive-light); }
+
+    /* Усі послуги — скролл-список */
+    .all-services-scroll { max-height: 280px; overflow-y: auto; border: 1px solid rgba(122,145,86,0.18); border-radius: 14px; }
+    .all-services-scroll::-webkit-scrollbar { width: 4px; }
+    .all-services-scroll::-webkit-scrollbar-thumb { background: rgba(122,145,86,0.35); border-radius: 4px; }
+    .srv-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid rgba(122,145,86,0.1);
+      cursor: pointer; transition: background .15s;
+    }
+    .srv-row:last-child { border-bottom: none; }
+    .srv-row:hover { background: rgba(122,145,86,0.08); }
+    .srv-row.active { background: rgba(74,94,46,0.2); }
+    .srv-row-left { display: flex; align-items: center; gap: 10px; }
+    .srv-row-icon { font-size: 1.1rem; }
+    .srv-row-name { font-size: 13px; color: var(--cream); }
+    .srv-row-price { font-size: 13px; font-weight: 600; color: var(--olive-light); white-space: nowrap; }
+
+    /* Варіанти тривалості */
+    .variants-wrap { margin-top: 14px; }
+    .variants-title { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; letter-spacing: 0.05em; text-transform: uppercase; }
     .variants-grid { display: flex; flex-wrap: wrap; gap: 8px; }
     .variant-btn {
       padding: 10px 16px; border: 1px solid rgba(122,145,86,0.25);
@@ -299,7 +329,7 @@
 <!-- ВІДЕО + ФОРМА -->
 <div class="cert-main">
   <div class="cert-video-side">
-    <video autoplay muted loop playsinline>
+    <video autoplay loop playsinline>
       <source src="assets/video/sertificate_video.mp4" type="video/mp4" />
     </video>
   </div>
@@ -332,10 +362,23 @@
     <div id="fg-service" class="service-picker-wrap">
       <div class="picker-section-label">Оберіть послугу *</div>
 
-      <!-- Крок 1: категорії -->
-      <div class="cat-grid" id="catGrid"></div>
+      <!-- Вкладки -->
+      <div class="picker-tabs" id="pickerTabs">
+        <button type="button" class="picker-tab active" data-tab="popular">⭐ Популярні</button>
+        <button type="button" class="picker-tab" data-tab="all">Усі послуги</button>
+      </div>
 
-      <!-- Крок 2: варіанти (тривалість + ціна) -->
+      <!-- Популярні: великі кнопки -->
+      <div id="popularPanel">
+        <div class="popular-grid" id="popularGrid"></div>
+      </div>
+
+      <!-- Усі послуги: скролл-список -->
+      <div id="allPanel" style="display:none">
+        <div class="all-services-scroll" id="allServicesScroll"></div>
+      </div>
+
+      <!-- Варіанти тривалості -->
       <div class="variants-wrap" id="variantsWrap" style="display:none">
         <div class="variants-title" id="variantsTitle"></div>
         <div class="variants-grid" id="variantsGrid"></div>
@@ -524,7 +567,10 @@
   ];
 
   /* ── DOM ── */
-  var catGrid       = document.getElementById('catGrid');
+  var popularGrid   = document.getElementById('popularGrid');
+  var allServicesScroll = document.getElementById('allServicesScroll');
+  var popularPanel  = document.getElementById('popularPanel');
+  var allPanel      = document.getElementById('allPanel');
   var variantsWrap  = document.getElementById('variantsWrap');
   var variantsTitle = document.getElementById('variantsTitle');
   var variantsGrid  = document.getElementById('variantsGrid');
@@ -545,17 +591,56 @@
   var submitBtn     = document.getElementById('submitBtn');
 
   var activeCatId = null;
-  var activeVariant = null; // {serviceName, label, price}
+  var activeVariant = null;
+  var activeTab = 'popular';
 
-  /* ── БУДУЄМО КАТЕГОРІЇ ── */
-  SERVICES.forEach(function(s){
+  /* ── ПОПУЛЯРНІ (перші 6) ── */
+  var POPULAR_IDS = ['zagalno','rozsl','antistres','parnyi','spa','fitobochka'];
+
+  POPULAR_IDS.forEach(function(pid){
+    var s = SERVICES.find(function(s){ return s.id === pid; });
+    if (!s) return;
+    var minPrice = Math.min.apply(null, s.variants.map(function(v){ return v.price; }));
+    var maxPrice = Math.max.apply(null, s.variants.map(function(v){ return v.price; }));
+    var priceStr = minPrice === maxPrice ? minPrice.toLocaleString('uk-UA') + ' грн' : 'від ' + minPrice.toLocaleString('uk-UA') + ' грн';
+    var durCount = s.variants.length === 1 ? s.variants[0].label : s.variants.length + ' варіанти тривалості';
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'cat-btn';
+    btn.className = 'popular-btn';
     btn.setAttribute('data-id', s.id);
-    btn.innerHTML = '<span class="cat-btn-icon">' + s.icon + '</span><span class="cat-btn-name">' + s.name + '</span>';
+    btn.innerHTML =
+      '<div class="popular-btn-top"><span class="popular-btn-icon">' + s.icon + '</span><span class="popular-btn-name">' + s.name + '</span></div>' +
+      '<div class="popular-btn-meta">' + durCount + '</div>' +
+      '<div class="popular-btn-price">' + priceStr + '</div>';
     btn.addEventListener('click', function(){ selectCategory(s.id); });
-    catGrid.appendChild(btn);
+    popularGrid.appendChild(btn);
+  });
+
+  /* ── УСІ ПОСЛУГИ (список) ── */
+  SERVICES.forEach(function(s){
+    var minPrice = Math.min.apply(null, s.variants.map(function(v){ return v.price; }));
+    var priceStr = 'від ' + minPrice.toLocaleString('uk-UA') + ' грн';
+    if (s.variants.length === 1) priceStr = s.variants[0].price.toLocaleString('uk-UA') + ' грн';
+    var row = document.createElement('div');
+    row.className = 'srv-row';
+    row.setAttribute('data-id', s.id);
+    row.innerHTML =
+      '<div class="srv-row-left"><span class="srv-row-icon">' + s.icon + '</span><span class="srv-row-name">' + s.name + '</span></div>' +
+      '<span class="srv-row-price">' + priceStr + '</span>';
+    row.addEventListener('click', function(){ selectCategory(s.id); });
+    allServicesScroll.appendChild(row);
+  });
+
+  /* ── ВКЛАДКИ ── */
+  document.querySelectorAll('.picker-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      activeTab = this.dataset.tab;
+      document.querySelectorAll('.picker-tab').forEach(function(t){ t.classList.remove('active'); });
+      this.classList.add('active');
+      popularPanel.style.display = activeTab === 'popular' ? 'block' : 'none';
+      allPanel.style.display = activeTab === 'all' ? 'block' : 'none';
+      variantsWrap.style.display = 'none';
+    });
   });
 
   function selectCategory(id){
@@ -566,8 +651,11 @@
     serviceError.style.display = 'none';
     document.getElementById('fg-service').classList.remove('invalid');
 
-    // підсвічуємо кнопку
-    catGrid.querySelectorAll('.cat-btn').forEach(function(b){
+    // підсвічуємо обрану кнопку
+    popularGrid.querySelectorAll('.popular-btn').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-id') === id);
+    });
+    allServicesScroll.querySelectorAll('.srv-row').forEach(function(b){
       b.classList.toggle('active', b.getAttribute('data-id') === id);
     });
 
@@ -610,7 +698,9 @@
     selDur.textContent         = variant.label;
     selPriceBadge.textContent  = variant.price.toLocaleString('uk-UA') + ' грн';
     selSummary.style.display   = 'block';
-    catGrid.style.display      = 'none';
+    popularPanel.style.display = 'none';
+    allPanel.style.display     = 'none';
+    document.getElementById('pickerTabs').style.display = 'none';
     variantsWrap.style.display = 'none';
     customAmountWrap.style.display = 'block';
     serviceError.style.display = 'none';
@@ -621,12 +711,14 @@
     inpService.value = '';
     inpPrice.value   = '';
     selSummary.style.display   = 'none';
-    catGrid.style.display      = 'grid';
+    document.getElementById('pickerTabs').style.display = 'flex';
+    popularPanel.style.display = activeTab === 'popular' ? 'block' : 'none';
+    allPanel.style.display     = activeTab === 'all' ? 'block' : 'none';
     customAmountWrap.style.display = 'none';
     customAmountField.style.display = 'none';
     customToggleBtn.textContent = '+ Вказати іншу суму';
     if (inpAmount) inpAmount.value = '';
-    // показати варіанти для поточної категорії
+    // показати варіанти якщо категорія вже обрана
     if (activeCatId) {
       var svc = SERVICES.find(function(s){ return s.id === activeCatId; });
       if (svc && svc.variants.length > 1) variantsWrap.style.display = 'block';

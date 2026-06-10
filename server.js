@@ -160,6 +160,32 @@ app.post("/api/certificate", async function (req, res) {
   }
 });
 
+/* ---------------- API: Анонімний відгук ---------------- */
+app.post("/api/review", async function (req, res) {
+  var d = req.body || {};
+  var rating  = parseInt(d.rating)  || 0;
+  var master  = String(d.master  || "").slice(0, 100).trim();
+  var text    = String(d.text    || "").slice(0, 1000).trim();
+  if (!text || rating < 1 || rating > 5) {
+    return res.status(400).json({ ok: false, error: "missing fields" });
+  }
+  var stars = "⭐".repeat(rating);
+  var msg = `✍️ <b>Новий анонімний відгук</b>\n\n${stars}\n` +
+    (master ? `💆 <b>Майстер:</b> ${master}\n` : "") +
+    `📝 ${text}`;
+  try {
+    await sendTelegram(msg);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("[review]", e.message);
+    res.status(500).json({ ok: false });
+  }
+});
+
+app.get("/review", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "review.html"));
+});
+
 /* ---------------- Socket.IO ---------------- */
 io.on("connection", function (socket) {
   var auth = socket.handshake.auth || {};
