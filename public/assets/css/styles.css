@@ -292,7 +292,7 @@ section { padding: 100px 0; }
 
 /* ── TEAM ── */
 .team-section { background: rgba(14,18,12,0.8); }
-.team-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 56px; }
+.team-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-top: 56px; }
 .team-card { position: relative; overflow: hidden; aspect-ratio: 3/4; background: var(--olive); cursor: pointer; }
 .team-card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,10,7,0.9) 0%, rgba(8,10,7,0.2) 50%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 28px; z-index: 2; }
 .team-initial { font-family: 'Playfair Display', serif; font-size: 4rem; color: rgba(122,145,86,0.25); position: absolute; top: 50%; left: 50%; transform: translate(-50%,-60%); }
