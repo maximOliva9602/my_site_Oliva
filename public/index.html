@@ -905,5 +905,145 @@
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="assets/js/chat.js"></script>
+
+<!-- ============ BOOKING DRAWER ============ -->
+<style>
+.booking-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  z-index: 9000; opacity: 0; pointer-events: none;
+  transition: opacity .3s ease;
+}
+.booking-overlay.open { opacity: 1; pointer-events: all; }
+
+.booking-drawer {
+  position: fixed; top: 0; right: 0; height: 100%;
+  width: 420px; max-width: 100vw;
+  background: #fff; z-index: 9001;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.25);
+  transform: translateX(100%);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column;
+}
+.booking-drawer.open { transform: translateX(0); }
+
+.booking-drawer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid #e8e4dc;
+  background: #1a1f0e; flex-shrink: 0;
+}
+.booking-drawer-head span {
+  color: #d4c9a8; font-size: 15px; font-weight: 600;
+  font-family: 'Inter', sans-serif; letter-spacing: .02em;
+}
+.booking-drawer-close {
+  background: none; border: none; cursor: pointer;
+  color: #d4c9a8; font-size: 24px; line-height: 1;
+  padding: 4px 8px; border-radius: 6px;
+  transition: background .2s;
+}
+.booking-drawer-close:hover { background: rgba(255,255,255,0.1); }
+
+.booking-drawer-body {
+  flex: 1; overflow: hidden; position: relative;
+}
+.booking-drawer-body iframe {
+  width: 100%; height: 100%; border: none; display: block;
+}
+.booking-drawer-fallback {
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; gap: 16px; padding: 32px;
+  text-align: center;
+}
+.booking-drawer-fallback p {
+  color: #555; font-size: 15px; line-height: 1.6;
+}
+.booking-drawer-fallback a {
+  display: inline-block; padding: 14px 28px;
+  background: #4a5e2e; color: #fff; border-radius: 10px;
+  text-decoration: none; font-weight: 600; font-size: 15px;
+}
+
+@media (max-width: 480px) {
+  .booking-drawer { width: 100vw; }
+}
+</style>
+
+<div class="booking-overlay" id="bookingOverlay"></div>
+<div class="booking-drawer" id="bookingDrawer">
+  <div class="booking-drawer-head">
+    <span>🌿 Oliva — Онлайн запис</span>
+    <button class="booking-drawer-close" id="bookingClose" aria-label="Закрити">✕</button>
+  </div>
+  <div class="booking-drawer-body" id="bookingBody">
+    <iframe
+      id="bookingIframe"
+      src=""
+      allow="payment"
+      title="Онлайн запис Oliva">
+    </iframe>
+    <div class="booking-drawer-fallback" id="bookingFallback">
+      <p>Не вдалося завантажити форму запису.<br>Перейдіть на сторінку бронювання:</p>
+      <a href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener">Записатися онлайн →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var overlay = document.getElementById('bookingOverlay');
+  var drawer  = document.getElementById('bookingDrawer');
+  var iframe  = document.getElementById('bookingIframe');
+  var fallback = document.getElementById('bookingFallback');
+  var closeBtn = document.getElementById('bookingClose');
+  var BOOK_URL = 'https://bookon.ua/s/oliva_massage_studio';
+  var loaded = false;
+
+  function openDrawer() {
+    if (!loaded) {
+      iframe.src = BOOK_URL;
+      loaded = true;
+      iframe.onerror = function() {
+        iframe.style.display = 'none';
+        fallback.style.display = 'flex';
+      };
+      // If iframe loads but is blocked (X-Frame-Options), detect via timeout
+      setTimeout(function(){
+        try {
+          var doc = iframe.contentDocument || iframe.contentWindow.document;
+          if (!doc || doc.body.innerHTML === '') throw 'blocked';
+        } catch(e) {
+          // Cross-origin or blocked — show fallback hint but don't hide iframe
+        }
+      }, 3000);
+    }
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    overlay.classList.remove('open');
+    drawer.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  closeBtn.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  // Intercept all booking buttons
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('a.srv-card-btn, a[href="https://bookon.ua/s/oliva_massage_studio"]');
+    if (btn && !btn.closest('.booking-drawer')) {
+      // Skip external-open links that user explicitly wants new tab
+      if (btn.getAttribute('data-external') === 'true') return;
+      e.preventDefault();
+      openDrawer();
+    }
+  });
+})();
+</script>
 </body>
 </html>
