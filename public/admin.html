@@ -84,26 +84,47 @@
   .blog-card-actions .btn-del:hover { border-color: #e07070; color: #e07070; }
 
   /* Editor */
-  .blog-editor { display: none; flex-direction: column; gap: 16px; }
+  .blog-editor { display: none; flex-direction: column; gap: 18px; max-width: 860px; }
   .blog-editor.open { display: flex; }
-  .blog-editor label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 4px; display: block; }
-  .blog-editor input[type=text], .blog-editor textarea { width: 100%; background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 14px; resize: vertical; }
-  .blog-editor input[type=text]:focus, .blog-editor textarea:focus { outline: none; border-color: var(--olive-light); }
-  .blog-editor input[type=text]::placeholder, .blog-editor textarea::placeholder { color: rgba(242,237,228,0.2); }
-  .blog-editor .cover-row { display: flex; gap: 10px; align-items: flex-start; }
-  .blog-editor .cover-preview { width: 120px; height: 80px; object-fit: cover; border-radius: 8px; display: block; background: rgba(255,255,255,0.05); flex-shrink: 0; }
-  .blog-editor .cover-preview.hidden { display: none; }
+  .blog-editor label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 6px; display: block; }
+  .blog-editor input[type=text] { width: 100%; background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 15px; }
+  .blog-editor input[type=text]:focus { outline: none; border-color: var(--olive-light); }
+  .blog-editor input[type=text]::placeholder { color: rgba(242,237,228,0.2); }
+
+  /* Cover upload */
+  .cover-upload-btn { display: flex; align-items: center; gap: 12px; }
+  .cover-upload-btn button { background: rgba(122,145,86,0.15); border: 1px dashed rgba(122,145,86,0.4); color: var(--olive-light); border-radius: 10px; padding: 10px 18px; font-size: 13px; cursor: pointer; transition: all .2s; }
+  .cover-upload-btn button:hover { background: rgba(122,145,86,0.25); border-style: solid; color: var(--cream); }
+  .cover-thumb { width: 80px; height: 54px; object-fit: cover; border-radius: 8px; display: none; }
+  .cover-thumb.show { display: block; }
+  .cover-name { font-size: 12px; color: var(--text-dim); }
+
+  /* WYSIWYG toolbar */
+  .editor-toolbar { display: flex; gap: 4px; flex-wrap: wrap; background: rgba(46,61,34,0.25); border: 1px solid var(--line); border-bottom: none; border-radius: 10px 10px 0 0; padding: 8px 10px; }
+  .tb-btn { background: none; border: none; color: var(--text-dim); border-radius: 6px; width: 34px; height: 30px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .tb-btn:hover { background: rgba(122,145,86,0.2); color: var(--cream); }
+  .tb-btn.active { background: rgba(122,145,86,0.3); color: var(--cream); }
+  .tb-sep { width: 1px; background: var(--line); margin: 4px 4px; align-self: stretch; }
+  .tb-btn-img { width: auto; padding: 0 10px; font-size: 12px; gap: 4px; }
+  .editor-area { min-height: 260px; background: rgba(46,61,34,0.15); border: 1px solid var(--line); border-radius: 0 0 10px 10px; padding: 16px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.75; outline: none; }
+  .editor-area:focus { border-color: var(--olive-light); }
+  .editor-area p { margin-bottom: 12px; }
+  .editor-area h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--cream); margin: 20px 0 10px; }
+  .editor-area ul, .editor-area ol { padding-left: 20px; margin-bottom: 12px; }
+  .editor-area li { margin-bottom: 6px; }
+  .editor-area img { max-width: 100%; border-radius: 8px; margin: 10px 0; }
+  .editor-area a { color: var(--olive-light); }
+  .editor-area [data-placeholder]:empty::before { content: attr(data-placeholder); color: rgba(242,237,228,0.2); pointer-events: none; }
+
   .blog-editor .publish-row { display: flex; align-items: center; gap: 10px; }
   .blog-editor .publish-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--olive-light); }
   .blog-editor .publish-row span { font-size: 14px; color: var(--cream); }
   .editor-actions { display: flex; gap: 10px; }
-  .editor-actions button { padding: 10px 20px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all .2s; }
+  .editor-actions button { padding: 12px 24px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all .2s; }
   .btn-save { background: var(--olive-light); border: none; color: #000; font-weight: 600; }
   .btn-save:hover { background: #8fa864; }
   .btn-cancel-ed { background: none; border: 1px solid var(--line); color: var(--text-dim); }
   .btn-cancel-ed:hover { color: var(--cream); border-color: var(--olive-light); }
-  .upload-area { border: 1px dashed rgba(122,145,86,0.35); border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; color: var(--text-dim); font-size: 13px; transition: border-color .2s; }
-  .upload-area:hover { border-color: var(--olive-light); color: var(--cream); }
   .upload-input { display: none; }
 
   /* chat pane */
@@ -180,30 +201,43 @@
           <input type="text" id="edTitle" placeholder="Наприклад: 5 переваг масажу після спорту" />
         </div>
         <div>
-          <label>Короткий анонс (для списку)</label>
-          <textarea id="edExcerpt" rows="2" placeholder="2-3 речення про статтю..."></textarea>
+          <label>Короткий анонс (показується в списку статей)</label>
+          <input type="text" id="edExcerpt" placeholder="2-3 речення про статтю..." />
         </div>
         <div>
-          <label>Обкладинка (фото)</label>
-          <div class="cover-row">
-            <img id="edCoverPreview" class="cover-preview hidden" src="" alt="preview" />
-            <div style="flex:1">
-              <div class="upload-area" id="uploadArea">📷 Натисни щоб завантажити фото</div>
-              <input type="file" id="uploadInput" class="upload-input" accept="image/*" />
-            </div>
+          <label>Обкладинка (головне фото)</label>
+          <div class="cover-upload-btn">
+            <button type="button" id="uploadCoverBtn">📷 Завантажити фото</button>
+            <img id="edCoverPreview" class="cover-thumb" src="" alt="cover" />
+            <span class="cover-name" id="coverName"></span>
           </div>
+          <input type="file" id="uploadInput" class="upload-input" accept="image/*" />
           <input type="hidden" id="edCover" />
         </div>
         <div>
-          <label>Текст статті (можна використовувати HTML: &lt;p&gt;, &lt;h2&gt;, &lt;ul&gt;, &lt;img&gt;)</label>
-          <textarea id="edBody" rows="14" placeholder="&lt;p&gt;Текст статті...&lt;/p&gt;&#10;&lt;h2&gt;Підзаголовок&lt;/h2&gt;&#10;&lt;p&gt;...&lt;/p&gt;"></textarea>
+          <label>Текст статті</label>
+          <div class="editor-toolbar" id="editorToolbar">
+            <button type="button" class="tb-btn" data-cmd="bold" title="Жирний"><b>B</b></button>
+            <button type="button" class="tb-btn" data-cmd="italic" title="Курсив"><i>I</i></button>
+            <button type="button" class="tb-btn" data-cmd="underline" title="Підкреслений"><u>U</u></button>
+            <div class="tb-sep"></div>
+            <button type="button" class="tb-btn" data-cmd="h2" title="Підзаголовок">H2</button>
+            <button type="button" class="tb-btn" data-cmd="p" title="Звичайний текст">¶</button>
+            <div class="tb-sep"></div>
+            <button type="button" class="tb-btn" data-cmd="insertUnorderedList" title="Список">≡</button>
+            <button type="button" class="tb-btn" data-cmd="insertOrderedList" title="Нумерований список">1.</button>
+            <div class="tb-sep"></div>
+            <button type="button" class="tb-btn tb-btn-img" id="insertImgBtn" title="Вставити фото">🖼 Фото</button>
+            <input type="file" id="insertImgInput" class="upload-input" accept="image/*" />
+          </div>
+          <div class="editor-area" id="edBody" contenteditable="true" data-placeholder="Пишіть тут — просто текст, без жодного коду..."></div>
         </div>
         <div class="publish-row">
           <input type="checkbox" id="edPublished" />
           <span>Опублікувати (буде видно на сайті)</span>
         </div>
         <div class="editor-actions">
-          <button class="btn-save" id="edSaveBtn">Зберегти</button>
+          <button class="btn-save" id="edSaveBtn">💾 Зберегти</button>
           <button class="btn-cancel-ed" id="edCancelBtn">Скасувати</button>
         </div>
       </div>
@@ -368,16 +402,17 @@
   });
 
   /* ========== BLOG MANAGER ========== */
-  var blogOverlay = document.getElementById("blogOverlay");
-  var blogEditor  = document.getElementById("blogEditor");
-  var blogList    = document.getElementById("blogList");
-  var edTitle     = document.getElementById("edTitle");
-  var edExcerpt   = document.getElementById("edExcerpt");
-  var edBody      = document.getElementById("edBody");
-  var edCover     = document.getElementById("edCover");
-  var edPublished = document.getElementById("edPublished");
+  var blogOverlay    = document.getElementById("blogOverlay");
+  var blogEditor     = document.getElementById("blogEditor");
+  var blogList       = document.getElementById("blogList");
+  var edTitle        = document.getElementById("edTitle");
+  var edExcerpt      = document.getElementById("edExcerpt");
+  var edBody         = document.getElementById("edBody");
+  var edCover        = document.getElementById("edCover");
+  var edPublished    = document.getElementById("edPublished");
   var edCoverPreview = document.getElementById("edCoverPreview");
-  var editingId   = null;
+  var coverName      = document.getElementById("coverName");
+  var editingId      = null;
 
   document.getElementById("blogMgrBtn").addEventListener("click", function () {
     blogOverlay.classList.add("open");
@@ -387,59 +422,100 @@
     blogOverlay.classList.remove("open");
     closeEditor();
   });
-  document.getElementById("blogNewBtn").addEventListener("click", function () {
-    openEditor(null);
-  });
+  document.getElementById("blogNewBtn").addEventListener("click", function () { openEditor(null); });
   document.getElementById("edCancelBtn").addEventListener("click", closeEditor);
 
-  // Upload фото
-  document.getElementById("uploadArea").addEventListener("click", function () {
+  /* -- Завантаження обкладинки -- */
+  document.getElementById("uploadCoverBtn").addEventListener("click", function () {
     document.getElementById("uploadInput").click();
   });
   document.getElementById("uploadInput").addEventListener("change", function () {
     var file = this.files[0];
     if (!file) return;
-    fetch("/api/admin/posts/upload", {
-      method: "POST",
-      headers: { "Content-Type": file.type },
-      body: file
-    }).then(function(r){ return r.json(); }).then(function(j){
-      if (j.ok) {
-        edCover.value = j.url;
-        edCoverPreview.src = j.url;
-        edCoverPreview.classList.remove("hidden");
-      }
+    uploadImage(file, function(url) {
+      edCover.value = url;
+      edCoverPreview.src = url;
+      edCoverPreview.classList.add("show");
+      coverName.textContent = file.name;
     });
+    this.value = '';
   });
 
+  /* -- Вставка фото в текст -- */
+  document.getElementById("insertImgBtn").addEventListener("click", function () {
+    document.getElementById("insertImgInput").click();
+  });
+  document.getElementById("insertImgInput").addEventListener("change", function () {
+    var file = this.files[0];
+    if (!file) return;
+    uploadImage(file, function(url) {
+      edBody.focus();
+      document.execCommand("insertHTML", false, '<img src="' + url + '" style="max-width:100%;border-radius:8px;margin:10px 0" />');
+    });
+    this.value = '';
+  });
+
+  /* -- Завантаження файлу → base64 → сервер -- */
+  function uploadImage(file, cb) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var dataUrl = e.target.result;
+      var ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+      fetch("/api/admin/upload-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataUrl: dataUrl, ext: ext })
+      }).then(function(r){ return r.json(); }).then(function(j){
+        if (j.ok) cb(j.url);
+        else alert('Помилка завантаження фото');
+      }).catch(function(){ alert('Помилка мережі'); });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* -- Toolbar -- */
+  document.getElementById("editorToolbar").addEventListener("click", function(e) {
+    var btn = e.target.closest("[data-cmd]");
+    if (!btn) return;
+    var cmd = btn.getAttribute("data-cmd");
+    edBody.focus();
+    if (cmd === "h2") {
+      document.execCommand("formatBlock", false, "H2");
+    } else if (cmd === "p") {
+      document.execCommand("formatBlock", false, "P");
+    } else {
+      document.execCommand(cmd, false, null);
+    }
+    e.preventDefault();
+  });
+
+  /* -- Список статей -- */
   function loadPosts() {
     fetch("/api/admin/posts").then(function(r){ return r.json(); }).then(function(posts){
       blogList.innerHTML = "";
       if (!posts.length) {
-        blogList.innerHTML = '<div style="color:var(--text-dim);padding:32px;text-align:center">Поки немає статей. Натисніть "+ Нова стаття"</div>';
+        blogList.innerHTML = '<div style="color:var(--text-dim);padding:32px;text-align:center;grid-column:1/-1">Поки немає статей. Натисніть "+ Нова стаття"</div>';
         return;
       }
       posts.forEach(function(p){
         var card = document.createElement("div");
         card.className = "blog-card";
-        var cover = p.cover ? '<img class="blog-card-cover" src="' + p.cover + '" />' : '';
+        var cover = p.cover ? '<img class="blog-card-cover" src="' + p.cover + '" />' : '<div class="blog-card-cover" style="display:flex;align-items:center;justify-content:center;font-size:2rem">🌿</div>';
         card.innerHTML = cover +
           '<div class="blog-card-body">' +
             '<div class="blog-card-status ' + (p.published ? 'pub' : 'draft') + '">' + (p.published ? '● Опублікована' : '○ Чернетка') + '</div>' +
             '<div class="blog-card-title">' + p.title + '</div>' +
             '<div class="blog-card-date">' + (p.date || '') + '</div>' +
             '<div class="blog-card-actions">' +
-              '<button data-edit="' + p.id + '">✏️ Редагувати</button>' +
+              '<button data-edit>✏️ Редагувати</button>' +
               (p.published
-                ? '<button data-toggle="' + p.id + '" data-pub="1">⬇ Сховати</button>'
-                : '<button data-toggle="' + p.id + '" data-pub="0">✅ Опублікувати</button>') +
-              '<button class="btn-del" data-del="' + p.id + '">🗑</button>' +
+                ? '<button data-toggle>⬇ Сховати</button>'
+                : '<button data-toggle>✅ Опублікувати</button>') +
+              '<button class="btn-del" data-del>🗑</button>' +
             '</div>' +
           '</div>';
         card.querySelector('[data-edit]').addEventListener('click', function(){ openEditor(p); });
-        card.querySelector('[data-toggle]').addEventListener('click', function(){
-          togglePublish(p.id, !p.published);
-        });
+        card.querySelector('[data-toggle]').addEventListener('click', function(){ togglePublish(p.id, !p.published); });
         card.querySelector('[data-del]').addEventListener('click', function(){
           if (confirm('Видалити статтю "' + p.title + '"?')) deletePost(p.id);
         });
@@ -450,18 +526,21 @@
 
   function openEditor(post) {
     editingId = post ? post.id : null;
-    edTitle.value     = post ? post.title : '';
-    edExcerpt.value   = post ? (post.excerpt || '') : '';
-    edBody.value      = post ? (post.body || '') : '';
-    edCover.value     = post ? (post.cover || '') : '';
+    edTitle.value       = post ? post.title : '';
+    edExcerpt.value     = post ? (post.excerpt || '') : '';
+    edBody.innerHTML    = post ? (post.body || '') : '';
+    edCover.value       = post ? (post.cover || '') : '';
     edPublished.checked = post ? !!post.published : false;
     if (post && post.cover) {
       edCoverPreview.src = post.cover;
-      edCoverPreview.classList.remove("hidden");
+      edCoverPreview.classList.add("show");
+      coverName.textContent = '';
     } else {
-      edCoverPreview.classList.add("hidden");
+      edCoverPreview.classList.remove("show");
+      coverName.textContent = '';
     }
     blogList.style.display = 'none';
+    document.getElementById("blogNewBtn").style.display = 'none';
     blogEditor.classList.add('open');
     edTitle.focus();
   }
@@ -469,26 +548,32 @@
   function closeEditor() {
     blogEditor.classList.remove('open');
     blogList.style.display = '';
+    document.getElementById("blogNewBtn").style.display = '';
   }
 
   document.getElementById("edSaveBtn").addEventListener("click", function () {
     var title = edTitle.value.trim();
-    if (!title) { edTitle.focus(); return; }
+    if (!title) { edTitle.focus(); edTitle.style.borderColor='#e07070'; return; }
+    edTitle.style.borderColor = '';
     var data = {
       title: title,
       excerpt: edExcerpt.value.trim(),
-      body: edBody.value.trim(),
+      body: edBody.innerHTML,
       cover: edCover.value.trim(),
       published: edPublished.checked
     };
-    var url = editingId ? '/api/admin/posts/' + editingId : '/api/admin/posts';
+    var url    = editingId ? '/api/admin/posts/' + editingId : '/api/admin/posts';
     var method = editingId ? 'PUT' : 'POST';
+    var btn = this;
+    btn.textContent = 'Збереження...';
+    btn.disabled = true;
     fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
       .then(function(r){ return r.json(); })
       .then(function(j){
+        btn.textContent = '💾 Зберегти'; btn.disabled = false;
         if (j.ok) { closeEditor(); loadPosts(); }
         else alert('Помилка збереження');
-      });
+      }).catch(function(){ btn.textContent = '💾 Зберегти'; btn.disabled = false; });
   });
 
   function togglePublish(id, published) {
@@ -497,7 +582,6 @@
       body: JSON.stringify({ published: published })
     }).then(loadPosts);
   }
-
   function deletePost(id) {
     fetch('/api/admin/posts/' + id, { method: 'DELETE' }).then(loadPosts);
   }

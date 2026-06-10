@@ -281,13 +281,19 @@ app.delete("/api/admin/posts/:id", requireAdmin, function (req, res) {
   res.json({ ok: true });
 });
 
-/* Завантаження фото для посту */
-app.post("/api/admin/posts/upload", requireAdmin, express.raw({ type: "image/*", limit: "10mb" }), function (req, res) {
-  var ext = (req.headers["content-type"] || "image/jpeg").split("/")[1] || "jpg";
+/* Завантаження фото — приймає JSON { dataUrl, ext } */
+app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
+  var d = req.body || {};
+  var dataUrl = String(d.dataUrl || "");
+  var ext = String(d.ext || "jpg").replace(/[^a-z0-9]/gi, "").slice(0, 5) || "jpg";
+  var match = dataUrl.match(/^data:image\/[^;]+;base64,(.+)$/);
+  if (!match) return res.status(400).json({ ok: false, error: "invalid dataUrl" });
+  var buf = Buffer.from(match[1], "base64");
+  if (buf.length > 10 * 1024 * 1024) return res.status(413).json({ ok: false, error: "too large" });
   var filename = crypto.randomBytes(12).toString("hex") + "." + ext;
   var uploadDir = path.join(__dirname, "public", "assets", "img", "blog");
   fs.mkdirSync(uploadDir, { recursive: true });
-  fs.writeFileSync(path.join(uploadDir, filename), req.body);
+  fs.writeFileSync(path.join(uploadDir, filename), buf);
   res.json({ ok: true, url: "/assets/img/blog/" + filename });
 });
 
