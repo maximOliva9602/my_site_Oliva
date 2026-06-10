@@ -282,7 +282,9 @@ app.delete("/api/admin/posts/:id", requireAdmin, function (req, res) {
   res.json({ ok: true });
 });
 
-/* Завантаження фото — приймає JSON { dataUrl, ext } */
+/* Завантаження фото — зберігається поруч з posts.json у persistent volume */
+var IMG_DIR = path.join(path.dirname(POSTS_FILE), "img", "blog");
+
 app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
   var d = req.body || {};
   var dataUrl = String(d.dataUrl || "");
@@ -292,10 +294,17 @@ app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
   var buf = Buffer.from(match[1], "base64");
   if (buf.length > 10 * 1024 * 1024) return res.status(413).json({ ok: false, error: "too large" });
   var filename = crypto.randomBytes(12).toString("hex") + "." + ext;
-  var uploadDir = path.join(__dirname, "public", "assets", "img", "blog");
-  fs.mkdirSync(uploadDir, { recursive: true });
-  fs.writeFileSync(path.join(uploadDir, filename), buf);
-  res.json({ ok: true, url: "/assets/img/blog/" + filename });
+  fs.mkdirSync(IMG_DIR, { recursive: true });
+  fs.writeFileSync(path.join(IMG_DIR, filename), buf);
+  res.json({ ok: true, url: "/api/blog-img/" + filename });
+});
+
+/* Роздача фото з persistent volume */
+app.get("/api/blog-img/:filename", function (req, res) {
+  var filename = path.basename(req.params.filename);
+  var filepath = path.join(IMG_DIR, filename);
+  if (!fs.existsSync(filepath)) return res.status(404).send("Not found");
+  res.sendFile(filepath);
 });
 
 /* Маршрути сторінок */
