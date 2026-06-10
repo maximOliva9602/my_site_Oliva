@@ -42,6 +42,7 @@
 
     /* MASTERS */
     .masters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 32px; }
+    .master-card:last-child:nth-child(odd) { grid-column: 1 / -1; max-width: 50%; margin: 0 auto; }
     .master-card { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 14px; padding: 18px 16px; text-align: center; cursor: pointer; transition: all .2s; }
     .master-card:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.06); }
     .master-card.active { background: rgba(122,145,86,0.15); border-color: var(--olive-light); }
@@ -116,7 +117,22 @@
   <!-- ВИБІР МАЙСТРА -->
   <div class="field-label">Оберіть майстра</div>
   <div class="masters" style="margin-bottom:32px">
-    <div class="master-card active" data-master="olena" onclick="selectMaster(this)">
+    <div class="master-card active" data-master="yaroslav" onclick="selectMaster(this)">
+      <div class="master-avatar"><img src="assets/img/master-yaroslav.jpg" alt="Ярослав" /></div>
+      <div class="master-name">Ярослав</div>
+      <div class="master-role">Топ майстер</div>
+    </div>
+    <div class="master-card" data-master="maksym" onclick="selectMaster(this)">
+      <div class="master-avatar"><img src="assets/img/master-maksym.jpg" alt="Максим" /></div>
+      <div class="master-name">Максим</div>
+      <div class="master-role">Топ майстер</div>
+    </div>
+    <div class="master-card" data-master="tetiana" onclick="selectMaster(this)">
+      <div class="master-avatar"><img src="assets/img/master-tetiana.jpg" alt="Тетяна" /></div>
+      <div class="master-name">Тетяна</div>
+      <div class="master-role">Топ майстер</div>
+    </div>
+    <div class="master-card" data-master="olena" onclick="selectMaster(this)">
       <div class="master-avatar"><img src="assets/img/master-olena.jpg" alt="Олена" /></div>
       <div class="master-name">Олена</div>
       <div class="master-role">Топ майстер</div>
@@ -124,7 +140,7 @@
     <div class="master-card" data-master="liudmyla" onclick="selectMaster(this)">
       <div class="master-avatar"><img src="assets/img/master-liudmyla.jpg" alt="Людмила" /></div>
       <div class="master-name">Людмила</div>
-      <div class="master-role">Топ майстер</div>
+      <div class="master-role">Майстер</div>
     </div>
   </div>
 
@@ -177,11 +193,14 @@
 
 <script>
   const MASTERS = {
+    yaroslav: { url: "https://send.monobank.ua/jar/YAROSLAV_URL" }, // ← замінити на посилання Ярослава
+    maksym:   { url: "https://send.monobank.ua/jar/MAKSYM_URL" },   // ← замінити на посилання Максима
+    tetiana:  { url: "https://send.monobank.ua/jar/TETIANA_URL" },  // ← замінити на посилання Тетяни
     olena:    { url: "https://send.monobank.ua/jar/goKABUfbt" },
     liudmyla: { url: "https://send.monobank.ua/jar/5AgF2AwxSe" }
   };
 
-  let selectedMaster = "olena";
+  let selectedMaster = "yaroslav";
   let selectedAmt = 150;
 
   function selectMaster(el) {
