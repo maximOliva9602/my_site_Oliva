@@ -179,7 +179,7 @@
       <span>/</span>
       <button type="button" data-lang="en">EN</button>
     </div>
-    <div id="navBookContainer"></div>
+    <a href="https://bookon.ua/s/oliva_massage_studio" target="_blank" rel="noopener" class="nav-cta" data-i18n="nav.book">Онлайн запис</a>
     <button class="burger" id="burger" aria-label="Меню"><span></span><span></span><span></span></button>
   </div>
 </nav>
@@ -918,114 +918,6 @@
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="assets/js/chat.js"></script>
-
-<!-- ============ BINOTEL BOOKING WIDGET ============ -->
-<style>
-/* Перепозиціонуємо плаваючу кнопку в хедер */
-bocrm-branch {
-  position: fixed !important;
-  top: 14px !important;
-  right: 16px !important;
-  bottom: auto !important;
-  left: auto !important;
-  z-index: 1001 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  width: auto !important;
-  height: auto !important;
-}
-bocrm-widget-button {
-  display: block !important;
-  background: transparent !important;
-}
-bocrm-branch button.bocrm-widget-button,
-bocrm-widget-button button.bocrm-widget-button {
-  background: var(--olive) !important;
-  color: var(--cream) !important;
-  padding: 10px 22px !important;
-  border-radius: 50px !important;
-  border: 1px solid var(--olive-light) !important;
-  font-size: 0.8rem !important;
-  letter-spacing: 0.04em !important;
-  font-family: 'Inter', sans-serif !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  white-space: nowrap !important;
-  box-shadow: none !important;
-  width: auto !important;
-  height: auto !important;
-  min-width: unset !important;
-  min-height: unset !important;
-  border-radius: 50px !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0 !important;
-}
-bocrm-branch button.bocrm-widget-button:hover,
-bocrm-widget-button button.bocrm-widget-button:hover {
-  background: var(--olive-mid) !important;
-}
-/* Ховаємо іконку/зображення якщо є */
-bocrm-branch button.bocrm-widget-button img,
-bocrm-branch button.bocrm-widget-button svg,
-bocrm-widget-button button.bocrm-widget-button img,
-bocrm-widget-button button.bocrm-widget-button svg {
-  display: none !important;
-}
-</style>
-
-<script>
-/* Завантажуємо binotel widget */
-(function (d, w, s) {
-  var h = 'FlH2h4E3VCWXlCI6Kaln', b = d.createElement(s);
-  b.async = true;
-  b.src = '//widgets.binotel.com/b/bocrm/widgets/' + h + '.xjs';
-  d.head.appendChild(b);
-})(document, window, 'script');
-
-/* Фіксуємо позицію кожного разу, коли widget намагається її змінити */
-(function(){
-  function pinToHeader(el) {
-    el.style.setProperty('position', 'fixed', 'important');
-    el.style.setProperty('top',    '14px',  'important');
-    el.style.setProperty('right',  '16px',  'important');
-    el.style.setProperty('bottom', 'auto',  'important');
-    el.style.setProperty('left',   'auto',  'important');
-  }
-
-  var branch = null;
-  var pinObs = null;
-
-  new MutationObserver(function() {
-    var el = document.querySelector('bocrm-branch');
-    if (el && el !== branch) {
-      branch = el;
-      pinToHeader(branch);
-      /* Стежимо за будь-якою зміною style/class і одразу повертаємо позицію */
-      pinObs = new MutationObserver(function(muts) {
-        for (var i=0; i<muts.length; i++) {
-          if (muts[i].attributeName === 'style' || muts[i].attributeName === 'class') {
-            pinToHeader(branch);
-            break;
-          }
-        }
-      });
-      pinObs.observe(branch, { attributes: true });
-    }
-  }).observe(document.documentElement, { childList: true, subtree: true });
-
-  /* Кнопки «Записатися» на сторінці */
-  document.addEventListener('click', function(e) {
-    var btn = e.target.closest('a.srv-card-btn, a[href="https://bookon.ua/s/oliva_massage_studio"]');
-    if (btn) {
-      e.preventDefault();
-      var wb = document.querySelector('bocrm-branch button, bocrm-widget-button button');
-      if (wb) wb.click();
-      else window.open('https://bookon.ua/s/oliva_massage_studio', '_blank');
-    }
-  });
-})();
-</script>
 
 </body>
 </html>
