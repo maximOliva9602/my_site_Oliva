@@ -455,3 +455,16 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
   .gallery-grid { grid-template-columns: 1fr 1fr; }
   .chat-panel { width: calc(100vw - 32px); }
 }
+
+@media (max-width: 768px) {
+  .srv-tabs {
+    flex-wrap: wrap;
+    border-radius: 16px;
+    overflow-x: visible;
+    justify-content: flex-start;
+  }
+  .srv-tab {
+    font-size: 0.7rem;
+    padding: 7px 11px;
+  }
+}
