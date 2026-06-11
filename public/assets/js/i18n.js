@@ -57,7 +57,7 @@
 
       "why.label": "Про студію", "why.title1": "Солом'янський район,", "why.title2": "поруч з метро",
       "why.sub": "Масаж у Києві, Солом'янський район — поруч із метро Шулявська. Зручна локація, де можна відновитися після роботи або тренування.",
-      "why.stat": "роки досвіду",
+      "why.stat": "задоволених клієнтів",
       "why.f1t": "Глибока робота з тілом", "why.f1d": "Працюємо з напругою глибоко — знімаємо затиски, покращуємо кровообіг та відновлюємо рухливість.",
       "why.f2t": "Сертифіковані майстри", "why.f2d": "Лише майстри з підтвердженою кваліфікацією та постійним підвищенням майстерності.",
       "why.f3t": "Зручний час", "why.f3d": "Приймаємо щодня з 09:00 до 21:30. Легко записатися онлайн у зручний час.",
@@ -130,7 +130,7 @@
 
       "why.label": "About the studio", "why.title1": "Solomianskyi district,", "why.title2": "next to the metro",
       "why.sub": "Massage in Kyiv, Solomianskyi district — next to Shuliavska metro. A convenient spot to recover after work or training.",
-      "why.stat": "years of experience",
+      "why.stat": "satisfied clients",
       "why.f1t": "Deep bodywork", "why.f1d": "We work deeply with tension — release knots, improve circulation and restore mobility.",
       "why.f2t": "Certified therapists", "why.f2d": "Only therapists with confirmed qualifications and constant skill development.",
       "why.f3t": "Convenient hours", "why.f3d": "Open daily from 09:00 to 21:30. Easy to book online at a convenient time.",
