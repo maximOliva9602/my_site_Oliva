@@ -27,8 +27,8 @@
   }
 
   /* ---------- modal ---------- */
-  function openModal(html) { $("modalCard").innerHTML = html; $("modal").classList.add("on"); }
-  function closeModal() { $("modal").classList.remove("on"); $("modalCard").innerHTML = ""; }
+  function openModal(html, wide) { $("modalCard").innerHTML = html; $("modalCard").className = "modal-card" + (wide ? " wide" : ""); $("modal").classList.add("on"); }
+  function closeModal() { $("modal").classList.remove("on"); $("modalCard").innerHTML = ""; $("modalCard").className = "modal-card"; }
   $("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
 
   /* ============================================================
@@ -631,7 +631,7 @@
   }
 
   function scheduleModal(m) {
-    openModal('<h3>Графік: ' + m.name + '</h3><div id="schBody" class="muted">Завантаження…</div>');
+    openModal('<h3>Графік: ' + m.name + '</h3><div id="schBody" class="muted">Завантаження…</div>', true);
     api("GET", "/api/crm/masters/" + m.id + "/schedule").then(function (res) {
       var sched = {}, brk = {};
       (res.j.schedule || []).forEach(function (r) { sched[r.weekday] = r; });
