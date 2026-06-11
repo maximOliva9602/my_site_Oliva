@@ -645,33 +645,27 @@
         var r = el("div", "sched-row" + (hasDay ? "" : " day-off"));
         r.appendChild(el("span", "wd", DOW[wd]));
 
-        // Робочий час
-        var wBlock = el("div", "sched-time");
-        var wsL = el("label", "", "Початок"); wsL.htmlFor = "ws" + wd;
-        var ws = el("input"); ws.type = "time"; ws.id = "ws" + wd; ws.dataset.wd = wd; ws.dataset.k = "ws";
-        var sepW = el("span", "sep", "–");
-        var weL = el("label", "", "Кінець"); weL.htmlFor = "we" + wd;
-        var we = el("input"); we.type = "time"; we.id = "we" + wd; we.dataset.wd = wd; we.dataset.k = "we";
+        var ws = el("input"); ws.type = "time"; ws.dataset.wd = wd; ws.dataset.k = "ws";
+        var we = el("input"); we.type = "time"; we.dataset.wd = wd; we.dataset.k = "we";
         if (sched[wd]) { ws.value = fmtMin(sched[wd].work_start); we.value = fmtMin(sched[wd].work_end); }
-        wBlock.appendChild(wsL); wBlock.appendChild(ws); wBlock.appendChild(sepW);
-        wBlock.appendChild(weL); wBlock.appendChild(we);
 
-        // Перерва
-        var bBlock = el("div", "sched-time");
-        var bsL = el("label", "", "Перерва"); bsL.htmlFor = "bs" + wd;
-        var bs = el("input"); bs.type = "time"; bs.id = "bs" + wd; bs.dataset.wd = wd; bs.dataset.k = "bs";
-        var sepB = el("span", "sep", "–");
-        var beL = el("label", "", "До"); beL.htmlFor = "be" + wd;
-        var be = el("input"); be.type = "time"; be.id = "be" + wd; be.dataset.wd = wd; be.dataset.k = "be";
+        r.appendChild(ws);
+        r.appendChild(el("span", "sched-sep", "–"));
+        r.appendChild(we);
+        r.appendChild(el("span", "sched-div", ""));
+        r.appendChild(el("span", "sched-lbl", "перерва"));
+
+        var bs = el("input"); bs.type = "time"; bs.dataset.wd = wd; bs.dataset.k = "bs";
+        var be = el("input"); be.type = "time"; be.dataset.wd = wd; be.dataset.k = "be";
         if (brk[wd]) { bs.value = fmtMin(brk[wd].break_start); be.value = fmtMin(brk[wd].break_end); }
-        bBlock.appendChild(bsL); bBlock.appendChild(bs); bBlock.appendChild(sepB);
-        bBlock.appendChild(beL); bBlock.appendChild(be);
 
-        // Змінюємо клас при редагуванні
+        r.appendChild(bs);
+        r.appendChild(el("span", "sched-sep", "–"));
+        r.appendChild(be);
+
         function refreshDayOff() { r.className = "sched-row" + (ws.value || we.value ? "" : " day-off"); }
         ws.addEventListener("change", refreshDayOff); we.addEventListener("change", refreshDayOff);
 
-        r.appendChild(wBlock); r.appendChild(bBlock);
         box.appendChild(r);
       });
       var foot = el("div", "modal-foot");
