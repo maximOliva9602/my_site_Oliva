@@ -114,8 +114,14 @@ async function pollStatuses() {
   }
 }
 
+/* Прямо надіслати довільний текст на телефон (для майстра, без черги). */
+async function sendDirect(phone, text) {
+  if (typeof driver.sendMessage !== "function") return;
+  await driver.sendMessage({ phone, text });
+}
+
 module.exports = {
   driver, DRIVER_NAME, STUDIO_ADDRESS,
   apptView, renderTemplate, queueNotification,
-  flushQueued, recordStatus, pollStatuses,
+  flushQueued, recordStatus, pollStatuses, sendDirect,
 };

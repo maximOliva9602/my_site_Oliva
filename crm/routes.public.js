@@ -141,6 +141,24 @@ router.post("/book", function (req, res) {
     return res.status(500).json({ ok: false, error: "server error" });
   }
 
+  // Повідомлення майстру (SMS/Viber на його телефон)
+  try {
+    const masterRow = db.prepare("SELECT name, phone FROM masters WHERE id=?").get(masterId);
+    if (masterRow && masterRow.phone) {
+      const d = date.split("-").reverse().slice(0,2).join(".");
+      const h = Math.floor(startMin/60), m = startMin%60;
+      const t = String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+      const svcRow = db.prepare("SELECT name FROM services WHERE id=?").get(serviceId);
+      const masterText = "Oliva: новий запис!\n" +
+        "Клієнт: " + name + " " + phone + "\n" +
+        "Послуга: " + (svcRow ? svcRow.name : "") + "\n" +
+        "Дата: " + d + " о " + t;
+      notify.sendDirect(masterRow.phone, masterText).catch(function(e) {
+        console.warn("[book] master notify failed:", e.message);
+      });
+    }
+  } catch(e) { console.warn("[book] master notify err:", e.message); }
+
   res.json({ ok: true, public_id: publicId });
 });
 

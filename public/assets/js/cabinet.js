@@ -62,7 +62,11 @@
     $("app").classList.add("on");
     $("roleTag").textContent = me.role === "owner" ? "Власник" : "Майстер";
 
-    TABS = [{ id: "appts", name: "Записи", render: renderAppts }];
+    TABS = [];
+    if (me.role === "owner") {
+      TABS.push({ id: "dashboard", name: "📊 Дашборд", render: renderDashboard });
+    }
+    TABS.push({ id: "appts", name: "Записи", render: renderAppts });
     TABS.push({ id: "clients", name: "Клієнти", render: renderClients });
     if (me.role === "owner") {
       TABS.push({ id: "services", name: "Послуги", render: renderServices });
@@ -85,6 +89,146 @@
   /* ============================================================
      ЗАПИСИ
      ============================================================ */
+  /* ============================================================
+     ДАШБОРД
+     ============================================================ */
+  function renderDashboard() {
+    var main = $("main"); main.innerHTML = '<div class="empty">Завантаження…</div>';
+    api("GET", "/api/crm/dashboard").then(function (res) {
+      if (!res.j.ok) { main.innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
+      var d = res.j;
+      main.innerHTML = "";
+
+      // helper
+      function grn(kop) { return kop ? Math.round(kop / 100).toLocaleString("uk-UA") + " грн" : "0 грн"; }
+      function card(title, content) {
+        var w = el("div", "item"); w.style.marginBottom = "14px";
+        var h = el("div", ""); h.style.cssText = "font-family:'Playfair Display',serif;color:var(--cream);font-size:1rem;font-weight:500;margin-bottom:12px;";
+        h.textContent = title; w.appendChild(h);
+        var c = el("div", ""); c.innerHTML = content; w.appendChild(c);
+        return w;
+      }
+      function row3(items) {
+        var g = el("div", ""); g.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;";
+        items.forEach(function(it) {
+          var b = el("div", ""); b.style.cssText = "background:rgba(46,61,34,.22);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;";
+          b.innerHTML = '<div style="font-size:.72rem;color:var(--text-dim);margin-bottom:3px;">' + it.label + '</div><div style="color:var(--cream);font-weight:600;font-size:1rem;">' + it.val + '</div>';
+          g.appendChild(b);
+        });
+        return g;
+      }
+      function tbl(heads, rows) {
+        var t = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;">';
+        t += '<tr>' + heads.map(function(h) { return '<th style="text-align:left;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">' + h + '</th>'; }).join("") + '</tr>';
+        rows.forEach(function(r) {
+          t += '<tr>' + r.map(function(c) { return '<td style="padding:6px 6px;border-bottom:1px solid rgba(122,145,86,.08);color:var(--cream);">' + c + '</td>'; }).join("") + '</tr>';
+        });
+        t += '</table>'; return t;
+      }
+
+      /* ---- 1. Записи ---- */
+      var a = d.appointments;
+      var s1 = row3([
+        { label: "Сьогодні",  val: a.today.total  || 0 },
+        { label: "Тиждень",   val: a.week.total   || 0 },
+        { label: "Місяць",    val: a.month.total  || 0 },
+      ]);
+      var s2 = row3([
+        { label: "Виконано",    val: a.month.completed || 0 },
+        { label: "Скасовано",   val: a.month.cancelled || 0 },
+        { label: "Не прийшли",  val: a.month.no_show   || 0 },
+      ]);
+      var upcomingHtml = "";
+      if (a.upcoming_today.length) {
+        upcomingHtml = tbl(["Час","Клієнт","Послуга","Майстер"],
+          a.upcoming_today.map(function(u) { return [u.time, u.client_name, u.service_name.split("(")[0].trim(), u.master_name]; }));
+      } else {
+        upcomingHtml = '<div style="color:var(--text-dim);font-size:.84rem;padding:8px 0;">Записів на сьогодні немає</div>';
+      }
+      var apptCard = card("1. Записи", "");
+      apptCard.querySelector("div:last-child").appendChild(s1);
+      apptCard.querySelector("div:last-child").appendChild(s2);
+      var upHead = el("div",""); upHead.style.cssText = "font-size:.78rem;color:var(--text-dim);margin:10px 0 6px;";
+      upHead.textContent = "Найближчі записи сьогодні"; apptCard.querySelector("div:last-child").appendChild(upHead);
+      apptCard.querySelector("div:last-child").insertAdjacentHTML("beforeend", upcomingHtml);
+      main.appendChild(apptCard);
+
+      /* ---- 2. Майстри ---- */
+      var mRows = d.masters.map(function(m) {
+        return [m.name,
+          '<span style="font-size:.72rem;color:var(--text-dim);">' + (m.level || "—") + '</span>',
+          m.bookings || 0,
+          '<div style="display:flex;align-items:center;gap:6px;"><div style="background:rgba(46,61,34,.3);border-radius:4px;height:6px;width:60px;overflow:hidden;"><div style="background:var(--olive-light);height:100%;width:' + (m.workload_pct||0) + '%"></div></div><span>' + (m.workload_pct||0) + '%</span></div>',
+          grn(m.revenue),
+          (m.free_today_h || 0) + " год",
+        ];
+      });
+      main.appendChild(card("2. Майстри",
+        tbl(["Ім'я","Рівень","Записів","Завант.","Дохід","Вільно сьогодні"], mRows)
+      ));
+
+      /* ---- 3. Послуги ---- */
+      var svcRows = d.services.slice(0,10).map(function(s) {
+        var shortName = s.name.length > 35 ? s.name.slice(0,35) + "…" : s.name;
+        return [shortName, s.bookings||0, grn(s.revenue), grn(Math.round(s.avg_price||0))];
+      });
+      main.appendChild(card("3. Послуги (місяць)",
+        tbl(["Послуга","Записів","Дохід","Сер. чек"], svcRows)
+      ));
+
+      /* ---- 4. Клієнти ---- */
+      var cl = d.clients;
+      var c1 = row3([
+        { label: "Всього",          val: cl.total || 0 },
+        { label: "Нових (місяць)",  val: cl.new_month || 0 },
+        { label: "Повторних",       val: cl.returning_total || 0 },
+      ]);
+      var topRows = (cl.top||[]).map(function(c,i) {
+        return ["#"+(i+1), c.name, c.phone, c.visit_count + " візитів"];
+      });
+      var inactiveRows = (cl.inactive||[]).map(function(c) {
+        var days = c.last_visit_at ? Math.round((Date.now()-c.last_visit_at)/86400000) : "?";
+        return [c.name, c.phone, days + " дн. тому"];
+      });
+      var clCard = card("4. Клієнти", "");
+      var clBox = clCard.querySelector("div:last-child");
+      clBox.appendChild(c1);
+      clBox.insertAdjacentHTML("beforeend", '<div style="font-size:.78rem;color:var(--text-dim);margin:10px 0 5px;">Топ за візитами</div>');
+      clBox.insertAdjacentHTML("beforeend", tbl(["#","Ім'я","Телефон","Візити"], topRows));
+      if (inactiveRows.length) {
+        clBox.insertAdjacentHTML("beforeend", '<div style="font-size:.78rem;color:var(--text-dim);margin:10px 0 5px;">Давно не були (&gt;30 днів)</div>');
+        clBox.insertAdjacentHTML("beforeend", tbl(["Ім'я","Телефон","Остання поява"], inactiveRows));
+      }
+      main.appendChild(clCard);
+
+      /* ---- 5. Фінанси ---- */
+      var f = d.finance;
+      var f1 = row3([
+        { label: "Дохід сьогодні",  val: grn(f.today.actual) },
+        { label: "Дохід тиждень",   val: grn(f.week.actual) },
+        { label: "Дохід місяць",    val: grn(f.month.actual) },
+      ]);
+      var f2 = row3([
+        { label: "Прогноз (є записи)", val: grn((f.today.forecast||0)+(f.week.forecast||0)+(f.month.forecast||0)) },
+        { label: "Середній чек",        val: grn(f.avg_check) },
+        { label: "",                    val: "" },
+      ]);
+      var byMasterRows = (f.by_master||[]).map(function(m) { return [m.name, grn(m.revenue)]; });
+      var bySvcRows    = (f.by_service||[]).map(function(s) {
+        var n = s.name.length > 35 ? s.name.slice(0,35)+"…" : s.name;
+        return [n, s.cnt||0, grn(s.revenue)];
+      });
+      var fCard = card("5. Фінанси", "");
+      var fBox = fCard.querySelector("div:last-child");
+      fBox.appendChild(f1); fBox.appendChild(f2);
+      fBox.insertAdjacentHTML("beforeend", '<div style="font-size:.78rem;color:var(--text-dim);margin:10px 0 5px;">По майстрах</div>');
+      fBox.insertAdjacentHTML("beforeend", tbl(["Майстер","Дохід"], byMasterRows));
+      fBox.insertAdjacentHTML("beforeend", '<div style="font-size:.78rem;color:var(--text-dim);margin:10px 0 5px;">По послугах</div>');
+      fBox.insertAdjacentHTML("beforeend", tbl(["Послуга","Записів","Дохід"], bySvcRows));
+      main.appendChild(fCard);
+    });
+  }
+
   var apptDate = todayStr();
   function renderAppts() {
     var main = $("main"); main.innerHTML = "";

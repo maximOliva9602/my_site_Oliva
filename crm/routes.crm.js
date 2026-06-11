@@ -386,6 +386,149 @@ router.delete("/users/:id", owner, function (req, res) {
   res.json(auth.deleteUser(parseInt(req.params.id, 10)));
 });
 
+/* ================================================================
+   ДАШБОРД — аналітика для власника
+   ================================================================ */
+router.get("/dashboard", owner, function (req, res) {
+  const now = tz.nowKyiv();
+  const today = now.date;
+
+  // Межі тижня (Пн) і місяця
+  const dt = new Date(today + "T00:00:00");
+  const dow = dt.getDay() === 0 ? 6 : dt.getDay() - 1;
+  const weekStart = new Date(dt); weekStart.setDate(dt.getDate() - dow);
+  const wStart = weekStart.toISOString().slice(0, 10);
+  const mStart = today.slice(0, 7) + "-01";
+
+  function apptStats(from, to) {
+    const r = db.prepare(
+      `SELECT
+         COUNT(*) total,
+         SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) completed,
+         SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) cancelled,
+         SUM(CASE WHEN status='no_show'   THEN 1 ELSE 0 END) no_show,
+         SUM(CASE WHEN status IN ('pending','confirmed') THEN 1 ELSE 0 END) active
+       FROM appointments WHERE date >= ? AND date <= ?`
+    ).get(from, to);
+    return r;
+  }
+
+  // --- 1. Записи ---
+  const apptToday = apptStats(today, today);
+  const apptWeek  = apptStats(wStart, today);
+  const apptMonth = apptStats(mStart, today);
+
+  const upcomingToday = db.prepare(
+    `SELECT a.id, a.start_min, a.status, a.duration_min,
+            c.name client_name, c.phone client_phone,
+            s.name service_name, m.name master_name
+       FROM appointments a
+       JOIN clients c ON c.id=a.client_id
+       JOIN services s ON s.id=a.service_id
+       JOIN masters  m ON m.id=a.master_id
+      WHERE a.date=? AND a.status IN ('pending','confirmed')
+      ORDER BY a.start_min`
+  ).all(today).map(function (a) {
+    return Object.assign({}, a, { time: tz.fmtMin(a.start_min) });
+  });
+
+  // --- 2. Майстри ---
+  const masters = db.prepare(
+    `SELECT m.id, m.name, m.photo, m.level,
+            COUNT(a.id) bookings,
+            SUM(CASE WHEN a.status='completed' THEN a.price ELSE 0 END) revenue
+       FROM masters m
+       LEFT JOIN appointments a ON a.master_id=m.id AND a.date>=?
+      WHERE m.active=1
+      GROUP BY m.id ORDER BY bookings DESC`
+  ).all(mStart);
+
+  // Завантаженість: робочих годин на місяць (Пн-Сб, 12.5 год/день)
+  const daysInMonth = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+  const workdays = Math.round(daysInMonth * 6 / 7);
+  const maxMinPerMaster = workdays * 750; // 12.5 год = 750 хв
+
+  masters.forEach(function (m) {
+    const usedMin = db.prepare(
+      `SELECT COALESCE(SUM(duration_min),0) s FROM appointments
+        WHERE master_id=? AND date>=? AND status IN ('pending','confirmed','completed')`
+    ).get(m.id, mStart).s;
+    m.workload_pct = maxMinPerMaster > 0 ? Math.min(100, Math.round(usedMin / maxMinPerMaster * 100)) : 0;
+    // Вільні слоти сьогодні
+    const sched = db.prepare(
+      "SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=?"
+    ).get(m.id, dt.getDay() === 0 ? 0 : dt.getDay());
+    m.free_today_h = sched ? Math.round((sched.work_end - sched.work_start) / 60 * 10) / 10 : 0;
+  });
+
+  // --- 3. Послуги ---
+  const services = db.prepare(
+    `SELECT s.name, COUNT(a.id) bookings,
+            SUM(CASE WHEN a.status='completed' THEN a.price ELSE 0 END) revenue,
+            AVG(CASE WHEN a.status='completed' THEN a.price ELSE NULL END) avg_price
+       FROM services s
+       LEFT JOIN appointments a ON a.service_id=s.id AND a.date>=?
+      WHERE s.active=1
+      GROUP BY s.id ORDER BY bookings DESC`
+  ).all(mStart);
+
+  // --- 4. Клієнти ---
+  const clientStats = db.prepare(
+    `SELECT
+       COUNT(*) total,
+       SUM(CASE WHEN created_at>=? THEN 1 ELSE 0 END) new_month,
+       SUM(CASE WHEN visit_count>1 THEN 1 ELSE 0 END) returning_total
+     FROM clients`
+  ).get(new Date(mStart + "T00:00:00").getTime());
+
+  const topClients = db.prepare(
+    `SELECT name, phone, visit_count, last_visit_at FROM clients ORDER BY visit_count DESC LIMIT 5`
+  ).all();
+
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 3600 * 1000;
+  const inactiveClients = db.prepare(
+    `SELECT name, phone, visit_count, last_visit_at FROM clients
+      WHERE last_visit_at < ? AND last_visit_at IS NOT NULL ORDER BY last_visit_at ASC LIMIT 10`
+  ).all(thirtyDaysAgo);
+
+  // --- 5. Фінанси ---
+  function revenue(from, to) {
+    return db.prepare(
+      `SELECT COALESCE(SUM(price),0) s FROM appointments WHERE status='completed' AND date>=? AND date<=?`
+    ).get(from, to).s;
+  }
+  function forecast(from, to) {
+    return db.prepare(
+      `SELECT COALESCE(SUM(price),0) s FROM appointments WHERE status IN ('pending','confirmed') AND date>=? AND date<=?`
+    ).get(from, to).s;
+  }
+  const avgCheck = db.prepare(
+    `SELECT AVG(price) v FROM appointments WHERE status='completed' AND date>=?`
+  ).get(mStart).v || 0;
+
+  res.json({
+    ok: true,
+    appointments: { today: apptToday, week: apptWeek, month: apptMonth, upcoming_today: upcomingToday },
+    masters: masters,
+    services: services,
+    clients: Object.assign({}, clientStats, { top: topClients, inactive: inactiveClients }),
+    finance: {
+      today:  { actual: revenue(today, today),  forecast: forecast(today, today) },
+      week:   { actual: revenue(wStart, today),  forecast: forecast(wStart, today) },
+      month:  { actual: revenue(mStart, today),  forecast: forecast(mStart, today) },
+      by_master: db.prepare(
+        `SELECT m.name, SUM(a.price) revenue FROM appointments a JOIN masters m ON m.id=a.master_id
+          WHERE a.status='completed' AND a.date>=? GROUP BY a.master_id ORDER BY revenue DESC`
+      ).all(mStart),
+      by_service: db.prepare(
+        `SELECT s.name, COUNT(*) cnt, SUM(a.price) revenue FROM appointments a JOIN services s ON s.id=a.service_id
+          WHERE a.status='completed' AND a.date>=? GROUP BY a.service_id ORDER BY revenue DESC LIMIT 8`
+      ).all(mStart),
+      avg_check: Math.round(avgCheck),
+    },
+  });
+});
+
 /* ---- Журнал сповіщень ---- */
 router.get("/notifications", owner, function (req, res) {
   const appt = parseInt(req.query.appointment, 10);
