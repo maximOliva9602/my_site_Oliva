@@ -2,6 +2,7 @@
    Студія масажу Oliva — i18n (UA / EN)
    Перемикач у панелі; вибір зберігається в localStorage.
    Кожен текст у HTML має атрибут data-i18n="ключ".
+   Назви послуг та категорій перекладаються фразово через SRV_PHRASES.
    ============================================================ */
 (function () {
   "use strict";
@@ -26,43 +27,9 @@
       "mq.7": "Масаж обличчя", "mq.8": "Топ майстри",
 
       "srv.label": "Наші послуги", "srv.title1": "Оберіть свій", "srv.title2": "сеанс відновлення",
-      "srv.tab.top": "Топ послуги", "srv.tab.complex": "Комплекси", "srv.tab.spa": "SPA-ритуали",
+      "srv.tab.top": "Популярні", "srv.tab.all": "Усі послуги",
+      "srv.tab.complex": "Комплекси", "srv.tab.spa": "SPA-ритуали",
       "srv.tab.master": "Прайс Майстер", "srv.tab.topmaster": "Прайс Топ Майстер",
-
-      "s.top.1": "Загально-оздоровчий масаж (Топ Майстер) 60 хв",
-      "s.top.2": "Парний масаж 60 хв",
-      "s.top.3": "Загально-оздоровчий масаж (Топ Майстер) 90 хв",
-      "s.top.4": "Класичний масаж обличчя (Топ Майстер) 60 хв",
-      "s.top.5": "Антицелюлітний масаж (Топ Майстер) 60 хв",
-      "s.top.6": "Спортивний масаж (Топ Майстер) 60 хв",
-      "s.top.7": "Фітобочка (кедрова) 30 хв",
-      "s.top.8": "Загально-оздоровчий масаж (Майстер) 60 хв",
-
-      "s.cx.1": "Комплекс для схуднення та корекції фігури",
-      "s.cx.2": "Антицелюлітний комплекс (курс 10 сеансів)",
-      "s.cx.3": "Лімфодренажний масаж + обгортання",
-      "s.cx.4": "Масаж спини + шия + голова",
-
-      "s.spa.1": "Фірмовий SPA-ритуал «Oliva» (масаж + маска + аромат)",
-      "s.spa.2": "Парний SPA-ритуал для двох",
-      "s.spa.3": "Релакс-ритуал «Відновлення» (тіло + обличчя)",
-      "s.spa.4": "Фітобочка + масаж спини (детокс-ритуал)",
-
-      "s.m.1": "Загально-оздоровчий масаж (Майстер) 45 хв",
-      "s.m.2": "Загально-оздоровчий масаж (Майстер) 60 хв",
-      "s.m.3": "Загально-оздоровчий масаж (Майстер) 90 хв",
-      "s.m.4": "Антицелюлітний масаж (Майстер) 60 хв",
-      "s.m.5": "Спортивний масаж (Майстер) 60 хв",
-      "s.m.6": "Парний масаж (Майстер) 60 хв",
-
-      "s.tm.1": "Загально-оздоровчий масаж (Топ Майстер) 45 хв",
-      "s.tm.2": "Загально-оздоровчий масаж (Топ Майстер) 60 хв",
-      "s.tm.3": "Загально-оздоровчий масаж (Топ Майстер) 90 хв",
-      "s.tm.4": "Антицелюлітний масаж (Топ Майстер) 60 хв",
-      "s.tm.5": "Спортивний масаж (Топ Майстер) 60 хв",
-      "s.tm.6": "Класичний масаж обличчя (Топ Майстер) 60 хв",
-      "s.tm.7": "Парний масаж (Топ Майстер) 60 хв",
-      "s.tm.8": "Загально-оздоровчий масаж (Топ Майстер) 120 хв",
 
       "dur.30": "30 хвилин", "dur.45": "45 хв.", "dur.60": "1 година",
       "dur.60s": "1 год.", "dur.90": "1 год. 30 хв.", "dur.120": "2 год.",
@@ -93,8 +60,9 @@
       "why.f2t": "Сертифіковані майстри", "why.f2d": "Лише майстри з підтвердженою кваліфікацією та постійним підвищенням майстерності.",
       "why.f3t": "Зручний час", "why.f3d": "Приймаємо щодня з 09:00 до 21:30. Легко записатися онлайн у зручний час.",
 
-      "cta.title": "Подаруй відновлення",
-      "cta.sub": "Подарунковий сертифікат на масаж або фітобочку — завжди влучний подарунок",
+      "cta.label": "Подарунок, який відчуваєш",
+      "cta.title": "СЕРТИФІКАТ",
+      "cta.sub": "Подаруй відпочинок у студії масажу —\nзавжди влучний подарунок",
       "cta.buy": "Купити сертифікат →", "cta.book": "Записатися онлайн",
 
       "con.label": "Де нас знайти", "con.title": "Контакти",
@@ -130,43 +98,9 @@
       "mq.7": "Face massage", "mq.8": "Top therapists",
 
       "srv.label": "Our services", "srv.title1": "Choose your", "srv.title2": "recovery session",
-      "srv.tab.top": "Top services", "srv.tab.complex": "Packages", "srv.tab.spa": "SPA rituals",
+      "srv.tab.top": "Popular", "srv.tab.all": "All services",
+      "srv.tab.complex": "Packages", "srv.tab.spa": "SPA rituals",
       "srv.tab.master": "Price · Master", "srv.tab.topmaster": "Price · Top Master",
-
-      "s.top.1": "Wellness massage (Top Master) 60 min",
-      "s.top.2": "Couples massage 60 min",
-      "s.top.3": "Wellness massage (Top Master) 90 min",
-      "s.top.4": "Classic face massage (Top Master) 60 min",
-      "s.top.5": "Anti-cellulite massage (Top Master) 60 min",
-      "s.top.6": "Sports massage (Top Master) 60 min",
-      "s.top.7": "Phyto-barrel (cedar) 30 min",
-      "s.top.8": "Wellness massage (Master) 60 min",
-
-      "s.cx.1": "Slimming & body-shaping package",
-      "s.cx.2": "Anti-cellulite package (course of 10)",
-      "s.cx.3": "Lymphatic drainage + body wrap",
-      "s.cx.4": "Back + neck + head massage",
-
-      "s.spa.1": "Signature SPA ritual “Oliva” (massage + mask + aroma)",
-      "s.spa.2": "Couples SPA ritual for two",
-      "s.spa.3": "Relax ritual “Recovery” (body + face)",
-      "s.spa.4": "Phyto-barrel + back massage (detox ritual)",
-
-      "s.m.1": "Wellness massage (Master) 45 min",
-      "s.m.2": "Wellness massage (Master) 60 min",
-      "s.m.3": "Wellness massage (Master) 90 min",
-      "s.m.4": "Anti-cellulite massage (Master) 60 min",
-      "s.m.5": "Sports massage (Master) 60 min",
-      "s.m.6": "Couples massage (Master) 60 min",
-
-      "s.tm.1": "Wellness massage (Top Master) 45 min",
-      "s.tm.2": "Wellness massage (Top Master) 60 min",
-      "s.tm.3": "Wellness massage (Top Master) 90 min",
-      "s.tm.4": "Anti-cellulite massage (Top Master) 60 min",
-      "s.tm.5": "Sports massage (Top Master) 60 min",
-      "s.tm.6": "Classic face massage (Top Master) 60 min",
-      "s.tm.7": "Couples massage (Top Master) 60 min",
-      "s.tm.8": "Wellness massage (Top Master) 120 min",
 
       "dur.30": "30 minutes", "dur.45": "45 min", "dur.60": "1 hour",
       "dur.60s": "1 hr", "dur.90": "1 hr 30 min", "dur.120": "2 hrs",
@@ -177,11 +111,11 @@
       "phyto.badge": "Cedar phyto-barrel",
       "phyto.label": "Warmth worth gifting",
       "phyto.title": "Phyto-barrel",
-      "phyto.lead": "Not just a procedure. Not just steam. It’s deep muscle warming, gentle body cleansing, relaxation without strain on the heart ❤️",
+      "phyto.lead": "Not just a procedure. Not just steam. It's deep muscle warming, gentle body cleansing, relaxation without strain on the heart ❤️",
       "phyto.p1": "Your head stays outside — you breathe freely while the body slowly lets go of tension.",
       "phyto.giftTitle": "🎁 Gift certificate for a phyto-barrel session",
       "phyto.g1": "— for a loved one", "phyto.g2": "— for mom",
-      "phyto.g3": "— for him after the gym", "phyto.g4": "— or just “because you’re tired”",
+      "phyto.g3": "— for him after the gym", "phyto.g4": "— or just \"because you're tired\"",
       "phyto.warm": "Warmth is always spot-on. Care is always in season.",
       "phyto.loc": "Shuliavka, Solomianskyi district",
       "phyto.cta": "Gift a certificate", "phyto.reel": "Watch the reel ↗",
@@ -197,8 +131,9 @@
       "why.f2t": "Certified therapists", "why.f2d": "Only therapists with confirmed qualifications and constant skill development.",
       "why.f3t": "Convenient hours", "why.f3d": "Open daily from 09:00 to 21:30. Easy to book online at a convenient time.",
 
-      "cta.title": "Gift recovery",
-      "cta.sub": "A gift certificate for a massage or phyto-barrel — always a perfect present",
+      "cta.label": "A gift you feel",
+      "cta.title": "CERTIFICATE",
+      "cta.sub": "Gift a massage studio experience —\nalways a perfect present",
       "cta.buy": "Buy a certificate →", "cta.book": "Book online",
 
       "con.label": "Where to find us", "con.title": "Contacts",
@@ -209,16 +144,112 @@
       "footer.copy": "© 2026 Oliva Massage Studio · Kyiv, Solomianskyi district",
 
       "chat.name": "Oliva Administrator", "chat.status": "Usually replies quickly",
-      "chat.greet": "Hi! 👋 This is Oliva massage studio. We’ll help with services, prices or booking. How is it easier to reach us?",
+      "chat.greet": "Hi! 👋 This is Oliva massage studio. We'll help with services, prices or booking. How is it easier to reach us?",
       "chat.call": "📞 Call us",
 
       "sticky.book": "Book online"
     }
   };
 
+  /* -------------------------------------------------------
+     Фразовий словник для послуг (UA → EN)
+     Порядок важливий: специфічніші фрази — першими.
+  ------------------------------------------------------- */
+  var SRV_PHRASES = [
+    // SPA rituals (specific first)
+    ['SPA Ритуал "Фіто-оновлення тіла"',           'SPA Ritual "Phyto Body Renewal"'],
+    ['Тепловий SPA-ритуал "Глибоке прогрівання для двох"', 'Thermal SPA ritual "Deep Warming for Two"'],
+    ['Обгортання Amore Shemen (гаряче)',             'Amore Shemen wrap (hot)'],
+    ['Обгортання Amore Shemen (холодне)',            'Amore Shemen wrap (cold)'],
+    ['Обгортання Amore Shemen',                      'Amore Shemen wrap'],
+    ['Обгортання Bruno Vassari Detox',               'Bruno Vassari Detox wrap'],
+    ['Гаряче (бандажне) обгортання SPA Seaweed',    'Hot bandage wrap SPA Seaweed'],
+    ['🔥 Гаряча експрес-трансформація тіла',        '🔥 Hot Express Body Transformation'],
+    ['❄️ Холодне моделювання тіла',                 '❄️ Cold Body Sculpting'],
+    ['🔥 Гаряче моделювання тіла',                  '🔥 Hot Body Sculpting'],
+    // Service types
+    ['Загально-оздоровчий масаж',                   'Wellness massage'],
+    ['Антистресовий масаж',                          'Anti-stress massage'],
+    ['Парний масаж',                                 'Couples massage'],
+    ['Масаж спини',                                  'Back massage'],
+    ['Масаж шийно-комірцевої зони',                  'Neck & shoulder massage'],
+    ['Класичний масаж обличчя',                      'Classic face massage'],
+    ['Лімфодренажний масаж',                         'Lymphatic drainage massage'],
+    ['Антицелюлітний масаж',                         'Anti-cellulite massage'],
+    ['Паріння у фітобочці',                          'Phyto-barrel steam'],
+    ['Дитячий масаж',                                "Children's massage"],
+    ['Масаж в чотири руки',                          'Four-hands massage'],
+    ['Масаж гарячим камінням',                       'Hot stone massage'],
+    ['SPA-ритуали',                                  'SPA rituals'],
+    // Level suffixes
+    ['(Топ Майстер)',                                '(Top Master)'],
+    ['(Майстер)',                                    '(Master)'],
+    // Duration words (after service names to avoid conflicts)
+    [' хв',                                          ' min'],
+    [' год. 40 хв.',                                 ' hr 40 min'],
+    [' год. 30 хв.',                                 ' hr 30 min'],
+    [' год. 15 хв.',                                 ' hr 15 min'],
+    [' год. 10 хв.',                                 ' hr 10 min'],
+    [' год.',                                        ' hr'],
+    ['год',                                          'hr'],
+  ];
+
+  /* Translate a single text using the phrase dictionary */
+  function translateText(text, lang) {
+    if (lang === 'uk') return text; // UK — original, handled via data-uk restore
+    var result = text;
+    for (var i = 0; i < SRV_PHRASES.length; i++) {
+      // Simple global replace of all occurrences
+      result = result.split(SRV_PHRASES[i][0]).join(SRV_PHRASES[i][1]);
+    }
+    return result;
+  }
+
+  /* Apply phrase-based translation to all service content elements */
+  function applyServicePhrases(lang) {
+    var selectors = [
+      '.srv-card-name',
+      '.srv-list-name',
+      '.srv-category-label',
+      '.srv-list-dur',
+    ];
+    selectors.forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        // Save original Ukrainian text on first encounter
+        if (!el.hasAttribute('data-uk')) {
+          el.setAttribute('data-uk', el.textContent);
+        }
+        if (lang === 'uk') {
+          el.textContent = el.getAttribute('data-uk');
+        } else {
+          el.textContent = translateText(el.getAttribute('data-uk'), lang);
+        }
+      });
+    });
+
+    // Translate "Book" buttons in service lists that have no data-i18n
+    var dict = DICT[lang] || DICT.uk;
+    document.querySelectorAll('.srv-card-btn:not([data-i18n])').forEach(function (el) {
+      if (!el.hasAttribute('data-uk')) {
+        el.setAttribute('data-uk', el.textContent);
+      }
+      el.textContent = lang === 'uk' ? (el.getAttribute('data-uk') || dict['book']) : dict['book'];
+    });
+
+    // Currency in list items (.cur span)
+    document.querySelectorAll('.cur').forEach(function (el) {
+      if (!el.hasAttribute('data-uk')) {
+        el.setAttribute('data-uk', el.textContent);
+      }
+      el.textContent = lang === 'uk' ? (el.getAttribute('data-uk') || ' грн') : ' UAH';
+    });
+  }
+
   function apply(lang) {
     var dict = DICT[lang] || DICT.uk;
     document.documentElement.lang = lang;
+
+    // Standard data-i18n elements
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
       var key = el.getAttribute("data-i18n");
       if (dict[key] != null) el.textContent = dict[key];
@@ -227,13 +258,19 @@
       var key = el.getAttribute("data-i18n-placeholder");
       if (dict[key] != null) el.setAttribute("placeholder", dict[key]);
     });
+
+    // Phrase-based service content
+    applyServicePhrases(lang);
+
+    // Language switcher buttons state
     document.querySelectorAll(".lang-switch button").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-lang") === lang);
     });
+
     try { localStorage.setItem("oliva_lang", lang); } catch (e) {}
   }
 
-  // Експортуємо мінімальний API
+  // Мінімальний публічний API
   window.OlivaI18n = {
     apply: apply,
     get: function () {
