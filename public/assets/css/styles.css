@@ -51,12 +51,14 @@ em { font-style: italic; }
 }
 .topbar__socials { display: flex; align-items: center; gap: 6px; }
 .soc {
-  width: 30px; height: 30px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   color: var(--text-dim);
   border: 1px solid transparent;
   transition: color .25s, background .25s, border-color .25s, transform .2s;
+  font-size: 18px;
 }
+.soc svg { width: 18px; height: 18px; }
 .soc:hover { color: var(--cream); background: var(--olive); border-color: var(--olive-light); transform: translateY(-1px); }
 .topbar__contacts { display: flex; align-items: center; gap: 22px; }
 .topbar__item {
