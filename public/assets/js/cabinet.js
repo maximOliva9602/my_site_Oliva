@@ -636,22 +636,42 @@
       var sched = {}, brk = {};
       (res.j.schedule || []).forEach(function (r) { sched[r.weekday] = r; });
       (res.j.breaks || []).forEach(function (r) { brk[r.weekday] = r; }); // одна перерва/день у UI
-      var box = $("schBody"); box.className = ""; box.innerHTML = "";
-      box.appendChild(el("div", "muted", "Порожні поля = вихідний. Час у форматі ГГ:ХХ."));
+      var box = $("schBody"); box.className = "sched-grid"; box.innerHTML = "";
+      box.appendChild(el("div", "muted", "Порожні поля = вихідний."));
       var rows = [];
-      for (var wd = 1; wd <= 6; wd++) rows.push(wd); rows.push(0); // Пн..Сб, Нд
+      for (var wd = 1; wd <= 6; wd++) rows.push(wd); rows.push(0);
       rows.forEach(function (wd) {
-        var r = el("div", "sched-row");
+        var hasDay = !!sched[wd];
+        var r = el("div", "sched-row" + (hasDay ? "" : " day-off"));
         r.appendChild(el("span", "wd", DOW[wd]));
-        var ws = el("input"); ws.type = "time"; ws.dataset.wd = wd; ws.dataset.k = "ws";
-        var we = el("input"); we.type = "time"; we.dataset.wd = wd; we.dataset.k = "we";
+
+        // Робочий час
+        var wBlock = el("div", "sched-time");
+        var wsL = el("label", "", "Початок"); wsL.htmlFor = "ws" + wd;
+        var ws = el("input"); ws.type = "time"; ws.id = "ws" + wd; ws.dataset.wd = wd; ws.dataset.k = "ws";
+        var sepW = el("span", "sep", "–");
+        var weL = el("label", "", "Кінець"); weL.htmlFor = "we" + wd;
+        var we = el("input"); we.type = "time"; we.id = "we" + wd; we.dataset.wd = wd; we.dataset.k = "we";
         if (sched[wd]) { ws.value = fmtMin(sched[wd].work_start); we.value = fmtMin(sched[wd].work_end); }
-        r.appendChild(ws); r.appendChild(el("span", "muted", "–")); r.appendChild(we);
-        r.appendChild(el("span", "muted", "перерва"));
-        var bs = el("input"); bs.type = "time"; bs.dataset.wd = wd; bs.dataset.k = "bs";
-        var be = el("input"); be.type = "time"; be.dataset.wd = wd; be.dataset.k = "be";
+        wBlock.appendChild(wsL); wBlock.appendChild(ws); wBlock.appendChild(sepW);
+        wBlock.appendChild(weL); wBlock.appendChild(we);
+
+        // Перерва
+        var bBlock = el("div", "sched-time");
+        var bsL = el("label", "", "Перерва"); bsL.htmlFor = "bs" + wd;
+        var bs = el("input"); bs.type = "time"; bs.id = "bs" + wd; bs.dataset.wd = wd; bs.dataset.k = "bs";
+        var sepB = el("span", "sep", "–");
+        var beL = el("label", "", "До"); beL.htmlFor = "be" + wd;
+        var be = el("input"); be.type = "time"; be.id = "be" + wd; be.dataset.wd = wd; be.dataset.k = "be";
         if (brk[wd]) { bs.value = fmtMin(brk[wd].break_start); be.value = fmtMin(brk[wd].break_end); }
-        r.appendChild(bs); r.appendChild(el("span", "muted", "–")); r.appendChild(be);
+        bBlock.appendChild(bsL); bBlock.appendChild(bs); bBlock.appendChild(sepB);
+        bBlock.appendChild(beL); bBlock.appendChild(be);
+
+        // Змінюємо клас при редагуванні
+        function refreshDayOff() { r.className = "sched-row" + (ws.value || we.value ? "" : " day-off"); }
+        ws.addEventListener("change", refreshDayOff); we.addEventListener("change", refreshDayOff);
+
+        r.appendChild(wBlock); r.appendChild(bBlock);
         box.appendChild(r);
       });
       var foot = el("div", "modal-foot");
@@ -744,7 +764,7 @@
         '<h3>' + (u ? "Акаунт майстра" : "Новий акаунт") + '</h3>' +
         '<label>Логін</label><input type="text" id="uName" maxlength="40" />' +
         '<label>' + (u ? "Новий пароль (порожньо = без змін)" : "Пароль") + '</label>' +
-        '<div class="pass-wrap"><input type="password" id="uPass" /><button type="button" class="pass-eye" id="uPassEye" title="Показати/сховати пароль">👁</button></div>' +
+        '<div class="pass-wrap"><input type="password" id="uPass" /><button type="button" class="pass-eye" id="uPassEye" title="Показати/сховати пароль"><svg id="uPassIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button></div>' +
         '<label>Майстер</label><select id="uMaster"></select>' +
         '<div class="err" id="uErr"></div>' +
         '<div class="modal-foot"><button class="btn btn-ghost" id="uCancel">Скасувати</button><button class="btn btn-primary" id="uSave">Зберегти</button></div>'
@@ -756,7 +776,10 @@
         var inp = $("uPass");
         var show = inp.type === "password";
         inp.type = show ? "text" : "password";
-        this.textContent = show ? "🙈" : "👁";
+        var icon = $("uPassIcon");
+        icon.innerHTML = show
+          ? '<path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 012.04-3.6m2.88-2.516A9.96 9.96 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.372 2.607M15 12a3 3 0 11-4.243-4.243M3 3l18 18"/>'
+          : '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
         inp.focus();
       });
       $("uCancel").addEventListener("click", closeModal);

@@ -88,10 +88,10 @@
   .modal-card input, .modal-card select, .modal-card textarea { width:100%; }
   .modal-foot { display:flex; gap:10px; margin-top:18px; }
   .modal-foot .btn { flex:1; }
-  .pass-wrap { position:relative; }
-  .pass-wrap input { padding-right:40px; }
-  .pass-eye { position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:1rem; opacity:.6; padding:0; line-height:1; }
-  .pass-eye:hover { opacity:1; }
+  .pass-wrap { position:relative; display:block; }
+  .pass-wrap input { width:100%; padding-right:44px; box-sizing:border-box; }
+  .pass-eye { position:absolute; right:0; top:0; bottom:0; width:40px; display:flex; align-items:center; justify-content:center; background:none; border:none; border-left:1px solid var(--line); border-radius:0 10px 10px 0; cursor:pointer; color:var(--text-dim); font-size:.85rem; transition:color .2s; }
+  .pass-eye:hover { color:var(--olive-light); }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
   .chip { border:1px solid var(--line); border-radius:20px; padding:6px 12px; font-size:.8rem; color:var(--text-dim); }
@@ -99,9 +99,15 @@
   .slots { display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:7px; margin-top:6px; }
   .slot { background:rgba(46,61,34,.2); border:1px solid var(--line); border-radius:8px; padding:9px 0; text-align:center; font-size:.85rem; color:var(--cream); }
   .slot.sel { background:var(--olive-light); color:var(--black); font-weight:600; }
-  .sched-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; font-size:.85rem; }
-  .sched-row .wd { width:34px; color:var(--text-dim); }
-  .sched-row input { width:78px; }
+  .sched-grid { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+  .sched-row { display:grid; grid-template-columns:36px 1fr 1fr; gap:8px; align-items:center; background:rgba(46,61,34,.18); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .sched-row.day-off { opacity:.45; }
+  .sched-row .wd { font-size:.82rem; font-weight:600; color:var(--olive-light); text-align:center; background:rgba(122,145,86,.12); border-radius:6px; padding:4px 0; }
+  .sched-row.day-off .wd { color:var(--text-dim); background:rgba(255,255,255,.04); }
+  .sched-time { display:flex; align-items:center; gap:6px; }
+  .sched-time label { font-size:.72rem; color:var(--text-dim); white-space:nowrap; min-width:38px; }
+  .sched-time input { flex:1; min-width:0; padding:7px 8px; font-size:.84rem; }
+  .sched-time .sep { color:var(--text-dim); font-size:.9rem; }
   .err { color:var(--err); font-size:.82rem; min-height:18px; margin-top:6px; }
   .muted { color:var(--text-dim); font-size:.82rem; }
 </style>
