@@ -149,6 +149,8 @@ app.post("/api/certificate", async function (req, res) {
   var recipient = String(d.recipient || "").slice(0, 100).trim();
   var service   = String(d.service   || "").slice(0, 150).trim();
   var price     = String(d.price     || "").slice(0, 20).trim();
+  var service2  = String(d.service2  || "").slice(0, 150).trim();
+  var price2    = String(d.price2    || "").slice(0, 20).trim();
   var certType  = String(d.certType  || "").slice(0, 30).trim();
   var delivery  = String(d.delivery  || "").slice(0, 50).trim();
   var address   = String(d.address   || "").slice(0, 200).trim();
@@ -162,12 +164,18 @@ app.post("/api/certificate", async function (req, res) {
     ? `🏠 <b>Отримання:</b> У студії`
     : `📦 <b>Доставка:</b> ${delivery}` + (address ? ` — ${address}` : "");
 
+  var serviceLine = service2
+    ? `💆 <b>Послуга 1:</b> ${service} — ${price} грн\n💆 <b>Послуга 2:</b> ${service2} — ${price2} грн`
+    : `💆 <b>Послуга:</b> ${service}`;
+
+  var totalPrice = d.totalPrice ? `${d.totalPrice} грн` : `${price} грн`;
+
   var text = `🎁 <b>Нове замовлення сертифіката!</b>\n\n` +
     `👤 <b>Замовник:</b> ${name}\n` +
     `📞 <b>Телефон:</b> ${phone}\n` +
     `🎀 <b>Сертифікат для:</b> ${recipient}\n` +
-    `💆 <b>Послуга:</b> ${service}\n` +
-    `💰 <b>Вартість:</b> ${price} грн\n` +
+    serviceLine + `\n` +
+    `💰 <b>Вартість:</b> ${totalPrice}\n` +
     `📄 <b>Тип:</b> ${certType}\n` +
     deliveryLine +
     (wishes ? `\n📝 <b>Побажання:</b> ${wishes}` : "");
