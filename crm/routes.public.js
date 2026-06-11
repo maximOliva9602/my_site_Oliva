@@ -15,6 +15,18 @@ const notify = require("./notify");
 const router = express.Router();
 const clean = function (s, max) { return String(s == null ? "" : s).slice(0, max || 200).trim(); };
 
+/* Всі активні майстри з фото та рівнем */
+router.get("/all-masters", function (req, res) {
+  const masters = db.prepare(
+    "SELECT id, name, photo, level FROM masters WHERE active = 1 ORDER BY sort_order, id"
+  ).all();
+  const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id = ?");
+  masters.forEach(function (m) {
+    m.service_ids = svcStmt.all(m.id).map(function (r) { return r.service_id; });
+  });
+  res.json({ ok: true, masters: masters });
+});
+
 /* Активні послуги */
 router.get("/services", function (req, res) {
   const rows = db.prepare(
