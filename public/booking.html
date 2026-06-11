@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Oliva — Онлайн-запис</title>
+<link rel="icon" href="assets/img/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #080A07; --black-2: #0e120c; --panel: #12160e;
+    --olive: #2E3D22; --olive-mid: #4A5E35; --olive-light: #7A9156;
+    --cream: #F2EDE4; --text: #D4CFC6; --text-dim: #8A8880;
+    --line: rgba(122,145,86,0.18); --err: #e0816b;
+  }
+  body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--text); min-height: 100vh; padding: 24px 16px 60px; }
+  .pf { font-family: 'Playfair Display', serif; }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 26px; }
+  header img { width: 56px; height: 56px; object-fit: contain; margin-bottom: 10px; }
+  header h1 { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.5rem; font-weight: 600; }
+  header p { color: var(--text-dim); font-size: 0.85rem; margin-top: 4px; }
+
+  .steps { display: flex; gap: 6px; margin-bottom: 22px; }
+  .steps .s { flex: 1; height: 4px; border-radius: 2px; background: rgba(122,145,86,0.16); transition: background .3s; }
+  .steps .s.on { background: var(--olive-light); }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 16px; }
+  .card h2 { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.1rem; margin-bottom: 16px; font-weight: 500; }
+
+  .opt { width: 100%; text-align: left; background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; color: var(--cream); font-size: 0.95rem; cursor: pointer; margin-bottom: 10px; transition: all .2s; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .opt:hover { border-color: var(--olive-light); background: rgba(46,61,34,0.32); }
+  .opt.sel { border-color: var(--olive-light); background: rgba(122,145,86,0.16); }
+  .opt .meta { color: var(--text-dim); font-size: 0.8rem; white-space: nowrap; }
+
+  input[type=date], input[type=text], input[type=tel], textarea {
+    width: 100%; background: rgba(46,61,34,0.22); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; color: var(--cream); font-size: 0.95rem; font-family: inherit; margin-bottom: 12px;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  label.fld { display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px; }
+
+  .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+  .slot { background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 9px; padding: 11px 0; color: var(--cream); font-size: 0.9rem; cursor: pointer; text-align: center; transition: all .15s; }
+  .slot:hover { border-color: var(--olive-light); }
+  .slot.sel { background: var(--olive-light); color: var(--black); font-weight: 600; border-color: transparent; }
+  .empty { color: var(--text-dim); font-size: 0.88rem; text-align: center; padding: 18px 0; }
+
+  .row { display: flex; gap: 10px; margin-top: 4px; }
+  .btn { flex: 1; border: none; border-radius: 10px; padding: 13px; font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .2s, opacity .2s; }
+  .btn-primary { background: var(--olive-light); color: var(--black); }
+  .btn-primary:hover { background: #8FA864; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-ghost { background: none; border: 1px solid var(--line); color: var(--text-dim); }
+  .btn-ghost:hover { color: var(--cream); border-color: var(--olive-light); }
+  .err { color: var(--err); font-size: 0.84rem; margin-top: 8px; min-height: 18px; text-align: center; }
+  .hide { display: none !important; }
+
+  .summary { font-size: 0.92rem; line-height: 1.9; }
+  .summary b { color: var(--cream); font-weight: 500; }
+  .done { text-align: center; padding: 20px 0; }
+  .done .ico { font-size: 2.6rem; margin-bottom: 10px; }
+  .done h2 { color: var(--olive-light); }
+  .done p { color: var(--text); margin-top: 10px; line-height: 1.7; }
+  a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light); text-decoration: none; font-size: 0.88rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="assets/img/logo.png" alt="Oliva" />
+    <h1 class="pf">Онлайн-запис</h1>
+    <p>Студія масажу Oliva</p>
+  </header>
+
+  <div class="steps">
+    <div class="s on" data-s="1"></div><div class="s" data-s="2"></div>
+    <div class="s" data-s="3"></div><div class="s" data-s="4"></div>
+  </div>
+
+  <!-- Крок 1: послуга -->
+  <div class="card" id="step1">
+    <h2>1. Оберіть послугу</h2>
+    <div id="serviceList"><div class="empty">Завантаження…</div></div>
+  </div>
+
+  <!-- Крок 2: майстер -->
+  <div class="card hide" id="step2">
+    <h2>2. Оберіть майстра</h2>
+    <div id="masterList"></div>
+    <div class="row"><button class="btn btn-ghost" data-back="1">Назад</button></div>
+  </div>
+
+  <!-- Крок 3: дата + час -->
+  <div class="card hide" id="step3">
+    <h2>3. Дата та час</h2>
+    <label class="fld">Дата</label>
+    <input type="date" id="dateInput" />
+    <div id="slotsWrap"><div class="empty">Оберіть дату</div></div>
+    <div class="row" style="margin-top:14px"><button class="btn btn-ghost" data-back="2">Назад</button></div>
+  </div>
+
+  <!-- Крок 4: контакти + підтвердження -->
+  <div class="card hide" id="step4">
+    <h2>4. Ваші дані</h2>
+    <div class="summary" id="summary"></div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:14px 0" />
+    <label class="fld">Ім'я</label>
+    <input type="text" id="nameInput" placeholder="Ваше ім'я" maxlength="100" />
+    <label class="fld">Телефон</label>
+    <input type="tel" id="phoneInput" placeholder="+380 __ ___ __ __" maxlength="30" />
+    <label class="fld">Коментар (необов'язково)</label>
+    <textarea id="commentInput" maxlength="500" placeholder="Побажання…"></textarea>
+    <div class="err" id="bookErr"></div>
+    <div class="row">
+      <button class="btn btn-ghost" data-back="3">Назад</button>
+      <button class="btn btn-primary" id="bookBtn">Підтвердити запис</button>
+    </div>
+  </div>
+
+  <!-- Готово -->
+  <div class="card hide" id="stepDone">
+    <div class="done">
+      <div class="ico">✅</div>
+      <h2 class="pf">Запис прийнято!</h2>
+      <p id="doneText"></p>
+      <a class="back-site" href="/">← На головну</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var state = { service: null, master: null, date: "", start_min: null };
+  var DOW = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+
+  function $(id) { return document.getElementById(id); }
+  function show(step) {
+    ["step1","step2","step3","step4","stepDone"].forEach(function (s) { $(s).classList.add("hide"); });
+    $(step).classList.remove("hide");
+    var n = { step1:1, step2:2, step3:3, step4:4, stepDone:4 }[step];
+    document.querySelectorAll(".steps .s").forEach(function (el) {
+      el.classList.toggle("on", parseInt(el.getAttribute("data-s"), 10) <= n);
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  function money(kop) { return kop ? (kop / 100).toFixed(0) + " грн" : ""; }
+
+  /* --- Крок 1: послуги --- */
+  fetch("/api/public/services").then(function (r) { return r.json(); }).then(function (j) {
+    var box = $("serviceList"); box.innerHTML = "";
+    if (!j.ok || !j.services.length) { box.innerHTML = '<div class="empty">Послуги тимчасово недоступні</div>'; return; }
+    j.services.forEach(function (s) {
+      var b = document.createElement("button");
+      b.className = "opt";
+      b.innerHTML = '<span></span><span class="meta"></span>';
+      b.querySelector("span").textContent = s.name;
+      b.querySelector(".meta").textContent = s.duration_min + " хв" + (s.price ? " · " + money(s.price) : "");
+      b.addEventListener("click", function () {
+        state.service = s; state.master = null; state.start_min = null;
+        loadMasters();
+      });
+      box.appendChild(b);
+    });
+  });
+
+  /* --- Крок 2: майстри --- */
+  function loadMasters() {
+    var box = $("masterList"); box.innerHTML = '<div class="empty">Завантаження…</div>';
+    show("step2");
+    fetch("/api/public/masters?service=" + state.service.id).then(function (r) { return r.json(); }).then(function (j) {
+      box.innerHTML = "";
+      var any = document.createElement("button");
+      any.className = "opt"; any.innerHTML = '<span>Будь-який майстер</span><span class="meta">найближчий вільний час</span>';
+      any.addEventListener("click", function () { state.master = { id: "any", name: "Будь-який майстер" }; goDate(); });
+      box.appendChild(any);
+      (j.masters || []).forEach(function (m) {
+        var b = document.createElement("button");
+        b.className = "opt"; b.innerHTML = '<span></span>';
+        b.querySelector("span").textContent = m.name;
+        b.addEventListener("click", function () { state.master = m; goDate(); });
+        box.appendChild(b);
+      });
+      if (!j.masters || !j.masters.length) {
+        var note = document.createElement("div"); note.className = "empty";
+        note.textContent = "Для цієї послуги поки немає окремих майстрів — оберіть «Будь-який».";
+        box.appendChild(note);
+      }
+    });
+  }
+
+  /* --- Крок 3: дата + слоти --- */
+  function goDate() {
+    var d = $("dateInput");
+    var today = new Date(); today.setHours(0,0,0,0);
+    var min = today.toISOString().slice(0,10);
+    d.min = min; if (!d.value || d.value < min) d.value = min;
+    $("slotsWrap").innerHTML = '<div class="empty">Завантаження…</div>';
+    show("step3");
+    loadSlots();
+  }
+  $("dateInput").addEventListener("change", function () { state.start_min = null; loadSlots(); });
+
+  function loadSlots() {
+    state.date = $("dateInput").value;
+    if (!state.date) return;
+    var wrap = $("slotsWrap"); wrap.innerHTML = '<div class="empty">Завантаження…</div>';
+    var url = "/api/public/slots?service=" + state.service.id + "&master=" + state.master.id + "&date=" + state.date;
+    fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      wrap.innerHTML = "";
+      if (!j.ok || !j.slots.length) { wrap.innerHTML = '<div class="empty">На цю дату вільних віконець немає. Оберіть іншу.</div>'; return; }
+      var grid = document.createElement("div"); grid.className = "slots";
+      j.slots.forEach(function (s) {
+        var b = document.createElement("div"); b.className = "slot"; b.textContent = s.time;
+        b.addEventListener("click", function () {
+          grid.querySelectorAll(".slot").forEach(function (x) { x.classList.remove("sel"); });
+          b.classList.add("sel"); state.start_min = s.start_min;
+          setTimeout(goConfirm, 180);
+        });
+        grid.appendChild(b);
+      });
+      wrap.appendChild(grid);
+    });
+  }
+
+  /* --- Крок 4: підтвердження --- */
+  function goConfirm() {
+    var dt = new Date(state.date + "T00:00:00");
+    var h = Math.floor(state.start_min/60), m = state.start_min%60;
+    var time = String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+    $("summary").innerHTML =
+      "Послуга: <b>" + state.service.name + "</b><br>" +
+      "Майстер: <b>" + state.master.name + "</b><br>" +
+      "Дата: <b>" + DOW[dt.getDay()] + ", " + state.date.split("-").reverse().slice(0,2).join(".") + "</b><br>" +
+      "Час: <b>" + time + "</b>";
+    show("step4");
+  }
+
+  /* --- бронювання --- */
+  $("bookBtn").addEventListener("click", function () {
+    var name = $("nameInput").value.trim();
+    var phone = $("phoneInput").value.trim();
+    var err = $("bookErr"); err.textContent = "";
+    if (!name) { err.textContent = "Вкажіть ім'я"; return; }
+    if (phone.replace(/\D/g,"").length < 9) { err.textContent = "Вкажіть коректний телефон"; return; }
+    var btn = this; btn.disabled = true; btn.textContent = "Зачекайте…";
+    fetch("/api/public/book", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service: state.service.id, master: state.master.id, date: state.date,
+        start_min: state.start_min, name: name, phone: phone, comment: $("commentInput").value.trim()
+      })
+    }).then(function (r) { return r.json().then(function (j) { return { code: r.status, j: j }; }); })
+      .then(function (res) {
+        btn.disabled = false; btn.textContent = "Підтвердити запис";
+        if (res.code === 409) {
+          err.textContent = "На жаль, це віконце щойно зайняли. Оберіть інший час.";
+          setTimeout(function () { goDate(); }, 1200); return;
+        }
+        if (!res.j.ok) { err.textContent = "Не вдалося створити запис. Спробуйте ще раз."; return; }
+        var time = $("summary").textContent;
+        $("doneText").innerHTML = "Ми надіслали підтвердження на ваш телефон.<br>" +
+          "Нагадаємо про візит за 24 години.<br><br>" +
+          "<b>" + state.service.name + "</b> · " + state.master.name + "<br>" +
+          state.date.split("-").reverse().slice(0,2).join(".") + ", " +
+          (String(Math.floor(state.start_min/60)).padStart(2,"0")+":"+String(state.start_min%60).padStart(2,"0"));
+        show("stepDone");
+      }).catch(function () {
+        btn.disabled = false; btn.textContent = "Підтвердити запис";
+        err.textContent = "Помилка зʼєднання. Спробуйте ще раз.";
+      });
+  });
+
+  /* --- кнопки «Назад» --- */
+  document.querySelectorAll("[data-back]").forEach(function (b) {
+    b.addEventListener("click", function () { show("step" + b.getAttribute("data-back")); });
+  });
+})();
+</script>
+</body>
+</html>

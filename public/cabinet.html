@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Oliva — Кабінет CRM</title>
+<link rel="icon" href="assets/img/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black:#080A07; --panel:#12160e; --panel-2:#171c11;
+    --olive:#2E3D22; --olive-light:#7A9156; --cream:#F2EDE4;
+    --text:#D4CFC6; --text-dim:#8A8880; --line:rgba(122,145,86,0.18); --err:#e0816b;
+    --ok:#7A9156; --warn:#caa45a;
+  }
+  body { font-family:'Inter',sans-serif; background:var(--black); color:var(--text); min-height:100vh; }
+  .pf { font-family:'Playfair Display',serif; }
+  button { font-family:inherit; cursor:pointer; }
+  input, select, textarea { font-family:inherit; }
+
+  /* login */
+  .login { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .login-card { width:100%; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:32px; text-align:center; }
+  .login-card img { width:60px; height:60px; object-fit:contain; margin:0 auto 12px; display:block; }
+  .login-card h1 { font-size:1.3rem; color:var(--cream); margin-bottom:4px; }
+  .login-card p { font-size:.83rem; color:var(--text-dim); margin-bottom:20px; }
+  .login-card input { width:100%; background:rgba(46,61,34,.25); border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--cream); font-size:.95rem; margin-bottom:10px; }
+  .login-card button { width:100%; background:var(--olive-light); color:var(--black); border:none; border-radius:10px; padding:12px; font-size:.95rem; font-weight:600; }
+  .login-err { color:var(--err); font-size:.82rem; margin-top:10px; min-height:18px; }
+
+  /* app */
+  .app { display:none; }
+  .app.on { display:block; }
+  .topbar { position:sticky; top:0; z-index:30; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; padding:12px 18px; }
+  .topbar img { width:30px; height:30px; object-fit:contain; }
+  .topbar .pf { color:var(--cream); font-size:1.05rem; }
+  .topbar .role { font-size:.72rem; color:var(--olive-light); background:rgba(122,145,86,.12); padding:3px 9px; border-radius:20px; }
+  .topbar .sp { flex:1; }
+  .topbar button { background:none; border:1px solid var(--line); color:var(--text-dim); border-radius:8px; padding:7px 12px; font-size:.8rem; }
+  .topbar button:hover { color:var(--cream); border-color:var(--olive-light); }
+
+  .tabs { display:flex; gap:4px; padding:10px 14px; overflow-x:auto; border-bottom:1px solid var(--line); background:var(--panel-2); }
+  .tab { background:none; border:none; color:var(--text-dim); padding:8px 14px; border-radius:8px; font-size:.86rem; white-space:nowrap; }
+  .tab.on { background:rgba(122,145,86,.16); color:var(--cream); }
+
+  .main { max-width:980px; margin:0 auto; padding:18px 14px 80px; }
+  .pane { display:none; } .pane.on { display:block; }
+
+  .bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .bar h2 { font-family:'Playfair Display',serif; color:var(--cream); font-size:1.2rem; font-weight:500; margin-right:auto; }
+  input[type=date], input[type=text], input[type=tel], input[type=number], select, textarea {
+    background:rgba(46,61,34,.22); border:1px solid var(--line); border-radius:9px; padding:9px 12px; color:var(--cream); font-size:.9rem;
+  }
+  textarea { width:100%; resize:vertical; min-height:64px; }
+  .btn { border:none; border-radius:9px; padding:9px 16px; font-size:.88rem; font-weight:600; }
+  .btn-primary { background:var(--olive-light); color:var(--black); }
+  .btn-primary:hover { background:#8FA864; }
+  .btn-ghost { background:none; border:1px solid var(--line); color:var(--text-dim); }
+  .btn-ghost:hover { color:var(--cream); border-color:var(--olive-light); }
+  .btn-sm { padding:5px 10px; font-size:.78rem; font-weight:500; border-radius:7px; }
+
+  .list { display:flex; flex-direction:column; gap:10px; }
+  .item { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:13px 15px; }
+  .item .row1 { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .item .t { font-size:1rem; color:var(--cream); font-weight:500; }
+  .item .sub { color:var(--text-dim); font-size:.82rem; margin-top:3px; }
+  .item .sp { flex:1; }
+  .badge { font-size:.72rem; padding:3px 9px; border-radius:20px; font-weight:500; }
+  .b-pending { background:rgba(202,164,90,.16); color:var(--warn); }
+  .b-confirmed { background:rgba(122,145,86,.18); color:var(--olive-light); }
+  .b-completed { background:rgba(122,145,86,.28); color:var(--cream); }
+  .b-cancelled, .b-no_show { background:rgba(224,129,107,.16); color:var(--err); }
+  .b-sent { background:rgba(202,164,90,.16); color:var(--warn); }
+  .b-delivered { background:rgba(122,145,86,.2); color:var(--olive-light); }
+  .b-undelivered, .b-failed { background:rgba(224,129,107,.16); color:var(--err); }
+  .b-queued { background:rgba(138,136,128,.18); color:var(--text-dim); }
+  .acts { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .empty { color:var(--text-dim); text-align:center; padding:30px 0; font-size:.9rem; }
+
+  /* modal */
+  .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:100; align-items:flex-start; justify-content:center; padding:30px 14px; overflow-y:auto; }
+  .modal.on { display:flex; }
+  .modal-card { width:100%; max-width:520px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; }
+  .modal-card h3 { font-family:'Playfair Display',serif; color:var(--cream); font-size:1.15rem; margin-bottom:16px; font-weight:500; }
+  .modal-card label { display:block; font-size:.78rem; color:var(--text-dim); margin:10px 0 5px; }
+  .modal-card input, .modal-card select, .modal-card textarea { width:100%; }
+  .modal-foot { display:flex; gap:10px; margin-top:18px; }
+  .modal-foot .btn { flex:1; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .chip { border:1px solid var(--line); border-radius:20px; padding:6px 12px; font-size:.8rem; color:var(--text-dim); }
+  .chip.on { background:rgba(122,145,86,.18); color:var(--cream); border-color:var(--olive-light); }
+  .slots { display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:7px; margin-top:6px; }
+  .slot { background:rgba(46,61,34,.2); border:1px solid var(--line); border-radius:8px; padding:9px 0; text-align:center; font-size:.85rem; color:var(--cream); }
+  .slot.sel { background:var(--olive-light); color:var(--black); font-weight:600; }
+  .sched-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; font-size:.85rem; }
+  .sched-row .wd { width:34px; color:var(--text-dim); }
+  .sched-row input { width:78px; }
+  .err { color:var(--err); font-size:.82rem; min-height:18px; margin-top:6px; }
+  .muted { color:var(--text-dim); font-size:.82rem; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="login">
+  <div class="login-card">
+    <img src="assets/img/logo.png" alt="Oliva" />
+    <h1 class="pf">Кабінет CRM</h1>
+    <p>Студія масажу Oliva</p>
+    <input type="text" id="loginUser" placeholder="Логін (майстри) — власник лишає порожнім" autocomplete="username" />
+    <input type="password" id="loginPass" placeholder="Пароль" autocomplete="current-password" />
+    <button id="loginBtn">Увійти</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <img src="assets/img/logo.png" alt="" />
+    <span class="pf">Oliva CRM</span>
+    <span class="role" id="roleTag"></span>
+    <span class="sp"></span>
+    <button id="logoutBtn">Вийти</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="main" id="main"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
+
+<script src="assets/js/cabinet.js"></script>
+</body>
+</html>

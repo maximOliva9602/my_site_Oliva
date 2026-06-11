@@ -15,6 +15,14 @@ const fs = require("fs");
 const express = require("express");
 const { Server } = require("socket.io");
 
+/* ---------------- CRM-модулі ---------------- */
+const auth = require("./crm/auth");
+const notify = require("./crm/notify");
+const scheduler = require("./crm/scheduler");
+const publicRoutes = require("./crm/routes.public");
+const crmRoutes = require("./crm/routes.crm");
+const webhookRoutes = require("./crm/routes.webhook");
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -52,9 +60,8 @@ app.use(express.static(path.join(__dirname, "public")));
 /* ---------------- In-memory сховище ---------------- */
 // conversations: visitorId -> { id, name, messages:[{from,text,ts}], lastTs, unread }
 const conversations = new Map();
-// adminSessions: token -> createdAt
-const adminSessions = new Map();
-const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 год
+// Сесії адміна/CRM живуть у crm/auth.js (спільні для чату, блогу й CRM)
+const SESSION_TTL = auth.SESSION_TTL;
 const MAX_LEN = 2000;
 
 function getConv(id) {
@@ -82,32 +89,44 @@ function parseCookies(header) {
   });
   return out;
 }
-function validToken(token) {
-  if (!token || !adminSessions.has(token)) return false;
-  if (Date.now() - adminSessions.get(token) > SESSION_TTL) { adminSessions.delete(token); return false; }
-  return true;
-}
+function validToken(token) { return auth.validToken(token); }
 
-/* ---------------- Авторизація адміна ---------------- */
+/* ---------------- Авторизація адміна / CRM ----------------
+   Підтримує власника ({password} = ADMIN_PASSWORD) і майстрів
+   ({username,password} з таблиці users). Повертає role + masterId. */
 app.post("/api/admin/login", function (req, res) {
-  var password = (req.body || {}).password;
-  if (password !== ADMIN_PASSWORD) return res.status(401).json({ ok: false });
-  var token = crypto.randomBytes(24).toString("hex");
-  adminSessions.set(token, Date.now());
-  res.cookie("oliva_admin", token, {
+  var r = auth.login(req.body || {});
+  if (!r.ok) return res.status(401).json({ ok: false });
+  res.cookie("oliva_admin", r.token, {
     httpOnly: true, sameSite: "lax", secure: IS_PROD, maxAge: SESSION_TTL, path: "/"
   });
-  res.json({ ok: true });
+  res.json({ ok: true, role: r.role, masterId: r.masterId });
 });
 app.post("/api/admin/logout", function (req, res) {
   var token = parseCookies(req.headers.cookie).oliva_admin;
-  if (token) adminSessions.delete(token);
+  auth.destroySession(token);
   res.clearCookie("oliva_admin", { path: "/" });
   res.json({ ok: true });
 });
 app.get("/api/admin/me", function (req, res) {
   var token = parseCookies(req.headers.cookie).oliva_admin;
-  res.json({ ok: validToken(token) });
+  var s = auth.getSession(token);
+  if (!s) return res.json({ ok: false });
+  res.json({ ok: true, role: s.role, masterId: s.masterId });
+});
+
+/* ---------------- CRM-роути ----------------
+   Монтуються ДО catch-all. Публічні — без авторизації; /api/crm —
+   усередині перевіряє requireAuth; вебхук — спільний секрет. */
+app.use("/api/public", publicRoutes);
+app.use("/api/crm", crmRoutes);
+app.use("/api/webhooks", webhookRoutes);
+
+app.get("/cabinet", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "cabinet.html"));
+});
+app.get("/booking", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "booking.html"));
 });
 
 app.get("/admin", function (req, res) {
@@ -226,11 +245,7 @@ app.get("/api/posts/:slug", function (req, res) {
 });
 
 /* Адмін ендпоінти (захищені токеном) */
-function requireAdmin(req, res, next) {
-  var token = parseCookies(req.headers.cookie).oliva_admin;
-  if (!validToken(token)) return res.status(401).json({ ok: false, error: "unauthorized" });
-  next();
-}
+const requireAdmin = auth.requireAuth();
 
 app.get("/api/admin/posts", requireAdmin, function (req, res) {
   res.json(readPosts());
@@ -317,10 +332,10 @@ app.get("/blog/:slug", function (req, res) {
 
 /* ---------------- Socket.IO ---------------- */
 io.on("connection", function (socket) {
-  var auth = socket.handshake.auth || {};
+  var handshake = socket.handshake.auth || {};
 
   /* ----- АДМІН ----- */
-  if (auth.role === "admin") {
+  if (handshake.role === "admin") {
     var token = parseCookies(socket.handshake.headers.cookie).oliva_admin;
     if (!validToken(token)) { socket.emit("unauthorized"); return socket.disconnect(true); }
 
@@ -351,7 +366,7 @@ io.on("connection", function (socket) {
   }
 
   /* ----- ВІДВІДУВАЧ ----- */
-  var visitorId = clean(auth.visitorId, 40);
+  var visitorId = clean(handshake.visitorId, 40);
   if (!visitorId) visitorId = "v_" + crypto.randomBytes(6).toString("hex");
   socket.join("visitor:" + visitorId);
   var conv = getConv(visitorId);
@@ -379,5 +394,8 @@ app.get("*", function (req, res) {
 
 server.listen(PORT, function () {
   console.log("Oliva site running on http://localhost:" + PORT);
-  console.log("Адмін-чат: http://localhost:" + PORT + "/admin");
+  console.log("Адмін-чат:  http://localhost:" + PORT + "/admin");
+  console.log("Кабінет CRM: http://localhost:" + PORT + "/cabinet");
+  console.log("Онлайн-запис: http://localhost:" + PORT + "/booking");
+  scheduler.start(); // нагадування Viber/SMS
 });
