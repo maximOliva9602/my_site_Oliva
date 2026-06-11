@@ -141,6 +141,14 @@ app.get("/certificate", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "certificate.html"));
 });
 
+app.get("/shop", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "shop.html"));
+});
+
+app.get("/training", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "training.html"));
+});
+
 /* ---------------- API: Замовлення сертифіката ---------------- */
 app.post("/api/certificate", async function (req, res) {
   var d = req.body || {};

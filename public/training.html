@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Навчання — Студія масажу Oliva</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="assets/img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #0a0c08; --olive: #4a5e2e; --olive-light: #7a9156;
+      --olive-mid: #2e3d22; --cream: #f2ede4;
+      --text-dim: rgba(242,237,228,0.55); --line: rgba(122,145,86,0.18);
+    }
+    html, body { min-height: 100vh; background: var(--black); color: var(--cream); font-family: 'Inter', sans-serif; }
+
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--line); }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .nav-logo span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); }
+    .nav-back { font-size: 13px; color: var(--olive-light); text-decoration: none; }
+    .nav-back:hover { color: var(--cream); }
+
+    .page-wrap {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: calc(100vh - 74px); padding: 40px 24px; text-align: center;
+    }
+
+    .icon { font-size: 64px; margin-bottom: 24px; opacity: 0.7; }
+
+    .eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 14px; }
+
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      color: var(--cream); margin-bottom: 16px;
+    }
+
+    .subtitle {
+      font-size: 15px; color: var(--text-dim); max-width: 380px;
+      margin: 0 auto 36px; line-height: 1.75;
+    }
+
+    .back-btn {
+      display: inline-block; padding: 12px 28px;
+      background: var(--olive); color: var(--cream);
+      border-radius: 50px; font-size: 14px; text-decoration: none;
+      transition: opacity .2s;
+    }
+    .back-btn:hover { opacity: 0.85; }
+
+    .divider {
+      width: 48px; height: 2px; background: var(--olive-light);
+      margin: 0 auto 28px; opacity: 0.4; border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="assets/img/logo.png" alt="Oliva" />
+    <span>Oliva<span style="color:var(--olive-light)">.</span></span>
+  </a>
+  <a href="/" class="nav-back">← Повернутися</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="icon">🎓</div>
+  <div class="eyebrow">Незабаром</div>
+  <h1 class="title">Навчання</h1>
+  <div class="divider"></div>
+  <p class="subtitle">
+    Вибачте, розділ навчання наразі в розробці.<br>
+    Незабаром тут будуть курси та майстер-класи від майстрів Oliva.
+  </p>
+  <a href="/" class="back-btn">На головну</a>
+</div>
+
+</body>
+</html>
