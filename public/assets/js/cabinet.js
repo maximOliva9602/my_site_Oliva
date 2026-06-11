@@ -743,7 +743,8 @@
       openModal(
         '<h3>' + (u ? "Акаунт майстра" : "Новий акаунт") + '</h3>' +
         '<label>Логін</label><input type="text" id="uName" maxlength="40" />' +
-        '<label>' + (u ? "Новий пароль (порожньо = без змін)" : "Пароль") + '</label><input type="password" id="uPass" />' +
+        '<label>' + (u ? "Новий пароль (порожньо = без змін)" : "Пароль") + '</label>' +
+        '<div class="pass-wrap"><input type="password" id="uPass" /><button type="button" class="pass-eye" id="uPassEye" title="Показати/сховати пароль">👁</button></div>' +
         '<label>Майстер</label><select id="uMaster"></select>' +
         '<div class="err" id="uErr"></div>' +
         '<div class="modal-foot"><button class="btn btn-ghost" id="uCancel">Скасувати</button><button class="btn btn-primary" id="uSave">Зберегти</button></div>'
@@ -751,6 +752,13 @@
       var sel = $("uMaster"); sel.appendChild(new Option("— без прив'язки —", ""));
       ms.forEach(function (m) { sel.appendChild(new Option(m.name, m.id)); });
       if (u) { $("uName").value = u.username; if (u.master_id) sel.value = u.master_id; }
+      $("uPassEye").addEventListener("click", function () {
+        var inp = $("uPass");
+        var show = inp.type === "password";
+        inp.type = show ? "text" : "password";
+        this.textContent = show ? "🙈" : "👁";
+        inp.focus();
+      });
       $("uCancel").addEventListener("click", closeModal);
       $("uSave").addEventListener("click", function () {
         var name = $("uName").value.trim(), pass = $("uPass").value, mid = sel.value ? parseInt(sel.value, 10) : null;
