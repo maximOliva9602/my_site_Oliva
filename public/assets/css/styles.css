@@ -462,9 +462,10 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
     border-radius: 16px;
     overflow-x: visible;
     justify-content: flex-start;
+    gap: 3px;
   }
   .srv-tab {
-    font-size: 0.7rem;
-    padding: 7px 11px;
+    font-size: 0.65rem;
+    padding: 6px 10px;
   }
 }
