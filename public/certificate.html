@@ -546,81 +546,105 @@
 
   /* ── ДАНІ ПОСЛУГ (ціни з bookon.ua) ── */
   var SERVICES = [
-    { id:'zagalno', icon:'💆', name:'Загально-оздоровчий масаж', variants:[
+    { id:'zagalno', icon:'', name:'Загально-оздоровчий масаж', variants:[
       { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
       { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
       { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
       { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
       { dur:'120 хв', masters:[{type:'Майстер', price:2200}, {type:'Топ Майстер', price:2300}] },
     ]},
-    { id:'parnyi', icon:'👫', name:'Парний масаж', variants:[
+    { id:'antistres', icon:'', name:'Антистресовий масаж', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+      { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
+      { dur:'120 хв', masters:[{type:'Майстер', price:2200}, {type:'Топ Майстер', price:2300}] },
+    ]},
+    { id:'parnyi', icon:'', name:'Парний масаж', variants:[
       { dur:'60 хв',  masters:[{type:'Топ Майстер', price:2700}] },
       { dur:'90 хв',  masters:[{type:'Топ Майстер', price:3500}] },
       { dur:'120 хв', masters:[{type:'Топ Майстер', price:4500}] },
     ]},
-    { id:'antistres', icon:'🧘', name:'Антистресовий масаж', variants:[
-      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
-      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
-      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
-      { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
-      { dur:'120 хв', masters:[{type:'Майстер', price:2200}, {type:'Топ Майстер', price:2300}] },
+    { id:'chotyryrucky', icon:'', name:'Масаж в чотири руки', variants:[
+      { dur:'60 хв',  masters:[{type:'Топ Майстер', price:2400}] },
+      { dur:'90 хв',  masters:[{type:'Топ Майстер', price:3200}] },
+      { dur:'120 хв', masters:[{type:'Топ Майстер', price:4500}] },
     ]},
-    { id:'antyvikovy', icon:'🌟', name:'Антивіковий масаж обличчя', variants:[
-      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
-      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
-      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
-    ]},
-    { id:'fitobochka', icon:'🌿', name:'Паріння у фітобочці', variants:[
-      { dur:'20 хв',  masters:[{type:'Фітобочка', price:600}] },
-      { dur:'30 хв',  masters:[{type:'Фітобочка', price:800}] },
-      { dur:'45 хв',  masters:[{type:'Фітобочка', price:900}] },
-      { dur:'60 хв',  masters:[{type:'Фітобочка', price:1000}] },
-    ]},
-    { id:'spa_fito', icon:'🌸', name:'SPA Ритуал "Фіто-оновлення тіла"', variants:[
-      { dur:'90 хв',  masters:[{type:'Ритуал', price:2150}] },
-      { dur:'130 хв', masters:[{type:'Ритуал', price:2750}] },
-    ]},
-    { id:'spa_dvoh', icon:'💑', name:'SPA Ритуал "Глибоке прогрівання для двох"', variants:[
-      { dur:'130 хв', masters:[{type:'Ритуал', price:6000}] },
-      { dur:'160 хв', masters:[{type:'Ритуал', price:7500}] },
-      { dur:'220 хв', masters:[{type:'Ритуал', price:8500}] },
-    ]},
-    { id:'spyna', icon:'🫴', name:'Масаж спини', variants:[
+    { id:'spyna', icon:'', name:'Масаж спини', variants:[
       { dur:'30 хв',  masters:[{type:'Топ Майстер', price:800}] },
       { dur:'45 хв',  masters:[{type:'Топ Майстер', price:1150}] },
       { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
     ]},
-    { id:'shyya', icon:'🙆', name:'Масаж шийно-комірцевої зони', variants:[
+    { id:'shyya', icon:'', name:'Масаж шийно-комірцевої зони', variants:[
       { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
       { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
       { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
     ]},
-    { id:'oblychchya', icon:'💎', name:'Класичний масаж обличчя', variants:[
-      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
-      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
-      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+    { id:'kaminnnya', icon:'', name:'Масаж гарячим камінням', variants:[
+      { dur:'60 хв',  masters:[{type:'Ритуал', price:1400}] },
+      { dur:'90 хв',  masters:[{type:'Ритуал', price:1800}] },
     ]},
-    { id:'limfodrenazh', icon:'💧', name:'Лімфодренажний масаж', variants:[
+    { id:'limfodrenazh', icon:'', name:'Лімфодренажний масаж', variants:[
       { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
       { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
       { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
       { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
     ]},
-    { id:'antytsel', icon:'✨', name:'Антицелюлітний масаж', variants:[
+    { id:'antytsel', icon:'', name:'Антицелюлітний масаж', variants:[
       { dur:'45 хв',  masters:[{type:'Майстер', price:1100}, {type:'Топ Майстер', price:1200}] },
       { dur:'60 хв',  masters:[{type:'Майстер', price:1300}, {type:'Топ Майстер', price:1450}] },
       { dur:'90 хв',  masters:[{type:'Майстер', price:1700}, {type:'Топ Майстер', price:1900}] },
       { dur:'120 хв', masters:[{type:'Майстер', price:2300}, {type:'Топ Майстер', price:2400}] },
     ]},
-    { id:'dytyachy', icon:'🧒', name:'Дитячий масаж', variants:[
+    { id:'oblychchya', icon:'', name:'Класичний масаж обличчя', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+    ]},
+    { id:'antyvikovy', icon:'', name:'Антивіковий масаж обличчя', variants:[
+      { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
+      { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
+    ]},
+    { id:'dytyachy', icon:'', name:'Дитячий масаж', variants:[
       { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
       { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1100}] },
       { dur:'60 хв',  masters:[{type:'Майстер', price:1200}, {type:'Топ Майстер', price:1350}] },
       { dur:'90 хв',  masters:[{type:'Майстер', price:1600}, {type:'Топ Майстер', price:1750}] },
     ]},
-    { id:'amore', icon:'🔥', name:'Обгортання Amore Shemen', variants:[
+    { id:'fitobochka', icon:'', name:'Паріння у фітобочці', variants:[
+      { dur:'20 хв',  masters:[{type:'Фітобочка', price:600}] },
+      { dur:'30 хв',  masters:[{type:'Фітобочка', price:800}] },
+      { dur:'45 хв',  masters:[{type:'Фітобочка', price:900}] },
+      { dur:'60 хв',  masters:[{type:'Фітобочка', price:1000}] },
+    ]},
+    { id:'spa_fito', icon:'', name:'SPA Ритуал "Фіто-оновлення тіла"', variants:[
+      { dur:'90 хв',  masters:[{type:'Ритуал', price:2150}] },
+      { dur:'130 хв', masters:[{type:'Ритуал', price:2750}] },
+    ]},
+    { id:'spa_dvoh', icon:'', name:'SPA Ритуал "Глибоке прогрівання для двох"', variants:[
+      { dur:'130 хв', masters:[{type:'Ритуал', price:6000}] },
+      { dur:'160 хв', masters:[{type:'Ритуал', price:7500}] },
+      { dur:'220 хв', masters:[{type:'Ритуал', price:8500}] },
+    ]},
+    { id:'amore', icon:'', name:'Обгортання Amore Shemen', variants:[
       { dur:'Гаряче · 1 год',        masters:[{type:'Ритуал', price:1600}] },
       { dur:'Холодне · 1 год 10 хв', masters:[{type:'Ритуал', price:1600}] },
+    ]},
+    { id:'detox', icon:'', name:'Обгортання Bruno Vassari Detox', variants:[
+      { dur:'1 год 15 хв', masters:[{type:'Ритуал', price:1600}] },
+    ]},
+    { id:'seaweed', icon:'', name:'Гаряче обгортання SPA Seaweed', variants:[
+      { dur:'1 год 10 хв', masters:[{type:'Ритуал', price:1600}] },
+    ]},
+    { id:'hot_express', icon:'', name:'Гаряча експрес-трансформація тіла', variants:[
+      { dur:'2 год 10 хв', masters:[{type:'Ритуал', price:3500}] },
+    ]},
+    { id:'cold_sculpt', icon:'', name:'Холодне моделювання тіла', variants:[
+      { dur:'2 год', masters:[{type:'Ритуал', price:2700}] },
+    ]},
+    { id:'hot_sculpt', icon:'', name:'Гаряче моделювання тіла', variants:[
+      { dur:'2 год', masters:[{type:'Ритуал', price:2700}] },
     ]},
   ];
 
@@ -661,7 +685,7 @@
     btn.className = 'popular-btn';
     btn.setAttribute('data-id', s.id);
     btn.innerHTML =
-      '<div class="popular-btn-top"><span class="popular-btn-icon">' + s.icon + '</span><span class="popular-btn-name">' + s.name + '</span></div>' +
+      '<div class="popular-btn-top"><span class="popular-btn-name">' + s.name + '</span></div>' +
       '<div class="popular-btn-meta">' + durCount + '</div>';
     btn.addEventListener('click', function(){ selectCategory(s.id); });
     popularGrid.appendChild(btn);
@@ -673,7 +697,7 @@
     row.className = 'srv-row';
     row.setAttribute('data-id', s.id);
     row.innerHTML =
-      '<div class="srv-row-left"><span class="srv-row-icon">' + s.icon + '</span><span class="srv-row-name">' + s.name + '</span></div>';
+      '<div class="srv-row-left"><span class="srv-row-name">' + s.name + '</span></div>';
     row.addEventListener('click', function(){ selectCategory(s.id); });
     allServicesScroll.appendChild(row);
   });
@@ -855,7 +879,7 @@
     html += '<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Оберіть послугу:</div>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;" id="p2ServiceBtns">';
     SERVICES.forEach(function(svc){
-      html += '<button type="button" data-svc="'+svc.id+'" style="padding:5px 10px;background:rgba(122,145,86,0.15);border:1px solid rgba(122,145,86,0.3);border-radius:8px;color:var(--cream);font-size:12px;cursor:pointer;">'+svc.icon+' '+svc.name+'</button>';
+      html += '<button type="button" data-svc="'+svc.id+'" style="padding:5px 10px;background:rgba(122,145,86,0.15);border:1px solid rgba(122,145,86,0.3);border-radius:8px;color:var(--cream);font-size:12px;cursor:pointer;">'+svc.name+'</button>';
     });
     html += '</div>';
     html += '<div id="p2Variants" style="display:none;margin-top:10px;"></div>';
