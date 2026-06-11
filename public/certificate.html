@@ -104,7 +104,9 @@
     .cert-form-side { padding: 48px 48px 80px; }
     @media (max-width: 900px) {
       .cert-main { grid-template-columns: 1fr; }
-      .cert-video-side { position: relative; height: 56vw; max-height: 420px; }
+      .cert-video-side { position: relative; height: auto; max-height: none; padding: 16px 16px 0; background: none; }
+      .cert-video-side video { width: 100%; height: auto; aspect-ratio: 1/1; object-fit: cover; border-radius: 20px; display: block; }
+      .mute-btn { bottom: 12px; right: 28px; width: 38px; height: 38px; font-size: 15px; }
       .cert-form-side { padding: 32px 24px 60px; }
     }
 
