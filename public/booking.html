@@ -43,7 +43,8 @@ header p { color: var(--text-dim); font-size: 0.82rem; margin-top: 3px; }
 .cat-from { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
 
 /* master grid */
-.master-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 9px; }
+.master-grid { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; }
+.master-card { width: 120px; flex-shrink: 0; }
 .master-card { background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 12px; padding: 13px 10px; cursor: pointer; transition: all .2s; text-align: center; }
 .master-card:hover { border-color: var(--olive-light); background: rgba(46,61,34,0.30); }
 .master-card.sel { border-color: var(--olive-light); background: rgba(122,145,86,0.14); }
@@ -266,12 +267,6 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     var catIds = allServices.filter(function(s) { return parseName(s.name).cat === state.category; }).map(function(s) { return s.id; });
     var eligible = allMasters.filter(function(m) { return m.service_ids.some(function(id) { return catIds.indexOf(id) !== -1; }); });
 
-    // "Будь-який"
-    var any = document.createElement("div"); any.className = "master-card";
-    any.innerHTML = '<div class="master-any-ico">🌿</div><div class="master-name">Будь-який</div><span class="lv lv-any">найближчий час</span>';
-    any.addEventListener("click", function() { state.master = { id: "any", name: "Будь-який майстер", level: null }; renderDurations(); goStep(3); });
-    box.appendChild(any);
-
     eligible.forEach(function(m) {
       var card = document.createElement("div"); card.className = "master-card";
       var isTop = m.level === "Топ Майстер";
@@ -285,7 +280,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
 
     if (!eligible.length) {
       var note = document.createElement("div"); note.className = "empty"; note.style.gridColumn = "1/-1";
-      note.textContent = "Майстрів не знайдено — оберіть «Будь-який»."; box.appendChild(note);
+      note.textContent = "Майстрів для цієї категорії не знайдено."; box.appendChild(note);
     }
   }
 
@@ -293,7 +288,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   function renderDurations() {
     var box = $("durList"); box.innerHTML = "";
     var opts;
-    if (!state.master || state.master.id === "any") {
+    if (!state.master) {
       opts = allServices.filter(function(s) { return parseName(s.name).cat === state.category; });
     } else {
       opts = allServices.filter(function(s) { return parseName(s.name).cat === state.category && state.master.service_ids.indexOf(s.id) !== -1; });
