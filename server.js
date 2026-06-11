@@ -199,7 +199,7 @@ app.post("/api/review", async function (req, res) {
     return res.status(400).json({ ok: false, error: "missing fields" });
   }
   var stars = "⭐".repeat(rating);
-  var msg = `✍️ <b>Новий анонімний відгук</b>\n\n${stars}\n` +
+  var msg = `✍️ <b>Новий анонімний відгук</b> #відгук\n\n${stars}\n` +
     (master ? `💆 <b>Майстер:</b> ${master}\n` : "") +
     `📝 ${text}`;
   try {
