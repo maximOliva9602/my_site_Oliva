@@ -145,16 +145,22 @@ CREATE INDEX IF NOT EXISTS idx_notif_status   ON notifications(status);
 CREATE INDEX IF NOT EXISTS idx_notif_provider ON notifications(provider_msg_id);
 `);
 
-/* ---------------- Seed початкових послуг ---------------- */
-(function seedServices() {
-  const count = db.prepare("SELECT COUNT(*) n FROM services").get().n;
-  if (count > 0) return;
+/* ---------------- Міграція: ціни в копійках ---------------- */
+/* Якщо ціни в БД ще в гривнях (MAX < 10000) — множимо на 100 */
+(function migrateprices() {
+  const maxPrice = db.prepare("SELECT MAX(price) v FROM services").get().v || 0;
+  if (maxPrice > 0 && maxPrice < 10000) {
+    db.prepare("UPDATE services SET price = price * 100").run();
+    console.log("[db] Міграція: ціни переведено в копійки.");
+  }
+})();
 
-  const now = Date.now();
-  const ins = db.prepare(
-    "INSERT OR IGNORE INTO services (name, duration_min, price, active, sort_order, created_at) VALUES (?, ?, ?, 1, ?, ?)"
-  );
-  const services = [
+/* ВИДАЛЕНО: перший seedServices() з цінами в гривнях */
+/* Зараз використовується тільки seed() нижче (ціни в копійках) */
+
+/* ---------------- DEPRECATED seed (не видаляти — для довідки) ---------------- */
+if (false) { // eslint-disable-line
+  const _services_grn = [
     ["Загально-оздоровчий масаж (Майстер) 30 хв", 30, 700],
     ["Загально-оздоровчий масаж (Майстер) 45 хв", 45, 1000],
     ["Загально-оздоровчий масаж (Майстер) 60 хв", 60, 1200],
@@ -240,16 +246,8 @@ CREATE INDEX IF NOT EXISTS idx_notif_provider ON notifications(provider_msg_id);
     ["Антивіковий масаж обличчя (Майстер) 60 хв", 60, 1200],
     ["Антивіковий масаж обличчя (Топ Майстер) 60 хв", 60, 1350],
     ["Антивіковий масаж обличчя (Топ Майстер) 90 хв", 90, 1750],
-  ];
-
-  const seedTx = db.transaction(function () {
-    services.forEach(function ([name, dur, price], i) {
-      ins.run(name, dur, price, i, now);
-    });
-  });
-  seedTx();
-  console.log("[db] Seed: додано " + services.length + " послуг.");
-})();
+  ]; // _services_grn — не використовується
+} // end if(false)
 
 /* ---------------- Міграції: нові колонки ---------------- */
 try { db.exec("ALTER TABLE masters ADD COLUMN photo TEXT"); } catch(e) {}
