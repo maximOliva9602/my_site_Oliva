@@ -10,6 +10,7 @@ const tz = require("./tz");
 
 const DRIVER_NAME = process.env.NOTIFY_DRIVER || "console";
 const STUDIO_ADDRESS = process.env.STUDIO_ADDRESS || "м. Київ, вул. Борщагівська, 145";
+const STUDIO_PHONE = process.env.STUDIO_PHONE || "+380974340112";
 
 let driver;
 try {
@@ -38,14 +39,18 @@ function ddmm(date) { const p = date.split("-"); return p[2] + "." + p[1]; }
 function renderTemplate(kind, v) {
   const when = `Дата: ${ddmm(v.date)}\nЧас: ${tz.fmtMin(v.start_min)}`;
   if (kind === "confirmation") {
-    return `Ваш запис у масажну студію Oliva прийнято ✅\n` +
-      `Послуга: ${v.service_name}\nМайстер: ${v.master_name}\n${when}\n` +
-      `Адреса: ${STUDIO_ADDRESS}\nЯкщо плани зміняться — зателефонуйте нам.`;
+    return `Студія масажу Oliva — запис підтверджено ✅\n` +
+      `Майстер: ${v.master_name}\n` +
+      `${when}\n` +
+      `Адреса: ${STUDIO_ADDRESS}\n` +
+      `Чекаємо на вас! Якщо плани зміняться — телефонуйте: ${STUDIO_PHONE}`;
   }
   // reminder_24h / reminder_2h
-  return `Нагадуємо про ваш запис у масажну студію.\n` +
-    `Послуга: ${v.service_name}\nМайстер: ${v.master_name}\n${when}\n` +
-    `Адреса: ${STUDIO_ADDRESS}`;
+  return `Нагадування від Oliva 💆\n` +
+    `Майстер: ${v.master_name}\n` +
+    `${when}\n` +
+    `Адреса: ${STUDIO_ADDRESS}\n` +
+    `Питання? ${STUDIO_PHONE}`;
 }
 
 /* Ставить сповіщення в чергу (status='queued'). Ідемпотентно завдяки
