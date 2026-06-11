@@ -131,7 +131,6 @@ router.post("/book", function (req, res) {
          VALUES (?,?,?,?,?,?,?,?,?, 'pending', 'public', ?, ?, ?)`
       ).run(publicId, client.id, masterId, serviceId, date, startMin, endMin, svc.duration_min, svc.price, comment, now, now);
       appointmentId = ai.lastInsertRowid;
-      // сповіщення-підтвердження в чергу (відправить планувальник)
       notify.queueNotification(appointmentId, "confirmation");
     });
     txn();
@@ -140,6 +139,9 @@ router.post("/book", function (req, res) {
     console.error("[book]", e.message);
     return res.status(500).json({ ok: false, error: "server error" });
   }
+
+  // Одразу надсилаємо підтвердження клієнту (не чекаємо scheduler)
+  notify.flushQueued().catch(function(e) { console.warn("[book] flush err:", e.message); });
 
   // Повідомлення майстру (SMS/Viber на його телефон)
   try {
