@@ -329,16 +329,72 @@
     <!-- Топ послуги -->
     <div class="srv-panel active" id="tab-top">
       <div class="services-grid">
-        <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Загально-оздоровчий масаж (Топ Майстер) 60 хв</div><div class="srv-card-dur" data-i18n="dur.60">1 година</div></div><div class="srv-card-right"><div class="srv-card-price">1 350<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
-        <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Загально-оздоровчий масаж (Топ Майстер) 90 хв</div><div class="srv-card-dur" data-i18n="dur.90">1 год. 30 хв.</div></div><div class="srv-card-right"><div class="srv-card-price">1 750<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
+
+        <!-- Загально-оздоровчий масаж (Топ Майстер) — grouped by duration -->
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Загально-оздоровчий масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row">
+              <span class="srv-multi-dur">45 хв.</span>
+              <div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div>
+            </div>
+            <div class="srv-multi-row">
+              <span class="srv-multi-dur">1 година</span>
+              <div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div>
+            </div>
+            <div class="srv-multi-row">
+              <span class="srv-multi-dur">1 год. 30 хв.</span>
+              <div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div>
+            </div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+
+        <!-- Антицелюлітний масаж — single -->
         <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Антицелюлітний масаж (Топ Майстер) 60 хв</div><div class="srv-card-dur" data-i18n="dur.60">1 година</div></div><div class="srv-card-right"><div class="srv-card-price">1 450<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
-        <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Загально-оздоровчий масаж (Топ Майстер) 45 хв</div><div class="srv-card-dur" data-i18n="dur.45">45 хв.</div></div><div class="srv-card-right"><div class="srv-card-price">1 150<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
+
+        <!-- Спортивний масаж — single -->
         <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Спортивний масаж (Топ Майстер) 60 хв</div><div class="srv-card-dur" data-i18n="dur.60">1 година</div></div><div class="srv-card-right"><div class="srv-card-price">1 350<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
-        <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Парний масаж 60 хв</div><div class="srv-card-dur" data-i18n="dur.60">1 година</div></div><div class="srv-card-right"><div class="srv-card-price">2 700<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
-        <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Класичний масаж обличчя (Топ Майстер) 60 хв</div><div class="srv-card-dur" data-i18n="dur.60">1 година</div></div><div class="srv-card-right"><div class="srv-card-price">1 350<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
-        <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Класичний масаж обличчя (Майстер) 30 хв</div><div class="srv-card-dur" data-i18n="dur.30">30 хвилин</div></div><div class="srv-card-right"><div class="srv-card-price">700<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
-        <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Класичний масаж обличчя (Топ Майстер) 30 хв</div><div class="srv-card-dur" data-i18n="dur.30">30 хвилин</div></div><div class="srv-card-right"><div class="srv-card-price">800<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
-        <div class="srv-card"><div class="srv-card-info"><div class="srv-card-name">Парний масаж 90 хв</div><div class="srv-card-dur" data-i18n="dur.90">1 год. 30 хв.</div></div><div class="srv-card-right"><div class="srv-card-price">3 500<span data-i18n="uah">грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn" data-i18n="book">Записатися</a></div></div>
+
+        <!-- Парний масаж — grouped by duration -->
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Парний масаж</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row">
+              <span class="srv-multi-dur">1 година</span>
+              <div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div>
+            </div>
+            <div class="srv-multi-row">
+              <span class="srv-multi-dur">1 год. 30 хв.</span>
+              <div class="srv-multi-right"><span class="srv-multi-price">3 500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div>
+            </div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+
+        <!-- Класичний масаж обличчя — grouped by master + duration -->
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Класичний масаж обличчя</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row">
+              <span class="srv-multi-dur">(Майстер) 30 хв.</span>
+              <div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div>
+            </div>
+            <div class="srv-multi-row">
+              <span class="srv-multi-dur">(Топ Майстер) 30 хв.</span>
+              <div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div>
+            </div>
+            <div class="srv-multi-row">
+              <span class="srv-multi-dur">(Топ Майстер) 60 хв.</span>
+              <div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div>
+            </div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+
       </div>
     </div>
 
@@ -994,6 +1050,14 @@
   flex: 1;
   border: none;
 }
+/* Multi-duration cards */
+.srv-multi-rows { display: flex; flex-direction: column; margin-top: 10px; }
+.srv-multi-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid rgba(122,145,86,0.15); }
+.srv-multi-dur { font-size: 0.8rem; color: var(--text-dim); flex: 1; display: flex; align-items: center; gap: 6px; }
+.srv-multi-dur::before { content: '⏱'; font-size: 0.7rem; }
+.srv-multi-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.srv-multi-price { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--cream); white-space: nowrap; }
+.srv-multi-price .cur { font-size: 0.75rem; font-family: 'Inter', sans-serif; font-weight: 400; margin-left: 2px; color: var(--text-dim); }
 /* Service card accordion */
 .srv-card { flex-direction: column; align-items: stretch; justify-content: flex-start; }
 .srv-card-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -1124,8 +1188,31 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
     return null;
   }
 
-  /* 1. Popular cards (tab-top) */
+  /* 1a. Multi-duration cards (tab-top) */
+  document.querySelectorAll('#tab-top .srv-card--multi').forEach(function(card){
+    var nameEl = card.querySelector('.srv-card-name');
+    if (!nameEl) return;
+    var raw = nameEl.getAttribute('data-uk') || nameEl.textContent.trim();
+    var descUk = getDesc(raw, 'uk');
+    if (!descUk) return;
+    var btn  = card.querySelector('.srv-card-toggle');
+    var body = card.querySelector('.srv-card-body');
+    if (!btn || !body) return;
+    body.textContent = getDesc(raw, curLang()) || descUk;
+    btn.addEventListener('click', function(){
+      body.textContent = getDesc(raw, curLang()) || descUk;
+      var open = body.style.display === 'block';
+      body.style.display = open ? 'none' : 'block';
+      btn.classList.toggle('open', !open);
+    });
+    document.addEventListener('langchange', function(){
+      body.textContent = getDesc(raw, curLang()) || descUk;
+    });
+  });
+
+  /* 1b. Popular cards (tab-top) — single */
   document.querySelectorAll('#tab-top .srv-card').forEach(function(card){
+    if (card.classList.contains('srv-card--multi')) return;
     var nameEl = card.querySelector('.srv-card-name');
     if (!nameEl) return;
     var raw = nameEl.getAttribute('data-uk') || nameEl.textContent;
