@@ -6,7 +6,10 @@
       "WebFetch(domain:massage-solomyanskyi.com.ua)",
       "WebFetch(domain:imaginative-cat-cbaa60.netlify.app)",
       "Read(//private/tmp/**)",
-      "Bash(curl -sL https://imaginative-cat-cbaa60.netlify.app/ -o oliva_ref.html)"
+      "Bash(curl -sL https://imaginative-cat-cbaa60.netlify.app/ -o oliva_ref.html)",
+      "Bash(DB_FILE=/tmp/oliva_final.db PORT=3997 NOTIFY_DRIVER=console ADMIN_PASSWORD=owner-pw REMINDER2_HOURS=2.5 node *)",
+      "Bash(sleep *)",
+      "Bash(node *)"
     ]
   }
 }
