@@ -436,12 +436,18 @@
     <!-- Комплекси -->
     <div class="srv-panel" id="tab-complex">
       <div class="srv-list">
+        <div class="srv-category-label">Обгортання Amore Shemen</div>
         <div class="srv-list-item"><div class="srv-list-name">Обгортання Amore Shemen (гаряче)</div><div class="srv-list-meta"><div class="srv-list-dur">1 год.</div><div class="srv-list-price">1 600<span class="cur"> грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
         <div class="srv-list-item"><div class="srv-list-name">Обгортання Amore Shemen (холодне)</div><div class="srv-list-meta"><div class="srv-list-dur">1 год. 10 хв.</div><div class="srv-list-price">1 600<span class="cur"> грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+        <div class="srv-category-label">Обгортання Bruno Vassari Detox</div>
         <div class="srv-list-item"><div class="srv-list-name">Обгортання Bruno Vassari Detox</div><div class="srv-list-meta"><div class="srv-list-dur">1 год. 15 хв.</div><div class="srv-list-price">1 600<span class="cur"> грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+        <div class="srv-category-label">Гаряче обгортання SPA Seaweed</div>
         <div class="srv-list-item"><div class="srv-list-name">Гаряче (бандажне) обгортання SPA Seaweed</div><div class="srv-list-meta"><div class="srv-list-dur">1 год. 10 хв.</div><div class="srv-list-price">1 600<span class="cur"> грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+        <div class="srv-category-label">Гаряча експрес-трансформація тіла</div>
         <div class="srv-list-item"><div class="srv-list-name">🔥 Гаряча експрес-трансформація тіла</div><div class="srv-list-meta"><div class="srv-list-dur">2 год. 10 хв.</div><div class="srv-list-price">3 500<span class="cur"> грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+        <div class="srv-category-label">Холодне моделювання тіла</div>
         <div class="srv-list-item"><div class="srv-list-name">❄️ Холодне моделювання тіла</div><div class="srv-list-meta"><div class="srv-list-dur">2 год.</div><div class="srv-list-price">2 700<span class="cur"> грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+        <div class="srv-category-label">Гаряче моделювання тіла</div>
         <div class="srv-list-item"><div class="srv-list-name">🔥 Гаряче моделювання тіла</div><div class="srv-list-meta"><div class="srv-list-dur">2 год.</div><div class="srv-list-price">2 700<span class="cur"> грн</span></div><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
       </div>
     </div>
@@ -1003,6 +1009,11 @@
   line-height: 1.65; padding-top: 8px; margin-top: 4px;
   border-top: 1px solid rgba(122,145,86,0.18);
 }
+.cat-desc-body {
+  display: none; font-size: 13px; color: var(--text-dim);
+  line-height: 1.65; padding: 6px 0 10px;
+}
+.srv-category-label { user-select: none; }
 </style>
 
 <script>
@@ -1025,85 +1036,124 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
 </script>
 
 <script>
-/* ── Service card accordion ── */
+/* ── Service accordion — all tabs ── */
 (function(){
-  var DESCS = {
+  var D = {
     uk: {
-      'Загально-оздоровчий': 'Класичний масаж усього тіла для зняття м\'язової напруги, покращення кровообігу та загального відновлення організму.',
-      'Парний масаж': 'Одночасний масаж для двох в одному кабінеті — ідеально для пар, подруг або близьких людей.',
-      'Антистресовий': 'М\'який розслаблюючий масаж, спрямований на зняття нервового напруження та відновлення внутрішнього балансу.',
-      'Паріння у фітобочці': 'Кедрова фітобочка з ароматичними лікувальними травами — глибоке прогрівання, детоксикація та повне розслаблення.',
-      'Антицелюлітний': 'Інтенсивна техніка для проблемних зон: розбиває целюліт, моделює силует і підтягує шкіру.',
-      'Масаж спини': 'Робота з м\'язами спини, хребтом та плечовим поясом. Ефективно знімає затиски та больовий синдром.',
-      'SPA Ритуал': 'Комплексна SPA-програма: поєднання масажу, косметичного обгортання та ароматерапії в одному ритуалі.',
-      'Дитячий масаж': 'Ніжний профілактичний масаж для дітей — зміцнює м\'язи, формує правильну поставу, підвищує імунітет.',
+      'Загально-оздоровчий масаж':        'Класичний масаж усього тіла для зняття м\'язової напруги, покращення кровообігу та загального відновлення організму.',
+      'Антистресовий масаж':               'М\'який розслаблюючий масаж для зняття нервового напруження та відновлення внутрішнього балансу.',
+      'Парний масаж':                      'Одночасний масаж для двох в одному кабінеті — ідеально для пар, подруг або близьких людей.',
+      'Масаж в чотири руки':               'Синхронний масаж двома майстрами одночасно — вдвічі глибше розслаблення та відновлення м\'язів.',
+      'Масаж спини':                       'Робота з м\'язами спини, хребтом та плечовим поясом. Ефективно знімає затиски та больовий синдром.',
+      'Масаж шийно-комірцевої зони':       'Точковий масаж шиї та плечей — знімає головний біль та напругу від тривалої роботи за комп\'ютером.',
+      'Масаж гарячим камінням':            'Стоун-масаж базальтовими каменями до 45°C — тепло проникає вглиб м\'язів, знімаючи найглибші затиски.',
+      'Лімфодренажний масаж':              'Стимулює відтік лімфи, зменшує набряклість та виводить токсини з організму, покращуючи обмін речовин.',
+      'Антицелюлітний масаж':              'Інтенсивна техніка для проблемних зон: розбиває целюліт, моделює силует та підтягує шкіру.',
+      'Класичний масаж обличчя':           'Ліфтинговий масаж для покращення кольору обличчя, зменшення зморщок та відновлення тонусу шкіри.',
+      'Антивіковий масаж обличчя':         'Спеціальна техніка для корекції вікових змін — моделює контур обличчя та підтягує шкіру природним способом.',
+      'Дитячий масаж':                     'Ніжний профілактичний масаж для дітей — зміцнює м\'язи, формує правильну поставу та підвищує імунітет.',
+      'Паріння у фітобочці':               'Кедрова фітобочка з ароматичними лікувальними травами — глибоке прогрівання, детоксикація та повне розслаблення.',
+      'SPA Ритуал "Фіто-оновлення тіла"': 'Комплексний SPA-ритуал: масаж + фіто-маска + ароматерапія. Повне відновлення тіла та духу в одному сеансі.',
+      'Тепловий SPA-ритуал':               'SPA-програма для двох: масаж + фітобочка + обгортання. Унікальний спільний досвід релаксу та відновлення.',
+      'SPA Ритуал':                        'Комплексна SPA-програма: поєднання масажу, косметичного обгортання та ароматерапії в єдиному ритуалі.',
+      'Обгортання Amore Shemen':           'Косметичне обгортання з натуральними оліями для глибокого зволоження, відновлення та пом\'якшення шкіри.',
+      'Обгортання Bruno Vassari Detox':    'Детокс-обгортання з активними компонентами для очищення пор, виведення токсинів та підвищення тонусу шкіри.',
+      'Гаряче обгортання SPA Seaweed':    'Бандажне обгортання з морськими водоростями — глибоке прогрівання та активне виведення зайвої рідини і токсинів.',
+      'Гаряча експрес-трансформація тіла':'Комплекс: антицелюлітний масаж + гаряче обгортання + фітобочка. Максимальний видимий результат за одне відвідування.',
+      'Холодне моделювання тіла':          'Комплекс: антицелюлітний масаж + холодне обгортання. Охолодження активує жироспалення та підтягує шкіру.',
+      'Гаряче моделювання тіла':           'Комплекс: антицелюлітний масаж + гаряче обгортання. Глибоке прогрівання для ефективної корекції та підтяжки тіла.',
     },
     en: {
-      'Загально-оздоровчий': 'Classic full-body massage to relieve muscle tension, improve circulation and support overall recovery.',
-      'Парний масаж': 'Simultaneous massage for two in one room — perfect for couples, friends or loved ones.',
-      'Антистресовий': 'Gentle relaxing massage targeting nervous tension relief and restoration of inner balance.',
-      'Паріння у фітобочці': 'Cedar phyto-barrel with aromatic healing herbs — deep warming, detox and complete relaxation.',
-      'Антицелюлітний': 'Intensive technique for problem areas: breaks up cellulite, contours the figure and tightens skin.',
-      'Масаж спини': 'Targeted work on back, spine and shoulder muscles. Effectively relieves tension and pain.',
-      'SPA Ритуал': 'Full SPA program: massage combined with cosmetic wrap and aromatherapy in a single ritual.',
-      'Дитячий масаж': 'Gentle preventive massage for children — strengthens muscles, improves posture and boosts immunity.',
+      'Загально-оздоровчий масаж':        'Classic full-body massage to relieve muscle tension, improve circulation and support overall recovery.',
+      'Антистресовий масаж':               'Gentle relaxing massage targeting nervous tension relief and restoration of inner balance.',
+      'Парний масаж':                      'Simultaneous massage for two in one room — perfect for couples, friends or loved ones.',
+      'Масаж в чотири руки':               'Synchronized massage by two therapists at once — twice as deep relaxation and muscle recovery.',
+      'Масаж спини':                       'Targeted work on back, spine and shoulder muscles. Effectively relieves tension and pain.',
+      'Масаж шийно-комірцевої зони':       'Targeted neck and shoulder massage — relieves headaches and tension from computer work.',
+      'Масаж гарячим камінням':            'Hot stone massage with basalt stones at 45°C — heat penetrates deep into muscles to release tension.',
+      'Лімфодренажний масаж':              'Stimulates lymph flow, reduces swelling and flushes toxins, improving the body\'s metabolism.',
+      'Антицелюлітний масаж':              'Intensive technique for problem areas: breaks cellulite, contours the figure and tightens skin.',
+      'Класичний масаж обличчя':           'Lifting massage to improve skin tone, reduce wrinkles and restore facial radiance.',
+      'Антивіковий масаж обличчя':         'Special technique for age correction — naturally sculpts facial contours and firms the skin.',
+      'Дитячий масаж':                     'Gentle preventive massage for children — strengthens muscles, improves posture and boosts immunity.',
+      'Паріння у фітобочці':               'Cedar phyto-barrel with aromatic healing herbs — deep warming, detox and complete relaxation.',
+      'SPA Ритуал "Фіто-оновлення тіла"': 'Full SPA ritual: massage + phyto mask + aromatherapy. Complete body and spirit renewal in one session.',
+      'Тепловий SPA-ритуал':               'SPA program for two: massage + phyto-barrel + wrap. A unique shared relaxation and renewal experience.',
+      'SPA Ритуал':                        'Full SPA program: massage + cosmetic wrap + aromatherapy combined in a single ritual.',
+      'Обгортання Amore Shemen':           'Cosmetic wrap with natural oils for deep hydration, skin restoration and softening.',
+      'Обгортання Bruno Vassari Detox':    'Detox wrap with active ingredients to cleanse pores, flush toxins and boost skin tone.',
+      'Гаряче обгортання SPA Seaweed':    'Bandage wrap with sea algae — deep warming and active removal of excess fluids and toxins.',
+      'Гаряча експрес-трансформація тіла':'Complex: anti-cellulite massage + hot wrap + phyto-barrel. Maximum visible results in one session.',
+      'Холодне моделювання тіла':          'Complex: anti-cellulite massage + cold wrap. Cooling activates fat burning and tightens the skin.',
+      'Гаряче моделювання тіла':           'Complex: anti-cellulite massage + hot wrap. Deep warming for effective body contouring and skin lifting.',
     }
   };
 
-  function getCurrentLang(){
-    return document.documentElement.lang === 'en' ? 'en' : 'uk';
-  }
+  function curLang(){ return document.documentElement.lang === 'en' ? 'en' : 'uk'; }
 
-  function findDesc(nameEl){
-    var text = nameEl ? (nameEl.getAttribute('data-uk') || nameEl.textContent) : '';
-    var descs = DESCS.uk;
-    for (var key in descs) {
-      if (text.indexOf(key) !== -1) return key;
+  function getDesc(rawText, l){
+    var t = rawText.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim();
+    var map = D[l] || D.uk;
+    if (map[t]) return map[t];
+    var keys = Object.keys(map).sort(function(a,b){ return b.length - a.length; });
+    for (var i = 0; i < keys.length; i++){
+      if (t.indexOf(keys[i]) !== -1) return map[keys[i]];
     }
     return null;
   }
 
+  /* 1. Popular cards (tab-top) */
   document.querySelectorAll('#tab-top .srv-card').forEach(function(card){
     var nameEl = card.querySelector('.srv-card-name');
-    var key = findDesc(nameEl);
-    if (!key) return;
+    if (!nameEl) return;
+    var raw = nameEl.getAttribute('data-uk') || nameEl.textContent;
+    var descUk = getDesc(raw, 'uk');
+    if (!descUk) return;
 
-    // wrap existing content
     var inner = card.innerHTML;
     card.innerHTML =
       '<div class="srv-card-main">' + inner + '</div>' +
-      '<button type="button" class="srv-card-toggle">' +
-        '<span class="arr">▾</span> Детальніше' +
-      '</button>' +
+      '<button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>' +
       '<div class="srv-card-body"></div>';
 
     var btn  = card.querySelector('.srv-card-toggle');
     var body = card.querySelector('.srv-card-body');
-    var descKey = key;
-
-    function setDesc(){
-      var lang = getCurrentLang();
-      body.textContent = DESCS[lang][descKey] || DESCS.uk[descKey];
-    }
-    setDesc();
+    body.textContent = getDesc(raw, curLang()) || descUk;
 
     btn.addEventListener('click', function(){
-      setDesc();
+      var n = card.querySelector('.srv-card-name');
+      var t = n ? (n.getAttribute('data-uk') || n.textContent) : raw;
+      body.textContent = getDesc(t, curLang()) || descUk;
       var open = body.style.display === 'block';
       body.style.display = open ? 'none' : 'block';
       btn.classList.toggle('open', !open);
     });
   });
 
-  // re-run setDesc on language switch
-  document.addEventListener('langChanged', function(){
-    document.querySelectorAll('#tab-top .srv-card-body').forEach(function(body){
-      var card = body.closest('.srv-card');
-      var nameEl = card.querySelector('.srv-card-name');
-      var key = findDesc(nameEl);
-      if (!key) return;
-      var lang = getCurrentLang();
-      body.textContent = DESCS[lang][key] || DESCS.uk[key];
+  /* 2. Category labels in all list tabs */
+  document.querySelectorAll('.srv-category-label').forEach(function(lbl){
+    var raw = lbl.getAttribute('data-uk') || lbl.textContent.trim();
+    var descUk = getDesc(raw, 'uk');
+    if (!descUk) return;
+
+    lbl.style.cursor = 'pointer';
+    var arr = document.createElement('span');
+    arr.className = 'cat-arr';
+    arr.style.cssText = 'font-size:11px;display:inline-block;transition:transform .25s;margin-left:5px;opacity:.7;';
+    arr.textContent = '▾';
+    lbl.appendChild(arr);
+
+    var body = document.createElement('div');
+    body.className = 'cat-desc-body';
+    body.textContent = getDesc(raw, curLang()) || descUk;
+    lbl.parentNode.insertBefore(body, lbl.nextSibling);
+
+    lbl.addEventListener('click', function(){
+      var t = lbl.getAttribute('data-uk') || lbl.firstChild.textContent.trim();
+      body.textContent = getDesc(t, curLang()) || descUk;
+      var open = body.style.display === 'block';
+      body.style.display = open ? 'none' : 'block';
+      arr.style.transform = open ? '' : 'rotate(180deg)';
     });
   });
 })();
