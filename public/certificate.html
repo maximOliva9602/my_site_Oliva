@@ -1103,6 +1103,47 @@
     Array.prototype.find = function(fn){ for(var i=0;i<this.length;i++) if(fn(this[i])) return this[i]; };
   }
 
+  // ── Service list translation (inside IIFE so it can access SERVICES, POPULAR_IDS, etc.) ──
+  function renderCertServiceLists(lang) {
+    var tr = (window.OlivaI18n && lang !== 'uk')
+      ? function(t) { return window.OlivaI18n.translate(t, lang); }
+      : function(t) { return t; };
+    var variantsWord = lang === 'en' ? ' options' : ' варіантів';
+
+    // Popular grid
+    popularGrid.innerHTML = '';
+    POPULAR_IDS.forEach(function(pid) {
+      var s = SERVICES.find(function(s){ return s.id === pid; });
+      if (!s) return;
+      var durCount = s.variants.length === 1
+        ? tr(s.variants[0].dur)
+        : s.variants.length + variantsWord;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'popular-btn' + (activeCatId === s.id ? ' active' : '');
+      btn.setAttribute('data-id', s.id);
+      btn.innerHTML =
+        '<div class="popular-btn-top"><span class="popular-btn-name">' + tr(s.name) + '</span></div>' +
+        '<div class="popular-btn-meta">' + durCount + '</div>';
+      btn.addEventListener('click', function(){ selectCategory(s.id); });
+      popularGrid.appendChild(btn);
+    });
+
+    // All services list
+    allServicesScroll.innerHTML = '';
+    SERVICES.forEach(function(s) {
+      var row = document.createElement('div');
+      row.className = 'srv-row' + (activeCatId === s.id ? ' active' : '');
+      row.setAttribute('data-id', s.id);
+      row.innerHTML = '<div class="srv-row-left"><span class="srv-row-name">' + tr(s.name) + '</span></div>';
+      row.addEventListener('click', function(){ selectCategory(s.id); });
+      allServicesScroll.appendChild(row);
+    });
+  }
+
+  // Set callback BEFORE i18n.js loads so auto-apply on page load works
+  window._olivaLangCallback = renderCertServiceLists;
+
 })();
 
   /* ── MUTE BUTTON ── */
@@ -1116,52 +1157,6 @@
 
 <script src="assets/js/i18n.js"></script>
 <script>
-  // ── Certificate service-list translation ──────────────────
-  function renderCertServiceLists(lang) {
-    if (!window.OlivaI18n) return;
-    var tr = lang !== 'uk'
-      ? function(t) { return window.OlivaI18n.translate(t, lang); }
-      : function(t) { return t; };
-    var variantsWord = lang === 'en' ? ' options' : ' варіантів';
-
-    // Popular grid
-    if (typeof popularGrid !== 'undefined' && popularGrid) {
-      popularGrid.innerHTML = '';
-      POPULAR_IDS.forEach(function(pid) {
-        var s = SERVICES.find(function(s){ return s.id === pid; });
-        if (!s) return;
-        var durCount = s.variants.length === 1
-          ? tr(s.variants[0].dur)
-          : s.variants.length + variantsWord;
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'popular-btn' + (activeCatId === s.id ? ' active' : '');
-        btn.setAttribute('data-id', s.id);
-        btn.innerHTML =
-          '<div class="popular-btn-top"><span class="popular-btn-name">' + tr(s.name) + '</span></div>' +
-          '<div class="popular-btn-meta">' + durCount + '</div>';
-        btn.addEventListener('click', function(){ selectCategory(s.id); });
-        popularGrid.appendChild(btn);
-      });
-    }
-
-    // All services list
-    if (typeof allServicesScroll !== 'undefined' && allServicesScroll) {
-      allServicesScroll.innerHTML = '';
-      SERVICES.forEach(function(s) {
-        var row = document.createElement('div');
-        row.className = 'srv-row' + (activeCatId === s.id ? ' active' : '');
-        row.setAttribute('data-id', s.id);
-        row.innerHTML = '<div class="srv-row-left"><span class="srv-row-name">' + tr(s.name) + '</span></div>';
-        row.addEventListener('click', function(){ selectCategory(s.id); });
-        allServicesScroll.appendChild(row);
-      });
-    }
-  }
-
-  // Register callback so i18n.js re-renders lists on every lang switch
-  window._olivaLangCallback = renderCertServiceLists;
-
   // ── Lang switch buttons ───────────────────────────────────
   var langSwitch = document.getElementById('langSwitch');
   if (langSwitch && window.OlivaI18n) {
@@ -1173,10 +1168,9 @@
         });
       });
     });
-    // Apply saved language on load (re-renders lists if EN is saved)
+    // Highlight saved language button on load
     var saved = window.OlivaI18n.get();
     if (saved !== 'uk') {
-      renderCertServiceLists(saved);
       langSwitch.querySelectorAll('button').forEach(function(b) {
         b.style.color = b.getAttribute('data-lang') === saved ? 'var(--cream)' : 'var(--text-dim)';
       });

@@ -96,18 +96,33 @@
     chatClose.addEventListener("click", function () { toggleChat(false); });
   }
 
-  /* ----- Поле вводу: відправляє повідомлення в Telegram ----- */
+  /* ----- Хук під майбутній живий чат (поки неактивний) -----
   var chatForm = document.getElementById("chatForm");
   var chatInput = document.getElementById("chatInput");
+  var chatBody = document.getElementById("chatBody");
+  function addMsg(text, dir) {
+    var m = document.createElement("div");
+    m.className = "chat-msg chat-msg--" + dir;
+    m.textContent = text;
+    chatBody.appendChild(m);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
   if (chatForm) {
     chatForm.removeAttribute("hidden");
     chatForm.addEventListener("submit", function (e) {
       e.preventDefault();
       var text = chatInput.value.trim();
       if (!text) return;
-      var tgUrl = "https://t.me/massage_oliva_kyiv?text=" + encodeURIComponent(text);
-      window.open(tgUrl, "_blank", "noopener");
+      addMsg(text, "out");
       chatInput.value = "";
+      fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        // тут опрацюємо відповідь / підключимо Socket.IO
+      });
     });
   }
+  ----------------------------------------------------------- */
 })();

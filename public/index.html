@@ -89,9 +89,7 @@
   }
   </script>
 
-  <link rel="icon" href="assets/img/favicon-32.png" type="image/png" sizes="32x32" />
-  <link rel="icon" href="assets/img/favicon-192.png" type="image/png" sizes="192x192" />
-  <link rel="apple-touch-icon" href="assets/img/favicon-192.png" />
+  <link rel="icon" href="assets/img/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -169,8 +167,8 @@
     <li><a href="#team" data-i18n="nav.team">Майстри</a></li>
     <li><a href="#contacts" data-i18n="nav.contacts">Контакти</a></li>
     <li><a href="/certificate.html" data-i18n="nav.cert" style="color:var(--cream);background:var(--olive);padding:6px 14px;border-radius:50px;font-size:13px;white-space:nowrap">🎁 Сертифікат</a></li>
-    <li><a href="/tips.html" data-i18n="nav.tips" style="color:var(--olive-light)">Чайові</a></li>
-    <li><a href="/review" data-i18n="nav.review" style="color:var(--olive-light)">Відгук</a></li>
+    <li><a href="/tips.html" data-i18n="nav.tips" style="color:var(--olive-light)">🤍 Чайові</a></li>
+    <li><a href="/review" data-i18n="nav.review" style="color:var(--olive-light)">✍️ Відгук</a></li>
     <li><a href="/blog" data-i18n="nav.blog">Блог</a></li>
     <li><a href="/shop" data-i18n="nav.shop">Магазин</a></li>
     <li><a href="/training" data-i18n="nav.training">Навчання</a></li>
@@ -196,11 +194,15 @@
   <div class="hero-bg-overlay"></div>
 
   <div class="hero-center">
-    <div class="hero-eyebrow" data-i18n="hero.eyebrow">Студія масажу OLIVA</div>
+    <div class="hero-eyebrow" data-i18n="hero.eyebrow">Студія масажу · Київ</div>
     <h1 class="hero-title">
-      <span data-i18n="hero.title1">Тут починається</span><br>
-      <em data-i18n="hero.title2">твоє відновлення</em>
+      <span data-i18n="hero.title1">Тут твоє</span><br>
+      <em data-i18n="hero.title2">відновлення</em><br>
+      <span data-i18n="hero.title3">починається</span>
     </h1>
+    <p class="hero-desc" data-i18n="hero.desc">
+      Місце, де ти можеш зупинитись, видихнути і відновити своє тіло. Працюємо з напругою глибоко — щоб ти відчув легкість вже після першого сеансу.
+    </p>
     <div class="hero-btns">
       <a href="/booking" class="btn btn-primary btn-pulse" onclick="openBookingDrawer(event)"><span data-i18n="hero.cta1">Записатися онлайн</span> →</a>
       <a href="#services" class="btn btn-outline" data-i18n="hero.cta2">Переглянути послуги</a>
@@ -250,7 +252,7 @@
     <div class="srv-carousel" id="srvCarousel">
 
       <a class="srv-slide" href="/booking" target="_blank" rel="noopener">
-        <img src="assets/img/parni.jpeg" alt="Парний масаж Київ" loading="lazy">
+        <img src="assets/img/srv-parni.jpg" alt="Парний масаж Київ" loading="lazy">
         <div class="srv-slide-overlay"></div>
         <div class="srv-slide-content">
           <div class="srv-slide-name">Парний масаж</div>
@@ -260,7 +262,7 @@
       </a>
 
       <a class="srv-slide" href="/booking" target="_blank" rel="noopener">
-        <img src="assets/img/ozdorovchuy.jpeg" alt="Загально-оздоровчий масаж Київ" loading="lazy">
+        <img src="assets/img/srv-ozdorovchuy.jpg" alt="Загально-оздоровчий масаж Київ" loading="lazy">
         <div class="srv-slide-overlay"></div>
         <div class="srv-slide-content">
           <div class="srv-slide-name">Загально-оздоровчий масаж</div>
@@ -270,7 +272,7 @@
       </a>
 
       <a class="srv-slide" href="/booking" target="_blank" rel="noopener">
-        <img src="assets/img/SPA.jpeg" alt="SPA ритуали Київ" loading="lazy">
+        <img src="assets/img/srv-spa.jpg" alt="SPA ритуали Київ" loading="lazy">
         <div class="srv-slide-overlay"></div>
         <div class="srv-slide-content">
           <div class="srv-slide-name">SPA-ритуали</div>
@@ -280,7 +282,7 @@
       </a>
 
       <a class="srv-slide" href="/booking" target="_blank" rel="noopener">
-        <img src="assets/img/shudnenia.jpeg" alt="Обгортання для схуднення Київ" loading="lazy">
+        <img src="assets/img/srv-shudnenia.jpg" alt="Обгортання для схуднення Київ" loading="lazy">
         <div class="srv-slide-overlay"></div>
         <div class="srv-slide-content">
           <div class="srv-slide-name">Обгортання для схуднення</div>
@@ -290,7 +292,7 @@
       </a>
 
       <a class="srv-slide" href="/booking" target="_blank" rel="noopener">
-        <img src="assets/img/aparatni.jpeg" alt="Апаратний масаж Київ" loading="lazy">
+        <img src="assets/img/srv-aparatni.jpg" alt="Апаратний масаж Київ" loading="lazy">
         <div class="srv-slide-overlay"></div>
         <div class="srv-slide-content">
           <div class="srv-slide-name">Апаратні масажі</div>
@@ -316,6 +318,7 @@
       </div>
       <div class="srv-tabs reveal">
         <button class="srv-tab active" data-tab="top" data-i18n="srv.tab.top">Популярні</button>
+        <button class="srv-tab" data-tab="all" data-i18n="srv.tab.all">Усі послуги</button>
         <button class="srv-tab" data-tab="complex" data-i18n="srv.tab.complex">Комплекси</button>
         <button class="srv-tab" data-tab="spa" data-i18n="srv.tab.spa">SPA-ритуали</button>
         <button class="srv-tab" data-tab="master" data-i18n="srv.tab.master">Прайс Майстер</button>
@@ -323,14 +326,12 @@
       </div>
     </div>
 
-    <div class="srv-and-promo">
-    <div class="srv-panels-col">
     <!-- Топ послуги -->
     <div class="srv-panel active" id="tab-top">
       <div class="services-grid">
 
         <!-- 1. Загально-оздоровчий масаж -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/ozdorovchuy.jpeg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Загально-оздоровчий масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -343,7 +344,7 @@
         </div>
 
         <!-- 2. Парний масаж -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/srv-parni.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Парний масаж</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 година</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -355,7 +356,7 @@
         </div>
 
         <!-- 3. Масаж спини -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж спини (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -367,7 +368,7 @@
         </div>
 
         <!-- 4. Масаж шийно-комірцевої зони -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж шийно-комірцевої зони (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -379,7 +380,7 @@
         </div>
 
         <!-- 5. Класичний масаж обличчя -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-oblychchia-solomianskyi-raion.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Класичний масаж обличчя</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">(Майстер) 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -391,7 +392,7 @@
         </div>
 
         <!-- 6. Антистресовий масаж -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antystresovyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Антистресовий масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -404,7 +405,7 @@
         </div>
 
         <!-- 7. Лімфодренажний масаж -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/limfodrenazhnyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Лімфодренажний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -417,7 +418,7 @@
         </div>
 
         <!-- 8. Антицелюлітний масаж -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antytseliulitnyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Антицелюлітний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -430,7 +431,7 @@
         </div>
 
         <!-- 9. Паріння у фітобочці -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/parinnia-u-fitobochtsi-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Паріння у фітобочці</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">20 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -443,7 +444,7 @@
         </div>
 
         <!-- 10. SPA Ритуал "Фіто-оновлення тіла" -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/relaks-spa-programa-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">SPA Ритуал «Фіто-оновлення тіла»</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">2 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -454,7 +455,7 @@
         </div>
 
         <!-- 11. SPA Ритуал "Глибоке прогрівання для двох" -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/relaks-spa-programa-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Тепловий SPA-ритуал «Глибоке прогрівання для двох»</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">2 год. 10 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">6 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -466,7 +467,7 @@
         </div>
 
         <!-- 12. Дитячий масаж -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-dlia-ditei-kyiv.PNG')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Дитячий масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -479,7 +480,7 @@
         </div>
 
         <!-- 13. Обгортання Amore Shemen -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Обгортання Amore Shemen</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">Гаряче · 1 година</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -492,11 +493,565 @@
       </div>
     </div>
 
-
-    <!-- Комплекси -->
-    <div class="srv-panel" id="tab-complex">
+    <!-- Усі послуги -->
+    <div class="srv-panel" id="tab-all">
       <div class="services-grid">
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg')">
+        <div class="srv-section-title">Масаж тіла</div>
+        <div class="srv-category-label">Загально-оздоровчий масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Загально-оздоровчий масаж (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Загально-оздоровчий масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 300<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Антистресовий масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Антистресовий масаж (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Антистресовий масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 300<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Спортивний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Спортивний масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Масаж спини</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж спини (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж спини (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Масаж шийно-комірцевої зони</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж шийно-комірцевої зони (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж шийно-комірцевої зони (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Лімфодренажний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Лімфодренажний масаж (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Лімфодренажний масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Антицелюлітний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Антицелюлітний масаж (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 300<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 300<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Антицелюлітний масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 450<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 900<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 400<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Міофасціальний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Міофасціальний масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Relax масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Relax масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Моделюючий масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Моделюючий масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 450<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 900<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 400<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Медовий масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Медовий масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 450<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 900<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 400<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Вакуумно-баночний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Вакуумно-баночний масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Масаж для вагітних</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж для вагітних (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж для вагітних (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 300<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Дитячий масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Дитячий масаж (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Дитячий масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Масаж стоп</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж стоп (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Масаж голови</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж голови</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Бамбуковий баночний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Бамбуковий баночний масаж</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Вісцеральний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Вісцеральний масаж</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Апаратно-вакуумний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Апаратно-вакуумний масаж</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 750<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Парний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Парний масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">3 500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">4 500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Масаж в чотири руки</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж в чотири руки</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 400<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">3 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">4 500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Масаж гарячим камінням</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Масаж гарячим камінням</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 400<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-section-title">Масаж обличчя</div>
+        <div class="srv-category-label">Класичний масаж обличчя</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Класичний масаж обличчя (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Класичний масаж обличчя (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Антивіковий масаж обличчя</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Антивіковий масаж обличчя (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Антивіковий масаж обличчя (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Лімфодренажний масаж обличчя</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Лімфодренажний масаж обличчя (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Лімфодренажний масаж обличчя (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Relax масаж обличчя</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Relax масаж обличчя (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Relax масаж обличчя (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Моделюючий масаж обличчя</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Моделюючий масаж обличчя (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Моделюючий масаж обличчя (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Пластичний масаж обличчя</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Пластичний масаж обличчя (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Пластичний масаж обличчя (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Скульптуруючий масаж обличчя</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Скульптуруючий масаж обличчя (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Скульптуруючий масаж обличчя (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Кобідо</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Кобідо (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">650<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Кобідо (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Гуа-ша обличчя</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Гуа-ша обличчя (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">650<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Гуа-ша обличчя (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 350<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Букальний масаж</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Букальний масаж (Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">50 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Букальний масаж (Топ Майстер)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">50 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 250<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-section-title">SPA-процедури та комплекси</div>
+        <div class="srv-category-label">Паріння у фітобочці</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Паріння у фітобочці</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">20 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">900<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-category-label">Обгортання Amore Shemen (гаряче)</div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Обгортання Amore Shemen (гаряче)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -504,7 +1059,8 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/obhortannia-dlia-skhudnennia-kyiv.jpg')">
+        <div class="srv-category-label">Обгортання Amore Shemen (холодне)</div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Обгортання Amore Shemen (холодне)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 10 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -512,7 +1068,8 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg')">
+        <div class="srv-category-label">Обгортання Bruno Vassari Detox</div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Обгортання Bruno Vassari Detox</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 15 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -520,7 +1077,8 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg')">
+        <div class="srv-category-label">Гаряче обгортання SPA Seaweed</div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Гаряче обгортання SPA Seaweed</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 10 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -528,7 +1086,8 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg')">
+        <div class="srv-category-label">Гаряча експрес-трансформація тіла</div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Гаряча експрес-трансформація тіла</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">2 год. 10 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">3 500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -536,7 +1095,8 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/obhortannia-dlia-skhudnennia-kyiv.jpg')">
+        <div class="srv-category-label">Холодне моделювання тіла</div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Холодне моделювання тіла</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -544,7 +1104,8 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg')">
+        <div class="srv-category-label">Гаряче моделювання тіла</div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Гаряче моделювання тіла</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -552,7 +1113,8 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg')">
+        <div class="srv-category-label">Сольове обгортання</div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Сольове обгортання</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 15 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 300<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -560,7 +1122,86 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/kinezioteipuvannia-kyiv.jpg')">
+        <div class="srv-category-label">Кінезіотейпування</div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Кінезіотейпування</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Комплекси -->
+    <div class="srv-panel" id="tab-complex">
+      <div class="services-grid">
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Обгортання Amore Shemen (гаряче)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Обгортання Amore Shemen (холодне)</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 10 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Обгортання Bruno Vassari Detox</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 15 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Гаряче обгортання SPA Seaweed</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 10 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Гаряча експрес-трансформація тіла</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год. 10 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">3 500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Холодне моделювання тіла</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Гаряче моделювання тіла</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
+          <div class="srv-card-name">Сольове обгортання</div>
+          <div class="srv-multi-rows">
+            <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 15 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 300<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
+          </div>
+          <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
+          <div class="srv-card-body"></div>
+        </div>
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Кінезіотейпування</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">500<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -574,7 +1215,7 @@
     <!-- SPA-ритуали -->
     <div class="srv-panel" id="tab-spa">
       <div class="services-grid">
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/srv-parni.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Парний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -584,7 +1225,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-zhk-dynastia.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж в чотири руки</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 400<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -594,7 +1235,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/stoun-terapiia-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж гарячим камінням</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 400<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -603,7 +1244,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/parinnia-u-fitobochtsi-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Паріння у фітобочці</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">20 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">600<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -614,7 +1255,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/relaks-spa-programa-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">SPA Ритуал «Фіто-оновлення тіла»</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год. 30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">2 150<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -623,7 +1264,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/relaks-spa-programa-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Тепловий SPA-ритуал «Глибоке прогрівання для двох»</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">2 год. 10 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">6 000<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -640,7 +1281,7 @@
     <div class="srv-panel" id="tab-master">
       <div class="services-grid">
         <div class="srv-section-title">Масаж тіла</div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/ozdorovchuy.jpeg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Загально-оздоровчий масаж (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -652,7 +1293,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antystresovyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Антистресовий масаж (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -664,7 +1305,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж спини (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -672,7 +1313,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж шийно-комірцевої зони (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -682,7 +1323,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/limfodrenazhnyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Лімфодренажний масаж (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -693,7 +1334,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antytseliulitnyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Антицелюлітний масаж (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -704,7 +1345,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-dlia-ditei-kyiv.PNG')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Дитячий масаж (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -715,7 +1356,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-dlia-vahitnykh-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж для вагітних (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">2 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -724,7 +1365,7 @@
           <div class="srv-card-body"></div>
         </div>
         <div class="srv-section-title">Масаж обличчя</div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-oblychchia-solomianskyi-raion.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Класичний масаж обличчя (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -734,7 +1375,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-oblychchia-kyiv-shuliavska.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Антивіковий масаж обличчя (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -744,7 +1385,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/kosmetychnyi-masazh-oblychchia-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Лімфодренажний масаж обличчя (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -754,7 +1395,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/lifting-masazh-oblychchya-shulyavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Relax масаж обличчя (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -764,7 +1405,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/relaks-masazh-oblychchia-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Моделюючий масаж обличчя (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -774,7 +1415,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/05987bda226ad8b3a60e6d13322a4c3c.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Пластичний масаж обличчя (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -784,7 +1425,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/oliva-masazh-oblychchya-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Скульптуруючий масаж обличчя (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -794,7 +1435,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/naturalne-omolodzhennia-oblychchya-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Кобідо (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">650<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -804,7 +1445,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-oblychchia-industrialnyi-mist-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Гуа-ша обличчя (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">650<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -814,7 +1455,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/bukkalnyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Букальний масаж (Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">50 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 100<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -829,7 +1470,7 @@
     <div class="srv-panel" id="tab-topmaster">
       <div class="services-grid">
         <div class="srv-section-title">Масаж тіла</div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/ozdorovchuy.jpeg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Загально-оздоровчий масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -841,7 +1482,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antystresovyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Антистресовий масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -853,7 +1494,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/sportyvnyi-masazh-kyiv.png')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Спортивний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -864,7 +1505,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж спини (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -874,7 +1515,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж шийно-комірцевої зони (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -884,7 +1525,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/limfodrenazhnyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Лімфодренажний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -895,7 +1536,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/antytseliulitnyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Антицелюлітний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -907,7 +1548,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-industrialnyi-mist-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Міофасціальний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -918,7 +1559,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/relaks-masazh-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Relax масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -929,7 +1570,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/korektsiia-figury-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Моделюючий масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -940,7 +1581,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/medovyi-masazh-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Медовий масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">45 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 200<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -951,7 +1592,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/banochnyi-masazh-kyiv-1.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Вакуумно-баночний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -962,7 +1603,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-dlia-vahitnykh-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж для вагітних (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -974,7 +1615,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-dlia-ditei-kyiv.PNG')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Дитячий масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -985,7 +1626,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-kyiv-shuliavska-oliva.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Масаж стоп (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -994,7 +1635,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/srv-parni.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Парний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1005,7 +1646,7 @@
           <div class="srv-card-body"></div>
         </div>
         <div class="srv-section-title">Масаж обличчя</div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-oblychchia-solomianskyi-raion.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Класичний масаж обличчя (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1015,7 +1656,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-oblychchia-kyiv-shuliavska.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Антивіковий масаж обличчя (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1025,7 +1666,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/kosmetychnyi-masazh-oblychchia-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Лімфодренажний масаж обличчя (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1035,7 +1676,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/lifting-masazh-oblychchya-shulyavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Relax масаж обличчя (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1045,7 +1686,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/relaks-masazh-oblychchia-shuliavska-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Моделюючий масаж обличчя (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1055,7 +1696,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/05987bda226ad8b3a60e6d13322a4c3c.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Пластичний масаж обличчя (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1065,7 +1706,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/oliva-masazh-oblychchya-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Скульптуруючий масаж обличчя (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1075,7 +1716,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/naturalne-omolodzhennia-oblychchya-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Кобідо (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1085,7 +1726,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/masazh-oblychchia-industrialnyi-mist-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Гуа-ша обличчя (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">30 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">800<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1094,7 +1735,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/bukkalnyi-masazh-kyiv.jpg')">
+        <div class="srv-card srv-card--multi">
           <div class="srv-card-name">Букальний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">50 хв.</span><div class="srv-multi-right"><span class="srv-multi-price">1 250<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -1104,43 +1745,42 @@
         </div>
       </div>
     </div>
-    </div><!-- /srv-panels-col -->
 
-    <aside class="promo-col" id="акції">
-      <div class="section-label reveal" data-i18n="promo.label">Спеціальні пропозиції</div>
-      <h2 class="section-title reveal"><span data-i18n="promo.title1">Акції</span><br><em data-i18n="promo.title2">та знижки</em></h2>
-      <div class="promo-grid reveal">
-        <div class="promo-block">
-          <div class="promo-block-title" data-i18n="promo.t1">Абонементи</div>
-          <div class="promo-row"><div class="promo-name"><span data-i18n="promo.r1n">Курс 5 сеансів масажу</span><span class="promo-sub" data-i18n="promo.r1s">Дійсний 2 місяці</span></div><div class="promo-val">−5%</div></div>
-          <div class="promo-row"><div class="promo-name"><span data-i18n="promo.r2n">Курс 10 сеансів масажу</span><span class="promo-sub" data-i18n="promo.r2s">Дійсний 3 місяці</span></div><div class="promo-val">−10%</div></div>
-          <div class="promo-row"><div class="promo-name"><span data-i18n="promo.r3n">Курс 15 сеансів масажу</span><span class="promo-sub" data-i18n="promo.r3s">Дійсний 4 місяці</span></div><div class="promo-val">−13%</div></div>
-        </div>
-        <div class="promo-block">
-          <div class="promo-block-title"><span data-i18n="promo.t2">Знижки</span> <span class="promo-note" data-i18n="promo.t2note">(не поширюються на Топ Майстрів)</span></div>
-          <div class="promo-row"><div class="promo-name"><span data-i18n="promo.d1n">До дня народження</span><span class="promo-sub" data-i18n="promo.d1s">Діє в день народження та 5 днів після</span></div><div class="promo-val">−15%</div></div>
-          <div class="promo-row"><div class="promo-name" data-i18n="promo.d2n">Для військових</div><div class="promo-val">−15%</div></div>
-          <div class="promo-row"><div class="promo-name"><span data-i18n="promo.d3n">На перший візит</span><span class="promo-sub" data-i18n="promo.d3s">За промокодом</span></div><div class="promo-val">−10%</div></div>
-        </div>
+<!-- ============ АКЦІЇ / ЗНИЖКИ ============ -->
+<section class="promo-section" id="акції">
+  <div class="container">
+    <div class="section-label reveal">Спеціальні пропозиції</div>
+    <h2 class="section-title reveal">Акції<br><em>та знижки</em></h2>
+    <div class="promo-grid reveal">
+      <div class="promo-block">
+        <div class="promo-block-title">Абонементи</div>
+        <div class="promo-row"><div class="promo-name">Курс 5 сеансів масажу<span class="promo-sub">Дійсний 2 місяці</span></div><div class="promo-val">−5%</div></div>
+        <div class="promo-row"><div class="promo-name">Курс 10 сеансів масажу<span class="promo-sub">Дійсний 3 місяці</span></div><div class="promo-val">−10%</div></div>
+        <div class="promo-row"><div class="promo-name">Курс 15 сеансів масажу<span class="promo-sub">Дійсний 4 місяці</span></div><div class="promo-val">−13%</div></div>
       </div>
-    </aside>
-    </div><!-- /srv-and-promo -->
-  </div><!-- /container -->
-</section><!-- /services-section -->
+      <div class="promo-block">
+        <div class="promo-block-title">Знижки <span class="promo-note">(не поширюються на Топ Майстрів)</span></div>
+        <div class="promo-row"><div class="promo-name">До дня народження<span class="promo-sub">Діє в день народження та 5 днів після</span></div><div class="promo-val">−15%</div></div>
+        <div class="promo-row"><div class="promo-name">Для військових</div><div class="promo-val">−15%</div></div>
+        <div class="promo-row"><div class="promo-name">На перший візит<span class="promo-sub">За промокодом</span></div><div class="promo-val">−10%</div></div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- ============ ПРАВИЛА ВІДВІДУВАННЯ ============ -->
 <section class="rules-section" id="правила">
   <div class="container">
-    <div class="section-label reveal" data-i18n="rules.label">Студія масажу Oliva</div>
-    <h2 class="section-title reveal"><span data-i18n="rules.title1">Правила</span><br><em data-i18n="rules.title2">відвідування</em></h2>
+    <div class="section-label reveal">Студія масажу Oliva</div>
+    <h2 class="section-title reveal">Правила<br><em>відвідування</em></h2>
     <div class="rules-accordion reveal">
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger1">Бронювання послуг студії</span>
+          <span class="rules-trigger-title">Бронювання послуг студії</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-1">
+        <div class="rules-body">
           <div class="rules-block">
             <p>Для підтвердження бронювання студія може запросити депозит (передоплату) у розмірі фіксованої суми <strong>(500 грн)</strong>.</p>
             <p>Депозит є оплатою за резервування часу спеціаліста студії.</p>
@@ -1156,10 +1796,10 @@
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger2">Запізнення</span>
+          <span class="rules-trigger-title">Запізнення</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-2">
+        <div class="rules-body">
           <div class="rules-block">
             <p>У разі запізнення клієнта тривалість процедури може бути скорочена на час запізнення.</p>
             <p>Вартість процедури при цьому не змінюється.</p>
@@ -1170,10 +1810,10 @@
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger3">Неявка на процедуру</span>
+          <span class="rules-trigger-title">Неявка на процедуру</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-3">
+        <div class="rules-body">
           <div class="rules-block">
             <p>У разі неявки клієнта або скасування запису менш ніж за <strong>5 годин</strong> до початку процедури депозит не повертається.</p>
             <p>У цьому випадку депозит вважається компенсацією за резервування часу спеціаліста.</p>
@@ -1184,10 +1824,10 @@
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger4">Скасування та перенесення запису</span>
+          <span class="rules-trigger-title">Скасування та перенесення запису</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-4">
+        <div class="rules-body">
           <div class="rules-block">
             <p>Перенесення або скасування запису можливе не пізніше ніж за <strong>5 годин</strong> до початку процедури.</p>
             <p>Клієнту надається одна можливість перенесення запису менш ніж за <strong>5 годин</strong> без втрати сеансу.</p>
@@ -1199,10 +1839,10 @@
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger5">Форс-мажорний шанс</span>
+          <span class="rules-trigger-title">Форс-мажорний шанс</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-5">
+        <div class="rules-body">
           <div class="rules-block">
             <p>У разі виникнення форс-мажорних обставин, таких як повітряна тривога, стихійні лиха, аварії, надзвичайні ситуації або інші обставини, що не залежать від студії чи клієнта та унеможливлюють проведення процедури, запис переноситься на інший день та час за домовленістю сторін.</p>
             <p>У таких випадках депозит, абонемент або подарунковий сертифікат не вважається використаним.</p>
@@ -1212,10 +1852,10 @@
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger6">Подарункові сертифікати</span>
+          <span class="rules-trigger-title">Подарункові сертифікати</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-6">
+        <div class="rules-body">
           <div class="rules-block">
             <p>Подарунковий сертифікат підтверджує право отримання послуг студії на суму або послугу, зазначену у сертифікаті.</p>
             <p>У разі перевищення вартості процедури над номіналом сертифіката клієнт здійснює доплату.</p>
@@ -1227,10 +1867,10 @@
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger7">Абонементи</span>
+          <span class="rules-trigger-title">Абонементи</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-7">
+        <div class="rules-body">
           <div class="rules-block">
             <p>Абонемент надає право на відвідування визначеної кількості процедур масажу відповідно до придбаного пакету.</p>
             <p>Термін дії абонемента становить: <strong>2 місяці — 5 сеансів; 3 місяці — 10 сеансів; 4 місяці — 15 сеансів</strong> з моменту придбання, якщо інше не зазначено під час купівлі.</p>
@@ -1244,10 +1884,10 @@
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger8">Стан здоров'я</span>
+          <span class="rules-trigger-title">Стан здоров'я</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-8">
+        <div class="rules-body">
           <div class="rules-block">
             <p>Перед початком процедури клієнт зобов'язаний повідомити спеціаліста про наявність хронічних захворювань, травми, операції, вагітність, підвищений артеріальний тиск, інші медичні обмеження, а також наявність будь-яких алергічних реакцій. Клієнт несе відповідальність за достовірність наданої інформації.</p>
             <p>У разі наявності протипоказань або ризику для здоров'я студія має право відмовити у проведенні процедури.</p>
@@ -1259,10 +1899,10 @@
 
       <div class="rules-item">
         <button class="rules-trigger" onclick="toggleRule(this)">
-          <span class="rules-trigger-title" data-i18n="rules.trigger9">Правила перебування у студії</span>
+          <span class="rules-trigger-title">Правила перебування у студії</span>
           <svg class="rules-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <div class="rules-body" data-rules-body="rules-body-9">
+        <div class="rules-body">
           <div class="rules-block">
             <p>Клієнти зобов'язані дотримуватися правил поведінки та поважати інших гостей студії.</p>
             <p>У приміщенні студії забороняється перебування у стані алкогольного або наркотичного сп'яніння.</p>
@@ -1512,7 +2152,7 @@
     <!-- Поки бекенд не підключено — швидкі кнопки на месенджери/дзвінок -->
     <div class="chat-quick" id="chatQuick">
       <a href="https://wa.me/380974340112" target="_blank" rel="noopener" class="chat-q chat-q--wa">WhatsApp</a>
-      <a href="viber://chat?number=380974340112" class="chat-q chat-q--vb">Viber</a>
+      <a href="https://viber.me/+380974340112" class="chat-q chat-q--vb">Viber</a>
       <a href="https://t.me/massage_oliva_kyiv" target="_blank" rel="noopener" class="chat-q chat-q--tg">Telegram</a>
       <a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener" class="chat-q chat-q--ig">Instagram Direct</a>
       <a href="tel:+380974340112" class="chat-q chat-q--call" data-i18n="chat.call">📞 Подзвонити</a>
@@ -1520,10 +2160,8 @@
     <!-- TODO: коли підключимо живий чат (Socket.IO + Telegram), тут з'явиться поле вводу.
          Розмітка готова, лишається активувати у script.js. -->
     <form class="chat-form" id="chatForm" hidden>
-      <input type="text" id="chatInput" placeholder="Написати в Telegram…" autocomplete="off" />
-      <button type="submit" aria-label="Відправити в Telegram" title="Відправити в Telegram">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-      </button>
+      <input type="text" id="chatInput" placeholder="Напишіть повідомлення…" autocomplete="off" />
+      <button type="submit" aria-label="Надіслати">→</button>
     </form>
   </div>
 </div>
@@ -2041,56 +2679,61 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
 
   /* 4. Background images on service cards — specific first to avoid wrong matches */
   var bgMap = [
-    ['Фіто-оновлення тіла', 'assets/img/relaks-spa-programa-kyiv.jpg'],
-    ['Глибоке прогрівання для двох', 'assets/img/relaks-spa-programa-kyiv.jpg'],
-    ['Гаряча експрес-трансформація', 'assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg'],
-    ['Холодне моделювання', 'assets/img/obhortannia-dlia-skhudnennia-kyiv.jpg'],
-    ['Гаряче моделювання', 'assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg'],
-    ['Обгортання Amore Shemen (гаряче)', 'assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg'],
-    ['Обгортання Amore Shemen (холодне)', 'assets/img/obhortannia-dlia-skhudnennia-kyiv.jpg'],
-    ['Обгортання Amore Shemen', 'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
-    ['Обгортання Bruno Vassari', 'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
-    ['Гаряче обгортання SPA Seaweed', 'assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg'],
-    ['Сольове обгортання', 'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
-    ['Антивіковий масаж обличчя', 'assets/img/masazh-oblychchia-kyiv-shuliavska.jpg'],
-    ['Лімфодренажний масаж обличчя', 'assets/img/kosmetychnyi-masazh-oblychchia-kyiv.jpg'],
-    ['Relax масаж обличчя', 'assets/img/lifting-masazh-oblychchya-shulyavska-kyiv.jpg'],
-    ['Моделюючий масаж обличчя', 'assets/img/relaks-masazh-oblychchia-shuliavska-kyiv.jpg'],
-    ['Пластичний масаж обличчя', 'assets/img/05987bda226ad8b3a60e6d13322a4c3c.jpg'],
-    ['Скульптуруючий масаж обличчя', 'assets/img/oliva-masazh-oblychchya-kyiv.jpg'],
-    ['Класичний масаж обличчя', 'assets/img/masazh-oblychchia-solomianskyi-raion.jpg'],
-    ['Кобідо', 'assets/img/naturalne-omolodzhennia-oblychchya-kyiv.jpg'],
-    ['Гуа-ша обличчя', 'assets/img/masazh-oblychchia-industrialnyi-mist-kyiv.jpg'],
-    ['Дитячий масаж', 'assets/img/masazh-dlia-ditei-kyiv.PNG'],
-    ['Паріння у фітобочці', 'assets/img/parinnia-u-fitobochtsi-kyiv.jpg'],
-    ['Масаж шийно-комірцевої зони', 'assets/img/masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg'],
-    ['Масаж спини', 'assets/img/masazh-shuliavska-kyiv.jpg'],
-    ['Масаж стоп', 'assets/img/masazh-kyiv-shuliavska-oliva.jpg'],
-    ['Масаж для вагітних', 'assets/img/masazh-dlia-vahitnykh-shuliavska-kyiv.jpg'],
-    ['Масаж гарячим камінням', 'assets/img/stoun-terapiia-kyiv.jpg'],
-    ['Антистресовий масаж', 'assets/img/antystresovyi-masazh-kyiv.jpg'],
-    ['Антицелюлітний масаж', 'assets/img/antytseliulitnyi-masazh-kyiv.jpg'],
-    ['Лімфодренажний масаж', 'assets/img/limfodrenazhnyi-masazh-kyiv.jpg'],
-    ['Медовий масаж', 'assets/img/medovyi-masazh-shuliavska-kyiv.jpg'],
-    ['Relax масаж', 'assets/img/relaks-masazh-shuliavska-kyiv.jpg'],
-    ['Вакуумно-баночний масаж', 'assets/img/banochnyi-masazh-kyiv-1.jpg'],
-    ['Букальний масаж', 'assets/img/bukkalnyi-masazh-kyiv.jpg'],
-    ['Вісцеральний масаж', 'assets/img/vistseralnyi-masazh-kyiv.jpg'],
-    ['Моделюючий масаж', 'assets/img/korektsiia-figury-kyiv.jpg'],
-    ['Міофасціальний масаж', 'assets/img/masazh-industrialnyi-mist-kyiv.jpg'],
-    ['Спортивний масаж', 'assets/img/sportyvnyi-masazh-kyiv.png'],
-    ['Масаж голови', 'assets/img/masazh-solomianskyi-raion-kyiv.png'],
-    ['Кінезіотейпування', 'assets/img/kinezioteipuvannia-kyiv.jpg'],
-    ['Апаратний масаж', 'assets/img/aparatnyi-masazh-shuliavska.jpg'],
-    ['Масаж в чотири руки', 'assets/img/masazh-zhk-dynastia.jpg'],
-    ['Парний масаж', 'assets/img/srv-parni.jpg'],
-    ['Загально-оздоровчий масаж', 'assets/img/ozdorovchuy.jpeg'],
+    // SPA-ритуали
+    ['Тепловий SPA-ритуал',               'assets/img/spa-sauna-kyiv.jpg'],
+    ['SPA Ритуал',                         'assets/img/srv-spa.jpg'],
+    // Обгортання (specific variants)
+    ['Обгортання Amore Shemen (гаряче)',   'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
+    ['Обгортання Amore Shemen (холодне)',  'assets/img/fitoterapiia-na-travakh-kyiv-2.jpg'],
+    ['Обгортання Bruno Vassari',           'assets/img/SPA.jpeg'],
+    ['Гаряче обгортання SPA Seaweed',      'assets/img/fitoterapiia-kyiv-solomianskyi-raion-2.jpg'],
+    ['Гаряча експрес-трансформація',       'assets/img/fitoterapiia-kyiv-solomianskyi-raion.jpg'],
+    ['Холодне моделювання',                'assets/img/shudnenia.jpeg'],
+    ['Гаряче моделювання',                 'assets/img/srv-shudnenia.jpg'],
+    ['Сольове обгортання',                 'assets/img/phyto.jpg'],
+    ['Кінезіотейпування',                  'assets/img/masazh-industrialnyi-mist-kyiv.jpg'],
+    // Масаж обличчя (specific first — щоб "Лімфодренажний масаж обличчя" ≠ загальний лімфодренаж)
+    ['Антивіковий масаж обличчя',          'assets/img/1-4806.jpg'],
+    ['Лімфодренажний масаж обличчя',       'assets/img/1-5971.jpg'],
+    ['Relax масаж обличчя',                'assets/img/masazh-zhk-dynastia.jpg'],
+    ['Моделюючий масаж обличчя',           'assets/img/phyto-2.jpg'],
+    ['Пластичний масаж обличчя',           'assets/img/gallery-1.jpg'],
+    ['Скульптуруючий масаж обличчя',       'assets/img/gallery-2.jpg'],
+    ['Класичний масаж обличчя',            'assets/img/aparatnyi-masazh-shuliavska.jpg'],
+    ['Кобідо',                             'assets/img/aparatni.jpeg'],
+    ['Гуа-ша',                             'assets/img/gallery-3.jpg'],
+    ['Букальний масаж',                    'assets/img/gallery-4.jpg'],
+    // Масаж тіла
+    ['Загально-оздоровчий',                'assets/img/srv-ozdorovchuy.jpg'],
+    ['Антистресовий',                      'assets/img/antystres-masazh-solomianskyi-kyiv-oliva.jpg'],
+    ['Спортивний',                         'assets/img/masazh-solomianskyi-raion-kyiv.png'],
+    ['Парний',                             'assets/img/srv-parni.jpg'],
+    ['чотири руки',                        'assets/img/parni.jpeg'],
+    ['Масаж спини',                        'assets/img/masazh-kyiv-shuliavska-oliva-2.jpg'],
+    ['шийно-комірцевої',                   'assets/img/masazh-kyiv-shuliavska-oliva.jpg'],
+    ['Лімфодренажний',                     'assets/img/ozdorovchyi-masazh-kyiv.jpg'],
+    ['Антицелюлітний',                     'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
+    ['Міофасціальний',                     'assets/img/gallery-5.jpg'],
+    ['Relax масаж',                        'assets/img/antystres-masazh-solomianskyi-kyiv-oliva-2.jpg'],
+    ['Моделюючий масаж',                   'assets/img/srv-shudnenia.jpg'],
+    ['Медовий',                            'assets/img/fitoterapiia-kyiv-solomianskyi-raion.jpg'],
+    ['Вакуумно-баночний',                  'assets/img/srv-aparatni.jpg'],
+    ['Бамбуковий баночний',                'assets/img/ozdorovchuy.jpeg'],
+    ['Вісцеральний',                       'assets/img/fitoterapiia-kyiv-solomianskyi-raion-2.jpg'],
+    ['Апаратно-вакуумний',                 'assets/img/aparatnyi-masazh-shuliavska.jpg'],
+    ['Масаж для вагітних',                 'assets/img/gallery-6.jpg'],
+    ['Дитячий',                            'assets/img/masazh-shuliavska-kyiv.jpg'],
+    ['Масаж стоп',                         'assets/img/gallery-7.jpg'],
+    ['Масаж голови',                       'assets/img/gallery-8.jpg'],
+    ['Паріння',                            'assets/img/fitoterapiia-na-travakh-kyiv.jpg'],
+    ['фітобочці',                          'assets/img/fitoterapiia-na-travakh-kyiv.jpg'],
+    ['гарячим камінням',                   'assets/img/spa-sauna-kyiv.jpg'],
+    ['Апаратний',                          'assets/img/srv-aparatni.jpg'],
   ];
   document.querySelectorAll('.srv-card').forEach(function(card){
     var nameEl = card.querySelector('.srv-card-name');
     if (!nameEl) return;
-    // Use data-uk (original Ukrainian, set by i18n.js) so matching works in both UA and EN modes
-    var name = nameEl.getAttribute('data-uk') || nameEl.textContent;
+    var name = nameEl.textContent;
     for (var i = 0; i < bgMap.length; i++) {
       if (name.indexOf(bgMap[i][0]) !== -1) {
         card.style.backgroundImage = 'url(' + bgMap[i][1] + ')';
