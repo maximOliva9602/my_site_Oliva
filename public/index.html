@@ -2095,7 +2095,8 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
   document.querySelectorAll('.srv-card').forEach(function(card){
     var nameEl = card.querySelector('.srv-card-name');
     if (!nameEl) return;
-    var name = nameEl.textContent;
+    // Use data-uk (original Ukrainian, set by i18n.js) so matching works in both UA and EN modes
+    var name = nameEl.getAttribute('data-uk') || nameEl.textContent;
     for (var i = 0; i < bgMap.length; i++) {
       if (name.indexOf(bgMap[i][0]) !== -1) {
         card.style.backgroundImage = 'url(' + bgMap[i][1] + ')';
