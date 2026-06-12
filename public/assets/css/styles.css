@@ -155,9 +155,9 @@ nav.scrolled {
 }
 .hero-bg-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.25); z-index: 1; }
 .hero-center {
-  position: relative; z-index: 2; text-align: left;
-  display: flex; flex-direction: column; align-items: flex-start;
-  padding: 0 56px 60px 32px; width: 50%; max-width: none;
+  position: relative; z-index: 2; text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 32px 60px; width: 100%; max-width: none;
 }
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(122,145,86,0.5); }
@@ -166,9 +166,11 @@ nav.scrolled {
 .btn-pulse { animation: pulse-glow 2s ease-in-out infinite; }
 
 .hero-eyebrow {
-  font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--olive-light); margin-bottom: 24px;
-  display: flex; align-items: center; gap: 12px;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3rem, 6vw, 5.5rem); line-height: 1.08;
+  letter-spacing: 0.02em; text-transform: none;
+  color: var(--cream); margin-bottom: 8px;
+  display: block;
 }
 .hero-eyebrow::before { display: none; }
 .hero-eyebrow::after { display: none; }
@@ -178,7 +180,7 @@ nav.scrolled {
 }
 .hero-title em { font-style: italic; color: var(--olive-light); }
 .hero-desc { font-size: 1rem; line-height: 1.7; color: rgba(255,255,255,0.75); max-width: 460px; margin-bottom: 40px; }
-.hero-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: flex-start; }
+.hero-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 
 .hero-badge {
   position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
