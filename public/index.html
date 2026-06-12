@@ -343,7 +343,7 @@
         </div>
 
         <!-- 2. Парний масаж -->
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/parni.jpeg')">
+        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/srv-parni.jpg')">
           <div class="srv-card-name">Парний масаж</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 година</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -574,7 +574,7 @@
     <!-- SPA-ритуали -->
     <div class="srv-panel" id="tab-spa">
       <div class="services-grid">
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/parni.jpeg')">
+        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/srv-parni.jpg')">
           <div class="srv-card-name">Парний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -994,7 +994,7 @@
           <button type="button" class="srv-card-toggle"><span class="arr">▾</span> Детальніше</button>
           <div class="srv-card-body"></div>
         </div>
-        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/parni.jpeg')">
+        <div class="srv-card srv-card--multi" style="background-image:url('assets/img/srv-parni.jpg')">
           <div class="srv-card-name">Парний масаж (Топ Майстер)</div>
           <div class="srv-multi-rows">
             <div class="srv-multi-row"><span class="srv-multi-dur">1 год.</span><div class="srv-multi-right"><span class="srv-multi-price">2 700<span class="cur"> грн</span></span><a href="/booking" target="_blank" rel="noopener" class="srv-card-btn">Записатися</a></div></div>
@@ -2041,56 +2041,50 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
 
   /* 4. Background images on service cards — specific first to avoid wrong matches */
   var bgMap = [
-    // SPA-ритуали
-    ['Тепловий SPA-ритуал',               'assets/img/spa-sauna-kyiv.jpg'],
-    ['SPA Ритуал',                         'assets/img/srv-spa.jpg'],
-    // Обгортання (specific variants)
-    ['Обгортання Amore Shemen (гаряче)',   'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
-    ['Обгортання Amore Shemen (холодне)',  'assets/img/fitoterapiia-na-travakh-kyiv-2.jpg'],
-    ['Обгортання Bruno Vassari',           'assets/img/SPA.jpeg'],
-    ['Гаряче обгортання SPA Seaweed',      'assets/img/fitoterapiia-kyiv-solomianskyi-raion-2.jpg'],
-    ['Гаряча експрес-трансформація',       'assets/img/fitoterapiia-kyiv-solomianskyi-raion.jpg'],
-    ['Холодне моделювання',                'assets/img/shudnenia.jpeg'],
-    ['Гаряче моделювання',                 'assets/img/srv-shudnenia.jpg'],
-    ['Сольове обгортання',                 'assets/img/phyto.jpg'],
-    ['Кінезіотейпування',                  'assets/img/masazh-industrialnyi-mist-kyiv.jpg'],
-    // Масаж обличчя (specific first — щоб "Лімфодренажний масаж обличчя" ≠ загальний лімфодренаж)
-    ['Антивіковий масаж обличчя',          'assets/img/masazh-oblychchia-kyiv-shuliavska.jpg'],
-    ['Лімфодренажний масаж обличчя',       'assets/img/1-5971.jpg'],
-    ['Relax масаж обличчя',                'assets/img/masazh-zhk-dynastia.jpg'],
-    ['Моделюючий масаж обличчя',           'assets/img/phyto-2.jpg'],
-    ['Пластичний масаж обличчя',           'assets/img/gallery-1.jpg'],
-    ['Скульптуруючий масаж обличчя',       'assets/img/gallery-2.jpg'],
-    ['Класичний масаж обличчя',            'assets/img/aparatnyi-masazh-shuliavska.jpg'],
-    ['Кобідо',                             'assets/img/aparatni.jpeg'],
-    ['Гуа-ша',                             'assets/img/gallery-3.jpg'],
-    ['Букальний масаж',                    'assets/img/gallery-4.jpg'],
-    // Масаж тіла
-    ['Загально-оздоровчий',                'assets/img/srv-ozdorovchuy.jpg'],
-    ['Антистресовий',                      'assets/img/antystres-masazh-solomianskyi-kyiv-oliva.jpg'],
-    ['Спортивний',                         'assets/img/masazh-solomianskyi-raion-kyiv.png'],
-    ['Парний',                             'assets/img/srv-parni.jpg'],
-    ['чотири руки',                        'assets/img/masazh-zhk-dynastia.jpg'],
-    ['Масаж спини',                        'assets/img/masazh-kyiv-shuliavska-oliva-2.jpg'],
-    ['шийно-комірцевої',                   'assets/img/masazh-kyiv-shuliavska-oliva.jpg'],
-    ['Лімфодренажний',                     'assets/img/ozdorovchyi-masazh-kyiv.jpg'],
-    ['Антицелюлітний',                     'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
-    ['Міофасціальний',                     'assets/img/gallery-5.jpg'],
-    ['Relax масаж',                        'assets/img/antystres-masazh-solomianskyi-kyiv-oliva-2.jpg'],
-    ['Моделюючий масаж',                   'assets/img/srv-shudnenia.jpg'],
-    ['Медовий',                            'assets/img/fitoterapiia-kyiv-solomianskyi-raion.jpg'],
-    ['Вакуумно-баночний',                  'assets/img/srv-aparatni.jpg'],
-    ['Бамбуковий баночний',                'assets/img/ozdorovchuy.jpeg'],
-    ['Вісцеральний',                       'assets/img/fitoterapiia-kyiv-solomianskyi-raion-2.jpg'],
-    ['Апаратно-вакуумний',                 'assets/img/aparatnyi-masazh-shuliavska.jpg'],
-    ['Масаж для вагітних',                 'assets/img/gallery-6.jpg'],
-    ['Дитячий',                            'assets/img/masazh-shuliavska-kyiv.jpg'],
-    ['Масаж стоп',                         'assets/img/gallery-7.jpg'],
-    ['Масаж голови',                       'assets/img/gallery-8.jpg'],
-    ['Паріння',                            'assets/img/fitoterapiia-na-travakh-kyiv.jpg'],
-    ['фітобочці',                          'assets/img/fitoterapiia-na-travakh-kyiv.jpg'],
-    ['гарячим камінням',                   'assets/img/spa-sauna-kyiv.jpg'],
-    ['Апаратний',                          'assets/img/srv-aparatni.jpg'],
+    ['Фіто-оновлення тіла', 'assets/img/relaks-spa-programa-kyiv.jpg'],
+    ['Глибоке прогрівання для двох', 'assets/img/relaks-spa-programa-kyiv.jpg'],
+    ['Гаряча експрес-трансформація', 'assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg'],
+    ['Холодне моделювання', 'assets/img/obhortannia-dlia-skhudnennia-kyiv.jpg'],
+    ['Гаряче моделювання', 'assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg'],
+    ['Обгортання Amore Shemen (гаряче)', 'assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg'],
+    ['Обгортання Amore Shemen (холодне)', 'assets/img/obhortannia-dlia-skhudnennia-kyiv.jpg'],
+    ['Обгортання Amore Shemen', 'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
+    ['Обгортання Bruno Vassari', 'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
+    ['Гаряче обгортання SPA Seaweed', 'assets/img/obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg'],
+    ['Сольове обгортання', 'assets/img/antytseliulitne-obhortannia-kyiv-shuliavska.jpg'],
+    ['Антивіковий масаж обличчя', 'assets/img/masazh-oblychchia-kyiv-shuliavska.jpg'],
+    ['Лімфодренажний масаж обличчя', 'assets/img/kosmetychnyi-masazh-oblychchia-kyiv.jpg'],
+    ['Relax масаж обличчя', 'assets/img/lifting-masazh-oblychchya-shulyavska-kyiv.jpg'],
+    ['Моделюючий масаж обличчя', 'assets/img/relaks-masazh-oblychchia-shuliavska-kyiv.jpg'],
+    ['Пластичний масаж обличчя', 'assets/img/05987bda226ad8b3a60e6d13322a4c3c.jpg'],
+    ['Скульптуруючий масаж обличчя', 'assets/img/oliva-masazh-oblychchya-kyiv.jpg'],
+    ['Класичний масаж обличчя', 'assets/img/masazh-oblychchia-solomianskyi-raion.jpg'],
+    ['Кобідо', 'assets/img/naturalne-omolodzhennia-oblychchya-kyiv.jpg'],
+    ['Гуа-ша обличчя', 'assets/img/masazh-oblychchia-industrialnyi-mist-kyiv.jpg'],
+    ['Дитячий масаж', 'assets/img/masazh-dlia-ditei-kyiv.PNG'],
+    ['Паріння у фітобочці', 'assets/img/parinnia-u-fitobochtsi-kyiv.jpg'],
+    ['Масаж шийно-комірцевої зони', 'assets/img/masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg'],
+    ['Масаж спини', 'assets/img/masazh-shuliavska-kyiv.jpg'],
+    ['Масаж стоп', 'assets/img/masazh-kyiv-shuliavska-oliva.jpg'],
+    ['Масаж для вагітних', 'assets/img/masazh-dlia-vahitnykh-shuliavska-kyiv.jpg'],
+    ['Масаж гарячим камінням', 'assets/img/stoun-terapiia-kyiv.jpg'],
+    ['Антистресовий масаж', 'assets/img/antystresovyi-masazh-kyiv.jpg'],
+    ['Антицелюлітний масаж', 'assets/img/antytseliulitnyi-masazh-kyiv.jpg'],
+    ['Лімфодренажний масаж', 'assets/img/limfodrenazhnyi-masazh-kyiv.jpg'],
+    ['Медовий масаж', 'assets/img/medovyi-masazh-shuliavska-kyiv.jpg'],
+    ['Relax масаж', 'assets/img/relaks-masazh-shuliavska-kyiv.jpg'],
+    ['Вакуумно-баночний масаж', 'assets/img/banochnyi-masazh-kyiv-1.jpg'],
+    ['Букальний масаж', 'assets/img/bukkalnyi-masazh-kyiv.jpg'],
+    ['Вісцеральний масаж', 'assets/img/vistseralnyi-masazh-kyiv.jpg'],
+    ['Моделюючий масаж', 'assets/img/korektsiia-figury-kyiv.jpg'],
+    ['Міофасціальний масаж', 'assets/img/masazh-industrialnyi-mist-kyiv.jpg'],
+    ['Спортивний масаж', 'assets/img/sportyvnyi-masazh-kyiv.png'],
+    ['Масаж голови', 'assets/img/masazh-solomianskyi-raion-kyiv.png'],
+    ['Кінезіотейпування', 'assets/img/kinezioteipuvannia-kyiv.jpg'],
+    ['Апаратний масаж', 'assets/img/aparatnyi-masazh-shuliavska.jpg'],
+    ['Масаж в чотири руки', 'assets/img/masazh-zhk-dynastia.jpg'],
+    ['Парний масаж', 'assets/img/srv-parni.jpg'],
+    ['Загально-оздоровчий масаж', 'assets/img/ozdorovchuy.jpeg'],
   ];
   document.querySelectorAll('.srv-card').forEach(function(card){
     var nameEl = card.querySelector('.srv-card-name');
