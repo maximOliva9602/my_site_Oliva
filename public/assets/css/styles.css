@@ -319,6 +319,24 @@ section { padding: 100px 0; }
 .promo-val { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--olive-light); white-space: nowrap; flex-shrink: 0; }
 @media (max-width: 900px) { .promo-grid { grid-template-columns: 1fr; } }
 
+/* ---- Правила відвідування ---- */
+.rules-section { padding: 80px 0; }
+.rules-accordion { margin-top: 48px; display: flex; flex-direction: column; gap: 3px; }
+.rules-item { border: 1px solid rgba(122,145,86,0.12); background: rgba(20,24,18,0.8); }
+.rules-trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 20px 28px; cursor: pointer; background: none; border: none; text-align: left; gap: 16px; }
+.rules-trigger-title { font-size: 0.92rem; color: var(--cream); font-weight: 500; letter-spacing: 0.03em; }
+.rules-trigger-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--olive-light); transition: transform 0.3s; }
+.rules-item.open .rules-trigger-icon { transform: rotate(45deg); }
+.rules-body { display: none; padding: 0 28px 22px; }
+.rules-item.open .rules-body { display: block; }
+.rules-block { margin-bottom: 18px; }
+.rules-block:last-child { margin-bottom: 0; }
+.rules-block-title { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--olive-light); font-weight: 600; margin-bottom: 10px; }
+.rules-block p { font-size: 0.84rem; color: var(--text-dim); line-height: 1.65; margin-bottom: 8px; }
+.rules-block p:last-child { margin-bottom: 0; }
+.rules-block p strong { color: var(--cream); font-weight: 500; }
+@media (max-width: 600px) { .rules-trigger { padding: 16px 18px; } .rules-body { padding: 0 18px 18px; } }
+
 /* ── TEAM ── */
 .team-section { background: rgba(14,18,12,0.8); }
 .team-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-top: 56px; }
