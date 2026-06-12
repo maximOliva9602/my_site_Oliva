@@ -15,7 +15,7 @@
       "nav.home": "Головна", "nav.services": "Послуги", "nav.prices": "Прайси",
       "nav.gallery": "Акції", "nav.phyto": "Фітобочка", "nav.team": "Майстри",
       "nav.contacts": "Контакти", "nav.book": "Онлайн запис",
-      "nav.cert": "🎁 Сертифікат", "nav.tips": "🤍 Чайові", "nav.review": "✍️ Відгук",
+      "nav.cert": "🎁 Сертифікат", "nav.tips": "Чайові", "nav.review": "Відгук",
       "nav.blog": "Блог", "nav.shop": "Магазин", "nav.training": "Навчання",
 
       "hero.eyebrow": "Студія масажу OLIVA",
@@ -88,7 +88,7 @@
       "nav.home": "Home", "nav.services": "Services", "nav.prices": "Prices",
       "nav.gallery": "Promotions", "nav.phyto": "Phyto-barrel", "nav.team": "Therapists",
       "nav.contacts": "Contacts", "nav.book": "Book online",
-      "nav.cert": "🎁 Gift Card", "nav.tips": "🤍 Tips", "nav.review": "✍️ Review",
+      "nav.cert": "🎁 Gift Card", "nav.tips": "Tips", "nav.review": "Review",
       "nav.blog": "Blog", "nav.shop": "Shop", "nav.training": "Training",
 
       "hero.eyebrow": "Massage Studio OLIVA",
