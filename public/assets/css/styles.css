@@ -319,7 +319,7 @@ section { padding: 100px 0; }
 
 /* ── АКЦІЇ / PROMO ── */
 .promo-section { padding: 80px 0; }
-.promo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 24px; }
+.promo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 24px; }
 .promo-col .promo-grid { margin-top: 20px; }
 .promo-block { background: rgba(20,24,18,0.8); border: 1px solid rgba(122,145,86,0.12); padding: 24px; }
 .promo-block-title { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--olive-light); font-weight: 600; margin-bottom: 20px; }
