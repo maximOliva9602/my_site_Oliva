@@ -13,7 +13,7 @@
       "top.hours": "Щодня 9:00 – 21:30",
 
       "nav.home": "Головна", "nav.services": "Послуги", "nav.prices": "Прайси",
-      "nav.gallery": "Галерея", "nav.phyto": "Фітобочка", "nav.team": "Майстри",
+      "nav.gallery": "Акції", "nav.phyto": "Фітобочка", "nav.team": "Майстри",
       "nav.contacts": "Контакти", "nav.book": "Онлайн запис",
       "nav.cert": "🎁 Сертифікат", "nav.tips": "🤍 Чайові", "nav.review": "✍️ Відгук",
       "nav.blog": "Блог", "nav.shop": "Магазин", "nav.training": "Навчання",
@@ -86,7 +86,7 @@
       "top.hours": "Daily 9:00 – 21:30",
 
       "nav.home": "Home", "nav.services": "Services", "nav.prices": "Prices",
-      "nav.gallery": "Gallery", "nav.phyto": "Phyto-barrel", "nav.team": "Therapists",
+      "nav.gallery": "Promotions", "nav.phyto": "Phyto-barrel", "nav.team": "Therapists",
       "nav.contacts": "Contacts", "nav.book": "Book online",
       "nav.cert": "🎁 Gift Card", "nav.tips": "🤍 Tips", "nav.review": "✍️ Review",
       "nav.blog": "Blog", "nav.shop": "Shop", "nav.training": "Training",

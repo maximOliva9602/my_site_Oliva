@@ -252,7 +252,7 @@ section { padding: 100px 0; }
 @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 .services-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
-.srv-card { background: rgba(20,24,18,0.8); border: 1px solid rgba(122,145,86,0.1); padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all .3s; position: relative; overflow: hidden; }
+.srv-card { background-color: rgba(12,16,10,0.88); background-size: cover; background-position: center top; background-blend-mode: multiply; border: 1px solid rgba(122,145,86,0.1); padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all .3s; position: relative; overflow: hidden; }
 .srv-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--olive-light); transform: scaleY(0); transform-origin: bottom; transition: transform .3s; }
 .srv-card:hover { background: rgba(46,61,34,0.25); }
 .srv-card:hover::before { transform: scaleY(1); }
@@ -306,6 +306,18 @@ section { padding: 100px 0; }
 .phyto-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
 .phyto-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .phyto-tags span { font-size: 0.74rem; color: var(--text-dim); background: rgba(46,61,34,0.25); border: 1px solid var(--line); border-radius: 50px; padding: 4px 12px; }
+
+/* ── АКЦІЇ / PROMO ── */
+.promo-section { padding: 80px 0; }
+.promo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 48px; }
+.promo-block { background: rgba(20,24,18,0.8); border: 1px solid rgba(122,145,86,0.12); padding: 32px; }
+.promo-block-title { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--olive-light); font-weight: 600; margin-bottom: 20px; }
+.promo-note { font-size: 9px; opacity: 0.6; display: block; margin-top: 2px; letter-spacing: 0.05em; }
+.promo-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: 1px solid rgba(122,145,86,0.12); }
+.promo-name { font-size: 0.88rem; color: var(--text); line-height: 1.4; }
+.promo-sub { display: block; font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+.promo-val { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--olive-light); white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 900px) { .promo-grid { grid-template-columns: 1fr; } }
 
 /* ── TEAM ── */
 .team-section { background: rgba(14,18,12,0.8); }
@@ -448,6 +460,11 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
   .phyto-grid { grid-template-columns: 1fr; gap: 32px; }
   .phyto-media { aspect-ratio: 16/10; }
   .team-grid { grid-template-columns: 1fr 1fr; }
+  .team-card { aspect-ratio: 3/5; }
+  .team-card-overlay { padding: 12px 14px; }
+  .team-name { font-size: 1rem; margin-bottom: 2px; }
+  .team-role { font-size: 0.55rem; letter-spacing: 0.06em; margin-bottom: 10px; white-space: nowrap; }
+  .team-card a { padding: 7px 12px; font-size: 0.68rem; }
   .why-grid { grid-template-columns: 1fr; gap: 40px; }
   .why-visual { height: 320px; }
   .contacts-grid { grid-template-columns: 1fr; gap: 40px; }

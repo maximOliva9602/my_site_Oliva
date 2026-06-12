@@ -530,7 +530,7 @@
         <li>Сертифікати між собою не сумуються</li>
         <li>При відміні запису менше ніж за 5 годин до візиту сертифікат вважається використаним</li>
         <li>У разі втрати або пошкодження сертифікат не може бути поновлений, кошти не повертаються</li>
-        <li>При записі обов'язково повідомте адміністратора про розрахунок сертифікатом та майте його при собі — послуги без пред'явлення не надаються</li>
+        <li>При записі обов'язково повідомте адміністратора про наявність подарункового сертифіката та візьміть його із собою. Послуги надаються лише після пред'явлення сертифіката.</li>
         <li>Термін дії сертифікату — 2 місяці з дня купівлі</li>
       </ul>
     </div>
@@ -538,7 +538,7 @@
 </div>
 
 <div class="page-footer">
-  <a href="/">Студія масажу Oliva</a> · <a href="https://maps.google.com/?q=Київ,+Борщагівська+145" target="_blank" rel="noopener">Київ, Борщагівська 145</a> · <a href="tel:+380974340112">097 434 01 12</a>
+  <a href="/">Студія масажу Oliva</a> · <a href="https://maps.google.com/?q=Київ,+Борщагівська+145" target="_blank" rel="noopener">Київ, Борщагівська 145</a> · <a href="tel:+380974340112">📞 097 434 01 12</a>
 </div>
 
 <script>
@@ -750,11 +750,14 @@
     // одна тривалість — одразу до вибору майстра
     if (svc.variants.length === 1) {
       variantsWrap.style.display = 'none';
+      hidePicker();
       showMasterStep(svc, svc.variants[0]);
+      if (window.innerWidth < 768) variantsWrap.scrollIntoView({behavior:'smooth', block:'start'});
       return;
     }
 
-    // кілька тривалостей — показуємо список
+    // кілька тривалостей — ховаємо picker, показуємо список
+    hidePicker();
     variantsTitle.textContent = svc.name + ' — оберіть тривалість:';
     variantsGrid.innerHTML = '';
     svc.variants.forEach(function(v){
@@ -770,6 +773,7 @@
       variantsGrid.appendChild(btn);
     });
     variantsWrap.style.display = 'block';
+    if (window.innerWidth < 768) variantsWrap.scrollIntoView({behavior:'smooth', block:'start'});
   }
 
   /* КРОК 2 — вибір майстра */
