@@ -29,7 +29,7 @@
       "mq.7": "Масаж обличчя", "mq.8": "Топ майстри",
 
       "srv.label": "Наші послуги", "srv.title1": "Оберіть свій", "srv.title2": "сеанс відновлення",
-      "srv.tab.top": "Популярні", "srv.tab.all": "Усі послуги",
+      "srv.tab.top": "Популярні",
       "srv.tab.complex": "Комплекси", "srv.tab.spa": "SPA-ритуали",
       "srv.tab.master": "Прайс Майстер", "srv.tab.topmaster": "Прайс Топ Майстер",
 
@@ -102,7 +102,7 @@
       "mq.7": "Face massage", "mq.8": "Top therapists",
 
       "srv.label": "Our services", "srv.title1": "Choose your", "srv.title2": "recovery session",
-      "srv.tab.top": "Popular", "srv.tab.all": "All services",
+      "srv.tab.top": "Popular",
       "srv.tab.complex": "Packages", "srv.tab.spa": "SPA rituals",
       "srv.tab.master": "Price · Master", "srv.tab.topmaster": "Price · Top Master",
 
