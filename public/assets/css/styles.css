@@ -252,9 +252,9 @@ section { padding: 100px 0; }
 @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 .services-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
-.srv-card { background-color: rgba(12,16,10,0.88); background-size: cover; background-position: center top; background-blend-mode: multiply; border: 1px solid rgba(122,145,86,0.1); padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all .3s; position: relative; overflow: hidden; }
+.srv-card { background-color: rgba(12,16,10,0.88); background-size: cover; background-position: center top; background-blend-mode: multiply; border: 1px solid rgba(122,145,86,0.1); padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: background-color .3s, border-color .3s; position: relative; overflow: hidden; }
 .srv-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--olive-light); transform: scaleY(0); transform-origin: bottom; transition: transform .3s; }
-.srv-card:hover { background: rgba(46,61,34,0.25); }
+.srv-card:hover { background-color: rgba(30,42,22,0.72); }
 .srv-card:hover::before { transform: scaleY(1); }
 .srv-card-info { flex: 1; }
 .srv-card-name { font-size: 0.82rem; color: var(--cream); font-weight: 500; margin-bottom: 4px; line-height: 1.4; }
