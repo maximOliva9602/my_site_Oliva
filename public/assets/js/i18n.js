@@ -78,7 +78,30 @@
       "chat.greet": "Вітаю! 👋 Це студія масажу Oliva. Підкажемо з послугами, цінами чи записом. Як зручніше зв'язатися?",
       "chat.call": "📞 Подзвонити",
 
-      "sticky.book": "Записатися онлайн"
+      "sticky.book": "Записатися онлайн",
+
+      "cert.back": "← Повернутись на головну",
+      "cert.eyebrow": "Студія масажу Oliva · Київ",
+      "cert.title1": "Подарунковий", "cert.title2": "сертифікат",
+      "cert.sub": "Ідеальний подарунок для близьких — сеанс масажу або SPA-ритуал у затишній атмосфері. Оформимо та доставимо Новою Поштою.",
+      "cert.perk1": "Красиво оформлений", "cert.perk2": "Доставка Новою Поштою", "cert.perk3": "Будь-яка послуга",
+      "cert.formTitle": "Заповніть форму",
+      "cert.labelName": "Ваше ім'я *", "cert.labelPhone": "Номер телефону *",
+      "cert.labelRecipient": "Сертифікат на ім'я *",
+      "cert.labelService": "Оберіть послугу *",
+      "cert.tabPopular": "⭐ Популярні", "cert.tabAll": "Усі послуги",
+      "cert.labelType": "Тип сертифіката *",
+      "cert.typeDigital": "📱 Електронний", "cert.typePaper": "📄 Паперовий",
+      "cert.labelDelivery": "Спосіб отримання *",
+      "cert.deliveryNp": "📦 Нова Пошта", "cert.deliveryTaxi": "🚕 Таксі", "cert.deliveryStudio": "🏠 У студії",
+      "cert.labelWishes": "Побажання до сертифіката",
+      "cert.submit": "🎁 Замовити сертифікат",
+      "cert.successTitle": "Замовлення отримано!",
+      "cert.successSub": "Дякуємо! Скоро з вами зв'яжемося.",
+      "cert.successBack": "← Повернутись на головну",
+      "cert.infoAbout": "Про сертифікат",
+      "cert.infoRules": "Умови використання",
+      "cert.totalLabel": "Загальна сума:"
     },
 
     en: {
@@ -151,7 +174,30 @@
       "chat.greet": "Hi! 👋 This is Oliva massage studio. We'll help with services, prices or booking. How is it easier to reach us?",
       "chat.call": "📞 Call us",
 
-      "sticky.book": "Book online"
+      "sticky.book": "Book online",
+
+      "cert.back": "← Back to home",
+      "cert.eyebrow": "Massage Studio Oliva · Kyiv",
+      "cert.title1": "Gift", "cert.title2": "Certificate",
+      "cert.sub": "The perfect gift for loved ones — a massage session or SPA ritual in a cozy atmosphere. We'll prepare and deliver by Nova Poshta.",
+      "cert.perk1": "Beautifully presented", "cert.perk2": "Nova Poshta delivery", "cert.perk3": "Any service",
+      "cert.formTitle": "Fill in the form",
+      "cert.labelName": "Your name *", "cert.labelPhone": "Phone number *",
+      "cert.labelRecipient": "Certificate recipient *",
+      "cert.labelService": "Choose a service *",
+      "cert.tabPopular": "⭐ Popular", "cert.tabAll": "All services",
+      "cert.labelType": "Certificate type *",
+      "cert.typeDigital": "📱 Digital", "cert.typePaper": "📄 Printed",
+      "cert.labelDelivery": "Delivery method *",
+      "cert.deliveryNp": "📦 Nova Poshta", "cert.deliveryTaxi": "🚕 Taxi", "cert.deliveryStudio": "🏠 Studio pickup",
+      "cert.labelWishes": "Wishes for the certificate",
+      "cert.submit": "🎁 Order certificate",
+      "cert.successTitle": "Order received!",
+      "cert.successSub": "Thank you! We'll contact you shortly.",
+      "cert.successBack": "← Back to home",
+      "cert.infoAbout": "About the certificate",
+      "cert.infoRules": "Terms of use",
+      "cert.totalLabel": "Total:"
     }
   };
 

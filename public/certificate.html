@@ -337,7 +337,12 @@
     <img src="assets/img/logo.png" alt="Oliva" />
     <span>Oliva<span style="color:var(--olive-light)">.</span></span>
   </a>
-  <a href="/" class="nav-back">← Повернутись на головну</a>
+  <a href="/" class="nav-back" data-i18n="cert.back">← Повернутись на головну</a>
+  <div class="lang-switch" id="langSwitch" role="group" aria-label="Мова" style="display:flex;align-items:center;gap:6px;font-size:13px;margin-left:auto;">
+    <button type="button" data-lang="uk" class="active" style="background:none;border:none;color:var(--cream);cursor:pointer;font-family:inherit;font-size:13px;padding:4px 8px;border-radius:4px;">UA</button>
+    <span style="color:var(--text-dim)">/</span>
+    <button type="button" data-lang="en" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-family:inherit;font-size:13px;padding:4px 8px;border-radius:4px;">EN</button>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -345,16 +350,16 @@
   <img class="page-hero-bg" src="assets/img/sertificate.jpg" alt="Подарунковий сертифікат Oliva" />
   <div class="page-hero-overlay"></div>
   <span class="page-hero-icon">🎁</span>
-  <div class="eyebrow">Студія масажу Oliva · Київ</div>
-  <h1 class="page-title">Подарунковий<br><em>сертифікат</em></h1>
-  <p class="page-sub">Ідеальний подарунок для близьких — сеанс масажу або SPA-ритуал у затишній атмосфері. Оформимо та доставимо Новою Поштою.</p>
+  <div class="eyebrow" data-i18n="cert.eyebrow">Студія масажу Oliva · Київ</div>
+  <h1 class="page-title"><span data-i18n="cert.title1">Подарунковий</span><br><em data-i18n="cert.title2">сертифікат</em></h1>
+  <p class="page-sub" data-i18n="cert.sub">Ідеальний подарунок для близьких — сеанс масажу або SPA-ритуал у затишній атмосфері. Оформимо та доставимо Новою Поштою.</p>
 </div>
 
 <!-- ПЕРЕВАГИ -->
 <div class="perks">
-  <div class="perk"><span class="perk-icon">✨</span> Красиво оформлений</div>
-  <div class="perk"><span class="perk-icon">📦</span> Доставка Новою Поштою</div>
-  <div class="perk"><span class="perk-icon">💆</span> Будь-яка послуга</div>
+  <div class="perk"><span class="perk-icon">✨</span> <span data-i18n="cert.perk1">Красиво оформлений</span></div>
+  <div class="perk"><span class="perk-icon">📦</span> <span data-i18n="cert.perk2">Доставка Новою Поштою</span></div>
+  <div class="perk"><span class="perk-icon">💆</span> <span data-i18n="cert.perk3">Будь-яка послуга</span></div>
 </div>
 
 <!-- ВІДЕО + ФОРМА -->
@@ -367,37 +372,37 @@
   </div>
   <div class="cert-form-side">
     <div class="form-section">
-  <h2 class="form-title">Заповніть форму</h2>
+  <h2 class="form-title" data-i18n="cert.formTitle">Заповніть форму</h2>
 
   <form id="certForm" novalidate>
 
     <div class="form-row">
       <div class="form-group" id="fg-name">
-        <label for="inp-name">Ваше ім'я *</label>
+        <label for="inp-name" data-i18n="cert.labelName">Ваше ім'я *</label>
         <input type="text" id="inp-name" placeholder="Наприклад: Олег" autocomplete="given-name" />
         <div class="field-error">Вкажіть ваше ім'я</div>
       </div>
       <div class="form-group" id="fg-phone">
-        <label for="inp-phone">Номер телефону *</label>
+        <label for="inp-phone" data-i18n="cert.labelPhone">Номер телефону *</label>
         <input type="tel" id="inp-phone" placeholder="+380" autocomplete="tel" />
         <div class="field-error">Вкажіть номер телефону</div>
       </div>
     </div>
 
     <div class="form-group" id="fg-recipient">
-      <label for="inp-recipient">Сертифікат на ім'я *</label>
+      <label for="inp-recipient" data-i18n="cert.labelRecipient">Сертифікат на ім'я *</label>
       <input type="text" id="inp-recipient" placeholder="Ім'я отримувача" />
       <div class="field-error">Вкажіть ім'я отримувача</div>
     </div>
 
     <!-- ВИБІР ПОСЛУГИ -->
     <div id="fg-service" class="service-picker-wrap">
-      <div class="picker-section-label">Оберіть послугу *</div>
+      <div class="picker-section-label" data-i18n="cert.labelService">Оберіть послугу *</div>
 
       <!-- Вкладки -->
       <div class="picker-tabs" id="pickerTabs">
-        <button type="button" class="picker-tab active" data-tab="popular">⭐ Популярні</button>
-        <button type="button" class="picker-tab" data-tab="all">Усі послуги</button>
+        <button type="button" class="picker-tab active" data-tab="popular" data-i18n="cert.tabPopular">⭐ Популярні</button>
+        <button type="button" class="picker-tab" data-tab="all" data-i18n="cert.tabAll">Усі послуги</button>
       </div>
 
       <!-- Популярні: великі кнопки -->
@@ -460,10 +465,10 @@
 
     <!-- ТИП СЕРТИФІКАТА -->
     <div class="form-group" id="fg-cert-type">
-      <label>Тип сертифіката *</label>
+      <label data-i18n="cert.labelType">Тип сертифіката *</label>
       <div class="option-chips" id="certTypeChips">
-        <button type="button" class="option-chip" data-val="Паперовий">📄 Паперовий</button>
-        <button type="button" class="option-chip" data-val="Електронний">📱 Електронний</button>
+        <button type="button" class="option-chip" data-val="Паперовий" data-i18n="cert.typePaper">📄 Паперовий</button>
+        <button type="button" class="option-chip" data-val="Електронний" data-i18n="cert.typeDigital">📱 Електронний</button>
       </div>
       <input type="hidden" id="inp-cert-type" />
       <div class="field-error">Оберіть тип сертифіката</div>
@@ -471,11 +476,11 @@
 
     <!-- ДОСТАВКА -->
     <div class="form-group" id="fg-delivery">
-      <label>Спосіб отримання *</label>
+      <label data-i18n="cert.labelDelivery">Спосіб отримання *</label>
       <div class="option-chips" id="deliveryChips">
-        <button type="button" class="option-chip" data-val="Нова Пошта">📦 Нова Пошта</button>
-        <button type="button" class="option-chip" data-val="Таксі">🚕 Таксі</button>
-        <button type="button" class="option-chip" data-val="Отримаю у студії">🏠 У студії</button>
+        <button type="button" class="option-chip" data-val="Нова Пошта" data-i18n="cert.deliveryNp">📦 Нова Пошта</button>
+        <button type="button" class="option-chip" data-val="Таксі" data-i18n="cert.deliveryTaxi">🚕 Таксі</button>
+        <button type="button" class="option-chip" data-val="Отримаю у студії" data-i18n="cert.deliveryStudio">🏠 У студії</button>
       </div>
       <input type="hidden" id="inp-delivery" />
       <div class="field-error">Оберіть спосіб отримання</div>
@@ -490,25 +495,25 @@
 
     <!-- ПІДСУМКОВА СУМА -->
     <div class="total-price-row" id="totalRow" style="display:none">
-      <span class="total-label">Загальна сума:</span>
+      <span class="total-label" data-i18n="cert.totalLabel">Загальна сума:</span>
       <span class="total-amount" id="totalAmount"></span>
     </div>
 
     <div class="form-group">
-      <label for="inp-wishes">Побажання до сертифіката</label>
+      <label for="inp-wishes" data-i18n="cert.labelWishes">Побажання до сертифіката</label>
       <textarea id="inp-wishes" placeholder="Підпис, побажання, особливі деталі оформлення…"></textarea>
     </div>
 
-    <button type="submit" class="btn-submit" id="submitBtn">🎁 Замовити сертифікат</button>
+    <button type="submit" class="btn-submit" id="submitBtn" data-i18n="cert.submit">🎁 Замовити сертифікат</button>
 
   </form>
 
   <!-- УСПІХ -->
   <div class="success-state" id="successState">
     <div class="success-icon">🌿</div>
-    <div class="success-title">Замовлення отримано!</div>
-    <p class="success-sub">Дякуємо! Скоро з вами зв'яжемося.</p>
-    <a href="/" class="btn-back">← Повернутись на головну</a>
+    <div class="success-title" data-i18n="cert.successTitle">Замовлення отримано!</div>
+    <p class="success-sub" data-i18n="cert.successSub">Дякуємо! Скоро з вами зв'яжемося.</p>
+    <a href="/" class="btn-back" data-i18n="cert.successBack">← Повернутись на головну</a>
   </div>
 </div><!-- /form-section -->
   </div><!-- /cert-form-side -->
@@ -518,13 +523,13 @@
 <div class="cert-info-section">
   <div class="cert-info-inner">
     <div class="cert-about">
-      <div class="cert-info-label">Про сертифікат</div>
+      <div class="cert-info-label" data-i18n="cert.infoAbout">Про сертифікат</div>
       <p>Подарунковий сертифікат від студії масажу Oliva — це не просто подарунок. Це турбота, відпочинок та відновлення, які залишаються в пам'яті надовго.</p>
       <p>Даруючи сертифікат, ви даруєте близькій людині можливість зупинитися серед щоденного поспіху, відновити сили, позбутися напруги та присвятити час собі.</p>
       <p>Сертифікат можна оформити на будь-яку суму або на конкретну послугу: загально-оздоровчий масаж, парний масаж, SPA-ритуали, фітотерапію у фітобочці, стоун-терапію та інші процедури студії.</p>
     </div>
     <div class="cert-rules">
-      <div class="cert-info-label">Умови використання</div>
+      <div class="cert-info-label" data-i18n="cert.infoRules">Умови використання</div>
       <ul>
         <li>Сертифікат не підлягає поверненню та обміну на грошові кошти</li>
         <li>Сертифікати між собою не сумуються</li>
@@ -1105,6 +1110,30 @@
     certVideo.muted = !certVideo.muted;
     muteBtn.textContent = certVideo.muted ? '🔇' : '🔊';
   });
+</script>
+
+<script src="assets/js/i18n.js"></script>
+<script>
+  // Wire up lang switch on certificate page
+  var langSwitch = document.getElementById('langSwitch');
+  if (langSwitch && window.OlivaI18n) {
+    langSwitch.querySelectorAll('button').forEach(function(b) {
+      b.addEventListener('click', function() {
+        window.OlivaI18n.apply(b.getAttribute('data-lang'));
+        langSwitch.querySelectorAll('button').forEach(function(btn) {
+          btn.style.color = btn === b ? 'var(--cream)' : 'var(--text-dim)';
+        });
+      });
+    });
+    // Apply saved language on load
+    var saved = window.OlivaI18n.get();
+    if (saved !== 'uk') {
+      window.OlivaI18n.apply(saved);
+      langSwitch.querySelectorAll('button').forEach(function(b) {
+        b.style.color = b.getAttribute('data-lang') === saved ? 'var(--cream)' : 'var(--text-dim)';
+      });
+    }
+  }
 </script>
 
 </body>
