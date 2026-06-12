@@ -37,6 +37,37 @@
       "dur.60s": "1 год.", "dur.90": "1 год. 30 хв.", "dur.120": "2 год.",
       "uah": "грн", "book": "Записатися", "from": "від",
 
+      "promo.label": "Спеціальні пропозиції",
+      "promo.title1": "Акції",
+      "promo.title2": "та знижки",
+      "promo.t1": "Абонементи",
+      "promo.r1n": "Курс 5 сеансів масажу",
+      "promo.r1s": "Дійсний 2 місяці",
+      "promo.r2n": "Курс 10 сеансів масажу",
+      "promo.r2s": "Дійсний 3 місяці",
+      "promo.r3n": "Курс 15 сеансів масажу",
+      "promo.r3s": "Дійсний 4 місяці",
+      "promo.t2": "Знижки",
+      "promo.t2note": "(не поширюються на Топ Майстрів)",
+      "promo.d1n": "До дня народження",
+      "promo.d1s": "Діє в день народження та 5 днів після",
+      "promo.d2n": "Для військових",
+      "promo.d3n": "На перший візит",
+      "promo.d3s": "За промокодом",
+
+      "rules.label": "Студія масажу Oliva",
+      "rules.title1": "Правила",
+      "rules.title2": "відвідування",
+      "rules.trigger1": "Бронювання послуг студії",
+      "rules.trigger2": "Запізнення",
+      "rules.trigger3": "Неявка на процедуру",
+      "rules.trigger4": "Скасування та перенесення запису",
+      "rules.trigger5": "Форс-мажорний шанс",
+      "rules.trigger6": "Подарункові сертифікати",
+      "rules.trigger7": "Абонементи",
+      "rules.trigger8": "Стан здоров'я",
+      "rules.trigger9": "Правила перебування у студії",
+
       "gal.label": "Атмосфера", "gal.title": "Галерея студії", "gal.more": "Більше в Instagram →",
 
       "phyto.badge": "Кедрова фітобочка",
@@ -101,7 +132,13 @@
       "cert.successBack": "← Повернутись на головну",
       "cert.infoAbout": "Про сертифікат",
       "cert.infoRules": "Умови використання",
-      "cert.totalLabel": "Загальна сума:"
+      "cert.totalLabel": "Загальна сума:",
+      "cert.variants": "варіантів",
+      "cert.masterType.master": "Майстер",
+      "cert.masterType.top": "Топ Майстер",
+      "cert.masterType.ritual": "Ритуал",
+      "cert.masterType.phyto": "Фітобочка",
+      "cert.changeService": "Змінити"
     },
 
     en: {
@@ -132,6 +169,37 @@
       "dur.30": "30 minutes", "dur.45": "45 min", "dur.60": "1 hour",
       "dur.60s": "1 hr", "dur.90": "1 hr 30 min", "dur.120": "2 hrs",
       "uah": "UAH", "book": "Book", "from": "from",
+
+      "promo.label": "Special offers",
+      "promo.title1": "Deals",
+      "promo.title2": "& discounts",
+      "promo.t1": "Subscriptions",
+      "promo.r1n": "5-session massage course",
+      "promo.r1s": "Valid for 2 months",
+      "promo.r2n": "10-session massage course",
+      "promo.r2s": "Valid for 3 months",
+      "promo.r3n": "15-session massage course",
+      "promo.r3s": "Valid for 4 months",
+      "promo.t2": "Discounts",
+      "promo.t2note": "(not applicable to Top Masters)",
+      "promo.d1n": "Birthday discount",
+      "promo.d1s": "Valid on birthday and 5 days after",
+      "promo.d2n": "For military personnel",
+      "promo.d3n": "First visit",
+      "promo.d3s": "With promo code",
+
+      "rules.label": "Oliva Massage Studio",
+      "rules.title1": "Visit",
+      "rules.title2": "Policy",
+      "rules.trigger1": "Booking studio services",
+      "rules.trigger2": "Late arrival",
+      "rules.trigger3": "No-show",
+      "rules.trigger4": "Cancellation & rescheduling",
+      "rules.trigger5": "Force-majeure",
+      "rules.trigger6": "Gift certificates",
+      "rules.trigger7": "Subscriptions",
+      "rules.trigger8": "Health conditions",
+      "rules.trigger9": "Studio conduct rules",
 
       "gal.label": "Atmosphere", "gal.title": "Studio gallery", "gal.more": "More on Instagram →",
 
@@ -197,8 +265,93 @@
       "cert.successBack": "← Back to home",
       "cert.infoAbout": "About the certificate",
       "cert.infoRules": "Terms of use",
-      "cert.totalLabel": "Total:"
+      "cert.totalLabel": "Total:",
+      "cert.variants": "options",
+      "cert.masterType.master": "Master",
+      "cert.masterType.top": "Top Master",
+      "cert.masterType.ritual": "Ritual",
+      "cert.masterType.phyto": "Phyto-barrel",
+      "cert.changeService": "Change"
     }
+  };
+
+  /* -------------------------------------------------------
+     Правила відвідування — вміст тіл (EN)
+     Зберігається тут, щоб уникати дублювання у HTML.
+  ------------------------------------------------------- */
+  var RULES_BODIES_EN = {
+    "rules-body-1":
+      '<div class="rules-block">' +
+        '<p>To confirm a booking the studio may request a deposit (prepayment) of a fixed amount of <strong>(500 UAH)</strong>.</p>' +
+        '<p>The deposit is payment for reserving the specialist\'s time.</p>' +
+        '<p>The deposit amount is credited toward the total cost of the procedure at the time of your visit.</p>' +
+        '<p>Specialist time is reserved individually, so if a client does not show up, the deposit is considered compensation for the reserved time.</p>' +
+      '</div>' +
+      '<div class="rules-block">' +
+        '<div class="rules-block-title">Booking without a deposit</div>' +
+        '<p>When booking without a deposit (prepayment), the client agrees that in the event of a no-show without prior notice or notice less than <strong>5 hours</strong> before the procedure, the studio has the right to request compensation for the specialist\'s reserved time of <strong>(500 UAH)</strong>.</p>' +
+      '</div>',
+
+    "rules-body-2":
+      '<div class="rules-block">' +
+        '<p>If a client is late, the duration of the procedure may be reduced by the time missed.</p>' +
+        '<p>The price of the procedure does not change.</p>' +
+        '<p>If the start of the procedure is delayed through no fault of the client, the studio guarantees the procedure will be carried out in full according to the booked duration.</p>' +
+      '</div>',
+
+    "rules-body-3":
+      '<div class="rules-block">' +
+        '<p>If a client does not show up or cancels less than <strong>5 hours</strong> before the procedure, the deposit is non-refundable.</p>' +
+        '<p>In this case the deposit is treated as compensation for the specialist\'s reserved time.</p>' +
+        '<p>This rule also applies in the case of significant lateness that makes the procedure impossible.</p>' +
+      '</div>',
+
+    "rules-body-4":
+      '<div class="rules-block">' +
+        '<p>Rescheduling or cancellation is possible no later than <strong>5 hours</strong> before the start of the procedure.</p>' +
+        '<p>Clients are given one opportunity to reschedule with less than <strong>5 hours</strong> notice without losing the session.</p>' +
+        '<p>In the event of a second reschedule or cancellation with less than <strong>5 hours</strong> notice, the deposit or prepayment is forfeited as compensation for the specialist\'s reserved time.</p>' +
+        '<p>If a booking made without prepayment is cancelled or missed, the next booking at the studio may only be confirmed after a deposit or prepayment is made.</p>' +
+      '</div>',
+
+    "rules-body-5":
+      '<div class="rules-block">' +
+        '<p>In the event of force-majeure circumstances such as an air-raid alert, natural disaster, emergency, or other circumstances beyond the control of the studio or client that make the procedure impossible, the appointment will be rescheduled to another day and time by mutual agreement.</p>' +
+        '<p>In such cases the deposit, subscription, or gift certificate is not considered used.</p>' +
+      '</div>',
+
+    "rules-body-6":
+      '<div class="rules-block">' +
+        '<p>A gift certificate confirms the right to receive studio services in the amount or for the service specified in the certificate.</p>' +
+        '<p>If the cost of the procedure exceeds the value of the certificate, the client pays the difference.</p>' +
+        '<p>Gift certificates cannot be exchanged for cash.</p>' +
+        '<p>If the client fails to show up without prior notice or with less than <strong>5 hours</strong> notice, the certificate is considered used.</p>' +
+      '</div>',
+
+    "rules-body-7":
+      '<div class="rules-block">' +
+        '<p>A subscription entitles the holder to the number of massage procedures corresponding to the purchased package.</p>' +
+        '<p>Subscription validity: <strong>2 months — 5 sessions; 3 months — 10 sessions; 4 months — 15 sessions</strong> from the date of purchase, unless otherwise specified at the time of purchase.</p>' +
+        '<p>Within the validity of the subscription, the client may reschedule or cancel with less than <strong>5 hours</strong> notice once without losing a session.</p>' +
+        '<p>In the event of a second no-show or cancellation with less than <strong>5 hours</strong> notice, the session is considered used.</p>' +
+        '<p>Unused sessions after the subscription expires are forfeited.</p>' +
+        '<p>A subscription may be transferred to another person once, subject to agreement with studio administration.</p>' +
+      '</div>',
+
+    "rules-body-8":
+      '<div class="rules-block">' +
+        '<p>Before the procedure, the client must inform the specialist of any chronic conditions, injuries, surgeries, pregnancy, high blood pressure, other medical restrictions, and any allergic reactions. The client is responsible for the accuracy of the information provided.</p>' +
+        '<p>If contraindications or health risks are present, the studio has the right to refuse the procedure.</p>' +
+        '<p>The decision on whether to proceed with the procedure is made by the studio specialist.</p>' +
+        '<p>The studio is not responsible for deterioration of the client\'s health if information about existing conditions or contraindications was concealed.</p>' +
+      '</div>',
+
+    "rules-body-9":
+      '<div class="rules-block">' +
+        '<p>Clients are required to observe rules of conduct and respect other studio guests.</p>' +
+        '<p>Entry to the studio in a state of alcohol or drug intoxication is prohibited.</p>' +
+        '<p>Administration has the right to refuse service in the event of a violation of studio rules.</p>' +
+      '</div>'
   };
 
   /* -------------------------------------------------------
@@ -209,21 +362,29 @@
     // SPA rituals (specific first)
     ['SPA Ритуал "Фіто-оновлення тіла"',           'SPA Ritual "Phyto Body Renewal"'],
     ['Тепловий SPA-ритуал "Глибоке прогрівання для двох"', 'Thermal SPA ritual "Deep Warming for Two"'],
+    ['SPA Ритуал "Глибоке прогрівання для двох"',  'SPA Ritual "Deep Warming for Two"'],
     ['Обгортання Amore Shemen (гаряче)',             'Amore Shemen wrap (hot)'],
     ['Обгортання Amore Shemen (холодне)',            'Amore Shemen wrap (cold)'],
     ['Обгортання Amore Shemen',                      'Amore Shemen wrap'],
     ['Обгортання Bruno Vassari Detox',               'Bruno Vassari Detox wrap'],
     ['Гаряче (бандажне) обгортання SPA Seaweed',    'Hot bandage wrap SPA Seaweed'],
+    ['Гаряче обгортання SPA Seaweed',               'Hot wrap SPA Seaweed'],
     ['🔥 Гаряча експрес-трансформація тіла',        '🔥 Hot Express Body Transformation'],
+    ['Гаряча експрес-трансформація тіла',           'Hot Express Body Transformation'],
     ['❄️ Холодне моделювання тіла',                 '❄️ Cold Body Sculpting'],
     ['🔥 Гаряче моделювання тіла',                  '🔥 Hot Body Sculpting'],
+    ['Холодне моделювання тіла',                    'Cold Body Sculpting'],
+    ['Гаряче моделювання тіла',                     'Hot Body Sculpting'],
+    // Face massage (specific first)
+    ['Антивіковий масаж обличчя',                   'Anti-aging face massage'],
+    ['Лімфодренажний масаж обличчя',                'Lymphatic drainage face massage'],
+    ['Класичний масаж обличчя',                     'Classic face massage'],
     // Service types
     ['Загально-оздоровчий масаж',                   'Wellness massage'],
     ['Антистресовий масаж',                          'Anti-stress massage'],
     ['Парний масаж',                                 'Couples massage'],
     ['Масаж спини',                                  'Back massage'],
     ['Масаж шийно-комірцевої зони',                  'Neck & shoulder massage'],
-    ['Класичний масаж обличчя',                      'Classic face massage'],
     ['Лімфодренажний масаж',                         'Lymphatic drainage massage'],
     ['Антицелюлітний масаж',                         'Anti-cellulite massage'],
     ['Паріння у фітобочці',                          'Phyto-barrel steam'],
@@ -231,6 +392,8 @@
     ['Масаж в чотири руки',                          'Four-hands massage'],
     ['Масаж гарячим камінням',                       'Hot stone massage'],
     ['SPA-ритуали',                                  'SPA rituals'],
+    // Master type labels (standalone)
+    ['Топ Майстер',                                  'Top Master'],
     // Level suffixes
     ['(Топ Майстер)',                                '(Top Master)'],
     ['(Майстер)',                                    '(Master)'],
@@ -242,6 +405,10 @@
     [' год. 10 хв.',                                 ' hr 10 min'],
     [' год.',                                        ' hr'],
     ['год',                                          'hr'],
+    ['варіантів',                                    'options'],
+    // Wrapping types used in certificate
+    ['Гаряче · 1 год',                               'Hot · 1 hr'],
+    ['Холодне · 1 год',                              'Cold · 1 hr'],
   ];
 
   /* Translate a single text using the phrase dictionary */
@@ -295,6 +462,9 @@
     });
   }
 
+  /* Storage for original rules-body innerHTML (keyed by element id) */
+  var _rulesOriginals = {};
+
   function apply(lang) {
     var dict = DICT[lang] || DICT.uk;
     document.documentElement.lang = lang;
@@ -309,6 +479,20 @@
       if (dict[key] != null) el.setAttribute("placeholder", dict[key]);
     });
 
+    // Rules bodies: swap full HTML content
+    document.querySelectorAll("[data-rules-body]").forEach(function (el) {
+      var bodyId = el.getAttribute("data-rules-body");
+      // Save original on first encounter
+      if (!_rulesOriginals[bodyId]) {
+        _rulesOriginals[bodyId] = el.innerHTML;
+      }
+      if (lang === 'uk') {
+        el.innerHTML = _rulesOriginals[bodyId];
+      } else if (RULES_BODIES_EN[bodyId] != null) {
+        el.innerHTML = RULES_BODIES_EN[bodyId];
+      }
+    });
+
     // Phrase-based service content
     applyServicePhrases(lang);
 
@@ -317,12 +501,18 @@
       b.classList.toggle("active", b.getAttribute("data-lang") === lang);
     });
 
+    // Notify certificate page if it registered a callback
+    if (typeof window._olivaLangCallback === 'function') {
+      window._olivaLangCallback(lang);
+    }
+
     try { localStorage.setItem("oliva_lang", lang); } catch (e) {}
   }
 
   // Мінімальний публічний API
   window.OlivaI18n = {
     apply: apply,
+    translate: translateText,
     get: function () {
       try { return localStorage.getItem("oliva_lang") || "uk"; } catch (e) { return "uk"; }
     }

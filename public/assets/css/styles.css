@@ -466,7 +466,7 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
 @media (max-width: 900px) {
   .topbar { display: none; }
   nav { top: 0; padding: 14px 20px; }
-  nav.scrolled { top: 0; padding: 10px 20px; }
+  nav.scrolled { top: 0; padding: 10px 20px; backdrop-filter: none; background: rgba(8,10,7,0.98); }
   .container { padding: 0 24px; }
   .nav-links {
     position: fixed; top: 0; right: 0; bottom: 0; width: 78%; max-width: 320px;
