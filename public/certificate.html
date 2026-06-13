@@ -381,7 +381,7 @@
     <div class="form-row">
       <div class="form-group" id="fg-name">
         <label for="inp-name" data-i18n="cert.labelName">Ваше ім'я *</label>
-        <input type="text" id="inp-name" placeholder="Наприклад: Олег" autocomplete="given-name" />
+        <input type="text" id="inp-name" placeholder="Наприклад: Олег" data-i18n-placeholder="cert.phName" autocomplete="given-name" />
         <div class="field-error" data-i18n="cert.errName">Вкажіть ваше ім'я</div>
       </div>
       <div class="form-group" id="fg-phone">
@@ -393,7 +393,7 @@
 
     <div class="form-group" id="fg-recipient">
       <label for="inp-recipient" data-i18n="cert.labelRecipient">Сертифікат на ім'я *</label>
-      <input type="text" id="inp-recipient" placeholder="Ім'я отримувача" />
+      <input type="text" id="inp-recipient" placeholder="Ім'я отримувача" data-i18n-placeholder="cert.phRecipient" />
       <div class="field-error" data-i18n="cert.errRecipient">Вкажіть ім'я отримувача</div>
     </div>
 
@@ -503,7 +503,7 @@
 
     <div class="form-group">
       <label for="inp-wishes" data-i18n="cert.labelWishes">Побажання до сертифіката</label>
-      <textarea id="inp-wishes" placeholder="Підпис, побажання, особливі деталі оформлення…"></textarea>
+      <textarea id="inp-wishes" placeholder="Підпис, побажання, особливі деталі оформлення…" data-i18n-placeholder="cert.phWishes"></textarea>
     </div>
 
     <button type="submit" class="btn-submit" id="submitBtn" data-i18n="cert.submit">🎁 Замовити сертифікат</button>
@@ -1149,29 +1149,39 @@
   }
 
   // ── Service list translation (inside IIFE so it can access SERVICES, POPULAR_IDS, etc.) ──
-  function retranslateSelected() {
+  function retranslateSelected(lang) {
+    var uah = lang === 'en' ? 'UAH' : 'грн';
+    var addrNP       = lang === 'en' ? 'Nova Poshta branch *'  : 'Відділення Нової Пошти *';
+    var addrDelivery = lang === 'en' ? 'Delivery address *'    : 'Адреса доставки *';
+    var phAddrNP     = lang === 'en' ? 'City, branch or parcel locker №' : 'Місто, відділення або поштомат №';
+    var phAddrTaxi   = lang === 'en' ? 'Street, building, apartment'     : 'Вулиця, будинок, квартира';
+
     if (activeVariant) {
-      selName.textContent       = tr(activeVariant.serviceName);
-      selDur.textContent        = tr(activeVariant.label);
-      selPriceBadge.textContent = activeVariant.price.toLocaleString('uk-UA') + ' ' + tx('uah');
+      var trFn = (window.OlivaI18n && lang !== 'uk')
+        ? function(t){ return window.OlivaI18n.translate(t, lang); }
+        : function(t){ return t; };
+      selName.textContent       = trFn(activeVariant.serviceName);
+      selDur.textContent        = trFn(activeVariant.label);
+      selPriceBadge.textContent = activeVariant.price.toLocaleString('uk-UA') + ' ' + uah;
     }
     if (activeVariant2) {
-      selName2.textContent       = tr(activeVariant2.serviceName);
-      selDur2.textContent        = tr(activeVariant2.label);
-      selPriceBadge2.textContent = activeVariant2.price.toLocaleString('uk-UA') + ' ' + tx('uah');
+      var trFn2 = (window.OlivaI18n && lang !== 'uk')
+        ? function(t){ return window.OlivaI18n.translate(t, lang); }
+        : function(t){ return t; };
+      selName2.textContent       = trFn2(activeVariant2.serviceName);
+      selDur2.textContent        = trFn2(activeVariant2.label);
+      selPriceBadge2.textContent = activeVariant2.price.toLocaleString('uk-UA') + ' ' + uah;
     }
     updateTotal();
-    // Re-translate address label if visible
+    // Re-translate address label & placeholder if visible
     var deliveryVal = document.getElementById('inp-delivery') ? document.getElementById('inp-delivery').value : '';
-    if (deliveryVal === 'Нова Пошта') addressLabel.textContent = tx('addrNP');
-    else if (deliveryVal === 'Таксі')  addressLabel.textContent = tx('addrDelivery');
-    // Update input placeholders
-    document.getElementById('inp-name').placeholder      = tx('phName');
-    document.getElementById('inp-recipient').placeholder = tx('phRecipient');
-    document.getElementById('inp-wishes').placeholder    = tx('phWishes');
-    var addrInput = document.getElementById('inp-address');
-    if (deliveryVal === 'Нова Пошта') addrInput.placeholder = tx('phAddrNP');
-    else if (deliveryVal === 'Таксі') addrInput.placeholder = tx('phAddrTaxi');
+    if (deliveryVal === 'Нова Пошта') {
+      addressLabel.textContent = addrNP;
+      document.getElementById('inp-address').placeholder = phAddrNP;
+    } else if (deliveryVal === 'Таксі') {
+      addressLabel.textContent = addrDelivery;
+      document.getElementById('inp-address').placeholder = phAddrTaxi;
+    }
   }
 
   function renderCertServiceLists(lang) {
