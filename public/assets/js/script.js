@@ -121,6 +121,8 @@
     var open = show != null ? show : panel.hasAttribute("hidden");
     if (open) { panel.removeAttribute("hidden"); }
     else { panel.setAttribute("hidden", ""); }
+    var callBtn = document.getElementById("callBtn");
+    if (callBtn) callBtn.style.display = open ? "none" : "";
   }
   if (launcher) {
     launcher.addEventListener("click", function () { toggleChat(); });
