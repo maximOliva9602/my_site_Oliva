@@ -162,7 +162,18 @@
       "cert.masterType.top": "Топ Майстер",
       "cert.masterType.ritual": "Ритуал",
       "cert.masterType.phyto": "Фітобочка",
-      "cert.changeService": "Змінити"
+      "cert.changeService": "Змінити",
+      "cert.change": "Змінити",
+      "cert.remove": "Видалити",
+      "cert.addService": "＋ Додати ще одну послугу",
+      "cert.errName": "Вкажіть ваше ім'я",
+      "cert.errPhone": "Вкажіть номер телефону",
+      "cert.errRecipient": "Вкажіть ім'я отримувача",
+      "cert.errService": "Оберіть послугу та тривалість",
+      "cert.errType": "Оберіть тип сертифіката",
+      "cert.errDelivery": "Оберіть спосіб отримання",
+      "cert.addrLabel": "Адреса *",
+      "cert.errAddress": "Вкажіть адресу"
     },
 
     en: {
@@ -319,7 +330,18 @@
       "cert.masterType.top": "Top Master",
       "cert.masterType.ritual": "Ritual",
       "cert.masterType.phyto": "Phyto-barrel",
-      "cert.changeService": "Change"
+      "cert.changeService": "Change",
+      "cert.change": "Change",
+      "cert.remove": "Remove",
+      "cert.addService": "＋ Add another service",
+      "cert.errName": "Please enter your name",
+      "cert.errPhone": "Please enter your phone number",
+      "cert.errRecipient": "Please enter recipient's name",
+      "cert.errService": "Please select a service and duration",
+      "cert.errType": "Please select certificate type",
+      "cert.errDelivery": "Please select delivery method",
+      "cert.addrLabel": "Address *",
+      "cert.errAddress": "Please enter address"
     }
   };
 
@@ -463,6 +485,9 @@
     ['SPA-ритуали',                                  'SPA rituals'],
     // Master type labels (standalone)
     ['Топ Майстер',                                  'Top Master'],
+    ['Майстер',                                      'Master'],
+    ['Ритуал',                                       'Ritual'],
+    ['Фітобочка',                                    'Phyto-barrel'],
     // Level suffixes
     ['(Топ Майстер)',                                '(Top Master)'],
     ['(Майстер)',                                    '(Master)'],
@@ -478,6 +503,8 @@
     // Wrapping types used in certificate
     ['Гаряче · 1 год',                               'Hot · 1 hr'],
     ['Холодне · 1 год',                              'Cold · 1 hr'],
+    // Currency
+    [' грн',                                         ' UAH'],
   ];
 
   /* Translate a single text using the phrase dictionary */

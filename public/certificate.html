@@ -382,19 +382,19 @@
       <div class="form-group" id="fg-name">
         <label for="inp-name" data-i18n="cert.labelName">Ваше ім'я *</label>
         <input type="text" id="inp-name" placeholder="Наприклад: Олег" autocomplete="given-name" />
-        <div class="field-error">Вкажіть ваше ім'я</div>
+        <div class="field-error" data-i18n="cert.errName">Вкажіть ваше ім'я</div>
       </div>
       <div class="form-group" id="fg-phone">
         <label for="inp-phone" data-i18n="cert.labelPhone">Номер телефону *</label>
         <input type="tel" id="inp-phone" placeholder="+380" autocomplete="tel" />
-        <div class="field-error">Вкажіть номер телефону</div>
+        <div class="field-error" data-i18n="cert.errPhone">Вкажіть номер телефону</div>
       </div>
     </div>
 
     <div class="form-group" id="fg-recipient">
       <label for="inp-recipient" data-i18n="cert.labelRecipient">Сертифікат на ім'я *</label>
       <input type="text" id="inp-recipient" placeholder="Ім'я отримувача" />
-      <div class="field-error">Вкажіть ім'я отримувача</div>
+      <div class="field-error" data-i18n="cert.errRecipient">Вкажіть ім'я отримувача</div>
     </div>
 
     <!-- ВИБІР ПОСЛУГИ -->
@@ -438,7 +438,7 @@
           </div>
           <div class="selected-price-badge" id="selectedPriceBadge"></div>
         </div>
-        <button type="button" class="selected-change" id="selectedChange">Змінити</button>
+        <button type="button" class="selected-change" id="selectedChange" data-i18n="cert.change">Змінити</button>
       </div>
 
       <!-- Додаткова послуга -->
@@ -451,13 +451,13 @@
             </div>
             <div class="selected-price-badge" id="selectedPriceBadge2"></div>
           </div>
-          <button type="button" class="selected-change" id="selectedChange2">Видалити</button>
+          <button type="button" class="selected-change" id="selectedChange2" data-i18n="cert.remove">Видалити</button>
         </div>
         <div id="picker2Wrap" style="display:none; margin-top:8px;"></div>
       </div>
-      <button type="button" id="addServiceBtn" class="add-service-btn" style="display:none; margin-top:10px;">＋ Додати ще одну послугу</button>
+      <button type="button" id="addServiceBtn" class="add-service-btn" style="display:none; margin-top:10px;" data-i18n="cert.addService">＋ Додати ще одну послугу</button>
 
-      <div class="field-error" id="serviceError" style="display:none">Оберіть послугу та тривалість</div>
+      <div class="field-error" id="serviceError" style="display:none" data-i18n="cert.errService">Оберіть послугу та тривалість</div>
       <input type="hidden" id="inp-service" />
       <input type="hidden" id="inp-price" />
       <input type="hidden" id="inp-service2" />
@@ -473,7 +473,7 @@
         <button type="button" class="option-chip" data-val="Електронний" data-i18n="cert.typeDigital">📱 Електронний</button>
       </div>
       <input type="hidden" id="inp-cert-type" />
-      <div class="field-error">Оберіть тип сертифіката</div>
+      <div class="field-error" data-i18n="cert.errType">Оберіть тип сертифіката</div>
     </div>
 
     <!-- ДОСТАВКА -->
@@ -485,14 +485,14 @@
         <button type="button" class="option-chip" data-val="Отримаю у студії" data-i18n="cert.deliveryStudio">🏠 У студії</button>
       </div>
       <input type="hidden" id="inp-delivery" />
-      <div class="field-error">Оберіть спосіб отримання</div>
+      <div class="field-error" data-i18n="cert.errDelivery">Оберіть спосіб отримання</div>
     </div>
 
     <!-- АДРЕСА (тільки для НП або таксі) -->
     <div class="form-group" id="fg-address" style="display:none">
-      <label for="inp-address" id="addressLabel">Адреса *</label>
+      <label for="inp-address" id="addressLabel" data-i18n="cert.addrLabel">Адреса *</label>
       <input type="text" id="inp-address" placeholder="" />
-      <div class="field-error">Вкажіть адресу</div>
+      <div class="field-error" data-i18n="cert.errAddress">Вкажіть адресу</div>
     </div>
 
     <!-- ПІДСУМКОВА СУМА -->
@@ -550,6 +550,41 @@
 
 <script>
 (function(){
+
+  /* ── I18N HELPERS ── */
+  function getLang() { return window.OlivaI18n ? window.OlivaI18n.get() : 'uk'; }
+  // Phrase-based translation (service names, durations, master types, currency)
+  function tr(text) {
+    var lang = getLang();
+    return (window.OlivaI18n && lang !== 'uk') ? window.OlivaI18n.translate(text, lang) : text;
+  }
+  // Key-value translations for dynamic UI labels
+  var TX = {
+    uk: {
+      addrNP:       'Відділення Нової Пошти *',
+      addrDelivery: 'Адреса доставки *',
+      chooseDur:    'оберіть тривалість:',
+      chooseMaster: 'Оберіть майстра:',
+      chooseService:'Оберіть послугу:',
+      durLabel:     'Тривалість:',
+      paperFee:     '+150 грн (папір)',
+      uah:          'грн',
+    },
+    en: {
+      addrNP:       'Nova Poshta branch *',
+      addrDelivery: 'Delivery address *',
+      chooseDur:    'choose duration:',
+      chooseMaster: 'Choose master:',
+      chooseService:'Choose service:',
+      durLabel:     'Duration:',
+      paperFee:     '+150 UAH (paper)',
+      uah:          'UAH',
+    }
+  };
+  function tx(key) {
+    var lang = getLang();
+    return (TX[lang] && TX[lang][key]) ? TX[lang][key] : (TX.uk[key] || key);
+  }
 
   /* ── ДАНІ ПОСЛУГ (ціни з bookon.ua) ── */
   var SERVICES = [
@@ -765,13 +800,13 @@
 
     // кілька тривалостей — ховаємо picker, показуємо список
     hidePicker();
-    variantsTitle.textContent = svc.name + ' — оберіть тривалість:';
+    variantsTitle.textContent = tr(svc.name) + ' — ' + tx('chooseDur');
     variantsGrid.innerHTML = '';
     svc.variants.forEach(function(v){
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'variant-btn';
-      btn.innerHTML = '<div class="variant-label">' + v.dur + '</div>';
+      btn.innerHTML = '<div class="variant-label">' + tr(v.dur) + '</div>';
       btn.addEventListener('click', function(){
         variantsGrid.querySelectorAll('.variant-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
@@ -795,14 +830,14 @@
       return;
     }
 
-    masterTitle.textContent = 'Оберіть майстра:';
+    masterTitle.textContent = tx('chooseMaster');
     durVariant.masters.forEach(function(m){
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'master-btn';
       btn.innerHTML =
-        '<div class="master-btn-type">' + m.type + '</div>' +
-        '<div class="master-btn-price">' + m.price.toLocaleString('uk-UA') + ' грн</div>';
+        '<div class="master-btn-type">' + tr(m.type) + '</div>' +
+        '<div class="master-btn-price">' + m.price.toLocaleString('uk-UA') + ' ' + tx('uah') + '</div>';
       btn.addEventListener('click', function(){
         masterGrid.querySelectorAll('.master-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
@@ -833,10 +868,10 @@
     var total = p1 + p2 + paper;
     if (total > 0) {
       var parts = [];
-      if (p1) parts.push(p1.toLocaleString('uk-UA') + ' грн');
-      if (p2) parts.push(p2.toLocaleString('uk-UA') + ' грн');
-      if (paper) parts.push('+150 грн (папір)');
-      totalAmount.textContent = total.toLocaleString('uk-UA') + ' грн';
+      if (p1) parts.push(p1.toLocaleString('uk-UA') + ' ' + tx('uah'));
+      if (p2) parts.push(p2.toLocaleString('uk-UA') + ' ' + tx('uah'));
+      if (paper) parts.push(tx('paperFee'));
+      totalAmount.textContent = total.toLocaleString('uk-UA') + ' ' + tx('uah');
       if (parts.length > 1) totalAmount.title = parts.join(' + ');
       totalRow.style.display = 'flex';
     } else {
@@ -852,9 +887,9 @@
     inpService.value = serviceName + ' · ' + label;
     inpPrice.value   = master.price;
 
-    selName.textContent       = serviceName;
-    selDur.textContent        = label;
-    selPriceBadge.textContent = master.price.toLocaleString('uk-UA') + ' грн';
+    selName.textContent       = tr(serviceName);
+    selDur.textContent        = tr(label);
+    selPriceBadge.textContent = master.price.toLocaleString('uk-UA') + ' ' + tx('uah');
     selSummary.style.display  = 'block';
     hidePicker();
     variantsWrap.style.display = 'none';
@@ -887,10 +922,10 @@
 
   function buildSimplePicker(){
     var html = '<div style="background:rgba(74,94,46,0.1);border:1px solid rgba(122,145,86,0.3);border-radius:12px;padding:12px;">';
-    html += '<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Оберіть послугу:</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">' + tx('chooseService') + '</div>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;" id="p2ServiceBtns">';
     SERVICES.forEach(function(svc){
-      html += '<button type="button" data-svc="'+svc.id+'" style="padding:5px 10px;background:rgba(122,145,86,0.15);border:1px solid rgba(122,145,86,0.3);border-radius:8px;color:var(--cream);font-size:12px;cursor:pointer;">'+svc.name+'</button>';
+      html += '<button type="button" data-svc="'+svc.id+'" style="padding:5px 10px;background:rgba(122,145,86,0.15);border:1px solid rgba(122,145,86,0.3);border-radius:8px;color:var(--cream);font-size:12px;cursor:pointer;">'+tr(svc.name)+'</button>';
     });
     html += '</div>';
     html += '<div id="p2Variants" style="display:none;margin-top:10px;"></div>';
@@ -916,9 +951,9 @@
         var p2m = wrap.querySelector('#p2Masters');
         p2m.style.display = 'none';
         p2v.style.display = 'block';
-        p2v.innerHTML = '<div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">Тривалість:</div><div style="display:flex;flex-wrap:wrap;gap:6px;">';
+        p2v.innerHTML = '<div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">' + tx('durLabel') + '</div><div style="display:flex;flex-wrap:wrap;gap:6px;">';
         activeSvc2.variants.forEach(function(v, i){
-          p2v.innerHTML += '<button type="button" data-var="'+i+'" style="padding:5px 12px;background:rgba(122,145,86,0.15);border:1px solid rgba(122,145,86,0.3);border-radius:8px;color:var(--cream);font-size:12px;cursor:pointer;">'+v.dur+'</button>';
+          p2v.innerHTML += '<button type="button" data-var="'+i+'" style="padding:5px 12px;background:rgba(122,145,86,0.15);border:1px solid rgba(122,145,86,0.3);border-radius:8px;color:var(--cream);font-size:12px;cursor:pointer;">'+tr(v.dur)+'</button>';
         });
         p2v.innerHTML += '</div>';
         return;
@@ -959,9 +994,9 @@
     activeVariant2 = { serviceName: serviceName, label: label, price: master.price };
     inpService2.value = serviceName + ' · ' + label;
     inpPrice2.value   = master.price;
-    selName2.textContent       = serviceName;
-    selDur2.textContent        = label;
-    selPriceBadge2.textContent = master.price.toLocaleString('uk-UA') + ' грн';
+    selName2.textContent       = tr(serviceName);
+    selDur2.textContent        = tr(label);
+    selPriceBadge2.textContent = master.price.toLocaleString('uk-UA') + ' ' + tx('uah');
     selSummary2.style.display  = 'block';
     document.getElementById('picker2Wrap').style.display = 'none';
     updateTotal();
@@ -1011,11 +1046,11 @@
 
       if (val === 'Нова Пошта') {
         fgAddress.style.display = 'block';
-        addressLabel.textContent = 'Відділення Нової Пошти *';
+        addressLabel.textContent = tx('addrNP');
         inpAddress.placeholder = 'Місто, відділення або поштомат №';
       } else if (val === 'Таксі') {
         fgAddress.style.display = 'block';
-        addressLabel.textContent = 'Адреса доставки *';
+        addressLabel.textContent = tx('addrDelivery');
         inpAddress.placeholder = 'Вулиця, будинок, квартира';
       } else {
         fgAddress.style.display = 'none';
@@ -1104,6 +1139,24 @@
   }
 
   // ── Service list translation (inside IIFE so it can access SERVICES, POPULAR_IDS, etc.) ──
+  function retranslateSelected() {
+    if (activeVariant) {
+      selName.textContent       = tr(activeVariant.serviceName);
+      selDur.textContent        = tr(activeVariant.label);
+      selPriceBadge.textContent = activeVariant.price.toLocaleString('uk-UA') + ' ' + tx('uah');
+    }
+    if (activeVariant2) {
+      selName2.textContent       = tr(activeVariant2.serviceName);
+      selDur2.textContent        = tr(activeVariant2.label);
+      selPriceBadge2.textContent = activeVariant2.price.toLocaleString('uk-UA') + ' ' + tx('uah');
+    }
+    updateTotal();
+    // Re-translate address label if visible
+    var deliveryVal = document.getElementById('inp-delivery') ? document.getElementById('inp-delivery').value : '';
+    if (deliveryVal === 'Нова Пошта') addressLabel.textContent = tx('addrNP');
+    else if (deliveryVal === 'Таксі')  addressLabel.textContent = tx('addrDelivery');
+  }
+
   function renderCertServiceLists(lang) {
     var tr = (window.OlivaI18n && lang !== 'uk')
       ? function(t) { return window.OlivaI18n.translate(t, lang); }
@@ -1142,7 +1195,10 @@
   }
 
   // Set callback BEFORE i18n.js loads so auto-apply on page load works
-  window._olivaLangCallback = renderCertServiceLists;
+  window._olivaLangCallback = function(lang) {
+    renderCertServiceLists(lang);
+    retranslateSelected();
+  };
 
 })();
 
