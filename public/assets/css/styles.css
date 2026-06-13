@@ -399,7 +399,7 @@ section { padding: 100px 0; }
   50%      { box-shadow: 0 10px 30px rgba(122,145,86,0.45), 0 0 0 14px rgba(143,168,100,0); }
 }
 .call-btn {
-  position: fixed; bottom: 100px; right: 24px; z-index: 1100;
+  position: fixed; bottom: 116px; right: 24px; z-index: 1100;
   width: 60px; height: 60px; border-radius: 50%;
   background: var(--olive-light); color: var(--black); border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
