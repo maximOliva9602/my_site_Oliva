@@ -37,6 +37,15 @@
   function openMenu() { navLinks.classList.add("open"); backdrop.classList.add("open"); burger.classList.add("open"); document.body.style.overflow = "hidden"; }
   function closeMenu() { navLinks.classList.remove("open"); backdrop.classList.remove("open"); burger.classList.remove("open"); document.body.style.overflow = ""; }
 
+  /* Close (✕) button inside the slide-out panel — visible only on mobile via CSS. */
+  var navClose = document.createElement("button");
+  navClose.type = "button";
+  navClose.className = "nav-close";
+  navClose.setAttribute("aria-label", "Закрити меню");
+  navClose.innerHTML = "&times;";
+  navClose.addEventListener("click", closeMenu);
+  navLinks.insertBefore(navClose, navLinks.firstChild);
+
   placeNavLinks();
   window.addEventListener("resize", placeNavLinks, { passive: true });
 

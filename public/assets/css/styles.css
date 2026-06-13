@@ -129,6 +129,16 @@ nav.scrolled {
 .burger.open span:nth-child(2) { opacity: 0; }
 .burger.open span:nth-child(3) { top: 10px; transform: rotate(-45deg); }
 
+/* Close button inside the mobile slide-out panel (hidden on desktop) */
+.nav-close {
+  display: none; position: absolute; top: 14px; right: 16px;
+  width: 40px; height: 40px; align-items: center; justify-content: center;
+  border: none; background: none; color: var(--cream);
+  font-size: 30px; line-height: 1; cursor: pointer; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-close:hover { color: var(--olive-light); }
+
 /* ── BUTTONS ── */
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
@@ -466,13 +476,14 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
      short nav bar. Drop it on mobile; the near-opaque background stays. */
   nav.scrolled { backdrop-filter: none; -webkit-backdrop-filter: none; }
   .nav-links {
-    position: fixed; top: 0; right: 0; bottom: 0; width: 78%; max-width: 320px;
+    position: fixed; top: 0; right: 0; bottom: 0; width: 62%; max-width: 270px;
     background: var(--black-2); border-left: 1px solid var(--line);
     flex-direction: column; justify-content: center; gap: 26px; padding: 40px;
     transform: translateX(100%); transition: transform .35s ease; z-index: 210;
   }
   .nav-links.open { transform: translateX(0); }
   .nav-links a { font-size: 1rem; }
+  .nav-close { display: flex; }
   .burger { display: block; }
   .nav-cta { display: none; }
   .hero { align-items: flex-start; justify-content: flex-start; }
