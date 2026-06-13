@@ -2240,7 +2240,14 @@ function toggleRule(btn) {
   var msg = document.getElementById('callMsg');
 
   btn.addEventListener('click', function(){
-    popup.classList.toggle('open');
+    var isOpen = popup.classList.toggle('open');
+    if (isOpen) {
+      phoneInput.value = '';
+      phoneInput.style.display = '';
+      sendBtn.style.display = '';
+      sendBtn.disabled = false;
+      msg.style.display = 'none';
+    }
   });
   closeBtn.addEventListener('click', function(){
     popup.classList.remove('open');
