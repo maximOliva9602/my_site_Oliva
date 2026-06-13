@@ -172,6 +172,7 @@
     <li><a href="/blog" data-i18n="nav.blog">Блог</a></li>
     <li><a href="/shop" data-i18n="nav.shop">Магазин</a></li>
     <li><a href="/training" data-i18n="nav.training">Навчання</a></li>
+    <li class="nav-phone-item"><a href="tel:+380974340112" class="nav-phone-link">📞 097 434 01 12</a></li>
   </ul>
 
   <div class="nav-right">
@@ -2209,6 +2210,61 @@ function toggleRule(btn) {
   var item = btn.closest('.rules-item');
   item.classList.toggle('open');
 }
+</script>
+
+<!-- ── CALL BUTTON + POPUP ── -->
+<button class="call-btn" id="callBtn" aria-label="Зателефонувати">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.26.2 2.47.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg>
+</button>
+
+<div class="call-popup" id="callPopup">
+  <button class="call-popup-close" id="callPopupClose" aria-label="Закрити">&times;</button>
+  <div class="call-popup-title">Зв'яжіться з нами</div>
+  <a href="tel:+380974340112" class="call-popup-phone">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.26.2 2.47.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg>
+    097 434 01 12
+  </a>
+  <div class="call-popup-sub">або залиште свій номер — ми передзвонимо</div>
+  <input type="tel" id="callPhone" placeholder="Ваш номер телефону" />
+  <button class="call-popup-send" id="callSend">Зв'яжіться зі мною</button>
+  <div class="call-popup-msg" id="callMsg">✓ Дякуємо! Зв'яжемося найближчим часом.</div>
+</div>
+
+<script>
+(function(){
+  var btn = document.getElementById('callBtn');
+  var popup = document.getElementById('callPopup');
+  var closeBtn = document.getElementById('callPopupClose');
+  var sendBtn = document.getElementById('callSend');
+  var phoneInput = document.getElementById('callPhone');
+  var msg = document.getElementById('callMsg');
+
+  btn.addEventListener('click', function(){
+    popup.classList.toggle('open');
+  });
+  closeBtn.addEventListener('click', function(){
+    popup.classList.remove('open');
+  });
+  sendBtn.addEventListener('click', function(){
+    var phone = phoneInput.value.trim();
+    if (!phone) { phoneInput.focus(); return; }
+    sendBtn.disabled = true;
+    fetch('/api/callback', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({phone: phone})
+    }).catch(function(){}).finally(function(){
+      msg.style.display = 'block';
+      sendBtn.style.display = 'none';
+      phoneInput.style.display = 'none';
+    });
+  });
+  document.addEventListener('click', function(e){
+    if (!popup.contains(e.target) && e.target !== btn) {
+      popup.classList.remove('open');
+    }
+  });
+})();
 </script>
 
 </body>
