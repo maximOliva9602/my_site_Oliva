@@ -19,6 +19,7 @@
       "nav.blog": "Блог", "nav.shop": "Магазин", "nav.training": "Навчання",
 
       "hero.eyebrow": "Студія масажу OLIVA",
+      "hero.brand1": "Студія масажу",
       "hero.title1": "Тут починається", "hero.title2": "твоє відновлення", "hero.title3": "",
       "hero.desc": "",
       "hero.cta1": "Записатися онлайн", "hero.cta2": "Переглянути послуги",
@@ -175,6 +176,7 @@
       "nav.blog": "Blog", "nav.shop": "Shop", "nav.training": "Training",
 
       "hero.eyebrow": "Massage Studio OLIVA",
+      "hero.brand1": "Massage Studio",
       "hero.title1": "Here begins", "hero.title2": "your recovery", "hero.title3": "",
       "hero.desc": "",
       "hero.cta1": "Book online", "hero.cta2": "View services",
