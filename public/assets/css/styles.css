@@ -75,8 +75,6 @@ nav {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 48px;
   transition: background .4s, padding .4s, top .4s;
-  -webkit-transform: translateZ(0); transform: translateZ(0);
-  isolation: isolate;
 }
 nav.scrolled {
   top: 0;
