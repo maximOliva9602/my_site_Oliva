@@ -15,12 +15,30 @@
   /* ---------- Mobile burger menu ---------- */
   var burger = document.getElementById("burger");
   var navLinks = document.getElementById("navLinks");
+  var navRight = document.querySelector(".nav-right");
   var backdrop = document.createElement("div");
   backdrop.className = "nav-backdrop";
   document.body.appendChild(backdrop);
 
+  /* On mobile the slide-out panel must live directly under <body>. A position:fixed
+     element nested inside the fixed <nav> hits an iOS Safari bug where its background
+     isn't painted (panel looks transparent) and a scrolled nav with backdrop-filter
+     traps it. Re-parent to <body> on mobile, restore into <nav> on desktop. */
+  function placeNavLinks() {
+    var mobile = window.innerWidth <= 900;
+    if (mobile && navLinks.parentNode !== document.body) {
+      document.body.appendChild(navLinks);
+    } else if (!mobile && navLinks.parentNode === document.body) {
+      nav.insertBefore(navLinks, navRight);
+      closeMenu();
+    }
+  }
+
   function openMenu() { navLinks.classList.add("open"); backdrop.classList.add("open"); burger.classList.add("open"); document.body.style.overflow = "hidden"; }
   function closeMenu() { navLinks.classList.remove("open"); backdrop.classList.remove("open"); burger.classList.remove("open"); document.body.style.overflow = ""; }
+
+  placeNavLinks();
+  window.addEventListener("resize", placeNavLinks, { passive: true });
 
   burger.addEventListener("click", function () {
     if (navLinks.classList.contains("open")) closeMenu(); else openMenu();

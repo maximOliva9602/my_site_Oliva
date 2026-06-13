@@ -461,6 +461,10 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
   nav { top: 0; padding: 14px 20px; }
   nav.scrolled { top: 0; padding: 10px 20px; }
   .container { padding: 0 24px; }
+  /* backdrop-filter on the scrolled nav makes it a containing block for its
+     fixed-positioned descendants, which traps the slide-out panel inside the
+     short nav bar. Drop it on mobile; the near-opaque background stays. */
+  nav.scrolled { backdrop-filter: none; -webkit-backdrop-filter: none; }
   .nav-links {
     position: fixed; top: 0; right: 0; bottom: 0; width: 78%; max-width: 320px;
     background: var(--black-2); border-left: 1px solid var(--line);
