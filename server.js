@@ -403,6 +403,14 @@ io.on("connection", function (socket) {
   });
 });
 
+/* ---------------- Зворотній дзвінок ---------------- */
+app.post("/api/callback", async function (req, res) {
+  var phone = String((req.body || {}).phone || "").trim().slice(0, 30);
+  if (!phone) return res.status(400).json({ ok: false, error: "phone required" });
+  await sendTelegram(`📞 <b>Запит на зворотній дзвінок</b>\n☎️ ${phone}\n\nКлієнт залишив номер через форму на сайті.`);
+  res.json({ ok: true });
+});
+
 /* ---------------- Fallback ---------------- */
 app.get("*", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "index.html"));
