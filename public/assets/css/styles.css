@@ -75,6 +75,8 @@ nav {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 48px;
   transition: background .4s, padding .4s, top .4s;
+  -webkit-transform: translateZ(0); transform: translateZ(0);
+  isolation: isolate;
 }
 nav.scrolled {
   top: 0;
@@ -120,7 +122,7 @@ nav.scrolled {
 .nav-cta:hover { background: var(--olive-mid); transform: translateY(-1px); }
 
 /* burger */
-.burger { display: none; width: 30px; height: 22px; position: relative; }
+.burger { display: none; width: 30px; height: 22px; position: relative; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .burger span { position: absolute; left: 0; height: 2px; width: 100%; background: var(--cream); transition: .3s; }
 .burger span:nth-child(1) { top: 0; }
 .burger span:nth-child(2) { top: 10px; }

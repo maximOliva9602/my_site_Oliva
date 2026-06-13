@@ -25,6 +25,10 @@
   burger.addEventListener("click", function () {
     if (navLinks.classList.contains("open")) closeMenu(); else openMenu();
   });
+  burger.addEventListener("touchstart", function (e) {
+    e.preventDefault();
+    if (navLinks.classList.contains("open")) closeMenu(); else openMenu();
+  }, { passive: false });
   backdrop.addEventListener("click", closeMenu);
   navLinks.querySelectorAll("a").forEach(function (a) { a.addEventListener("click", closeMenu); });
 
