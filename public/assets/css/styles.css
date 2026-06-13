@@ -395,20 +395,19 @@ section { padding: 100px 0; }
 
 /* ── CALL BUTTON ── */
 @keyframes call-pulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(122,145,86,0.7); }
-  50%      { box-shadow: 0 0 0 14px rgba(122,145,86,0); }
+  0%,100% { box-shadow: 0 10px 30px rgba(122,145,86,0.45), 0 0 0 0 rgba(143,168,100,0.7); }
+  50%      { box-shadow: 0 10px 30px rgba(122,145,86,0.45), 0 0 0 14px rgba(143,168,100,0); }
 }
 .call-btn {
-  position: fixed; bottom: 90px; right: 24px; z-index: 1100;
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--olive); border: none; cursor: pointer;
+  position: fixed; bottom: 100px; right: 24px; z-index: 1100;
+  width: 60px; height: 60px; border-radius: 50%;
+  background: var(--olive-light); color: var(--black); border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  animation: call-pulse 2s infinite;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  transition: transform .2s;
+  animation: call-pulse 2.2s ease-out infinite;
+  transition: transform .25s, background .25s;
 }
-.call-btn:hover { transform: scale(1.1); }
-.call-btn svg { width: 26px; height: 26px; fill: #fff; }
+.call-btn:hover { transform: translateY(-3px); background: #8FA864; }
+.call-btn svg { width: 26px; height: 26px; fill: var(--black); }
 
 .call-popup {
   position: fixed; bottom: 160px; right: 24px; z-index: 1200;
