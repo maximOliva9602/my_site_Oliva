@@ -561,24 +561,34 @@
   // Key-value translations for dynamic UI labels
   var TX = {
     uk: {
-      addrNP:       'Відділення Нової Пошти *',
-      addrDelivery: 'Адреса доставки *',
-      chooseDur:    'оберіть тривалість:',
-      chooseMaster: 'Оберіть майстра:',
-      chooseService:'Оберіть послугу:',
-      durLabel:     'Тривалість:',
-      paperFee:     '+150 грн (папір)',
-      uah:          'грн',
+      addrNP:        'Відділення Нової Пошти *',
+      addrDelivery:  'Адреса доставки *',
+      chooseDur:     'оберіть тривалість:',
+      chooseMaster:  'Оберіть майстра:',
+      chooseService: 'Оберіть послугу:',
+      durLabel:      'Тривалість:',
+      paperFee:      '+150 грн (папір)',
+      uah:           'грн',
+      phName:        'Наприклад: Олег',
+      phRecipient:   'Ім\'я отримувача',
+      phWishes:      'Підпис, побажання, особливі деталі оформлення…',
+      phAddrNP:      'Місто, відділення або поштомат №',
+      phAddrTaxi:    'Вулиця, будинок, квартира',
     },
     en: {
-      addrNP:       'Nova Poshta branch *',
-      addrDelivery: 'Delivery address *',
-      chooseDur:    'choose duration:',
-      chooseMaster: 'Choose master:',
-      chooseService:'Choose service:',
-      durLabel:     'Duration:',
-      paperFee:     '+150 UAH (paper)',
-      uah:          'UAH',
+      addrNP:        'Nova Poshta branch *',
+      addrDelivery:  'Delivery address *',
+      chooseDur:     'choose duration:',
+      chooseMaster:  'Choose master:',
+      chooseService: 'Choose service:',
+      durLabel:      'Duration:',
+      paperFee:      '+150 UAH (paper)',
+      uah:           'UAH',
+      phName:        'E.g.: Alex',
+      phRecipient:   'Recipient\'s name',
+      phWishes:      'Signature, wishes, special details…',
+      phAddrNP:      'City, branch or parcel locker №',
+      phAddrTaxi:    'Street, building, apartment',
     }
   };
   function tx(key) {
@@ -1047,11 +1057,11 @@
       if (val === 'Нова Пошта') {
         fgAddress.style.display = 'block';
         addressLabel.textContent = tx('addrNP');
-        inpAddress.placeholder = 'Місто, відділення або поштомат №';
+        inpAddress.placeholder = tx('phAddrNP');
       } else if (val === 'Таксі') {
         fgAddress.style.display = 'block';
         addressLabel.textContent = tx('addrDelivery');
-        inpAddress.placeholder = 'Вулиця, будинок, квартира';
+        inpAddress.placeholder = tx('phAddrTaxi');
       } else {
         fgAddress.style.display = 'none';
         inpAddress.value = '';
@@ -1155,6 +1165,13 @@
     var deliveryVal = document.getElementById('inp-delivery') ? document.getElementById('inp-delivery').value : '';
     if (deliveryVal === 'Нова Пошта') addressLabel.textContent = tx('addrNP');
     else if (deliveryVal === 'Таксі')  addressLabel.textContent = tx('addrDelivery');
+    // Update input placeholders
+    document.getElementById('inp-name').placeholder      = tx('phName');
+    document.getElementById('inp-recipient').placeholder = tx('phRecipient');
+    document.getElementById('inp-wishes').placeholder    = tx('phWishes');
+    var addrInput = document.getElementById('inp-address');
+    if (deliveryVal === 'Нова Пошта') addrInput.placeholder = tx('phAddrNP');
+    else if (deliveryVal === 'Таксі') addrInput.placeholder = tx('phAddrTaxi');
   }
 
   function renderCertServiceLists(lang) {
