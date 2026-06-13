@@ -313,6 +313,9 @@
     .selected-price-badge { font-size: 1.2rem; font-weight: 600; color: var(--olive-light); white-space: nowrap; }
     .selected-change { font-size: 11px; color: var(--olive-light); text-decoration: underline; background: none; border: none; cursor: pointer; padding: 6px 0 0; }
     .selected-change:hover { color: var(--cream); }
+    .picker-back-btn { font-size: 12px; color: var(--olive-light); background: none; border: none; cursor: pointer; padding: 0 0 10px; display: flex; align-items: center; gap: 4px; }
+    .picker-back-btn:hover { color: var(--cream); }
+    .variants-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 14px; padding: 10px 12px; background: rgba(122,145,86,0.07); border-radius: 8px; border-left: 2px solid rgba(122,145,86,0.4); }
 
     .custom-amount-wrap { margin-bottom: 20px; }
     .custom-toggle-btn { font-size: 13px; color: var(--olive-light); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
@@ -419,7 +422,9 @@
 
       <!-- Варіанти тривалості -->
       <div class="variants-wrap" id="variantsWrap" style="display:none">
+        <button type="button" class="picker-back-btn" id="variantsBack">← Обрати іншу послугу</button>
         <div class="variants-title" id="variantsTitle"></div>
+        <div class="variants-desc" id="variantsDesc" style="display:none"></div>
         <div class="variants-grid" id="variantsGrid"></div>
       </div>
 
@@ -726,7 +731,31 @@
   var activeTab = 'popular';
 
   /* ── ПОПУЛЯРНІ ── */
-  var POPULAR_IDS = ['zagalno','parnyi','antyvikovy','antistres','fitobochka','spa_fito','spa_dvoh'];
+  var POPULAR_IDS = ['zagalno','parnyi','antyvikovy','antistres','kaminnnya','fitobochka','spa_fito','spa_dvoh'];
+
+  var SERVICE_DESC = {
+    zagalno:     'Класичний масаж усього тіла для покращення самопочуття та зняття м\'язової напруги. Гармонізує роботу всіх систем організму.',
+    antistres:   'Розслаблюючий масаж для зняття нервового напруження та відновлення внутрішнього балансу. М\'яка техніка знімає тривогу вже під час першого сеансу.',
+    parnyi:      'Ніжний ритуал для двох — синхронний масаж у виконанні двох майстрів одночасно. Ідеально для романтичного подарунка.',
+    chotyryrucky:'Унікальна техніка — чотири руки двох майстрів, що працюють синхронно. Глибоке розслаблення та відчуття повного занурення у відпочинок.',
+    spyna:       'Глибоке опрацювання м\'язів спини, усунення болю та відчуття важкості. Особливо ефективний при сидячій роботі.',
+    shyya:       'Спрямований на зняття напруги в шиї та плечах, покращує кровообіг головного мозку та усуває головний біль.',
+    kaminnnya:   'Масаж теплими вулканічними каменями — глибоке прогрівання м\'язів, розслаблення та відновлення. Ідеально знімає хронічну напругу та стрес.',
+    limfodrenazh:'Стимулює відтік лімфи, зменшує набряклість та виводить токсини. Відчутний результат вже після першого сеансу.',
+    antytsel:    'Інтенсивний масаж для покращення мікроциркуляції, зменшення целюліту та моделювання силуету тіла.',
+    oblychchya:  'Класичний масаж обличчя для покращення тонусу шкіри, стимуляції кровообігу та природного ліфтингу.',
+    antyvikovy:  'Ліфтинг-масаж обличчя з техніками, що уповільнюють процеси старіння та повертають шкірі пружність.',
+    dytyachy:    'М\'який та безпечний масаж для дітей, що сприяє гармонійному розвитку, зміцненню імунітету та опорно-рухового апарату.',
+    fitobochka:  'Паровий кедровий фітобочок — детоксикація організму, розслаблення м\'язів та відновлення через цілющий пар з травами.',
+    spa_fito:    'SPA-ритуал на основі фітопрепаратів для глибокого оновлення шкіри. Включає скраб, обгортання та масаж.',
+    spa_dvoh:    'Романтичний SPA-ритуал для пари — синхронний масаж, прогрівання у фітобочці та обгортання.',
+    amore:       'Розкішне обгортання Amore Shemen для живлення та зволоження шкіри. Шкіра стає шовковистою та сяючою.',
+    detox:       'Детоксикуюче обгортання Bruno Vassari для активного виведення токсинів та підтягування шкіри.',
+    seaweed:     'Гаряче обгортання з морськими водоростями — мінералізація, живлення та відновлення шкіри.',
+    hot_express: 'Комплексна трансформація тіла — прогрівання, масаж та обгортання за одну процедуру.',
+    cold_sculpt: 'Холодне моделювання тіла — скульптування силуету та зменшення жирових відкладень.',
+    hot_sculpt:  'Гаряче моделювання тіла — лімфодренаж, глибокий розігрів та ліполіз.',
+  };
 
   POPULAR_IDS.forEach(function(pid){
     var s = SERVICES.find(function(s){ return s.id === pid; });
@@ -769,12 +798,35 @@
   var masterWrap  = document.getElementById('masterWrap');
   var masterTitle = document.getElementById('masterTitle');
   var masterGrid  = document.getElementById('masterGrid');
+  var variantsDesc = document.getElementById('variantsDesc');
 
   function hidePicker(){
     popularPanel.style.display = 'none';
     allPanel.style.display     = 'none';
     document.getElementById('pickerTabs').style.display = 'none';
   }
+
+  function showPicker(){
+    document.getElementById('pickerTabs').style.display = 'flex';
+    popularPanel.style.display = activeTab === 'popular' ? 'block' : 'none';
+    allPanel.style.display     = activeTab === 'all' ? 'block' : 'none';
+  }
+
+  document.getElementById('variantsBack').addEventListener('click', function(){
+    activeCatId   = null;
+    activeDur     = null;
+    activeVariant = null;
+    inpService.value = '';
+    inpPrice.value   = '';
+    variantsWrap.style.display = 'none';
+    masterWrap.style.display   = 'none';
+    selSummary.style.display   = 'none';
+    addServiceBtn.style.display = 'none';
+    serviceError.style.display  = 'none';
+    popularGrid.querySelectorAll('.popular-btn').forEach(function(b){ b.classList.remove('active'); });
+    allServicesScroll.querySelectorAll('.srv-row').forEach(function(b){ b.classList.remove('active'); });
+    showPicker();
+  });
 
   /* КРОК 1 — вибір послуги */
   function selectCategory(id){
@@ -801,8 +853,13 @@
 
     // одна тривалість — одразу до вибору майстра
     if (svc.variants.length === 1) {
-      variantsWrap.style.display = 'none';
       hidePicker();
+      variantsTitle.textContent = tr(svc.name) + ' — ' + tr(svc.variants[0].dur);
+      var desc1 = SERVICE_DESC[id] || '';
+      if (desc1) { variantsDesc.textContent = desc1; variantsDesc.style.display = 'block'; }
+      else { variantsDesc.style.display = 'none'; }
+      variantsGrid.innerHTML = '';
+      variantsWrap.style.display = 'block';
       showMasterStep(svc, svc.variants[0]);
       if (window.innerWidth < 768) variantsWrap.scrollIntoView({behavior:'smooth', block:'start'});
       return;
@@ -811,6 +868,9 @@
     // кілька тривалостей — ховаємо picker, показуємо список
     hidePicker();
     variantsTitle.textContent = tr(svc.name) + ' — ' + tx('chooseDur');
+    var desc = SERVICE_DESC[id] || '';
+    if (desc) { variantsDesc.textContent = desc; variantsDesc.style.display = 'block'; }
+    else { variantsDesc.style.display = 'none'; }
     variantsGrid.innerHTML = '';
     svc.variants.forEach(function(v){
       var btn = document.createElement('button');
