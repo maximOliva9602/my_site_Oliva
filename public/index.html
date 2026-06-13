@@ -2260,7 +2260,7 @@ function toggleRule(btn) {
     });
   });
   document.addEventListener('click', function(e){
-    if (!popup.contains(e.target) && e.target !== btn) {
+    if (!popup.contains(e.target) && !btn.contains(e.target)) {
       popup.classList.remove('open');
     }
   });
