@@ -499,16 +499,17 @@
     ['(Майстер)',                                    '(Master)'],
     // Duration words (after service names to avoid conflicts)
     [' хв',                                          ' min'],
+    ['година',                                       'hour'],
     [' год. 40 хв.',                                 ' hr 40 min'],
     [' год. 30 хв.',                                 ' hr 30 min'],
     [' год. 15 хв.',                                 ' hr 15 min'],
     [' год. 10 хв.',                                 ' hr 10 min'],
     [' год.',                                        ' hr'],
-    ['год',                                          'hr'],
+    [' год',                                         ' hr'],
     ['варіантів',                                    'options'],
     // Wrapping types used in certificate
-    ['Гаряче · 1 год',                               'Hot · 1 hr'],
-    ['Холодне · 1 год',                              'Cold · 1 hr'],
+    ['Гаряче ·',                                     'Hot ·'],
+    ['Холодне ·',                                    'Cold ·'],
     // Currency
     [' грн',                                         ' UAH'],
   ];
@@ -531,6 +532,7 @@
       '.srv-list-name',
       '.srv-category-label',
       '.srv-list-dur',
+      '.srv-multi-dur',
     ];
     selectors.forEach(function (sel) {
       document.querySelectorAll(sel).forEach(function (el) {
