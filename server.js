@@ -134,8 +134,11 @@ app.get("/admin", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
+app.get("/share", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "share.html"));
+});
 app.get("/tips", function (req, res) {
-  res.sendFile(path.join(__dirname, "public", "tips.html"));
+  res.redirect(301, "/share?tab=tips");
 });
 
 app.get("/certificate", function (req, res) {
@@ -221,7 +224,7 @@ app.post("/api/review", async function (req, res) {
 });
 
 app.get("/review", function (req, res) {
-  res.sendFile(path.join(__dirname, "public", "review.html"));
+  res.redirect(301, "/share");
 });
 
 /* ============================================================
