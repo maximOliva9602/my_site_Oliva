@@ -126,6 +126,7 @@ app.get("/cabinet", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "cabinet.html"));
 });
 app.get("/booking", function (req, res) {
+  return res.redirect(301, "https://bookon.ua/s/oliva_massage_studio");
   res.sendFile(path.join(__dirname, "public", "booking.html"));
 });
 
@@ -133,8 +134,11 @@ app.get("/admin", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
+app.get("/share", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "share.html"));
+});
 app.get("/tips", function (req, res) {
-  res.sendFile(path.join(__dirname, "public", "tips.html"));
+  res.redirect(301, "/share?tab=tips");
 });
 
 app.get("/certificate", function (req, res) {
@@ -220,7 +224,7 @@ app.post("/api/review", async function (req, res) {
 });
 
 app.get("/review", function (req, res) {
-  res.sendFile(path.join(__dirname, "public", "review.html"));
+  res.redirect(301, "/share");
 });
 
 /* ============================================================
@@ -401,6 +405,14 @@ io.on("connection", function (socket) {
     const adminUrl = process.env.SITE_URL ? `${process.env.SITE_URL}/admin` : "https://site-oliva-production.up.railway.app/admin";
     sendTelegram(`💬 <b>Нове повідомлення з сайту</b>\n👤 ${conv.name}\n📝 ${text}\n\n🔗 <a href="${adminUrl}">Відповісти в адмін-панелі</a>`);
   });
+});
+
+/* ---------------- Зворотній дзвінок ---------------- */
+app.post("/api/callback", async function (req, res) {
+  var phone = String((req.body || {}).phone || "").trim().slice(0, 30);
+  if (!phone) return res.status(400).json({ ok: false, error: "phone required" });
+  await sendTelegram(`📞 <b>Запит на зворотній дзвінок</b>\n☎️ ${phone}\n\nКлієнт залишив номер через форму на сайті.`);
+  res.json({ ok: true });
 });
 
 /* ---------------- Fallback ---------------- */
