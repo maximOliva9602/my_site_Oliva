@@ -153,6 +153,48 @@
     .app.viewing .pane { display: flex; }
     .pane-head .back { display: block; }
   }
+
+  /* ----- SERVICES OVERLAY ----- */
+  .svc-overlay { display: none; position: fixed; inset: 0; background: var(--black); z-index: 200; flex-direction: column; overflow: hidden; }
+  .svc-overlay.open { display: flex; }
+  .svc-top { display: flex; align-items: center; gap: 14px; padding: 14px 22px; border-bottom: 1px solid var(--line); flex-shrink: 0; flex-wrap: wrap; }
+  .svc-top h2 { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.1rem; flex: 1; }
+  .svc-top button { background: none; border: 1px solid var(--line); color: var(--text-dim); border-radius: 8px; padding: 7px 14px; font-size: 0.8rem; cursor: pointer; transition: all .2s; }
+  .svc-top button:hover { color: var(--cream); border-color: var(--olive-light); }
+  .svc-top .btn-new-svc { background: var(--olive-light); color: var(--black); border-color: transparent; font-weight: 600; }
+  .svc-top .btn-new-svc:hover { background: #8fa864; }
+  .svc-filter { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .svc-filter button { padding: 5px 12px; font-size: 0.75rem; border-radius: 20px; background: none; border: 1px solid var(--line); color: var(--text-dim); cursor: pointer; transition: all .2s; }
+  .svc-filter button.active { background: rgba(122,145,86,0.25); border-color: var(--olive-light); color: var(--olive-light); }
+
+  .svc-body { flex: 1; overflow-y: auto; padding: 24px; }
+  .svc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .svc-card { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .svc-card-img { width: 100%; height: 120px; object-fit: cover; display: block; background: rgba(255,255,255,0.05); position: relative; }
+  .svc-card-img-placeholder { width: 100%; height: 120px; background: rgba(46,61,34,0.3); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--olive-light); }
+  .svc-card-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .svc-card-cat { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--olive-light); }
+  .svc-card-name { font-size: 0.88rem; color: var(--cream); font-weight: 500; line-height: 1.4; }
+  .svc-card-meta { display: flex; gap: 12px; font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
+  .svc-card-desc { font-size: 0.78rem; color: var(--text-dim); line-height: 1.5; margin-top: 4px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .svc-card-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 10px; }
+  .svc-card-actions button { flex: 1; padding: 6px; font-size: 12px; border-radius: 8px; background: none; border: 1px solid var(--line); color: var(--text-dim); cursor: pointer; transition: all .2s; }
+  .svc-card-actions button:hover { color: var(--cream); border-color: var(--olive-light); }
+  .svc-card-actions .btn-del-svc:hover { border-color: #e07070; color: #e07070; }
+
+  /* Services editor */
+  .svc-editor { display: none; flex-direction: column; gap: 18px; max-width: 720px; }
+  .svc-editor.open { display: flex; }
+  .svc-editor label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 6px; display: block; }
+  .svc-editor input[type=text], .svc-editor input[type=number] { width: 100%; background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 15px; }
+  .svc-editor input:focus { outline: none; border-color: var(--olive-light); }
+  .svc-editor input::placeholder { color: rgba(242,237,228,0.2); }
+  .svc-editor textarea { width: 100%; background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 14px; resize: vertical; min-height: 90px; }
+  .svc-editor textarea:focus { outline: none; border-color: var(--olive-light); }
+  .svc-editor textarea::placeholder { color: rgba(242,237,228,0.2); }
+  .svc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .svc-editor-actions { display: flex; gap: 10px; }
+  .svc-editor-actions button { padding: 12px 24px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all .2s; }
 </style>
 </head>
 <body>
@@ -181,10 +223,63 @@
       <div class="conv-empty" id="convEmpty">Поки немає звернень.<br>Тут зʼявлятимуться чати з сайту.</div>
     </div>
     <div class="side-foot">
-      <button class="blog-btn" id="blogMgrBtn">✍️ Керувати блогом</button>
+      <button class="blog-btn" id="svcMgrBtn">💆 Послуги</button>
+      <button class="blog-btn" id="blogMgrBtn">✍️ Блог</button>
       <button id="logoutBtn">Вийти</button>
     </div>
   </aside>
+
+  <!-- SERVICES MANAGER OVERLAY -->
+  <div class="svc-overlay" id="svcOverlay">
+    <div class="svc-top">
+      <h2>💆 Послуги</h2>
+      <div class="svc-filter" id="svcFilter"></div>
+      <button id="svcNewBtn" class="btn-new-svc">+ Нова послуга</button>
+      <button id="svcCloseBtn">✕ Закрити</button>
+    </div>
+    <div class="svc-body" id="svcBody">
+      <div class="svc-editor" id="svcEditor">
+        <div>
+          <label>Назва послуги *</label>
+          <input type="text" id="svcName" placeholder="Наприклад: Антистресовий масаж 60 хв" />
+        </div>
+        <div>
+          <label>Категорія</label>
+          <input type="text" id="svcCategory" placeholder="Наприклад: Загальний масаж, SPA, Дитячий..." list="svcCategoryList" />
+          <datalist id="svcCategoryList"></datalist>
+        </div>
+        <div class="svc-row2">
+          <div>
+            <label>Ціна (грн) *</label>
+            <input type="number" id="svcPrice" placeholder="0" min="0" step="50" />
+          </div>
+          <div>
+            <label>Тривалість (хв) *</label>
+            <input type="number" id="svcDuration" placeholder="60" min="1" step="5" />
+          </div>
+        </div>
+        <div>
+          <label>Опис</label>
+          <textarea id="svcDesc" placeholder="Короткий опис послуги для клієнтів..."></textarea>
+        </div>
+        <div>
+          <label>Фото (фон картки)</label>
+          <div class="cover-upload-btn">
+            <button type="button" id="svcUploadBtn">📷 Завантажити фото</button>
+            <img id="svcImgPreview" class="cover-thumb" src="" alt="cover" />
+            <span class="cover-name" id="svcImgName"></span>
+          </div>
+          <input type="file" id="svcUploadInput" class="upload-input" accept="image/*" />
+          <input type="hidden" id="svcImgUrl" />
+        </div>
+        <div class="svc-editor-actions">
+          <button class="btn-save" id="svcSaveBtn">💾 Зберегти</button>
+          <button class="btn-cancel-ed" id="svcCancelBtn">Скасувати</button>
+        </div>
+      </div>
+      <div class="svc-list" id="svcList"></div>
+    </div>
+  </div>
 
   <!-- BLOG MANAGER OVERLAY -->
   <div class="blog-overlay" id="blogOverlay">
@@ -400,6 +495,187 @@
   document.getElementById("logoutBtn").addEventListener("click", function () {
     fetch("/api/admin/logout", { method: "POST" }).then(function () { location.reload(); });
   });
+
+  /* ========== SERVICES MANAGER ========== */
+  var svcOverlay    = document.getElementById("svcOverlay");
+  var svcEditor     = document.getElementById("svcEditor");
+  var svcList       = document.getElementById("svcList");
+  var svcFilter     = document.getElementById("svcFilter");
+  var svcName       = document.getElementById("svcName");
+  var svcCategory   = document.getElementById("svcCategory");
+  var svcPrice      = document.getElementById("svcPrice");
+  var svcDuration   = document.getElementById("svcDuration");
+  var svcDesc       = document.getElementById("svcDesc");
+  var svcImgUrl     = document.getElementById("svcImgUrl");
+  var svcImgPreview = document.getElementById("svcImgPreview");
+  var svcImgName    = document.getElementById("svcImgName");
+  var svcCategoryList = document.getElementById("svcCategoryList");
+  var svcEditingId  = null;
+  var svcAllItems   = [];
+  var svcActiveFilter = "";
+
+  document.getElementById("svcMgrBtn").addEventListener("click", function () {
+    svcOverlay.classList.add("open");
+    loadServices();
+  });
+  document.getElementById("svcCloseBtn").addEventListener("click", function () {
+    svcOverlay.classList.remove("open");
+    closeSvcEditor();
+  });
+  document.getElementById("svcNewBtn").addEventListener("click", function () { openSvcEditor(null); });
+  document.getElementById("svcCancelBtn").addEventListener("click", closeSvcEditor);
+
+  document.getElementById("svcUploadBtn").addEventListener("click", function () {
+    document.getElementById("svcUploadInput").click();
+  });
+  document.getElementById("svcUploadInput").addEventListener("change", function () {
+    var file = this.files[0];
+    if (!file) return;
+    uploadImage(file, function (url) {
+      svcImgUrl.value = url;
+      svcImgPreview.src = url;
+      svcImgPreview.classList.add("show");
+      svcImgName.textContent = file.name;
+    });
+    this.value = "";
+  });
+
+  function loadServices() {
+    fetch("/api/admin/services").then(function (r) { return r.json(); }).then(function (j) {
+      svcAllItems = j.services || [];
+      renderSvcFilter();
+      renderSvcList();
+    });
+  }
+
+  function renderSvcFilter() {
+    var cats = [];
+    svcAllItems.forEach(function (s) {
+      var c = (s.category || "").trim();
+      if (c && cats.indexOf(c) === -1) cats.push(c);
+    });
+    // update datalist
+    svcCategoryList.innerHTML = "";
+    cats.forEach(function (c) {
+      var opt = document.createElement("option"); opt.value = c; svcCategoryList.appendChild(opt);
+    });
+    // build filter buttons
+    svcFilter.innerHTML = "";
+    if (!cats.length) return;
+    var allBtn = document.createElement("button");
+    allBtn.textContent = "Усі";
+    allBtn.className = svcActiveFilter === "" ? "active" : "";
+    allBtn.addEventListener("click", function () { svcActiveFilter = ""; renderSvcFilter(); renderSvcList(); });
+    svcFilter.appendChild(allBtn);
+    cats.forEach(function (c) {
+      var btn = document.createElement("button");
+      btn.textContent = c;
+      btn.className = svcActiveFilter === c ? "active" : "";
+      btn.addEventListener("click", function () { svcActiveFilter = c; renderSvcFilter(); renderSvcList(); });
+      svcFilter.appendChild(btn);
+    });
+  }
+
+  function renderSvcList() {
+    svcList.innerHTML = "";
+    var items = svcActiveFilter
+      ? svcAllItems.filter(function (s) { return (s.category || "") === svcActiveFilter; })
+      : svcAllItems;
+    if (!items.length) {
+      svcList.innerHTML = '<div style="color:var(--text-dim);padding:32px;text-align:center;grid-column:1/-1">Послуг немає. Натисніть "+ Нова послуга"</div>';
+      return;
+    }
+    items.forEach(function (s) {
+      var card = document.createElement("div");
+      card.className = "svc-card";
+      var imgHtml = s.image_url
+        ? '<img class="svc-card-img" src="' + s.image_url + '" />'
+        : '<div class="svc-card-img-placeholder">💆</div>';
+      var priceGrn = s.price ? Math.round(s.price / 100) + ' грн' : 'Ціна не вказана';
+      var catHtml = s.category ? '<div class="svc-card-cat">' + s.category + '</div>' : '';
+      var descHtml = s.description ? '<div class="svc-card-desc">' + s.description + '</div>' : '';
+      card.innerHTML = imgHtml +
+        '<div class="svc-card-body">' +
+          catHtml +
+          '<div class="svc-card-name">' + s.name + '</div>' +
+          '<div class="svc-card-meta"><span>⏱ ' + s.duration_min + ' хв</span><span>💰 ' + priceGrn + '</span></div>' +
+          descHtml +
+          '<div class="svc-card-actions">' +
+            '<button data-edit>✏️ Редагувати</button>' +
+            '<button class="btn-del-svc" data-del>🗑 Видалити</button>' +
+          '</div>' +
+        '</div>';
+      card.querySelector('[data-edit]').addEventListener('click', function () { openSvcEditor(s); });
+      card.querySelector('[data-del]').addEventListener('click', function () {
+        if (confirm('Видалити послугу "' + s.name + '"?')) deleteSvc(s.id);
+      });
+      svcList.appendChild(card);
+    });
+  }
+
+  function openSvcEditor(svc) {
+    svcEditingId = svc ? svc.id : null;
+    svcName.value     = svc ? svc.name : '';
+    svcCategory.value = svc ? (svc.category || '') : '';
+    svcPrice.value    = svc ? Math.round(svc.price / 100) : '';
+    svcDuration.value = svc ? svc.duration_min : '';
+    svcDesc.value     = svc ? (svc.description || '') : '';
+    svcImgUrl.value   = svc ? (svc.image_url || '') : '';
+    if (svc && svc.image_url) {
+      svcImgPreview.src = svc.image_url;
+      svcImgPreview.classList.add('show');
+      svcImgName.textContent = '';
+    } else {
+      svcImgPreview.classList.remove('show');
+      svcImgName.textContent = '';
+    }
+    svcList.style.display = 'none';
+    svcFilter.style.display = 'none';
+    document.getElementById('svcNewBtn').style.display = 'none';
+    svcEditor.classList.add('open');
+    svcName.focus();
+  }
+
+  function closeSvcEditor() {
+    svcEditor.classList.remove('open');
+    svcList.style.display = '';
+    svcFilter.style.display = '';
+    document.getElementById('svcNewBtn').style.display = '';
+  }
+
+  document.getElementById('svcSaveBtn').addEventListener('click', function () {
+    var name = svcName.value.trim();
+    var dur  = parseInt(svcDuration.value, 10);
+    if (!name) { svcName.style.borderColor = '#e07070'; svcName.focus(); return; }
+    svcName.style.borderColor = '';
+    if (!(dur > 0)) { svcDuration.style.borderColor = '#e07070'; svcDuration.focus(); return; }
+    svcDuration.style.borderColor = '';
+    var data = {
+      name:         name,
+      category:     svcCategory.value.trim(),
+      price:        Math.round((parseFloat(svcPrice.value) || 0) * 100),
+      duration_min: dur,
+      description:  svcDesc.value.trim(),
+      image_url:    svcImgUrl.value.trim()
+    };
+    var url    = svcEditingId ? '/api/admin/services/' + svcEditingId : '/api/admin/services';
+    var method = svcEditingId ? 'PUT' : 'POST';
+    var btn = this;
+    btn.textContent = 'Збереження...'; btn.disabled = true;
+    fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        btn.textContent = '💾 Зберегти'; btn.disabled = false;
+        if (j.ok) { closeSvcEditor(); loadServices(); }
+        else alert('Помилка збереження: ' + (j.error || ''));
+      }).catch(function () { btn.textContent = '💾 Зберегти'; btn.disabled = false; });
+  });
+
+  function deleteSvc(id) {
+    fetch('/api/admin/services/' + id, { method: 'DELETE' })
+      .then(function () { loadServices(); });
+  }
+  /* ========== END SERVICES ========== */
 
   /* ========== BLOG MANAGER ========== */
   var blogOverlay    = document.getElementById("blogOverlay");

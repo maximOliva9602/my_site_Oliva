@@ -16,6 +16,7 @@ const express = require("express");
 const { Server } = require("socket.io");
 
 /* ---------------- CRM-модулі ---------------- */
+const db = require("./crm/db");
 const auth = require("./crm/auth");
 const notify = require("./crm/notify");
 const scheduler = require("./crm/scheduler");
@@ -332,6 +333,47 @@ app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
   fs.mkdirSync(IMG_DIR, { recursive: true });
   fs.writeFileSync(path.join(IMG_DIR, filename), buf);
   res.json({ ok: true, url: "/api/blog-img/" + filename });
+});
+
+/* ---- Послуги (адмін) ---- */
+function cleanSvc(s, max) { return String(s == null ? "" : s).slice(0, max || 200).trim() || null; }
+
+app.get("/api/admin/services", requireAdmin, function (req, res) {
+  var rows = db.prepare("SELECT * FROM services WHERE active=1 ORDER BY sort_order, id").all();
+  res.json({ ok: true, services: rows });
+});
+app.post("/api/admin/services", requireAdmin, function (req, res) {
+  var d = req.body || {};
+  var name = cleanSvc(d.name, 150);
+  var dur = parseInt(d.duration_min, 10);
+  if (!name || !(dur > 0)) return res.status(400).json({ ok: false, error: "name+duration required" });
+  var info = db.prepare(
+    "INSERT INTO services (name,duration_min,price,category,description,image_url,active,sort_order,created_at) VALUES (?,?,?,?,?,?,1,?,?)"
+  ).run(name, dur, parseInt(d.price, 10) || 0, cleanSvc(d.category, 100), cleanSvc(d.description, 1000), cleanSvc(d.image_url, 500), parseInt(d.sort_order, 10) || 0, Date.now());
+  res.json({ ok: true, id: info.lastInsertRowid });
+});
+app.put("/api/admin/services/:id", requireAdmin, function (req, res) {
+  var id = parseInt(req.params.id, 10);
+  var s = db.prepare("SELECT * FROM services WHERE id=?").get(id);
+  if (!s) return res.status(404).json({ ok: false });
+  var d = req.body || {};
+  db.prepare(
+    "UPDATE services SET name=?,duration_min=?,price=?,category=?,description=?,image_url=?,sort_order=? WHERE id=?"
+  ).run(
+    d.name !== undefined ? (cleanSvc(d.name, 150) || s.name) : s.name,
+    d.duration_min !== undefined ? (parseInt(d.duration_min, 10) || s.duration_min) : s.duration_min,
+    d.price !== undefined ? (parseInt(d.price, 10) || 0) : s.price,
+    d.category !== undefined ? cleanSvc(d.category, 100) : s.category,
+    d.description !== undefined ? cleanSvc(d.description, 1000) : s.description,
+    d.image_url !== undefined ? cleanSvc(d.image_url, 500) : s.image_url,
+    d.sort_order !== undefined ? (parseInt(d.sort_order, 10) || 0) : s.sort_order,
+    id
+  );
+  res.json({ ok: true });
+});
+app.delete("/api/admin/services/:id", requireAdmin, function (req, res) {
+  db.prepare("UPDATE services SET active=0 WHERE id=?").run(parseInt(req.params.id, 10));
+  res.json({ ok: true });
 });
 
 /* Роздача фото з persistent volume */

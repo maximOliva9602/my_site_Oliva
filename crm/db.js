@@ -252,6 +252,9 @@ if (false) { // eslint-disable-line
 /* ---------------- Міграції: нові колонки ---------------- */
 try { db.exec("ALTER TABLE masters ADD COLUMN photo TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN level TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE services ADD COLUMN category TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE services ADD COLUMN description TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE services ADD COLUMN image_url TEXT"); } catch(e) {}
 
 /* ---------------- Seed початкових даних ---------------- */
 (function seed() {
