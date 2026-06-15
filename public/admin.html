@@ -186,6 +186,8 @@
   .svc-card-actions button { flex: 1; padding: 6px; font-size: 12px; border-radius: 8px; background: none; border: 1px solid var(--line); color: var(--text-dim); cursor: pointer; transition: all .2s; }
   .svc-card-actions button:hover { color: var(--cream); border-color: var(--olive-light); }
   .svc-card-actions .btn-del-svc:hover { border-color: #e07070; color: #e07070; }
+  .svc-card-actions .btn-feat-svc { flex: 1.2; }
+  .svc-card-actions .btn-feat-svc:hover { border-color: #c8a84b; color: #c8a84b; }
 
   /* Services editor */
   .svc-editor { display: none; flex-direction: column; gap: 18px; max-width: 720px; }
@@ -617,10 +619,19 @@
           descHtml +
           '<div class="svc-card-actions">' +
             '<button data-edit>✏️ Редагувати</button>' +
+            '<button class="btn-feat-svc" data-feat title="Популярне">' + (s.featured ? '⭐ Популярне' : '☆ Популярне') + '</button>' +
             '<button class="btn-del-svc" data-del>🗑 Видалити</button>' +
           '</div>' +
         '</div>';
       card.querySelector('[data-edit]').addEventListener('click', function () { openSvcEditor(s); });
+      card.querySelector('[data-feat]').addEventListener('click', function () {
+        var newVal = s.featured ? 0 : 1;
+        fetch('/api/admin/services/' + s.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ featured: newVal })
+        }).then(function () { loadServices(); });
+      });
       card.querySelector('[data-del]').addEventListener('click', function () {
         if (confirm('Видалити послугу "' + s.name + '"?')) deleteSvc(s.id);
       });

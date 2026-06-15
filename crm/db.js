@@ -255,6 +255,7 @@ try { db.exec("ALTER TABLE masters ADD COLUMN level TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN category TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN description TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN image_url TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE services ADD COLUMN featured INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 
 /* ---------------- Seed початкових даних ---------------- */
 (function seed() {
@@ -668,6 +669,35 @@ try { db.exec("ALTER TABLE services ADD COLUMN image_url TEXT"); } catch(e) {}
   });
   tx();
   console.log('[db] Seeded category/description/image_url for ' + services.length + ' services.');
+})();
+
+/* ---- Популярні послуги: встановлюємо featured=1 ---- */
+(function seedFeaturedServices() {
+  var already = db.prepare("SELECT COUNT(*) n FROM services WHERE featured=1").get().n;
+  if (already > 0) return; // Вже налаштовано — не перезатираємо
+  var upd = db.prepare("UPDATE services SET featured=1 WHERE name LIKE ?");
+  var patterns = [
+    'Загально-оздоровчий масаж (Топ Майстер)%',
+    'Парний масаж%',
+    'Масаж спини (Топ Майстер)%',
+    'Масаж шийно-комірцевої зони (Топ Майстер)%',
+    'Класичний масаж обличчя (Майстер) 30 хв',
+    'Класичний масаж обличчя (Топ Майстер)%',
+    'Антистресовий масаж (Топ Майстер)%',
+    'Лімфодренажний масаж (Топ Майстер)%',
+    'Антицелюлітний масаж (Топ Майстер)%',
+    'Паріння у фітобочці%',
+    'SPA Ритуал%',
+    'Тепловий SPA-ритуал%',
+    'Дитячий масаж (Топ Майстер)%',
+    'Обгортання Amore Shemen%',
+  ];
+  var tx = db.transaction(function() {
+    patterns.forEach(function(p) { upd.run(p); });
+  });
+  tx();
+  var cnt = db.prepare("SELECT COUNT(*) n FROM services WHERE featured=1").get().n;
+  console.log('[db] seedFeaturedServices: позначено ' + cnt + ' послуг як популярні.');
 })();
 
 module.exports = db;

@@ -335,6 +335,14 @@ app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
   res.json({ ok: true, url: "/api/blog-img/" + filename });
 });
 
+/* ---- Публічний список активних послуг (для сайту) ---- */
+app.get("/api/services", function (req, res) {
+  var rows = db.prepare(
+    "SELECT id, name, duration_min, price, category, description, image_url, featured FROM services WHERE active=1 ORDER BY sort_order, id"
+  ).all();
+  res.json({ ok: true, services: rows });
+});
+
 /* ---- Послуги (адмін) ---- */
 function cleanSvc(s, max) { return String(s == null ? "" : s).slice(0, max || 200).trim() || null; }
 
@@ -358,7 +366,7 @@ app.put("/api/admin/services/:id", requireAdmin, function (req, res) {
   if (!s) return res.status(404).json({ ok: false });
   var d = req.body || {};
   db.prepare(
-    "UPDATE services SET name=?,duration_min=?,price=?,category=?,description=?,image_url=?,sort_order=? WHERE id=?"
+    "UPDATE services SET name=?,duration_min=?,price=?,category=?,description=?,image_url=?,sort_order=?,featured=? WHERE id=?"
   ).run(
     d.name !== undefined ? (cleanSvc(d.name, 150) || s.name) : s.name,
     d.duration_min !== undefined ? (parseInt(d.duration_min, 10) || s.duration_min) : s.duration_min,
@@ -367,6 +375,7 @@ app.put("/api/admin/services/:id", requireAdmin, function (req, res) {
     d.description !== undefined ? cleanSvc(d.description, 1000) : s.description,
     d.image_url !== undefined ? cleanSvc(d.image_url, 500) : s.image_url,
     d.sort_order !== undefined ? (parseInt(d.sort_order, 10) || 0) : s.sort_order,
+    d.featured !== undefined ? (parseInt(d.featured, 10) ? 1 : 0) : (s.featured || 0),
     id
   );
   res.json({ ok: true });
