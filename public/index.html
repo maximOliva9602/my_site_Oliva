@@ -1366,17 +1366,22 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
 
         var body = document.createElement('div');
         body.className = 'srv-card-body';
-        renderDesc(body, getDesc(groupName, curLang()) || ukDesc);
+        // DB description has priority for Ukrainian; D object used for English translation
+        function resolveDesc() {
+          if (curLang() === 'en') return getDesc(groupName, 'en') || dbDesc || getDesc(groupName, 'uk');
+          return dbDesc || getDesc(groupName, 'uk');
+        }
+        renderDesc(body, resolveDesc());
         card.appendChild(body);
 
         btn.addEventListener('click', function() {
-          renderDesc(body, getDesc(groupName, curLang()) || ukDesc);
+          renderDesc(body, resolveDesc());
           var open = body.style.display === 'block';
           body.style.display = open ? 'none' : 'block';
           btn.classList.toggle('open', !open);
         });
         document.addEventListener('langchange', function() {
-          renderDesc(body, getDesc(groupName, curLang()) || ukDesc);
+          renderDesc(body, resolveDesc());
         });
       }
       return card;
