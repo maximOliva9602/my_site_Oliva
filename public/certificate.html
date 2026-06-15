@@ -242,20 +242,9 @@
       border-radius: 14px; background: rgba(242,237,228,0.04);
       cursor: pointer; font-family: 'Inter', sans-serif;
       color: var(--cream); text-align: left; transition: all .2s;
-      position: relative; overflow: hidden;
-      background-size: cover; background-position: center;
-      min-height: 90px;
     }
-    .popular-btn::before {
-      content: ''; position: absolute; inset: 0; z-index: 0;
-      background: linear-gradient(135deg, rgba(10,12,8,0.74) 0%, rgba(30,40,20,0.62) 100%);
-      transition: background .2s;
-    }
-    .popular-btn:hover { border-color: var(--olive-light); }
-    .popular-btn:hover::before { background: linear-gradient(135deg, rgba(10,12,8,0.55) 0%, rgba(30,40,20,0.45) 100%); }
-    .popular-btn.active { border-color: var(--olive-light); }
-    .popular-btn.active::before { background: linear-gradient(135deg, rgba(74,94,46,0.72) 0%, rgba(40,60,25,0.8) 100%); }
-    .popular-btn > * { position: relative; z-index: 1; }
+    .popular-btn:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.1); }
+    .popular-btn.active { border-color: var(--olive-light); background: rgba(74,94,46,0.25); }
     .popular-btn-top { display: flex; align-items: center; gap: 8px; }
     .popular-btn-icon { font-size: 1.3rem; }
     .popular-btn-name { font-size: 13px; font-weight: 500; line-height: 1.3; }
@@ -324,9 +313,6 @@
     .selected-price-badge { font-size: 1.2rem; font-weight: 600; color: var(--olive-light); white-space: nowrap; }
     .selected-change { font-size: 11px; color: var(--olive-light); text-decoration: underline; background: none; border: none; cursor: pointer; padding: 6px 0 0; }
     .selected-change:hover { color: var(--cream); }
-    .picker-back-btn { font-size: 12px; color: var(--olive-light); background: none; border: none; cursor: pointer; padding: 0 0 10px; display: flex; align-items: center; gap: 4px; }
-    .picker-back-btn:hover { color: var(--cream); }
-    .variants-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 14px; padding: 10px 12px; background: rgba(122,145,86,0.07); border-radius: 8px; border-left: 2px solid rgba(122,145,86,0.4); white-space: pre-line; }
 
     .custom-amount-wrap { margin-bottom: 20px; }
     .custom-toggle-btn { font-size: 13px; color: var(--olive-light); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
@@ -375,7 +361,7 @@
 <div class="perks">
   <div class="perk"><span class="perk-icon">✨</span> <span data-i18n="cert.perk1">Красиво оформлений</span></div>
   <div class="perk"><span class="perk-icon">📦</span> <span data-i18n="cert.perk2">Доставка Новою Поштою</span></div>
-  <div class="perk"><span class="perk-icon">💆</span> <span data-i18n="cert.perk3">На будь-яку послугу студії</span></div>
+  <div class="perk"><span class="perk-icon">💆</span> <span data-i18n="cert.perk3">Будь-яка послуга</span></div>
 </div>
 
 <!-- ВІДЕО + ФОРМА -->
@@ -433,9 +419,7 @@
 
       <!-- Варіанти тривалості -->
       <div class="variants-wrap" id="variantsWrap" style="display:none">
-        <button type="button" class="picker-back-btn" id="variantsBack">← Обрати іншу послугу</button>
         <div class="variants-title" id="variantsTitle"></div>
-        <div class="variants-desc" id="variantsDesc" style="display:none"></div>
         <div class="variants-grid" id="variantsGrid"></div>
       </div>
 
@@ -742,55 +726,7 @@
   var activeTab = 'popular';
 
   /* ── ПОПУЛЯРНІ ── */
-  var POPULAR_IDS = ['zagalno','parnyi','antyvikovy','antistres','kaminnnya','fitobochka','spa_fito','spa_dvoh'];
-
-  var SERVICE_IMG = {
-    zagalno:      'ozdorovchyi-masazh-kyiv.jpg',
-    antistres:    'antystresovyi-masazh-kyiv.jpg',
-    parnyi:       'parni.jpeg',
-    chotyryrucky: 'masazh-kyiv-shuliavska-oliva.jpg',
-    spyna:        'masazh-shuliavska-kyiv.jpg',
-    shyya:        'masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg',
-    kaminnnya:    'stoun-terapiia-kyiv.jpg',
-    limfodrenazh: 'limfodrenazhnyi-masazh-kyiv.jpg',
-    antytsel:     'antytseliulitnyi-masazh-kyiv.jpg',
-    oblychchya:   'masazh-oblychchia-kyiv-shuliavska.jpg',
-    antyvikovy:   'lifting-masazh-oblychchya-shulyavska-kyiv.jpg',
-    dytyachy:     'masazh-dlia-ditei-kyiv.PNG',
-    fitobochka:   'parinnia-u-fitobochtsi-kyiv.jpg',
-    spa_fito:     'fitoterapiia-na-travakh-kyiv.jpg',
-    spa_dvoh:     'spa-sauna-kyiv.jpg',
-    amore:        'obhortannia-dlia-skhudnennia-kyiv.jpg',
-    detox:        'obhortannia-dlia-skhudnennia-shuliavska-kyiv.jpg',
-    seaweed:      'relaks-spa-programa-kyiv.jpg',
-    hot_express:  'medovyi-masazh-shuliavska-kyiv.jpg',
-    cold_sculpt:  'korektsiia-figury-kyiv.jpg',
-    hot_sculpt:   'shudnenia.jpeg',
-  };
-
-  var SERVICE_DESC = {
-    zagalno:     'Класичний масаж для відновлення всього тіла: знімаємо м\'язову напругу, покращуємо кровообіг та повертаємо природну легкість руху. Після сеансу — тіло «живе», а голова ясна.',
-    antistres:   'Розслаблюючий масаж для зняття нервового напруження та відновлення внутрішнього балансу. М\'яка техніка знімає тривогу та дає відчуття спокою вже під час сеансу.',
-    parnyi:      'Одночасний масаж для двох в одному кабінеті — два майстри, два столи, повне розслаблення поряд. Ідеально для пар, подруг або близьких людей. Після процедури — легкість у тілі та спокій у думках.',
-    chotyryrucky:'Синхронний масаж двома майстрами одночасно — вдвічі глибше розслаблення та відновлення м\'язів. Незвичний досвід, який неможливо забути.',
-    spyna:       'Глибока робота з м\'язами спини, хребтом та плечовим поясом. Знімає затиски, усуває больовий синдром і повертає свободу рухів.',
-    shyya:       'Точковий масаж шиї та плечей — знімає головний біль, напругу від роботи за комп\'ютером та відновлює рухливість верхнього поясу.',
-    kaminnnya:   'Стоун-масаж базальтовими каменями — тепло проникає вглиб м\'язів, знімаючи найглибші затиски. Поєднання тепла і техніки масажу дає незрівнянний ефект розслаблення.',
-    limfodrenazh:'Стимулює відтік лімфи, зменшує набряклість та виводить токсини. Відчутний результат вже після першого сеансу — легші ноги, зменшення об\'ємів і покращення стану шкіри.',
-    antytsel:    'Інтенсивна техніка для проблемних зон: розбиваємо застій, активуємо кровообіг і запускаємо процес зменшення об\'ємів. Шкіра стає більш гладкою, пружною, а тіло — підтягнутим.',
-    oblychchya:  'Ліфтинговий масаж для покращення кольору обличчя, зменшення зморщок та відновлення тонусу шкіри. Після сеансу — природне сяйво та ефект «відпочилого вигляду».',
-    antyvikovy:  'Спеціальна техніка для корекції вікових змін — моделює контур обличчя та підтягує шкіру природним способом.',
-    dytyachy:    'Ніжний профілактичний масаж для дітей — зміцнює м\'язи, формує правильну поставу та підвищує імунітет. Безпечна техніка, адаптована під дитяче тіло.',
-    fitobochka:  '20 хв. — швидке прогрівання, розігрів м\'язів та підготовка тіла до масажу.\n30 хв. — глибоко розігріває м\'язи, запускає детокс та готує тіло до масажу.\n45 хв. — інтенсивне прогрівання з детоксом та глибоким розслабленням м\'язів.\n1 год. — максимальний ефект: детокс, покращення кровообігу та повне розслаблення тіла.',
-    spa_fito:    '1 год. 30 хв.:\n• 20 хв фітобочка — тепло проникає глибоко, тіло «відпускає» втому\n• 10 хв скраб — шкіра оновлюється, стає гладкою та живою\n• 60 хв масаж — напруга зникає, з\'являється легкість у кожному русі\nЦе момент, коли ти по-справжньому перезавантажуєшся.\n✨ Ідеально для себе або парного відпочинку\n\n2 год. 10 хв.:\n• 30 хв фітобочка — тепло проникає глибоко, тіло «відпускає» втому\n• 10 хв скраб — шкіра оновлюється, стає гладкою та живою\n• 90 хв масаж — напруга зникає, з\'являється легкість у кожному русі\nЦе момент, коли ти по-справжньому перезавантажуєшся.\n✨ Ідеально для себе або парного відпочинку',
-    spa_dvoh:    '2 год. 10 хв.:\n• 30 хв фітобочка — глибоко розігріває м\'язи та готує тіло до масажу\n• 30 хв стоун терапія + масаж стоп — напруга буквально тане\n• 10 хв скраб — шкіра стає гладкою та оновленою\n• 60 хв масаж на вибір — максимальне розслаблення під ваш запит\n\n2 год. 40 хв. (160 хв повного відновлення):\n• 45 хв фітобочка — глибоко розігріває м\'язи та готує тіло\n• 45 хв стоун терапія + масаж стоп — напруга тане, тіло наповнюється теплом\n• 10 хв скраб — шкіра гладка та оновлена\n• 60 хв масаж на вибір — максимальний ефект під ваш запит\nЦе більше, ніж SPA — це глибоке перезавантаження тіла і стану. Ви виходите іншими.\n✨ Ідеально для пари або подарунку\n\n3 год. 40 хв. (220 хв повного перезавантаження):\n• 45 хв фітобочка — глибоко розігріває м\'язи та готує тіло\n• 45 хв стоун терапія + масаж стоп — напруга тане, тіло наповнюється теплом\n• 10 хв скраб — шкіра гладка та оновлена\n• 90 хв масаж на вибір — максимальне відновлення та розслаблення\n• 20 хв масаж бамбуковими віниками — тонус і легкість у тілі\nЦе не просто SPA — це 3+ години, де зникає стрес, напруга і навіть думки. Ви виходите іншими.',
-    amore:       'Гаряче або холодне бандажне обгортання з активними компонентами для зменшення целюліту, зняття набряків та підтяжки шкіри. Два варіанти — для різних задач і типів шкіри.',
-    detox:       'Преміальне детокс-обгортання Bruno Vassari — глибоке очищення та перезапуск тіла. Активні компоненти виводять токсини, зменшують набряки, покращують тонус шкіри та запускають процеси жироспалення. Відчуття легкості вже після першої процедури.',
-    seaweed:     'Бандажне обгортання з морськими водоростями — глибоке прогрівання та активне виведення зайвої рідини і токсинів.',
-    hot_express: 'Фітобочка на травах + лімфодренажний/антицелюлітний масаж + апаратно-вакуумний масаж + гаряче обгортання Amore Shemen. Інтенсивний комплекс для швидкого видимого результату.',
-    cold_sculpt: 'Лімфодренажний/антицелюлітний масаж + апаратно-вакуумний масаж + холодне бандажне обгортання Amore Shemen. Делікатне, але ефективне моделювання без перегріву.',
-    hot_sculpt:  'Лімфодренажний/антицелюлітний масаж + апаратно-вакуумний масаж + гаряче бандажне обгортання SPA Seaweed. Глибоке прогрівання тканин для активного жироспалення та корекції контурів.',
-  };
+  var POPULAR_IDS = ['zagalno','parnyi','antyvikovy','antistres','fitobochka','spa_fito','spa_dvoh'];
 
   POPULAR_IDS.forEach(function(pid){
     var s = SERVICES.find(function(s){ return s.id === pid; });
@@ -800,7 +736,6 @@
     btn.type = 'button';
     btn.className = 'popular-btn';
     btn.setAttribute('data-id', s.id);
-    if (SERVICE_IMG[s.id]) btn.style.backgroundImage = 'url(assets/img/' + SERVICE_IMG[s.id] + ')';
     btn.innerHTML =
       '<div class="popular-btn-top"><span class="popular-btn-name">' + s.name + '</span></div>' +
       '<div class="popular-btn-meta">' + durCount + '</div>';
@@ -834,35 +769,12 @@
   var masterWrap  = document.getElementById('masterWrap');
   var masterTitle = document.getElementById('masterTitle');
   var masterGrid  = document.getElementById('masterGrid');
-  var variantsDesc = document.getElementById('variantsDesc');
 
   function hidePicker(){
     popularPanel.style.display = 'none';
     allPanel.style.display     = 'none';
     document.getElementById('pickerTabs').style.display = 'none';
   }
-
-  function showPicker(){
-    document.getElementById('pickerTabs').style.display = 'flex';
-    popularPanel.style.display = activeTab === 'popular' ? 'block' : 'none';
-    allPanel.style.display     = activeTab === 'all' ? 'block' : 'none';
-  }
-
-  document.getElementById('variantsBack').addEventListener('click', function(){
-    activeCatId   = null;
-    activeDur     = null;
-    activeVariant = null;
-    inpService.value = '';
-    inpPrice.value   = '';
-    variantsWrap.style.display = 'none';
-    masterWrap.style.display   = 'none';
-    selSummary.style.display   = 'none';
-    addServiceBtn.style.display = 'none';
-    serviceError.style.display  = 'none';
-    popularGrid.querySelectorAll('.popular-btn').forEach(function(b){ b.classList.remove('active'); });
-    allServicesScroll.querySelectorAll('.srv-row').forEach(function(b){ b.classList.remove('active'); });
-    showPicker();
-  });
 
   /* КРОК 1 — вибір послуги */
   function selectCategory(id){
@@ -889,13 +801,8 @@
 
     // одна тривалість — одразу до вибору майстра
     if (svc.variants.length === 1) {
+      variantsWrap.style.display = 'none';
       hidePicker();
-      variantsTitle.textContent = tr(svc.name) + ' — ' + tr(svc.variants[0].dur);
-      var desc1 = SERVICE_DESC[id] || '';
-      if (desc1) { variantsDesc.textContent = desc1; variantsDesc.style.display = 'block'; }
-      else { variantsDesc.style.display = 'none'; }
-      variantsGrid.innerHTML = '';
-      variantsWrap.style.display = 'block';
       showMasterStep(svc, svc.variants[0]);
       if (window.innerWidth < 768) variantsWrap.scrollIntoView({behavior:'smooth', block:'start'});
       return;
@@ -904,9 +811,6 @@
     // кілька тривалостей — ховаємо picker, показуємо список
     hidePicker();
     variantsTitle.textContent = tr(svc.name) + ' — ' + tx('chooseDur');
-    var desc = SERVICE_DESC[id] || '';
-    if (desc) { variantsDesc.textContent = desc; variantsDesc.style.display = 'block'; }
-    else { variantsDesc.style.display = 'none'; }
     variantsGrid.innerHTML = '';
     svc.variants.forEach(function(v){
       var btn = document.createElement('button');
@@ -1298,7 +1202,6 @@
       btn.type = 'button';
       btn.className = 'popular-btn' + (activeCatId === s.id ? ' active' : '');
       btn.setAttribute('data-id', s.id);
-      if (SERVICE_IMG[s.id]) btn.style.backgroundImage = 'url(assets/img/' + SERVICE_IMG[s.id] + ')';
       btn.innerHTML =
         '<div class="popular-btn-top"><span class="popular-btn-name">' + tr(s.name) + '</span></div>' +
         '<div class="popular-btn-meta">' + durCount + '</div>';
