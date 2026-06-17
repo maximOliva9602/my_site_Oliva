@@ -81,6 +81,12 @@
       var b = el("button", "tab" + (i === 0 ? " on" : ""), t.name);
       b.addEventListener("click", function () {
         tabsEl.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("on"); });
+        // Відновити стилі main якщо виходимо з календаря
+        var mainEl = document.getElementById("main");
+        if (mainEl && mainEl.dataset.prevStyle !== undefined) {
+          mainEl.setAttribute("style", mainEl.dataset.prevStyle);
+          delete mainEl.dataset.prevStyle;
+        }
         b.classList.add("on"); t.render();
       });
       tabsEl.appendChild(b);
@@ -245,6 +251,14 @@
     // Перемикач вигляду (список / календар)
     var viewToggle = el("button", "btn btn-ghost", apptViewMode === "calendar" ? "📋 Список" : "📅 Календар");
     viewToggle.addEventListener("click", function () {
+      if (apptViewMode === "calendar") {
+        // Виходимо з календаря — відновлюємо main
+        var mainEl = document.getElementById("main");
+        if (mainEl && mainEl.dataset.prevStyle !== undefined) {
+          mainEl.setAttribute("style", mainEl.dataset.prevStyle);
+          delete mainEl.dataset.prevStyle;
+        }
+      }
       apptViewMode = apptViewMode === "calendar" ? "list" : "calendar";
       viewToggle.textContent = apptViewMode === "calendar" ? "📋 Список" : "📅 Календар";
       reloadView();
@@ -301,8 +315,22 @@
 
     function loadCalendar(masterFilter) {
       contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
-      var HOUR_START = 8, HOUR_END = 22, SLOT_H = 48;
+      var HOUR_START = 8, HOUR_END = 22;
+      var TOTAL_SLOTS = (HOUR_END - HOUR_START) * 2; // 28 слотів по 30 хв
+      // Розрахунок висоти слота — календар займає весь екран без прокрутки
+      var CAL_HEADER_H = 44; // висота рядка майстрів
+      var availH = window.innerHeight
+        - (document.querySelector(".topbar") ? document.querySelector(".topbar").offsetHeight : 54)
+        - (document.querySelector(".tabs") ? document.querySelector(".tabs").offsetHeight : 48)
+        - (contentEl.parentElement ? contentEl.parentElement.previousElementSibling.offsetHeight + 16 : 60)
+        - 8; // margin
+      var SLOT_H = Math.max(22, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
+
+      // Розтягуємо main на повну ширину для календаря
+      var mainEl = document.getElementById("main");
+      mainEl.dataset.prevStyle = mainEl.getAttribute("style") || "";
+      mainEl.style.cssText = "max-width:none;padding:8px 8px 8px;margin:0;";
 
       var mastersPr = api("GET", "/api/crm/masters");
       var apptUrl = ME.role === "owner"
@@ -385,8 +413,7 @@
         }
 
         wrap.appendChild(table);
-        wrap.style.maxHeight = "calc(100vh - 180px)";
-        wrap.style.overflow = "auto";
+        wrap.style.cssText = "overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);";
         contentEl.appendChild(wrap);
 
         if (!appts.length) {
@@ -397,9 +424,17 @@
       });
     }
 
+    function restoreMain() {
+      var mainEl = document.getElementById("main");
+      if (mainEl && mainEl.dataset.prevStyle !== undefined) {
+        mainEl.setAttribute("style", mainEl.dataset.prevStyle);
+        delete mainEl.dataset.prevStyle;
+      }
+    }
+
     window.__reloadAppts = function () {
       if (apptViewMode === "calendar") loadCalendar(activeMasterFilter);
-      else loadAppts(activeMasterFilter);
+      else { restoreMain(); loadAppts(activeMasterFilter); }
     };
     // початкове завантаження (без фільтру майстра) для майстра
     if (ME.role !== "owner") reloadView();
