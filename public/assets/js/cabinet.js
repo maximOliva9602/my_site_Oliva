@@ -81,12 +81,9 @@
       var b = el("button", "tab" + (i === 0 ? " on" : ""), t.name);
       b.addEventListener("click", function () {
         tabsEl.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("on"); });
-        // Відновити стилі main якщо виходимо з календаря
-        var mainEl = document.getElementById("main");
-        if (mainEl && mainEl.dataset.prevStyle !== undefined) {
-          mainEl.setAttribute("style", mainEl.dataset.prevStyle);
-          delete mainEl.dataset.prevStyle;
-        }
+        // Прибрати overlay календаря якщо є
+        var ov = document.getElementById("cal-overlay");
+        if (ov) ov.remove();
         b.classList.add("on"); t.render();
       });
       tabsEl.appendChild(b);
@@ -252,12 +249,9 @@
     var viewToggle = el("button", "btn btn-ghost", apptViewMode === "calendar" ? "📋 Список" : "📅 Календар");
     viewToggle.addEventListener("click", function () {
       if (apptViewMode === "calendar") {
-        // Виходимо з календаря — відновлюємо main
-        var mainEl = document.getElementById("main");
-        if (mainEl && mainEl.dataset.prevStyle !== undefined) {
-          mainEl.setAttribute("style", mainEl.dataset.prevStyle);
-          delete mainEl.dataset.prevStyle;
-        }
+        // Прибрати overlay календаря якщо є
+        var ov = document.getElementById("cal-overlay");
+        if (ov) ov.remove();
       }
       apptViewMode = apptViewMode === "calendar" ? "list" : "calendar";
       viewToggle.textContent = apptViewMode === "calendar" ? "📋 Список" : "📅 Календар";
@@ -314,25 +308,24 @@
     }
 
     function loadCalendar(masterFilter) {
-      contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
+      contentEl.innerHTML = "";
       var HOUR_START = 8, HOUR_END = 22;
       var TOTAL_SLOTS = (HOUR_END - HOUR_START) * 2; // 28 слотів по 30 хв
       var CAL_HEADER_H = 44;
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
 
-      // Розтягуємо main на повну ширину для календаря
-      var mainEl = document.getElementById("main");
-      mainEl.dataset.prevStyle = mainEl.getAttribute("style") || "";
-      mainEl.style.cssText = "max-width:none;padding:8px;margin:0;";
-      // Забороняємо скрол сторінки
-      document.body.style.overflow = "hidden";
-
-      // Вимірюємо реальну висоту елементів після рендеру
-      var topbarH = (document.querySelector(".topbar") || {offsetHeight: 50}).offsetHeight;
-      var barEl = contentEl.previousElementSibling;
-      var barH = barEl ? (barEl.offsetHeight + 12) : 60;
-      var availH = window.innerHeight - topbarH - barH - 20;
+      // Вимірюємо точний відступ від верху viewport до початку контентної зони
+      var contentTop = Math.round(contentEl.getBoundingClientRect().top);
+      var availH = window.innerHeight - contentTop - 8; // 8px відступ знизу
       var SLOT_H = Math.max(18, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
+
+      // Оверлей з position:fixed — не впливає на решту CRM
+      var old = document.getElementById("cal-overlay");
+      if (old) old.remove();
+      var overlay = document.createElement("div");
+      overlay.id = "cal-overlay";
+      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:0;z-index:10;background:var(--black);padding:0 8px 8px;overflow-x:auto;overflow-y:hidden;";
+      document.body.appendChild(overlay);
 
       var mastersPr = api("GET", "/api/crm/masters");
       var apptUrl = ME.role === "owner"
@@ -458,25 +451,22 @@
         }
 
         wrap.appendChild(table);
-        var wrapH = CAL_HEADER_H + TOTAL_SLOTS * SLOT_H + 2;
-        wrap.style.cssText = "overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:" + wrapH + "px;";
-        contentEl.appendChild(wrap);
+        wrap.style.cssText = "overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:100%;min-width:" + (50 + masters.length * 140) + "px;";
+        overlay.appendChild(wrap);
 
         if (!appts.length) {
-          var empty = el("div","empty","На " + ddmm(apptDate) + " записів немає");
-          empty.style.marginTop = "10px";
-          contentEl.appendChild(empty);
+          var empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "На " + ddmm(apptDate) + " записів немає";
+          empty.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);";
+          overlay.appendChild(empty);
         }
       });
     }
 
     function restoreMain() {
-      var mainEl = document.getElementById("main");
-      if (mainEl && mainEl.dataset.prevStyle !== undefined) {
-        mainEl.setAttribute("style", mainEl.dataset.prevStyle);
-        delete mainEl.dataset.prevStyle;
-      }
-      document.body.style.overflow = "";
+      var ov = document.getElementById("cal-overlay");
+      if (ov) ov.remove();
     }
 
     window.__reloadAppts = function () {
