@@ -716,6 +716,48 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
   }
 })();
 
+/* ---------------- Міграція: синхронізація master_services за рівнем ---------------- */
+/*
+ * Запускається щоразу при старті. Додає відсутні послуги майстрам згідно їхнього рівня.
+ * Рівні:
+ *   "Топ Майстер"        → послуги з "(Топ Майстер)" + спільні (без мітки)
+ *   "Майстер"/"Майстриня"→ послуги з "(Майстер)" (НЕ Топ) + спільні
+ *   Решта                → лише спільні
+ *
+ * Існуючі зв'язки не видаляються (використовується INSERT OR IGNORE).
+ */
+(function syncMasterServices() {
+  var masters = db.prepare("SELECT id, level FROM masters WHERE active=1").all();
+  var allSvcs = db.prepare("SELECT id, name FROM services WHERE active=1").all();
+  var ins = db.prepare("INSERT OR IGNORE INTO master_services (master_id, service_id) VALUES (?,?)");
+  var added = 0;
+
+  var tx = db.transaction(function() {
+    masters.forEach(function(m) {
+      var lvl = (m.level || "").trim();
+      var isTop = lvl === "Топ Майстер";
+      var isMaster = lvl === "Майстер" || lvl === "Майстриня";
+
+      allSvcs.forEach(function(s) {
+        var hasTop    = s.name.indexOf("(Топ Майстер)") !== -1;
+        var hasMaster = s.name.indexOf("(Майстер)")     !== -1 && !hasTop;
+        var shared    = !hasTop && !hasMaster;
+
+        var fits = shared ||
+                   (isTop    && hasTop)    ||
+                   (isMaster && hasMaster);
+
+        if (fits) {
+          var r = ins.run(m.id, s.id);
+          if (r.changes) added++;
+        }
+      });
+    });
+  });
+  tx();
+  if (added > 0) console.log("[db] syncMasterServices: додано " + added + " нових зв'язків майстер–послуга.");
+})();
+
 /* ---- Популярні послуги: встановлюємо featured=1 ---- */
 (function seedFeaturedServices() {
   var already = db.prepare("SELECT COUNT(*) n FROM services WHERE featured=1").get().n;
