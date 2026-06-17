@@ -357,11 +357,14 @@
             var cell = el("div");
             cell.style.cssText = "border-top:1px solid rgba(122,145,86,.08);border-right:1px solid rgba(122,145,86,.06);height:" + SLOT_H + "px;position:relative;";
 
-            // Знайти записи що починаються в цьому слоті
+            // Знайти записи що починаються В МЕЖАХ цього 30-хв слоту
             appts.filter(function(a) {
-              return a.master_id === master.id && a.start_min === absMin;
+              return a.master_id === master.id &&
+                     a.start_min >= absMin && a.start_min < absMin + 30;
             }).forEach(function(a) {
               var heightPx = Math.max(a.duration_min / 30 * SLOT_H - 3, SLOT_H - 3);
+              // Зміщення всередині слоту (напр. 20:45 → 15 хв від 20:30 → 0.5 * SLOT_H)
+              var offsetPx = (a.start_min - absMin) / 30 * SLOT_H;
               var bgColor = a.status === "completed" ? "rgba(122,145,86,0.35)" :
                             a.status === "cancelled" || a.status === "no_show" ? "rgba(224,129,107,0.2)" :
                             a.status === "confirmed" ? "rgba(122,145,86,0.22)" : "rgba(202,164,90,0.18)";
@@ -369,7 +372,7 @@
                                 a.status === "cancelled" || a.status === "no_show" ? "var(--err)" :
                                 a.status === "confirmed" ? "var(--olive-light)" : "var(--warn)";
               var block = el("div");
-              block.style.cssText = "position:absolute;left:2px;right:2px;top:2px;height:" + heightPx + "px;background:" + bgColor + ";border:1px solid " + borderColor + ";border-radius:7px;padding:4px 6px;overflow:hidden;cursor:pointer;z-index:2;";
+              block.style.cssText = "position:absolute;left:2px;right:2px;top:" + (offsetPx + 2) + "px;height:" + heightPx + "px;background:" + bgColor + ";border:1px solid " + borderColor + ";border-radius:7px;padding:4px 6px;overflow:hidden;cursor:pointer;z-index:2;";
               block.innerHTML = '<div style="font-size:.77rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + a.client_name + '</div>' +
                 '<div style="font-size:.68rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (a.service_name||'').split('(')[0].trim() + '</div>' +
                 (a.price ? '<div style="font-size:.68rem;color:var(--olive-light);">' + Math.round(a.price/100) + ' грн</div>' : '');

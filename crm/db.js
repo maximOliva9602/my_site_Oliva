@@ -690,6 +690,32 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
   console.log('[db] Seeded category/description/image_url for ' + services.length + ' services.');
 })();
 
+/* ---------------- Міграція: оновити майстрів ---------------- */
+(function updateMasters() {
+  // Людмила → рівень "Майстриня"
+  db.prepare("UPDATE masters SET level='Майстриня' WHERE name='Людмила' AND level='Майстер'").run();
+  // Додати Андрія якщо ще немає
+  var andrii = db.prepare("SELECT id FROM masters WHERE name='Андрій'").get();
+  if (!andrii) {
+    var now = Date.now();
+    var r = db.prepare(
+      "INSERT INTO masters (name, photo, level, active, sort_order, created_at) VALUES (?,?,?,1,?,?)"
+    ).run('Андрій', 'assets/img/master-andrii.jpg', 'Майстер', 5, now);
+    var mid = r.lastInsertRowid;
+    // Розклад Пн-Сб 9:00-21:30
+    var insSched = db.prepare("INSERT OR IGNORE INTO master_schedule (master_id,weekday,work_start,work_end) VALUES (?,?,540,1290)");
+    for (var wd = 1; wd <= 6; wd++) insSched.run(mid, wd);
+    // Послуги рівня Майстер
+    var svcs = db.prepare("SELECT id FROM services WHERE active=1 AND name LIKE '%(Майстер)%' AND name NOT LIKE '%(Топ Майстер)%'").all();
+    var insMS = db.prepare("INSERT OR IGNORE INTO master_services (master_id,service_id) VALUES (?,?)");
+    svcs.forEach(function(s) { insMS.run(mid, s.id); });
+    // Спільні послуги (без рівня)
+    var shared = db.prepare("SELECT id FROM services WHERE active=1 AND name NOT LIKE '%(Майстер)%' AND name NOT LIKE '%(Топ Майстер)%'").all();
+    shared.forEach(function(s) { insMS.run(mid, s.id); });
+    console.log('[db] Додано майстра Андрій.');
+  }
+})();
+
 /* ---- Популярні послуги: встановлюємо featured=1 ---- */
 (function seedFeaturedServices() {
   var already = db.prepare("SELECT COUNT(*) n FROM services WHERE featured=1").get().n;
