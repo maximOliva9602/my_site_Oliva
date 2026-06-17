@@ -317,20 +317,17 @@
       contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
       var HOUR_START = 8, HOUR_END = 22;
       var TOTAL_SLOTS = (HOUR_END - HOUR_START) * 2; // 28 слотів по 30 хв
-      // Розрахунок висоти слота — календар займає весь екран без прокрутки
       var CAL_HEADER_H = 44; // висота рядка майстрів
-      var availH = window.innerHeight
-        - (document.querySelector(".topbar") ? document.querySelector(".topbar").offsetHeight : 54)
-        - (document.querySelector(".tabs") ? document.querySelector(".tabs").offsetHeight : 48)
-        - (contentEl.parentElement ? contentEl.parentElement.previousElementSibling.offsetHeight + 16 : 60)
-        - 8; // margin
-      var SLOT_H = Math.max(22, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
+      // Фіксований розрахунок: topbar≈54 + tabs≈48 + bar з датою≈56 + відступи≈16
+      var OVERHEAD = 174;
+      var availH = window.innerHeight - OVERHEAD;
+      var SLOT_H = Math.max(20, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
 
       // Розтягуємо main на повну ширину для календаря
       var mainEl = document.getElementById("main");
       mainEl.dataset.prevStyle = mainEl.getAttribute("style") || "";
-      mainEl.style.cssText = "max-width:none;padding:8px 8px 8px;margin:0;";
+      mainEl.style.cssText = "max-width:none;padding:8px;margin:0;";
 
       var mastersPr = api("GET", "/api/crm/masters");
       var apptUrl = ME.role === "owner"
@@ -404,7 +401,50 @@
               block.innerHTML = '<div style="font-size:.77rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + a.client_name + '</div>' +
                 '<div style="font-size:.68rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (a.service_name||'').split('(')[0].trim() + '</div>' +
                 (a.price ? '<div style="font-size:.68rem;color:var(--olive-light);">' + Math.round(a.price/100) + ' грн</div>' : '');
-              block.addEventListener("click", function() { apptDetailModal(a); });
+              block.addEventListener("click", function(e) {
+                e.stopPropagation();
+                // Видаляємо старий попап якщо є
+                var old = document.getElementById("cal-popup");
+                if (old) old.remove();
+                var popup = document.createElement("div");
+                popup.id = "cal-popup";
+                var timeStr = fmtMin(a.start_min) + "–" + fmtMin(a.end_min || (a.start_min + a.duration_min));
+                var statusBadge = '<span class="badge b-' + a.status + '" style="font-size:.7rem;">' + (STATUS_LABEL[a.status]||a.status) + '</span>';
+                popup.innerHTML =
+                  '<div style="font-size:.95rem;font-weight:600;color:var(--cream);margin-bottom:6px;">' + a.client_name + '</div>' +
+                  '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:3px;">🕐 ' + timeStr + '</div>' +
+                  '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:3px;">💆 ' + (a.service_name||'').split('(')[0].trim() + '</div>' +
+                  '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:8px;">👤 ' + (a.master_name||'') + '</div>' +
+                  (a.price ? '<div style="font-size:.82rem;color:var(--olive-light);margin-bottom:8px;">' + Math.round(a.price/100) + ' грн' + (a.paid ? ' ✓' : '') + '</div>' : '') +
+                  '<div style="margin-bottom:10px;">' + statusBadge + '</div>' +
+                  '<div style="display:flex;gap:6px;">' +
+                  '<button id="cal-popup-detail" style="flex:1;background:var(--olive-light);color:var(--black);border:none;border-radius:7px;padding:6px 10px;font-size:.78rem;font-weight:600;cursor:pointer;">Детальніше</button>' +
+                  '<button id="cal-popup-close" style="background:none;border:1px solid var(--line);color:var(--text-dim);border-radius:7px;padding:6px 10px;font-size:.78rem;cursor:pointer;">✕</button>' +
+                  '</div>';
+                // Позиціонування: поруч з блоком
+                var rect = block.getBoundingClientRect();
+                var popW = 220;
+                var left = rect.right + 8;
+                if (left + popW > window.innerWidth - 10) left = rect.left - popW - 8;
+                if (left < 8) left = 8;
+                var top = Math.min(rect.top, window.innerHeight - 280);
+                popup.style.cssText = "position:fixed;left:" + left + "px;top:" + top + "px;width:" + popW + "px;background:var(--panel);border:1px solid var(--olive-light);border-radius:12px;padding:14px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.5);";
+                document.body.appendChild(popup);
+                document.getElementById("cal-popup-close").addEventListener("click", function(ev) {
+                  ev.stopPropagation(); popup.remove();
+                });
+                document.getElementById("cal-popup-detail").addEventListener("click", function(ev) {
+                  ev.stopPropagation(); popup.remove(); window.apptDetailModal(a);
+                });
+                // Закрити при кліку деінде
+                setTimeout(function() {
+                  document.addEventListener("click", function h() {
+                    var p = document.getElementById("cal-popup");
+                    if (p) p.remove();
+                    document.removeEventListener("click", h);
+                  });
+                }, 10);
+              });
               cell.appendChild(block);
             });
 
@@ -413,7 +453,8 @@
         }
 
         wrap.appendChild(table);
-        wrap.style.cssText = "overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);";
+        var wrapH = CAL_HEADER_H + TOTAL_SLOTS * SLOT_H + 2;
+        wrap.style.cssText = "overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:" + wrapH + "px;";
         contentEl.appendChild(wrap);
 
         if (!appts.length) {
@@ -441,7 +482,7 @@
   }
 
   /* ---- Детальна картка запису (для календаря) ---- */
-  function apptDetailModal(a) {
+  window.apptDetailModal = function apptDetailModal(a) {
     var html = '<h3>' + a.client_name + '</h3>' +
       '<div class="sub" style="margin-bottom:12px;">' + a.service_name + ' · ' + fmtMin(a.start_min) + '–' + fmtMin(a.end_min || (a.start_min + a.duration_min)) + ' · ' + a.master_name + '</div>' +
       '<div class="sub">' + a.client_phone + '</div>' +
