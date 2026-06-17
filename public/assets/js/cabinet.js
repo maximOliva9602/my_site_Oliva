@@ -1015,11 +1015,19 @@
      ТРАФІК САЙТУ (власник)
      ============================================================ */
   function renderTraffic() {
-    var main = $("main"); main.innerHTML = '<div class="empty">Завантаження…</div>';
-    api("GET", "/api/crm/analytics/visits").then(function(res) {
-      if (!res.j.ok) { main.innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
-      var d = res.j;
-      main.innerHTML = "";
+    var main = $("main");
+
+    function load() {
+      // Показуємо спінер лише якщо контент ще не завантажений
+      if (!main.dataset.loaded) main.innerHTML = '<div class="empty">Завантаження…</div>';
+      var btn = document.getElementById("traffic-refresh");
+      if (btn) { btn.textContent = "⟳"; btn.disabled = true; }
+
+      api("GET", "/api/crm/analytics/visits").then(function(res) {
+        if (!res.j.ok) { main.innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
+        main.dataset.loaded = "1";
+        var d = res.j;
+        main.innerHTML = "";
 
       function sec(html) {
         var s = document.createElement("div");
@@ -1208,7 +1216,22 @@
         '<span>Менше</span><div style="flex:1;height:4px;border-radius:2px;background:linear-gradient(to right,rgba(122,145,86,.07),rgba(122,145,86,.97));"></div><span>Більше</span></div>';
       botRow.appendChild(sec(hourHtml));
       main.appendChild(botRow);
+
+      // Кнопка оновлення — додаємо після завантаження
+      var refreshRow = document.createElement("div");
+      refreshRow.style.cssText = "display:flex;justify-content:flex-end;margin-bottom:14px;";
+      var refreshBtn = document.createElement("button");
+      refreshBtn.id = "traffic-refresh";
+      refreshBtn.className = "btn btn-ghost";
+      refreshBtn.style.cssText = "font-size:.82rem;gap:6px;display:flex;align-items:center;";
+      refreshBtn.innerHTML = "🔄 Оновити";
+      refreshBtn.addEventListener("click", function() { load(); });
+      refreshRow.appendChild(refreshBtn);
+      main.insertBefore(refreshRow, main.firstChild);
     });
+    }
+
+    load();
   }
 
   /* ============================================================
