@@ -101,13 +101,20 @@ function createAppointment(d, session) {
 /* ---------- зміна статусу ---------- */
 function setStatus(id, status, session) {
   if (STATUSES.indexOf(status) === -1) return { status: 400, body: { ok: false, error: "bad status" } };
-  const a = db.prepare("SELECT id, master_id, client_id FROM appointments WHERE id=?").get(id);
+  const a = db.prepare("SELECT id, master_id, client_id, public_id FROM appointments WHERE id=?").get(id);
   if (!a) return { status: 404, body: { ok: false, error: "not found" } };
   if (session.role !== "owner" && a.master_id !== session.masterId) {
     return { status: 403, body: { ok: false, error: "forbidden" } };
   }
   db.prepare("UPDATE appointments SET status=?, updated_at=? WHERE id=?").run(status, Date.now(), id);
   recomputeClient(a.client_id);
+  // Після завершення — ставимо в чергу запит на відгук
+  if (status === "completed") {
+    try {
+      const notify = require("./notify");
+      notify.queueNotification(id, "review_request");
+    } catch(e) { /* notify може не підтримувати review_request — OK */ }
+  }
   return { status: 200, body: { ok: true, appointment: viewAppt(apptRow(id)) } };
 }
 
@@ -180,6 +187,21 @@ router.patch("/appointments/:id", any, function (req, res) {
     db.prepare("UPDATE appointments SET comment=?, updated_at=? WHERE id=?").run(comment, Date.now(), id);
   }
   res.json({ ok: true, appointment: viewAppt(apptRow(id)) });
+});
+
+/* ---- Оплата запису ---- */
+router.patch("/appointments/:id/payment", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = db.prepare("SELECT id, master_id FROM appointments WHERE id=?").get(id);
+  if (!a) return res.status(404).json({ ok: false });
+  if (req.session.role !== "owner" && a.master_id !== req.session.masterId)
+    return res.status(403).json({ ok: false });
+  const d = req.body || {};
+  const paid = d.paid !== undefined ? (d.paid ? 1 : 0) : 0;
+  const method = d.pay_method ? String(d.pay_method).slice(0, 30) : null;
+  db.prepare("UPDATE appointments SET paid=?, pay_method=?, updated_at=? WHERE id=?")
+    .run(paid, method, Date.now(), id);
+  res.json({ ok: true });
 });
 
 /* ============================================================
@@ -353,7 +375,8 @@ router.get("/clients/:id", any, function (req, res) {
   const client = db.prepare("SELECT * FROM clients WHERE id=?").get(id);
   if (!client) return res.status(404).json({ ok: false });
   const history = db.prepare(
-    `SELECT a.id, a.date, a.start_min, a.status, s.name service_name, m.name master_name
+    `SELECT a.id, a.date, a.start_min, a.status, a.service_id, a.master_id,
+            s.name service_name, m.name master_name
        FROM appointments a JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id
       WHERE a.client_id=? ORDER BY a.date DESC, a.start_min DESC`
   ).all(id).map(viewAppt);
@@ -527,6 +550,93 @@ router.get("/dashboard", owner, function (req, res) {
       avg_check: Math.round(avgCheck),
     },
   });
+});
+
+/* ---- Розширена аналітика для дашборду ---- */
+router.get("/dashboard/analytics", owner, function (req, res) {
+  const now = tz.nowKyiv();
+  const today = now.date;
+  const dt = new Date(today + "T00:00:00");
+  const dow = dt.getDay() === 0 ? 6 : dt.getDay() - 1;
+  const weekStart = new Date(dt); weekStart.setDate(dt.getDate() - dow);
+  const wStart = weekStart.toISOString().slice(0, 10);
+  const mStart = today.slice(0, 7) + "-01";
+
+  // Дохід по днях за останні 30 днів
+  const thirtyAgo = new Date(dt); thirtyAgo.setDate(dt.getDate() - 29);
+  const thirtyStart = thirtyAgo.toISOString().slice(0, 10);
+  const revenueByDay = db.prepare(
+    `SELECT date, SUM(price) revenue FROM appointments
+      WHERE status='completed' AND date>=? AND date<=? GROUP BY date ORDER BY date`
+  ).all(thirtyStart, today);
+
+  // Завантаженість по годинах (кількість записів у кожній годині)
+  const byHour = db.prepare(
+    `SELECT (start_min/60) hour, COUNT(*) cnt FROM appointments
+      WHERE status IN ('completed','confirmed','pending') AND date>=?
+      GROUP BY hour ORDER BY hour`
+  ).all(mStart);
+
+  // Топ послуг місяця
+  const topServices = db.prepare(
+    `SELECT s.name, COUNT(*) cnt, SUM(a.price) revenue
+       FROM appointments a JOIN services s ON s.id=a.service_id
+      WHERE a.status='completed' AND a.date>=?
+      GROUP BY a.service_id ORDER BY revenue DESC LIMIT 8`
+  ).all(mStart);
+
+  // Лояльність до майстра (клієнти що повернулися до ТОГО Ж майстра)
+  const masters = db.prepare("SELECT id, name FROM masters WHERE active=1").all();
+  const masterLoyalty = masters.map(function(m) {
+    const total = db.prepare(
+      `SELECT COUNT(DISTINCT client_id) n FROM appointments WHERE master_id=? AND status='completed'`
+    ).get(m.id).n;
+    const returning = db.prepare(
+      `SELECT COUNT(*) n FROM (
+         SELECT client_id FROM appointments
+          WHERE master_id=? AND status='completed'
+          GROUP BY client_id HAVING COUNT(*)>1
+       )`
+    ).get(m.id).n;
+    return { id: m.id, name: m.name, total_clients: total, returning: returning,
+             loyalty_pct: total > 0 ? Math.round(returning / total * 100) : 0 };
+  });
+
+  // Середній чек по місяцях (останні 6 місяців)
+  const avgByMonth = db.prepare(
+    `SELECT substr(date,1,7) month, AVG(price) avg_check, SUM(price) revenue, COUNT(*) cnt
+       FROM appointments WHERE status='completed' AND date>=date('now','-6 months')
+       GROUP BY month ORDER BY month`
+  ).all();
+
+  // Відгуки
+  const reviews = db.prepare(
+    `SELECT r.*, c.name client_name, m.name master_name
+       FROM reviews r JOIN clients c ON c.id=r.client_id JOIN masters m ON m.id=r.master_id
+      ORDER BY r.created_at DESC LIMIT 20`
+  ).all();
+  const avgRating = db.prepare("SELECT AVG(rating) v FROM reviews").get().v || 0;
+
+  res.json({
+    ok: true,
+    revenue_by_day: revenueByDay,
+    by_hour: byHour,
+    top_services: topServices,
+    master_loyalty: masterLoyalty,
+    avg_by_month: avgByMonth,
+    reviews: reviews,
+    avg_rating: Math.round(avgRating * 10) / 10,
+  });
+});
+
+/* ---- Відгуки ---- */
+router.get("/reviews", owner, function (req, res) {
+  const rows = db.prepare(
+    `SELECT r.*, c.name client_name, m.name master_name
+       FROM reviews r JOIN clients c ON c.id=r.client_id JOIN masters m ON m.id=r.master_id
+      ORDER BY r.created_at DESC LIMIT 100`
+  ).all();
+  res.json({ ok: true, reviews: rows });
 });
 
 /* ---- Журнал сповіщень ---- */

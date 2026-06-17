@@ -256,6 +256,25 @@ try { db.exec("ALTER TABLE services ADD COLUMN category TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN description TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN image_url TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN featured INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN paid INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN pay_method TEXT"); } catch(e) {}
+
+/* Таблиця відгуків */
+db.exec(`
+CREATE TABLE IF NOT EXISTS reviews (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  appointment_id INTEGER NOT NULL UNIQUE,
+  master_id      INTEGER NOT NULL,
+  client_id      INTEGER NOT NULL,
+  rating         INTEGER NOT NULL,
+  comment        TEXT,
+  created_at     INTEGER NOT NULL,
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+  FOREIGN KEY (master_id)      REFERENCES masters(id),
+  FOREIGN KEY (client_id)      REFERENCES clients(id)
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
+`);
 
 /* ---------------- Seed початкових даних ---------------- */
 (function seed() {

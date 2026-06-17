@@ -123,6 +123,40 @@ app.use("/api/public", publicRoutes);
 app.use("/api/crm", crmRoutes);
 app.use("/api/webhooks", webhookRoutes);
 
+/* ---- Публічний відгук (без авторизації) ---- */
+app.get("/api/review/:public_id", function (req, res) {
+  const a = db.prepare(
+    `SELECT a.public_id, a.date, a.status, s.name service_name, m.name master_name, m.id master_id,
+            c.name client_name
+       FROM appointments a JOIN services s ON s.id=a.service_id
+       JOIN masters m ON m.id=a.master_id JOIN clients c ON c.id=a.client_id
+      WHERE a.public_id=?`
+  ).get(req.params.public_id);
+  if (!a) return res.status(404).json({ ok: false });
+  const already = db.prepare("SELECT id FROM reviews WHERE appointment_id=(SELECT id FROM appointments WHERE public_id=?)").get(req.params.public_id);
+  res.json({ ok: true, appointment: a, already_reviewed: !!already });
+});
+
+app.post("/api/review/:public_id", function (req, res) {
+  const a = db.prepare(
+    "SELECT id, master_id, client_id, status FROM appointments WHERE public_id=?"
+  ).get(req.params.public_id);
+  if (!a) return res.status(404).json({ ok: false, error: "not found" });
+  if (a.status !== "completed") return res.status(400).json({ ok: false, error: "appointment not completed" });
+  const d = req.body || {};
+  const rating = parseInt(d.rating, 10);
+  if (!(rating >= 1 && rating <= 5)) return res.status(400).json({ ok: false, error: "invalid rating" });
+  const comment = String(d.comment || "").slice(0, 1000).trim();
+  try {
+    db.prepare(
+      "INSERT INTO reviews (appointment_id, master_id, client_id, rating, comment, created_at) VALUES (?,?,?,?,?,?)"
+    ).run(a.id, a.master_id, a.client_id, rating, comment || null, Date.now());
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(409).json({ ok: false, error: "already reviewed" });
+  }
+});
+
 app.get("/cabinet", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "cabinet.html"));
 });

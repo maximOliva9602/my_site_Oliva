@@ -66,9 +66,11 @@
     if (me.role === "owner") {
       TABS.push({ id: "dashboard", name: "📊 Дашборд", render: renderDashboard });
     }
-    TABS.push({ id: "appts", name: "Записи", render: renderAppts });
+    TABS.push({ id: "appts", name: "📅 Записи", render: renderAppts });
     TABS.push({ id: "clients", name: "Клієнти", render: renderClients });
     if (me.role === "owner") {
+      TABS.push({ id: "analytics", name: "📈 Аналітика", render: renderAnalytics });
+      TABS.push({ id: "reviews", name: "⭐ Відгуки", render: renderReviews });
       TABS.push({ id: "services", name: "Послуги", render: renderServices });
       TABS.push({ id: "masters", name: "Майстри", render: renderMasters });
       TABS.push({ id: "users", name: "Доступи", render: renderUsers });
@@ -230,13 +232,25 @@
   }
 
   var apptDate = todayStr();
+  var apptViewMode = "list"; // "list" | "calendar"
+
   function renderAppts() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar");
     bar.appendChild(el("h2", null, "Записи"));
     var dateInp = el("input"); dateInp.type = "date"; dateInp.value = apptDate;
-    dateInp.addEventListener("change", function () { apptDate = dateInp.value; loadAppts(); });
+    dateInp.addEventListener("change", function () { apptDate = dateInp.value; reloadView(); });
     bar.appendChild(dateInp);
+
+    // Перемикач вигляду (список / календар)
+    var viewToggle = el("button", "btn btn-ghost", apptViewMode === "calendar" ? "📋 Список" : "📅 Календар");
+    viewToggle.addEventListener("click", function () {
+      apptViewMode = apptViewMode === "calendar" ? "list" : "calendar";
+      viewToggle.textContent = apptViewMode === "calendar" ? "📋 Список" : "📅 Календар";
+      reloadView();
+    });
+    bar.appendChild(viewToggle);
+
     var newBtn = el("button", "btn btn-primary", "+ Новий запис");
     newBtn.addEventListener("click", function () { apptModal(); });
     bar.appendChild(newBtn);
@@ -244,34 +258,202 @@
 
     var masterFilterWrap = el("div", "bar");
     main.appendChild(masterFilterWrap);
-    var listEl = el("div", "list"); main.appendChild(listEl);
+    var contentEl = el("div"); contentEl.id = "apptContent"; main.appendChild(contentEl);
 
-    // фільтр по майстрах (тільки власник)
+    var activeMasterFilter = "";
+
     if (ME.role === "owner") {
       api("GET", "/api/crm/masters").then(function (res) {
         var sel = el("select");
         sel.appendChild(new Option("Усі майстри", ""));
         (res.j.masters || []).forEach(function (m) { sel.appendChild(new Option(m.name, m.id)); });
-        sel.addEventListener("change", function () { loadAppts(sel.value); });
+        sel.addEventListener("change", function () { activeMasterFilter = sel.value; reloadView(sel.value); });
         masterFilterWrap.appendChild(el("span", "muted", "Майстер:"));
         masterFilterWrap.appendChild(sel);
+        reloadView();
       });
+    } else {
+      reloadView();
+    }
+
+    function reloadView(masterId) {
+      if (masterId !== undefined) activeMasterFilter = masterId;
+      if (apptViewMode === "calendar") {
+        loadCalendar(activeMasterFilter);
+      } else {
+        loadAppts(activeMasterFilter);
+      }
     }
 
     function loadAppts(masterId) {
-      listEl.innerHTML = '<div class="empty">Завантаження…</div>';
+      contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
       var url = ME.role === "owner"
         ? "/api/crm/appointments?date=" + apptDate + (masterId ? "&master=" + masterId : "")
         : "/api/crm/me/appointments?from=" + apptDate + "&to=" + apptDate;
       api("GET", url).then(function (res) {
         var list = res.j.appointments || [];
-        listEl.innerHTML = "";
+        contentEl.innerHTML = "";
+        var listEl = el("div", "list"); contentEl.appendChild(listEl);
         if (!list.length) { listEl.appendChild(el("div", "empty", "На " + ddmm(apptDate) + " записів немає")); return; }
         list.forEach(function (a) { listEl.appendChild(apptItem(a)); });
       });
     }
-    window.__reloadAppts = function () { loadAppts(); };
-    loadAppts();
+
+    function loadCalendar(masterFilter) {
+      contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
+      var HOUR_START = 8, HOUR_END = 22, SLOT_H = 48;
+      var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
+
+      var mastersPr = api("GET", "/api/crm/masters");
+      var apptUrl = ME.role === "owner"
+        ? "/api/crm/appointments?date=" + apptDate + (masterFilter ? "&master=" + masterFilter : "")
+        : "/api/crm/me/appointments?from=" + apptDate + "&to=" + apptDate;
+      var apptsPr = api("GET", apptUrl);
+
+      Promise.all([mastersPr, apptsPr]).then(function(rs) {
+        var allMasters = rs[0].j.masters || [];
+        var appts = rs[1].j.appointments || [];
+
+        // Фільтр майстрів: показуємо лише тих у кого є записи або (для власника) всіх
+        var masters = allMasters;
+        if (masterFilter) masters = allMasters.filter(function(m) { return String(m.id) === String(masterFilter); });
+        else if (ME.role !== "owner") masters = allMasters.filter(function(m) { return m.id === ME.masterId; });
+
+        contentEl.innerHTML = "";
+        var wrap = el("div");
+        wrap.style.cssText = "overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);";
+
+        var table = el("div");
+        table.style.cssText = "display:grid;grid-template-columns:50px repeat(" + masters.length + ",minmax(140px,1fr));min-width:" + (50 + masters.length * 140) + "px;";
+
+        // Заголовки
+        var cornerCell = el("div");
+        cornerCell.style.cssText = "position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);border-right:1px solid var(--line);";
+        table.appendChild(cornerCell);
+
+        masters.forEach(function(m) {
+          var h = el("div");
+          h.style.cssText = "position:sticky;top:0;z-index:4;background:var(--panel-2);border-bottom:1px solid var(--line);border-right:1px solid rgba(122,145,86,.1);padding:10px 8px;text-align:center;";
+          h.innerHTML = '<div style="font-size:.85rem;font-weight:600;color:var(--cream);">' + m.name + '</div><div style="font-size:.7rem;color:var(--olive-light);">' + (m.level||'') + '</div>';
+          table.appendChild(h);
+        });
+
+        // Рядки по 30 хвилин
+        for (var min = 0; min < TOTAL_MIN; min += 30) {
+          var h = HOUR_START + Math.floor(min / 60);
+          var m = min % 60;
+          var absMin = HOUR_START * 60 + min;
+
+          var timeCell = el("div");
+          timeCell.style.cssText = "border-top:1px solid var(--line);border-right:1px solid var(--line);display:flex;align-items:flex-start;justify-content:center;padding-top:3px;height:" + SLOT_H + "px;";
+          if (m === 0) {
+            var tl = el("span"); tl.style.cssText = "font-size:.68rem;color:var(--text-dim);";
+            tl.textContent = String(h).padStart(2,"0") + ":00";
+            timeCell.appendChild(tl);
+          }
+          table.appendChild(timeCell);
+
+          masters.forEach(function(master) {
+            var cell = el("div");
+            cell.style.cssText = "border-top:1px solid rgba(122,145,86,.08);border-right:1px solid rgba(122,145,86,.06);height:" + SLOT_H + "px;position:relative;";
+
+            // Знайти записи що починаються в цьому слоті
+            appts.filter(function(a) {
+              return a.master_id === master.id && a.start_min === absMin;
+            }).forEach(function(a) {
+              var heightPx = Math.max(a.duration_min / 30 * SLOT_H - 3, SLOT_H - 3);
+              var bgColor = a.status === "completed" ? "rgba(122,145,86,0.35)" :
+                            a.status === "cancelled" || a.status === "no_show" ? "rgba(224,129,107,0.2)" :
+                            a.status === "confirmed" ? "rgba(122,145,86,0.22)" : "rgba(202,164,90,0.18)";
+              var borderColor = a.status === "completed" ? "var(--olive-light)" :
+                                a.status === "cancelled" || a.status === "no_show" ? "var(--err)" :
+                                a.status === "confirmed" ? "var(--olive-light)" : "var(--warn)";
+              var block = el("div");
+              block.style.cssText = "position:absolute;left:2px;right:2px;top:2px;height:" + heightPx + "px;background:" + bgColor + ";border:1px solid " + borderColor + ";border-radius:7px;padding:4px 6px;overflow:hidden;cursor:pointer;z-index:2;";
+              block.innerHTML = '<div style="font-size:.77rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + a.client_name + '</div>' +
+                '<div style="font-size:.68rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (a.service_name||'').split('(')[0].trim() + '</div>' +
+                (a.price ? '<div style="font-size:.68rem;color:var(--olive-light);">' + Math.round(a.price/100) + ' грн</div>' : '');
+              block.addEventListener("click", function() { apptDetailModal(a); });
+              cell.appendChild(block);
+            });
+
+            table.appendChild(cell);
+          });
+        }
+
+        wrap.appendChild(table);
+        wrap.style.maxHeight = "calc(100vh - 180px)";
+        wrap.style.overflow = "auto";
+        contentEl.appendChild(wrap);
+
+        if (!appts.length) {
+          var empty = el("div","empty","На " + ddmm(apptDate) + " записів немає");
+          empty.style.marginTop = "10px";
+          contentEl.appendChild(empty);
+        }
+      });
+    }
+
+    window.__reloadAppts = function () {
+      if (apptViewMode === "calendar") loadCalendar(activeMasterFilter);
+      else loadAppts(activeMasterFilter);
+    };
+    // початкове завантаження (без фільтру майстра) для майстра
+    if (ME.role !== "owner") reloadView();
+  }
+
+  /* ---- Детальна картка запису (для календаря) ---- */
+  function apptDetailModal(a) {
+    var html = '<h3>' + a.client_name + '</h3>' +
+      '<div class="sub" style="margin-bottom:12px;">' + a.service_name + ' · ' + fmtMin(a.start_min) + '–' + fmtMin(a.end_min || (a.start_min + a.duration_min)) + ' · ' + a.master_name + '</div>' +
+      '<div class="sub">' + a.client_phone + '</div>' +
+      (a.comment ? '<div class="sub" style="margin-top:8px;">💬 ' + a.comment + '</div>' : '') +
+      '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>';
+
+    // Оплата
+    html += '<div style="margin-top:14px;"><label style="font-size:.78rem;color:var(--text-dim);">Оплата</label>' +
+      '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">' +
+      '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="dPaid"' + (a.paid ? ' checked' : '') + '> Оплачено</label>' +
+      '<select id="dPayMethod" style="flex:1;min-width:100px;">' +
+      '<option value="">Спосіб</option>' +
+      ['Готівка','Картка','Переказ'].map(function(m) { return '<option value="'+m+'"'+(a.pay_method===m?' selected':'')+'>'+m+'</option>'; }).join('') +
+      '</select></div></div>';
+
+    html += '<div class="err" id="dErr"></div><div class="modal-foot">';
+
+    if (a.status === "pending") html += '<button class="btn btn-primary btn-sm" id="dConfirm">Підтвердити</button>';
+    if (a.status === "pending" || a.status === "confirmed") {
+      html += '<button class="btn btn-ghost btn-sm" id="dComplete">Завершити</button>';
+      html += '<button class="btn btn-ghost btn-sm" id="dNoShow">Не прийшов</button>';
+      html += '<button class="btn btn-ghost btn-sm" id="dCancel">Скасувати</button>';
+    }
+    html += '<button class="btn btn-ghost" id="dClose">Закрити</button></div>';
+
+    openModal(html);
+
+    function setStatus(status) {
+      api("PATCH", "/api/crm/appointments/" + a.id + "/status", { status: status }).then(function(res) {
+        if (!res.j.ok) { $("dErr").textContent = "Помилка"; return; }
+        // Зберегти оплату
+        var paid = $("dPaid") && $("dPaid").checked ? 1 : 0;
+        var method = $("dPayMethod") ? $("dPayMethod").value : "";
+        if (paid || method) {
+          api("PATCH", "/api/crm/appointments/" + a.id + "/payment", { paid: paid, pay_method: method });
+        }
+        closeModal(); if (window.__reloadAppts) window.__reloadAppts();
+      });
+    }
+    if ($("dConfirm")) $("dConfirm").addEventListener("click", function() { setStatus("confirmed"); });
+    if ($("dComplete")) $("dComplete").addEventListener("click", function() { setStatus("completed"); });
+    if ($("dNoShow")) $("dNoShow").addEventListener("click", function() { setStatus("no_show"); });
+    if ($("dCancel")) $("dCancel").addEventListener("click", function() { setStatus("cancelled"); });
+    $("dClose").addEventListener("click", function() {
+      // Зберегти оплату без зміни статусу
+      var paid = $("dPaid") && $("dPaid").checked ? 1 : 0;
+      var method = $("dPayMethod") ? $("dPayMethod").value : "";
+      api("PATCH", "/api/crm/appointments/" + a.id + "/payment", { paid: paid, pay_method: method });
+      closeModal();
+    });
   }
 
   function apptItem(a) {
@@ -280,7 +462,10 @@
     row.appendChild(el("span", "t", fmtMin(a.start_min)));
     var info = el("div");
     info.appendChild(el("div", "t", a.client_name + " · " + a.service_name));
-    info.appendChild(el("div", "sub", a.master_name + " · " + a.client_phone + " · " + a.duration_min + " хв"));
+    var subParts = [a.master_name, a.client_phone, a.duration_min + " хв"];
+    if (a.price) subParts.push(money(a.price));
+    if (a.paid) subParts.push("✅ " + (a.pay_method || "оплачено"));
+    info.appendChild(el("div", "sub", subParts.join(" · ")));
     info.style.marginLeft = "4px";
     row.appendChild(info);
     row.appendChild(el("span", "sp"));
@@ -305,12 +490,35 @@
       resB.addEventListener("click", function () { rescheduleModal(a); });
       acts.appendChild(resB);
     }
+    // Кнопка оплати (якщо завершено але не оплачено)
+    if (a.status === "completed" && !a.paid) {
+      var payB = el("button", "btn btn-sm btn-ghost", "💳 Оплата");
+      payB.addEventListener("click", function () { paymentModal(a); });
+      acts.appendChild(payB);
+    }
     item.appendChild(acts);
     return item;
   }
 
+  /* ---- Модалка оплати ---- */
+  function paymentModal(a) {
+    openModal(
+      '<h3>Оплата запису</h3>' +
+      '<div class="muted">' + a.client_name + ' · ' + a.service_name + ' · ' + money(a.price) + '</div>' +
+      '<label>Спосіб оплати</label>' +
+      '<select id="pmMethod"><option value="Готівка">Готівка</option><option value="Картка">Картка</option><option value="Переказ">Переказ</option></select>' +
+      '<div class="modal-foot"><button class="btn btn-ghost" id="pmCancel">Скасувати</button><button class="btn btn-primary" id="pmSave">Позначити оплаченим</button></div>'
+    );
+    $("pmCancel").addEventListener("click", closeModal);
+    $("pmSave").addEventListener("click", function () {
+      api("PATCH", "/api/crm/appointments/" + a.id + "/payment", { paid: 1, pay_method: $("pmMethod").value })
+        .then(function () { closeModal(); if (window.__reloadAppts) window.__reloadAppts(); });
+    });
+  }
+
   /* ---- модалка нового запису ---- */
-  function apptModal() {
+  function apptModal(opts) {
+    var prefill = (opts && opts.prefill) || {};
     openModal(
       '<h3>Новий запис</h3>' +
       '<label>Послуга</label><select id="mService"></select>' +
@@ -327,6 +535,8 @@
     var chosen = { start_min: null };
     $("mCancel").addEventListener("click", closeModal);
     $("mDate").value = apptDate; $("mDate").min = todayStr();
+    if (prefill.clientName) $("mName").value = prefill.clientName;
+    if (prefill.clientPhone) $("mPhone").value = prefill.clientPhone;
 
     // послуги
     api("GET", "/api/crm/services").then(function (res) {
@@ -334,6 +544,7 @@
       (res.j.services || []).forEach(function (s) {
         var o = new Option(s.name + " (" + s.duration_min + " хв)", s.id); o.dataset.dur = s.duration_min; sel.appendChild(o);
       });
+      if (prefill.serviceId) sel.value = prefill.serviceId;
       loadMasters();
     });
     // майстри (власник — усі; майстер — лише себе фіксовано)
@@ -344,6 +555,7 @@
           if (ME.role !== "owner" && m.id !== ME.masterId) return;
           sel.appendChild(new Option(m.name, m.id));
         });
+        if (prefill.masterId) sel.value = prefill.masterId;
         loadSlots();
       });
     }
@@ -503,7 +715,155 @@
       box.appendChild(hist);
       var foot = el("div", "modal-foot");
       var close = el("button", "btn btn-ghost", "Закрити"); close.addEventListener("click", closeModal);
+      // Кнопка "Записати повторно" — остання завершена послуга
+      var lastCompleted = h.find(function(a) { return a.status === "completed"; });
+      if (lastCompleted) {
+        var rebook = el("button", "btn btn-primary", "🔄 Записати повторно");
+        rebook.addEventListener("click", function() {
+          closeModal();
+          apptModal({ prefill: { clientName: c.name, clientPhone: c.phone, serviceId: lastCompleted.service_id, masterId: lastCompleted.master_id } });
+        });
+        foot.appendChild(rebook);
+      }
       foot.appendChild(close); box.appendChild(foot);
+    });
+  }
+
+  /* ============================================================
+     АНАЛІТИКА (власник)
+     ============================================================ */
+  function renderAnalytics() {
+    var main = $("main"); main.innerHTML = '<div class="empty">Завантаження…</div>';
+    api("GET", "/api/crm/dashboard/analytics").then(function(res) {
+      if (!res.j.ok) { main.innerHTML = '<div class="empty">Помилка</div>'; return; }
+      var d = res.j;
+      main.innerHTML = "";
+
+      function grn(kop) { return kop ? Math.round(kop/100).toLocaleString("uk-UA") + " грн" : "0 грн"; }
+      function card(title, content) {
+        var w = el("div","item"); w.style.marginBottom = "14px";
+        var h = el("div",""); h.style.cssText = "font-family:'Playfair Display',serif;color:var(--cream);font-size:1rem;font-weight:500;margin-bottom:12px;";
+        h.textContent = title; w.appendChild(h);
+        var c = el("div",""); c.innerHTML = content; w.appendChild(c);
+        return w;
+      }
+
+      /* ---- 1. Дохід по днях (SVG бар-чарт) ---- */
+      var days = d.revenue_by_day || [];
+      if (days.length) {
+        var maxRev = Math.max.apply(null, days.map(function(x){return x.revenue||0;})) || 1;
+        var bw = Math.max(4, Math.min(18, Math.floor(520 / days.length) - 2));
+        var svgH = 80, svgW = days.length * (bw+2) + 20;
+        var bars = days.map(function(day, i) {
+          var h = Math.round((day.revenue||0) / maxRev * svgH);
+          var x = 10 + i*(bw+2);
+          var label = day.date ? day.date.slice(5) : "";
+          return '<rect x="'+x+'" y="'+(svgH-h)+'" width="'+bw+'" height="'+h+'" fill="var(--olive-light)" rx="2" opacity=".85">' +
+            '<title>'+label+': '+grn(day.revenue)+'</title></rect>' +
+            (i % 5 === 0 ? '<text x="'+(x+bw/2)+'" y="'+(svgH+12)+'" text-anchor="middle" font-size="8" fill="var(--text-dim)">'+label+'</text>' : '');
+        }).join("");
+        var chartHtml = '<svg width="100%" viewBox="0 0 '+svgW+' '+(svgH+16)+'" style="overflow:visible;">'+bars+'</svg>';
+        main.appendChild(card("📈 Дохід по днях (30 днів)", chartHtml));
+      }
+
+      /* ---- 2. Завантаженість по годинах ---- */
+      var byHour = d.by_hour || [];
+      if (byHour.length) {
+        var maxCnt = Math.max.apply(null, byHour.map(function(x){return x.cnt||0;})) || 1;
+        var hBars = "";
+        for (var h = 8; h <= 21; h++) {
+          var found = byHour.find(function(x){ return x.hour === h; });
+          var cnt = found ? found.cnt : 0;
+          var pct = Math.round(cnt/maxCnt*100);
+          var color = pct > 70 ? "var(--olive-light)" : pct > 30 ? "rgba(122,145,86,.6)" : "rgba(122,145,86,.25)";
+          hBars += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+            '<span style="width:34px;font-size:.72rem;color:var(--text-dim);text-align:right;">' + String(h).padStart(2,"0") + ':00</span>' +
+            '<div style="flex:1;background:rgba(46,61,34,.3);border-radius:4px;height:14px;">' +
+            '<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:4px;transition:width .3s;"></div></div>' +
+            '<span style="width:28px;font-size:.7rem;color:var(--text-dim);">' + (cnt||"") + '</span></div>';
+        }
+        main.appendChild(card("🕐 Завантаженість по годинах (місяць)", hBars));
+      }
+
+      /* ---- 3. Топ послуг ---- */
+      var topSvcs = d.top_services || [];
+      if (topSvcs.length) {
+        var tbl = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;">' +
+          '<tr><th style="text-align:left;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">Послуга</th>' +
+          '<th style="text-align:right;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">Записів</th>' +
+          '<th style="text-align:right;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">Дохід</th></tr>';
+        topSvcs.forEach(function(s) {
+          var nm = (s.name||"").split("(")[0].trim();
+          nm = nm.length > 30 ? nm.slice(0,30)+"…" : nm;
+          tbl += '<tr><td style="padding:6px;color:var(--cream);border-bottom:1px solid rgba(122,145,86,.08);">'+nm+'</td>' +
+            '<td style="padding:6px;text-align:right;color:var(--cream);border-bottom:1px solid rgba(122,145,86,.08);">'+s.cnt+'</td>' +
+            '<td style="padding:6px;text-align:right;color:var(--olive-light);border-bottom:1px solid rgba(122,145,86,.08);">'+grn(s.revenue)+'</td></tr>';
+        });
+        tbl += '</table>';
+        main.appendChild(card("🏆 Топ послуг (місяць)", tbl));
+      }
+
+      /* ---- 4. Лояльність до майстра ---- */
+      var loyalty = d.master_loyalty || [];
+      if (loyalty.length) {
+        var lHtml = "";
+        loyalty.forEach(function(m) {
+          lHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+            '<span style="width:90px;font-size:.85rem;color:var(--cream);">'+m.name+'</span>' +
+            '<div style="flex:1;background:rgba(46,61,34,.3);border-radius:6px;height:18px;">' +
+            '<div style="width:'+m.loyalty_pct+'%;height:100%;background:var(--olive-light);border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">' +
+            (m.loyalty_pct>15?'<span style="font-size:.7rem;color:var(--black);font-weight:600;">'+m.loyalty_pct+'%</span>':'') +
+            '</div></div>' +
+            '<span style="width:80px;font-size:.72rem;color:var(--text-dim);">' + m.returning + ' з ' + m.total_clients + '</span></div>';
+        });
+        main.appendChild(card("❤️ Лояльність до майстра (% клієнтів що повернулися)", lHtml));
+      }
+
+      /* ---- 5. Дохід по місяцях ---- */
+      var byMonth = d.avg_by_month || [];
+      if (byMonth.length) {
+        var mTbl = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;">' +
+          '<tr><th style="text-align:left;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">Місяць</th>' +
+          '<th style="text-align:right;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">Записів</th>' +
+          '<th style="text-align:right;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">Дохід</th>' +
+          '<th style="text-align:right;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">Сер. чек</th></tr>';
+        byMonth.forEach(function(m) {
+          mTbl += '<tr><td style="padding:6px;color:var(--cream);border-bottom:1px solid rgba(122,145,86,.08);">'+m.month+'</td>' +
+            '<td style="padding:6px;text-align:right;color:var(--cream);border-bottom:1px solid rgba(122,145,86,.08);">'+m.cnt+'</td>' +
+            '<td style="padding:6px;text-align:right;color:var(--olive-light);border-bottom:1px solid rgba(122,145,86,.08);">'+grn(m.revenue)+'</td>' +
+            '<td style="padding:6px;text-align:right;color:var(--text-dim);border-bottom:1px solid rgba(122,145,86,.08);">'+grn(m.avg_check)+'</td></tr>';
+        });
+        mTbl += '</table>';
+        main.appendChild(card("📅 Дохід по місяцях", mTbl));
+      }
+    });
+  }
+
+  /* ============================================================
+     ВІДГУКИ (власник)
+     ============================================================ */
+  function renderReviews() {
+    var main = $("main"); main.innerHTML = "";
+    var bar = el("div","bar"); bar.appendChild(el("h2",null,"Відгуки клієнтів"));
+    main.appendChild(bar);
+    var listEl = el("div","list"); main.appendChild(listEl);
+    listEl.innerHTML = '<div class="empty">Завантаження…</div>';
+    api("GET","/api/crm/reviews").then(function(res) {
+      var list = res.j.reviews || [];
+      listEl.innerHTML = "";
+      if (!list.length) { listEl.appendChild(el("div","empty","Відгуків ще немає")); return; }
+      list.forEach(function(r) {
+        var item = el("div","item");
+        var row = el("div","row1");
+        var stars = "★".repeat(r.rating) + "☆".repeat(5-r.rating);
+        var info = el("div");
+        info.appendChild(el("div","t", stars + "  " + (r.client_name||"Клієнт")));
+        info.appendChild(el("div","sub", r.master_name + " · " + new Date(r.created_at).toLocaleDateString("uk-UA")));
+        if (r.comment) info.appendChild(el("div","sub","💬 " + r.comment));
+        row.appendChild(info);
+        item.appendChild(row);
+        listEl.appendChild(item);
+      });
     });
   }
 
