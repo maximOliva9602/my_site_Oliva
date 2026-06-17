@@ -629,6 +629,81 @@ router.get("/dashboard/analytics", owner, function (req, res) {
   });
 });
 
+/* ---- Аналітика трафіку сайту ---- */
+router.get("/analytics/visits", owner, function (req, res) {
+  const now = Date.now();
+  const dayMs  = 86400000;
+  const t30    = now - 30 * dayMs;
+  const t7     = now - 7  * dayMs;
+  const t1     = now - 1  * dayMs;
+
+  // Відвідування по днях (30 днів)
+  const visitsByDay = db.prepare(`
+    SELECT substr(datetime(created_at/1000,'unixepoch','localtime'),1,10) day,
+           COUNT(*) total,
+           COUNT(DISTINCT ip_hash) uniq
+    FROM page_visits WHERE event='pageview' AND created_at>=?
+    GROUP BY day ORDER BY day
+  `).all(t30);
+
+  // KPI
+  const kToday = db.prepare("SELECT COUNT(*) n, COUNT(DISTINCT ip_hash) u FROM page_visits WHERE event='pageview' AND created_at>=?").get(t1);
+  const kWeek  = db.prepare("SELECT COUNT(*) n, COUNT(DISTINCT ip_hash) u FROM page_visits WHERE event='pageview' AND created_at>=?").get(t7);
+  const kMonth = db.prepare("SELECT COUNT(*) n, COUNT(DISTINCT ip_hash) u FROM page_visits WHERE event='pageview' AND created_at>=?").get(t30);
+
+  // Топ сторінок
+  const topPages = db.prepare(`
+    SELECT path, COUNT(*) total, COUNT(DISTINCT ip_hash) uniq
+    FROM page_visits WHERE event='pageview' AND created_at>=?
+    GROUP BY path ORDER BY total DESC LIMIT 10
+  `).all(t30);
+
+  // Пристрої
+  const devices = db.prepare(`
+    SELECT ua_type, COUNT(*) n FROM page_visits WHERE event='pageview' AND created_at>=? GROUP BY ua_type
+  `).all(t30);
+
+  // Джерела трафіку (referrer domain)
+  const sources = db.prepare(`
+    SELECT COALESCE(utm_source,
+      CASE WHEN referrer IS NULL OR referrer='' THEN 'direct'
+           WHEN referrer LIKE '%google%' THEN 'google'
+           WHEN referrer LIKE '%instagram%' THEN 'instagram'
+           WHEN referrer LIKE '%facebook%' OR referrer LIKE '%fb.com%' THEN 'facebook'
+           WHEN referrer LIKE '%telegram%' THEN 'telegram'
+           ELSE 'other' END
+    ) src, COUNT(*) n
+    FROM page_visits WHERE event='pageview' AND created_at>=?
+    GROUP BY src ORDER BY n DESC LIMIT 8
+  `).all(t30);
+
+  // Кліки (кнопки/посилання)
+  const clicks = db.prepare(`
+    SELECT label, COUNT(*) n
+    FROM page_visits WHERE event='click' AND created_at>=?
+    GROUP BY label ORDER BY n DESC LIMIT 10
+  `).all(t30);
+
+  // Години активності
+  const byHour = db.prepare(`
+    SELECT CAST(strftime('%H', datetime(created_at/1000,'unixepoch','localtime')) AS INTEGER) hour,
+           COUNT(*) n
+    FROM page_visits WHERE event='pageview' AND created_at>=?
+    GROUP BY hour ORDER BY hour
+  `).all(t7);
+
+  res.json({
+    ok: true,
+    kpi: { today: kToday, week: kWeek, month: kMonth },
+    visits_by_day: visitsByDay,
+    top_pages: topPages,
+    devices: devices,
+    sources: sources,
+    clicks: clicks,
+    by_hour: byHour,
+  });
+});
+
 /* ---- Відгуки ---- */
 router.get("/reviews", owner, function (req, res) {
   const rows = db.prepare(

@@ -123,6 +123,44 @@ app.use("/api/public", publicRoutes);
 app.use("/api/crm", crmRoutes);
 app.use("/api/webhooks", webhookRoutes);
 
+/* ---------------- Трекінг відвідувань сайту ---------------- */
+var trackRateMap = new Map(); // ip -> [timestamps]
+app.post("/api/track", function (req, res) {
+  res.json({ ok: true }); // відповідаємо одразу — не блокуємо браузер
+
+  try {
+    var b = req.body || {};
+    var ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+    // Rate limit: не більше 60 подій з однієї IP за хвилину
+    var now = Date.now();
+    var times = (trackRateMap.get(ip) || []).filter(function(t){ return now - t < 60000; });
+    if (times.length >= 60) return;
+    times.push(now);
+    trackRateMap.set(ip, times);
+
+    var ipHash = require("crypto").createHash("sha256").update(ip + (process.env.TRACK_SALT||"oliva")).digest("hex").slice(0,16);
+    var ua = (req.headers["user-agent"] || "").toLowerCase();
+    var uaType = /mobile|android|iphone|ipad/.test(ua) ? "mobile" : "desktop";
+
+    var path    = String(b.path    || "/").slice(0, 200);
+    var referrer= String(b.referrer|| "").slice(0, 500);
+    var utmSrc  = String(b.utm_source  || "").slice(0, 100);
+    var utmMed  = String(b.utm_medium  || "").slice(0, 100);
+    var utmCamp = String(b.utm_campaign|| "").slice(0, 100);
+    var event   = /^[a-z_]{1,30}$/.test(b.event||"") ? b.event : "pageview";
+    var label   = String(b.label || "").slice(0, 100);
+    var sid     = String(b.session_id || "").slice(0, 40);
+
+    db.prepare(
+      "INSERT INTO page_visits (path,referrer,utm_source,utm_medium,utm_campaign,event,label,session_id,ip_hash,ua_type,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+    ).run(path, referrer||null, utmSrc||null, utmMed||null, utmCamp||null, event, label||null, sid||null, ipHash, uaType, now);
+  } catch(e) {
+    console.error("[track]", e.message);
+  }
+});
+// Очищення старих записів з rate-map кожні 5 хв
+setInterval(function(){ trackRateMap.clear(); }, 5*60*1000);
+
 /* ---- Публічний відгук (без авторизації) ---- */
 app.get("/api/review/:public_id", function (req, res) {
   const a = db.prepare(

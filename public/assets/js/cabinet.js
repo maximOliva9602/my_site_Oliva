@@ -70,7 +70,8 @@
     TABS.push({ id: "clients", name: "Клієнти", render: renderClients });
     if (me.role === "owner") {
       TABS.push({ id: "analytics", name: "📈 Аналітика", render: renderAnalytics });
-      TABS.push({ id: "reviews", name: "⭐ Відгуки", render: renderReviews });
+      TABS.push({ id: "traffic",   name: "🌐 Трафік",   render: renderTraffic });
+      TABS.push({ id: "reviews",   name: "⭐ Відгуки",  render: renderReviews });
       TABS.push({ id: "services", name: "Послуги", render: renderServices });
       TABS.push({ id: "masters", name: "Майстри", render: renderMasters });
       TABS.push({ id: "users", name: "Доступи", render: renderUsers });
@@ -1007,6 +1008,206 @@
         rHtml += '</div>';
         main.appendChild(section(rHtml));
       }
+    });
+  }
+
+  /* ============================================================
+     ТРАФІК САЙТУ (власник)
+     ============================================================ */
+  function renderTraffic() {
+    var main = $("main"); main.innerHTML = '<div class="empty">Завантаження…</div>';
+    api("GET", "/api/crm/analytics/visits").then(function(res) {
+      if (!res.j.ok) { main.innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
+      var d = res.j;
+      main.innerHTML = "";
+
+      function sec(html) {
+        var s = document.createElement("div");
+        s.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;";
+        s.innerHTML = html; return s;
+      }
+      function ttl(t) { return '<div style="font-family:\'Playfair Display\',serif;color:var(--cream);font-size:1rem;font-weight:500;margin-bottom:14px;">'+t+'</div>'; }
+
+      /* ---- KPI ---- */
+      var kpi = d.kpi || {};
+      var kpiRow = document.createElement("div");
+      kpiRow.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;";
+      [
+        { icon:"👁",  label:"Сьогодні",     v: (kpi.today||{}).n||0, u: (kpi.today||{}).u||0 },
+        { icon:"📅", label:"Тиждень",       v: (kpi.week||{}).n||0,  u: (kpi.week||{}).u||0  },
+        { icon:"📆", label:"Місяць (30 дн)",v: (kpi.month||{}).n||0, u: (kpi.month||{}).u||0 },
+      ].forEach(function(k) {
+        var c = document.createElement("div");
+        c.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 14px;";
+        c.innerHTML = '<div style="font-size:1.4rem;margin-bottom:6px;">'+k.icon+'</div>'+
+          '<div style="font-size:1.3rem;font-weight:700;color:var(--cream);font-family:\'Playfair Display\',serif;">'+k.v+'</div>'+
+          '<div style="font-size:.72rem;color:var(--text-dim);margin-top:3px;">'+k.u+' унікальних · '+k.label+'</div>';
+        kpiRow.appendChild(c);
+      });
+      main.appendChild(kpiRow);
+
+      /* ---- Відвідування по днях (area chart) ---- */
+      var vdays = d.visits_by_day || [];
+      if (vdays.length > 1) {
+        var W=860,H=120,PL=42,PR=10,PT=10,PB=20;
+        var pw=W-PL-PR, ph=H-PT-PB;
+        var maxV = Math.max.apply(null, vdays.map(function(x){return x.total||0;})) || 1;
+        var n = vdays.length;
+        var pts  = vdays.map(function(v,i){ return [PL+i/(n-1)*pw, PT+ph-(v.total||0)/maxV*ph, v]; });
+        var ptsU = vdays.map(function(v,i){ return [PL+i/(n-1)*pw, PT+ph-(v.uniq||0)/maxV*ph,  v]; });
+
+        function areaPath(ps, bot) {
+          var p="M "+ps[0][0]+","+bot;
+          ps.forEach(function(pt){ p+=" L "+pt[0]+","+pt[1]; });
+          return p+" L "+ps[ps.length-1][0]+","+bot+" Z";
+        }
+        function linePath(ps) {
+          var p="M "+ps[0][0]+","+ps[0][1];
+          for(var i=1;i<ps.length;i++){
+            var dx=(ps[i][0]-ps[i-1][0])*0.4;
+            p+=" C "+(ps[i-1][0]+dx)+","+ps[i-1][1]+" "+(ps[i][0]-dx)+","+ps[i][1]+" "+ps[i][0]+","+ps[i][1];
+          }
+          return p;
+        }
+        // Y grid
+        var yg=""; for(var yi=0;yi<=3;yi++){
+          var yv=Math.round(maxV*yi/3), yp=PT+ph-ph*yi/3;
+          yg+='<line x1="'+PL+'" y1="'+yp+'" x2="'+(W-PR)+'" y2="'+yp+'" stroke="rgba(122,145,86,.07)"/>';
+          yg+='<text x="'+(PL-4)+'" y="'+(yp+4)+'" text-anchor="end" font-size="9" fill="var(--text-dim)">'+yv+'</text>';
+        }
+        // X labels
+        var xl=""; pts.forEach(function(p,i){
+          if(i===0||i===n-1||i%5===0){
+            var lbl=(p[2].day||"").slice(5).replace("-",".");
+            xl+='<text x="'+p[0]+'" y="'+(H-3)+'" text-anchor="middle" font-size="9" fill="var(--text-dim)">'+lbl+'</text>';
+          }
+        });
+        // Dots with tooltip
+        var dots=pts.map(function(p){
+          return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3" fill="var(--olive-light)" opacity=".8"><title>'+(p[2].day||"")+': '+p[2].total+' / '+p[2].uniq+' унікальних</title></circle>';
+        }).join("");
+
+        var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;overflow:visible;">'+
+          '<defs>'+
+          '<linearGradient id="vg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--olive-light)" stop-opacity=".28"/><stop offset="100%" stop-color="var(--olive-light)" stop-opacity=".02"/></linearGradient>'+
+          '<linearGradient id="ug" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7A9156" stop-opacity=".18"/><stop offset="100%" stop-color="#7A9156" stop-opacity=".01"/></linearGradient>'+
+          '</defs>'+
+          yg+xl+
+          '<path d="'+areaPath(pts, PT+ph)+'" fill="url(#vg)"/>'+
+          '<path d="'+areaPath(ptsU,PT+ph)+'" fill="url(#ug)"/>'+
+          '<path d="'+linePath(pts)+'"  fill="none" stroke="var(--olive-light)" stroke-width="2"/>'+
+          '<path d="'+linePath(ptsU)+'" fill="none" stroke="rgba(122,145,86,.5)" stroke-width="1.5" stroke-dasharray="4 3"/>'+
+          dots+
+          '</svg>';
+        var legend='<div style="display:flex;gap:16px;margin-bottom:10px;font-size:.75rem;">'+
+          '<span style="color:var(--olive-light);">─── Всього</span>'+
+          '<span style="color:rgba(122,145,86,.7);">- - - Унікальних</span></div>';
+        main.appendChild(sec(ttl("👁 Відвідування за 30 днів")+legend+svg));
+      } else {
+        main.appendChild(sec(ttl("👁 Відвідування за 30 днів")+'<div class="empty" style="padding:20px 0;">Даних поки немає — дочекайтесь перших відвідувачів після деплою</div>'));
+      }
+
+      /* ---- Середній рядок: сторінки + джерела ---- */
+      var midRow = document.createElement("div");
+      midRow.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;";
+
+      // Топ сторінок
+      var topPages = d.top_pages || [];
+      var maxP = Math.max.apply(null, topPages.map(function(p){return p.total||0;})) || 1;
+      var pgHtml = ttl("📄 Топ сторінок (30 дн)");
+      var PAGE_NAMES = { "/": "Головна", "/booking.html": "Запис", "/blog.html": "Блог",
+        "/shop.html": "Магазин", "/training.html": "Навчання", "/tips.html": "Чайові",
+        "/certificate.html": "Сертифікати", "/share.html": "Поділитись" };
+      topPages.forEach(function(p) {
+        var nm = PAGE_NAMES[p.path] || p.path;
+        var pct = Math.round((p.total||0)/maxP*100);
+        pgHtml += '<div style="margin-bottom:9px;">'+
+          '<div style="display:flex;justify-content:space-between;margin-bottom:3px;">'+
+          '<span style="font-size:.82rem;color:var(--cream);">'+nm+'</span>'+
+          '<span style="font-size:.75rem;color:var(--olive-light);">'+p.total+' / '+p.uniq+' uniq</span></div>'+
+          '<div style="background:rgba(46,61,34,.4);border-radius:4px;height:7px;">'+
+          '<div style="width:'+pct+'%;height:100%;background:rgba(122,145,86,.7);border-radius:4px;"></div></div></div>';
+      });
+      if (!topPages.length) pgHtml += '<div class="empty" style="padding:16px 0;">Даних ще немає</div>';
+      midRow.appendChild(sec(pgHtml));
+
+      // Джерела трафіку
+      var sources = d.sources || [];
+      var maxS = Math.max.apply(null, sources.map(function(s){return s.n||0;})) || 1;
+      var totalSrc = sources.reduce(function(a,s){return a+(s.n||0);},0)||1;
+      var SRC_ICONS = { direct:"🔗", google:"🔍", instagram:"📸", facebook:"👍", telegram:"✈️", other:"🌐" };
+      var srcHtml = ttl("📡 Джерела трафіку (30 дн)");
+      sources.forEach(function(s) {
+        var pct = Math.round((s.n||0)/maxS*100);
+        var share = Math.round((s.n||0)/totalSrc*100);
+        var icon = SRC_ICONS[s.src] || "🌐";
+        srcHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'+
+          '<span style="font-size:1rem;width:20px;">'+icon+'</span>'+
+          '<span style="font-size:.82rem;color:var(--cream);width:80px;flex-shrink:0;">'+s.src+'</span>'+
+          '<div style="flex:1;background:rgba(46,61,34,.4);border-radius:4px;height:8px;">'+
+          '<div style="width:'+pct+'%;height:100%;background:rgba(122,145,86,.7);border-radius:4px;"></div></div>'+
+          '<span style="font-size:.72rem;color:var(--text-dim);width:46px;text-align:right;">'+s.n+' ('+share+'%)</span></div>';
+      });
+      if (!sources.length) srcHtml += '<div class="empty" style="padding:16px 0;">Даних ще немає</div>';
+      midRow.appendChild(sec(srcHtml));
+      main.appendChild(midRow);
+
+      /* ---- Нижній рядок: пристрої + кліки + пік годин ---- */
+      var botRow = document.createElement("div");
+      botRow.style.cssText = "display:grid;grid-template-columns:1fr 1.2fr 1.4fr;gap:14px;margin-bottom:14px;";
+
+      // Пристрої (donut-like)
+      var devices = d.devices || [];
+      var totalDev = devices.reduce(function(a,x){return a+(x.n||0);},0)||1;
+      var devHtml = ttl("📱 Пристрої");
+      var DEV_ICONS = { mobile:"📱", desktop:"🖥" };
+      devices.forEach(function(dv) {
+        var pct = Math.round((dv.n||0)/totalDev*100);
+        devHtml += '<div style="margin-bottom:12px;">'+
+          '<div style="display:flex;justify-content:space-between;margin-bottom:5px;">'+
+          '<span style="font-size:.85rem;color:var(--cream);">'+(DEV_ICONS[dv.ua_type]||"💻")+' '+(dv.ua_type==="mobile"?"Мобільні":"Десктоп")+'</span>'+
+          '<span style="font-size:.82rem;color:var(--olive-light);font-weight:600;">'+pct+'%</span></div>'+
+          '<div style="background:rgba(46,61,34,.4);border-radius:6px;height:10px;">'+
+          '<div style="width:'+pct+'%;height:100%;background:rgba(122,145,86,.'+(dv.ua_type==="mobile"?"8":"5")+');border-radius:6px;"></div></div>'+
+          '<div style="font-size:.7rem;color:var(--text-dim);margin-top:3px;">'+dv.n+' сесій</div></div>';
+      });
+      if (!devices.length) devHtml += '<div class="empty" style="padding:16px 0;">—</div>';
+      botRow.appendChild(sec(devHtml));
+
+      // Топ кліків
+      var clicks = d.clicks || [];
+      var maxC = Math.max.apply(null, clicks.map(function(c){return c.n||0;})) || 1;
+      var clkHtml = ttl("🖱 Кліки по CTA");
+      clicks.forEach(function(c) {
+        var pct = Math.round((c.n||0)/maxC*100);
+        clkHtml += '<div style="margin-bottom:8px;">'+
+          '<div style="display:flex;justify-content:space-between;margin-bottom:3px;">'+
+          '<span style="font-size:.8rem;color:var(--cream);">'+(c.label||"—")+'</span>'+
+          '<span style="font-size:.75rem;color:var(--olive-light);">'+c.n+'</span></div>'+
+          '<div style="background:rgba(46,61,34,.4);border-radius:4px;height:6px;">'+
+          '<div style="width:'+pct+'%;height:100%;background:rgba(122,145,86,.75);border-radius:4px;"></div></div></div>';
+      });
+      if (!clicks.length) clkHtml += '<div class="empty" style="padding:16px 0;">Кліків ще немає</div>';
+      botRow.appendChild(sec(clkHtml));
+
+      // Пік годин (тиждень)
+      var byHour = d.by_hour || [];
+      var maxH = Math.max.apply(null, byHour.map(function(x){return x.n||0;})) || 1;
+      var hourHtml = ttl("🕐 Активність по годинах");
+      hourHtml += '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;">';
+      for (var hh=8;hh<=23;hh++){
+        var hf=byHour.filter(function(x){return x.hour===hh;})[0];
+        var hCnt=hf?hf.n:0;
+        var al=0.07+hCnt/maxH*0.9;
+        hourHtml+='<div style="background:rgba(122,145,86,'+al.toFixed(2)+');border-radius:5px;padding:5px 2px;text-align:center;" title="'+String(hh).padStart(2,"0")+':00 — '+hCnt+'">'+
+          '<div style="font-size:.7rem;font-weight:600;color:var(--cream);">'+hCnt+'</div>'+
+          '<div style="font-size:.58rem;color:rgba(212,207,198,.5);margin-top:1px;">'+String(hh).padStart(2,"0")+'</div></div>';
+      }
+      hourHtml += '</div>';
+      hourHtml += '<div style="display:flex;align-items:center;gap:5px;margin-top:8px;font-size:.67rem;color:var(--text-dim);">'+
+        '<span>Менше</span><div style="flex:1;height:4px;border-radius:2px;background:linear-gradient(to right,rgba(122,145,86,.07),rgba(122,145,86,.97));"></div><span>Більше</span></div>';
+      botRow.appendChild(sec(hourHtml));
+      main.appendChild(botRow);
     });
   }
 

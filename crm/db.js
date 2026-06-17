@@ -145,6 +145,27 @@ CREATE INDEX IF NOT EXISTS idx_notif_status   ON notifications(status);
 CREATE INDEX IF NOT EXISTS idx_notif_provider ON notifications(provider_msg_id);
 `);
 
+/* ---------------- Таблиця відвідувань сайту ---------------- */
+db.exec(`
+CREATE TABLE IF NOT EXISTS page_visits (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  path       TEXT    NOT NULL,
+  referrer   TEXT,
+  utm_source TEXT,
+  utm_medium TEXT,
+  utm_campaign TEXT,
+  event      TEXT    NOT NULL DEFAULT 'pageview',
+  label      TEXT,
+  session_id TEXT,
+  ip_hash    TEXT,
+  ua_type    TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_pv_created ON page_visits(created_at);
+CREATE INDEX IF NOT EXISTS idx_pv_path    ON page_visits(path);
+CREATE INDEX IF NOT EXISTS idx_pv_event   ON page_visits(event);
+`);
+
 /* ---------------- Міграція: ціни в копійках ---------------- */
 /* Якщо ціни в БД ще в гривнях (MAX < 10000) — множимо на 100 */
 (function migrateprices() {
