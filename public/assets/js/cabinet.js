@@ -317,17 +317,22 @@
       contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
       var HOUR_START = 8, HOUR_END = 22;
       var TOTAL_SLOTS = (HOUR_END - HOUR_START) * 2; // 28 слотів по 30 хв
-      var CAL_HEADER_H = 44; // висота рядка майстрів
-      // Фіксований розрахунок: topbar з табами≈50 + bar з датою≈56 + відступи≈16
-      var OVERHEAD = 122;
-      var availH = window.innerHeight - OVERHEAD;
-      var SLOT_H = Math.max(20, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
+      var CAL_HEADER_H = 44;
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
 
       // Розтягуємо main на повну ширину для календаря
       var mainEl = document.getElementById("main");
       mainEl.dataset.prevStyle = mainEl.getAttribute("style") || "";
       mainEl.style.cssText = "max-width:none;padding:8px;margin:0;";
+      // Забороняємо скрол сторінки
+      document.body.style.overflow = "hidden";
+
+      // Вимірюємо реальну висоту елементів після рендеру
+      var topbarH = (document.querySelector(".topbar") || {offsetHeight: 50}).offsetHeight;
+      var barEl = contentEl.previousElementSibling;
+      var barH = barEl ? (barEl.offsetHeight + 12) : 60;
+      var availH = window.innerHeight - topbarH - barH - 20;
+      var SLOT_H = Math.max(18, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
 
       var mastersPr = api("GET", "/api/crm/masters");
       var apptUrl = ME.role === "owner"
@@ -471,6 +476,7 @@
         mainEl.setAttribute("style", mainEl.dataset.prevStyle);
         delete mainEl.dataset.prevStyle;
       }
+      document.body.style.overflow = "";
     }
 
     window.__reloadAppts = function () {
