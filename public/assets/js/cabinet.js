@@ -318,8 +318,8 @@
       var HOUR_START = 8, HOUR_END = 22;
       var TOTAL_SLOTS = (HOUR_END - HOUR_START) * 2; // 28 слотів по 30 хв
       var CAL_HEADER_H = 44; // висота рядка майстрів
-      // Фіксований розрахунок: topbar≈54 + tabs≈48 + bar з датою≈56 + відступи≈16
-      var OVERHEAD = 174;
+      // Фіксований розрахунок: topbar з табами≈50 + bar з датою≈56 + відступи≈16
+      var OVERHEAD = 122;
       var availH = window.innerHeight - OVERHEAD;
       var SLOT_H = Math.max(20, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
