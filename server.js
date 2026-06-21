@@ -302,21 +302,8 @@ app.get("/review", function (req, res) {
 
 /* ============================================================
    BLOG
-   Файл posts.json зберігається у /data/posts.json
-   На Railway: підключи Volume і змонтуй на /app/data
+   Статті зберігаються в SQLite (та сама DB що і CRM) — на Railway Volume.
    ============================================================ */
-const POSTS_FILE = process.env.POSTS_FILE || path.join(__dirname, "data", "posts.json");
-
-function readPosts() {
-  try {
-    if (!fs.existsSync(POSTS_FILE)) return [];
-    return JSON.parse(fs.readFileSync(POSTS_FILE, "utf8")) || [];
-  } catch (e) { return []; }
-}
-function writePosts(posts) {
-  fs.mkdirSync(path.dirname(POSTS_FILE), { recursive: true });
-  fs.writeFileSync(POSTS_FILE, JSON.stringify(posts, null, 2), "utf8");
-}
 function slugify(text) {
   return text.toLowerCase()
     .replace(/[іїєґ]/g, function(c){ return {і:'i',ї:'i',є:'e',ґ:'g'}[c]||c; })
@@ -324,15 +311,23 @@ function slugify(text) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
+/* Підготовлені запити для блогу */
+var stmtAllPosts      = db.prepare("SELECT * FROM blog_posts ORDER BY date DESC, rowid DESC");
+var stmtPublicPosts   = db.prepare("SELECT id,slug,title,excerpt,cover,date FROM blog_posts WHERE published=1 ORDER BY date DESC, rowid DESC");
+var stmtPostBySlug    = db.prepare("SELECT * FROM blog_posts WHERE slug=? AND published=1");
+var stmtPostById      = db.prepare("SELECT * FROM blog_posts WHERE id=?");
+var stmtInsertPost    = db.prepare("INSERT INTO blog_posts (id,slug,title,excerpt,body,cover,date,published) VALUES (?,?,?,?,?,?,?,?)");
+var stmtUpdatePost    = db.prepare("UPDATE blog_posts SET title=?,excerpt=?,body=?,cover=?,published=? WHERE id=?");
+var stmtDeletePost    = db.prepare("DELETE FROM blog_posts WHERE id=?");
+var stmtSlugExists    = db.prepare("SELECT 1 FROM blog_posts WHERE slug=?");
+
 /* Публічні ендпоінти */
 app.get("/api/posts", function (req, res) {
-  var posts = readPosts().filter(function(p){ return p.published; });
-  res.json(posts.map(function(p){ return { id: p.id, slug: p.slug, title: p.title, excerpt: p.excerpt, cover: p.cover, date: p.date }; }));
+  res.json(stmtPublicPosts.all());
 });
 
 app.get("/api/posts/:slug", function (req, res) {
-  var posts = readPosts();
-  var post = posts.find(function(p){ return p.slug === req.params.slug && p.published; });
+  var post = stmtPostBySlug.get(req.params.slug);
   if (!post) return res.status(404).json({ ok: false });
   res.json(post);
 });
@@ -341,19 +336,18 @@ app.get("/api/posts/:slug", function (req, res) {
 const requireAdmin = auth.requireAuth();
 
 app.get("/api/admin/posts", requireAdmin, function (req, res) {
-  res.json(readPosts());
+  res.json(stmtAllPosts.all());
 });
 
 app.post("/api/admin/posts", requireAdmin, function (req, res) {
   var d = req.body || {};
   var title = String(d.title || "").slice(0, 200).trim();
   if (!title) return res.status(400).json({ ok: false, error: "title required" });
-  var posts = readPosts();
   var id = crypto.randomBytes(8).toString("hex");
   var baseSlug = slugify(title) || id;
   var slug = baseSlug;
   var n = 1;
-  while (posts.find(function(p){ return p.slug === slug; })) { slug = baseSlug + '-' + (n++); }
+  while (stmtSlugExists.get(slug)) { slug = baseSlug + '-' + (n++); }
   var post = {
     id: id, slug: slug,
     title: title,
@@ -361,37 +355,32 @@ app.post("/api/admin/posts", requireAdmin, function (req, res) {
     body: String(d.body || "").slice(0, 200000).trim(),
     cover: String(d.cover || "").slice(0, 500).trim(),
     date: new Date().toISOString().slice(0, 10),
-    published: !!d.published
+    published: d.published ? 1 : 0
   };
-  posts.unshift(post);
-  writePosts(posts);
+  stmtInsertPost.run(post.id, post.slug, post.title, post.excerpt, post.body, post.cover, post.date, post.published);
   res.json({ ok: true, post: post });
 });
 
 app.put("/api/admin/posts/:id", requireAdmin, function (req, res) {
   var d = req.body || {};
-  var posts = readPosts();
-  var idx = posts.findIndex(function(p){ return p.id === req.params.id; });
-  if (idx < 0) return res.status(404).json({ ok: false });
-  var p = posts[idx];
-  if (d.title !== undefined) p.title = String(d.title).slice(0, 200).trim();
-  if (d.excerpt !== undefined) p.excerpt = String(d.excerpt).slice(0, 500).trim();
-  if (d.body !== undefined) p.body = String(d.body).slice(0, 20000).trim();
-  if (d.cover !== undefined) p.cover = String(d.cover).slice(0, 500).trim();
-  if (d.published !== undefined) p.published = !!d.published;
-  writePosts(posts);
-  res.json({ ok: true, post: p });
+  var existing = stmtPostById.get(req.params.id);
+  if (!existing) return res.status(404).json({ ok: false });
+  var title    = d.title     !== undefined ? String(d.title).slice(0, 200).trim()   : existing.title;
+  var excerpt  = d.excerpt   !== undefined ? String(d.excerpt).slice(0, 500).trim() : existing.excerpt;
+  var body     = d.body      !== undefined ? String(d.body).slice(0, 200000).trim() : existing.body;
+  var cover    = d.cover     !== undefined ? String(d.cover).slice(0, 500).trim()   : existing.cover;
+  var published = d.published !== undefined ? (d.published ? 1 : 0)                 : existing.published;
+  stmtUpdatePost.run(title, excerpt, body, cover, published, req.params.id);
+  res.json({ ok: true, post: { id: req.params.id, slug: existing.slug, title, excerpt, body, cover, date: existing.date, published } });
 });
 
 app.delete("/api/admin/posts/:id", requireAdmin, function (req, res) {
-  var posts = readPosts();
-  var newPosts = posts.filter(function(p){ return p.id !== req.params.id; });
-  writePosts(newPosts);
+  stmtDeletePost.run(req.params.id);
   res.json({ ok: true });
 });
 
-/* Завантаження фото — зберігається поруч з posts.json у persistent volume */
-var IMG_DIR = path.join(path.dirname(POSTS_FILE), "img", "blog");
+/* Фото для блогу — зберігається поруч з SQLite DB на Railway Volume */
+var IMG_DIR = path.join(path.dirname(process.env.DB_FILE || path.join(__dirname, "data", "oliva.db")), "img", "blog");
 
 app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
   var d = req.body || {};

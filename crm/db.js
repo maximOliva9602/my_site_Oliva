@@ -145,6 +145,22 @@ CREATE INDEX IF NOT EXISTS idx_notif_status   ON notifications(status);
 CREATE INDEX IF NOT EXISTS idx_notif_provider ON notifications(provider_msg_id);
 `);
 
+/* ---------------- Таблиця блог-статей ---------------- */
+db.exec(`
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id        TEXT PRIMARY KEY,
+  slug      TEXT UNIQUE NOT NULL,
+  title     TEXT NOT NULL,
+  excerpt   TEXT NOT NULL DEFAULT '',
+  body      TEXT NOT NULL DEFAULT '',
+  cover     TEXT NOT NULL DEFAULT '',
+  date      TEXT NOT NULL,
+  published INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_posts_slug      ON blog_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_posts_published ON blog_posts(published, date);
+`);
+
 /* ---------------- Таблиця відвідувань сайту ---------------- */
 db.exec(`
 CREATE TABLE IF NOT EXISTS page_visits (
