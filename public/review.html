@@ -95,12 +95,7 @@
 
  <div class="field-label">Майстер (необов'язково)</div>
  <div class="masters" id="mastersRow">
- <div class="master-chip" data-name="">Не вказувати</div>
- <div class="master-chip" data-name="Ярослав">Ярослав</div>
- <div class="master-chip" data-name="Максим">Максим</div>
- <div class="master-chip" data-name="Андрій">Андрій</div>
- <div class="master-chip" data-name="Олена">Олена</div>
- <div class="master-chip" data-name="Людмила">Людмила</div>
+ <div class="master-chip active" data-name="">Не вказувати</div>
 </div>
 
  <div class="field-label">Ваш відгук</div>
@@ -135,15 +130,33 @@
  });
  });
 
- // Майстер
- document.querySelectorAll(".master-chip").forEach(function(chip) {
- chip.addEventListener("click", function() {
- document.querySelectorAll(".master-chip").forEach(function(c) { c.classList.remove("active"); });
- this.classList.add("active");
- master = this.dataset.name;
- });
- });
- document.querySelector('.master-chip[data-name=""]').classList.add("active");
+ // Майстер — динамічно з API
+ function bindChips() {
+   document.querySelectorAll(".master-chip").forEach(function(chip) {
+     chip.addEventListener("click", function() {
+       document.querySelectorAll(".master-chip").forEach(function(c) { c.classList.remove("active"); });
+       this.classList.add("active");
+       master = this.dataset.name;
+     });
+   });
+ }
+ bindChips(); // для "Не вказувати"
+
+ fetch('/api/masters')
+   .then(function(r) { return r.json(); })
+   .then(function(j) {
+     if (!j.ok || !j.masters) return;
+     var row = document.getElementById('mastersRow');
+     j.masters.forEach(function(m) {
+       var chip = document.createElement('div');
+       chip.className = 'master-chip';
+       chip.dataset.name = m.name;
+       chip.textContent = m.name;
+       row.appendChild(chip);
+     });
+     bindChips();
+   })
+   .catch(function() {});
 
  // Текст
  var textarea = document.getElementById("reviewText");
