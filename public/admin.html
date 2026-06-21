@@ -210,6 +210,50 @@
   .svc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .svc-editor-actions { display: flex; gap: 10px; }
   .svc-editor-actions button { padding: 12px 24px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all .2s; }
+
+  /* ===== MASTERS MANAGER ===== */
+  .svc-close-btn { background: none !important; border: 1px solid var(--line) !important; color: var(--text-dim) !important; border-radius: 8px !important; padding: 7px 16px !important; font-size: 0.8rem !important; cursor: pointer; transition: all .2s !important; }
+  .svc-close-btn:hover { color: var(--cream) !important; border-color: var(--olive-light) !important; }
+
+  /* Список — картки */
+  .master-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; padding: 4px 0; }
+  .master-card { background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 16px; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; transition: border-color .2s; }
+  .master-card:hover { border-color: rgba(122,145,86,0.5); }
+  .master-card-avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(122,145,86,0.4); background: rgba(46,61,34,0.4); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: var(--text-dim); overflow: hidden; flex-shrink: 0; }
+  .master-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .master-card-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--cream); font-weight: 600; }
+  .master-card-level { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); }
+  .master-card-mono { font-size: 11px; color: var(--text-dim); }
+  .master-card-actions { display: flex; gap: 8px; margin-top: 4px; width: 100%; }
+  .master-card-actions button { flex: 1; padding: 8px 0; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all .2s; border: 1px solid var(--line); background: none; color: var(--text-dim); }
+  .master-card-actions .mc-edit { border-color: rgba(122,145,86,0.4); color: var(--olive-light); }
+  .master-card-actions .mc-edit:hover { background: rgba(122,145,86,0.15); color: var(--cream); }
+  .master-card-actions .mc-del:hover { border-color: #e07070; color: #e07070; }
+
+  /* Форма редагування */
+  .master-form { max-width: 780px; }
+  .master-form-header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .master-back-btn { background: none; border: 1px solid var(--line); color: var(--text-dim); border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; transition: all .2s; }
+  .master-back-btn:hover { color: var(--cream); border-color: var(--olive-light); }
+  .master-form-header span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); }
+  .master-form-body { display: flex; gap: 32px; align-items: flex-start; }
+  .master-photo-col { display: flex; flex-direction: column; align-items: center; gap: 12px; flex-shrink: 0; }
+  .master-photo-wrap { width: 140px; height: 140px; border-radius: 50%; border: 3px solid rgba(122,145,86,0.4); overflow: hidden; background: rgba(46,61,34,0.3); display: flex; align-items: center; justify-content: center; }
+  .master-photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .master-photo-wrap img.show { display: block; }
+  .master-photo-placeholder { font-size: 3rem; color: var(--text-dim); }
+  .master-photo-upload-btn { background: rgba(122,145,86,0.15); border: 1px solid rgba(122,145,86,0.4); color: var(--olive-light); border-radius: 10px; padding: 8px 16px; font-size: 12px; cursor: pointer; transition: all .2s; white-space: nowrap; }
+  .master-photo-upload-btn:hover { background: rgba(122,145,86,0.25); color: var(--cream); }
+  .master-fields-col { flex: 1; display: flex; flex-direction: column; gap: 18px; }
+  .master-field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 7px; letter-spacing: .04em; }
+  .field-hint { color: rgba(122,145,86,0.6); font-size: 11px; }
+  .master-field input, .master-field select { width: 100%; background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; color: var(--cream); font-size: 14px; outline: none; transition: border-color .2s; }
+  .master-field input:focus, .master-field select:focus { border-color: var(--olive-light); }
+  .master-level-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .level-btn { background: none; border: 1px solid var(--line); color: var(--text-dim); border-radius: 20px; padding: 7px 16px; font-size: 13px; cursor: pointer; transition: all .2s; }
+  .level-btn:hover { border-color: var(--olive-light); color: var(--cream); }
+  .level-btn.active { background: var(--olive-light); color: var(--black); border-color: transparent; font-weight: 600; }
+  .master-form-footer { display: flex; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -306,46 +350,64 @@
     <div class="svc-top">
       <h2>👥 Майстри</h2>
       <div style="flex:1"></div>
-      <button class="btn-new" id="masterCloseBtn">✕ Закрити</button>
+      <button class="svc-close-btn" id="masterCloseBtn">✕ Закрити</button>
     </div>
     <div class="svc-body" id="masterBody">
-      <!-- Список -->
-      <div id="masterList" style="display:flex;flex-direction:column;gap:10px;padding:8px 0;"></div>
+
+      <!-- Список карток -->
+      <div id="masterList" class="master-cards"></div>
+
       <!-- Редактор -->
-      <div id="masterEditor" style="display:none;padding:16px 0;">
-        <h3 id="masterEdTitle" style="margin-bottom:20px;color:var(--cream)">Редагувати майстра</h3>
-        <div class="grid2">
-          <div><label>Ім'я</label><input type="text" id="meName" maxlength="100" /></div>
-          <div><label>Рівень / Категорія</label>
-            <select id="meLevel">
-              <option value="Топ Майстер">Топ Майстер</option>
-              <option value="Майстер">Майстер</option>
-              <option value="Майстриня">Майстриня</option>
-            </select>
+      <div id="masterEditor" class="master-form" style="display:none">
+        <div class="master-form-header">
+          <button class="master-back-btn" id="meCancelBtn">← Назад</button>
+          <span id="masterEdTitle">Редагувати майстра</span>
+        </div>
+
+        <div class="master-form-body">
+          <!-- Фото зліва -->
+          <div class="master-photo-col">
+            <div class="master-photo-wrap" id="mePhotoWrap">
+              <img id="mePhotoPreview" src="" alt="" />
+              <div class="master-photo-placeholder" id="mePhotoPlaceholder">👤</div>
+            </div>
+            <button type="button" class="master-photo-upload-btn" id="mePhotoBtn">📷 Змінити фото</button>
+            <input type="file" id="mePhotoInput" class="upload-input" accept="image/*" />
+            <input type="hidden" id="mePhotoUrl" />
+          </div>
+
+          <!-- Поля справа -->
+          <div class="master-fields-col">
+            <div class="master-field">
+              <label>Ім'я майстра</label>
+              <input type="text" id="meName" maxlength="100" placeholder="Максим" />
+            </div>
+            <div class="master-field">
+              <label>Рівень / Категорія</label>
+              <div class="master-level-btns" id="meLevelBtns">
+                <button type="button" class="level-btn" data-val="Топ Майстер">⭐ Топ Майстер</button>
+                <button type="button" class="level-btn" data-val="Майстер">Майстер</button>
+                <button type="button" class="level-btn" data-val="Майстриня">Майстриня</button>
+              </div>
+              <input type="hidden" id="meLevel" />
+            </div>
+            <div class="master-field">
+              <label>Посилання MonoBank <span class="field-hint">— необов'язково</span></label>
+              <input type="url" id="meMonoLink" placeholder="https://send.monobank.ua/jar/..." maxlength="500" />
+            </div>
+            <div class="master-field" style="width:160px">
+              <label>Порядок <span class="field-hint">(менше = першим)</span></label>
+              <input type="number" id="meSortOrder" min="0" max="99" value="0" />
+            </div>
           </div>
         </div>
-        <div style="margin-top:14px">
-          <label>Фото (замінити)</label>
-          <div class="cover-upload-btn">
-            <button type="button" id="mePhotoBtn">📷 Завантажити фото</button>
-            <img id="mePhotoPreview" class="cover-thumb" src="" alt="" />
-          </div>
-          <input type="file" id="mePhotoInput" class="upload-input" accept="image/*" />
-          <input type="hidden" id="mePhotoUrl" />
-        </div>
-        <div style="margin-top:14px">
-          <label>Посилання MonoBank (необов'язково)</label>
-          <input type="url" id="meMonoLink" placeholder="https://send.monobank.ua/jar/..." maxlength="500" />
-        </div>
-        <div style="margin-top:14px">
-          <label>Порядок відображення (менше = першим)</label>
-          <input type="number" id="meSortOrder" min="0" max="99" value="0" style="width:100px" />
-        </div>
-        <div class="editor-actions" style="margin-top:20px">
-          <button class="btn-save" id="meSaveBtn">💾 Зберегти</button>
-          <button class="btn-cancel-ed" id="meCancelBtn">Скасувати</button>
+
+        <div class="master-form-footer">
+          <button class="btn-save" id="meSaveBtn">💾 Зберегти зміни</button>
+          <button class="btn-cancel-ed" id="meCancelBtn2">Скасувати</button>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -796,6 +858,7 @@
       mePhotoUrl.value = url;
       mePhotoPreview.src = url;
       mePhotoPreview.classList.add("show");
+      document.getElementById("mePhotoPlaceholder").style.display = "none";
     });
     this.value = "";
   });
@@ -835,56 +898,77 @@
       .then(function (j) { renderMasterList(j.masters || []); });
   }
 
+  /* level-кнопки */
+  document.getElementById("meLevelBtns").addEventListener("click", function (e) {
+    var btn = e.target.closest(".level-btn");
+    if (!btn) return;
+    document.querySelectorAll(".level-btn").forEach(function (b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    meLevel.value = btn.getAttribute("data-val");
+  });
+  document.getElementById("meCancelBtn2").addEventListener("click", closeMasterEditor);
+
+  function setLevelBtn(val) {
+    document.querySelectorAll(".level-btn").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-val") === val);
+    });
+    meLevel.value = val;
+  }
+
   function renderMasterList(masters) {
     masterList.innerHTML = "";
     masterEditor.style.display = "none";
+    masterList.style.display = "";
     masters.forEach(function (m) {
-      var row = document.createElement("div");
-      row.className = "svc-row";
-      row.innerHTML =
-        '<div style="display:flex;align-items:center;gap:12px;flex:1">' +
-          (m.photo ? '<img src="' + m.photo + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--line)" />' : '<div style="width:44px;height:44px;border-radius:50%;background:var(--olive-mid);display:flex;align-items:center;justify-content:center;font-size:1.2rem">👤</div>') +
-          '<div>' +
-            '<div style="color:var(--cream);font-weight:600">' + m.name + '</div>' +
-            '<div style="color:var(--text-dim);font-size:12px">' + (m.level || '—') + (m.mono_link ? ' · 💳 Monobank' : '') + '</div>' +
-          '</div>' +
-        '</div>' +
-        '<button class="svc-edit-btn">✏️ Редагувати</button>' +
-        '<button class="btn-del" style="margin-left:8px" data-del>🗑</button>';
-      row.querySelector(".svc-edit-btn").addEventListener("click", function () { openMasterEditor(m); });
-      row.querySelector("[data-del]").addEventListener("click", function () {
-        if (!confirm('Видалити майстра "' + m.name + '"? Він зникне з сайту та системи.')) return;
+      var card = document.createElement("div");
+      card.className = "master-card";
+      var avatarInner = m.photo
+        ? '<img src="' + m.photo + '" alt="' + m.name + '" style="width:100%;height:100%;object-fit:cover" />'
+        : '👤';
+      card.innerHTML =
+        '<div class="master-card-avatar">' + avatarInner + '</div>' +
+        '<div class="master-card-name">' + m.name + '</div>' +
+        '<div class="master-card-level">' + (m.level || '—') + '</div>' +
+        (m.mono_link ? '<div class="master-card-mono">💳 Monobank</div>' : '') +
+        '<div class="master-card-actions">' +
+          '<button class="mc-edit">✏️ Редагувати</button>' +
+          '<button class="mc-del" data-del>🗑 Видалити</button>' +
+        '</div>';
+      card.querySelector(".mc-edit").addEventListener("click", function () { openMasterEditor(m); });
+      card.querySelector("[data-del]").addEventListener("click", function () {
+        if (!confirm('Видалити майстра "' + m.name + '"?\nВін зникне з сайту та системи.')) return;
         fetch("/api/crm/masters/" + m.id, { method: "DELETE", credentials: "same-origin" })
           .then(function (r) { return r.json(); })
           .then(function (j) { if (j.ok) loadMasters(); else alert("Помилка видалення"); })
           .catch(function () { alert("Помилка мережі"); });
       });
-      masterList.appendChild(row);
+      masterList.appendChild(card);
     });
   }
 
   function openMasterEditor(m) {
-    meEditingId    = m.id;
-    meName.value   = m.name || "";
-    meLevel.value  = m.level || "Майстер";
+    meEditingId = m.id;
+    meName.value = m.name || "";
+    setLevelBtn(m.level || "Майстер");
     meMonoLink.value = m.mono_link || "";
     meSortOrder.value = m.sort_order || 0;
     mePhotoUrl.value = m.photo || "";
     if (m.photo) {
       mePhotoPreview.src = m.photo;
       mePhotoPreview.classList.add("show");
+      document.getElementById("mePhotoPlaceholder").style.display = "none";
     } else {
       mePhotoPreview.classList.remove("show");
+      document.getElementById("mePhotoPlaceholder").style.display = "";
     }
-    masterEdTitle.textContent = "Редагувати: " + m.name;
+    masterEdTitle.textContent = m.name;
     masterList.style.display = "none";
     masterEditor.style.display = "block";
   }
 
   function closeMasterEditor() {
     masterEditor.style.display = "none";
-    masterList.style.display = "flex";
-    masterList.style.flexDirection = "column";
+    masterList.style.display = "";
   }
 
   document.getElementById("meSaveBtn").addEventListener("click", function () {
