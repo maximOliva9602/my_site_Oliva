@@ -116,33 +116,7 @@
 
  <!-- ВИБІР МАЙСТРА -->
  <div class="field-label">Оберіть майстра</div>
- <div class="masters" style="margin-bottom:32px">
- <div class="master-card active" data-master="yaroslav" onclick="selectMaster(this)">
- <div class="master-avatar"><img src="assets/img/master-yaroslav.jpg" alt="Ярослав" /></div>
- <div class="master-name">Ярослав</div>
- <div class="master-role">Топ майстер</div>
-</div>
- <div class="master-card" data-master="maksym" onclick="selectMaster(this)">
- <div class="master-avatar"><img src="assets/img/master-maksym.jpg" alt="Максим" /></div>
- <div class="master-name">Максим</div>
- <div class="master-role">Топ майстер</div>
-</div>
- <div class="master-card" data-master="andrii" onclick="selectMaster(this)">
- <div class="master-avatar"><img src="assets/img/master-andrii.jpg" alt="Андрій" /></div>
- <div class="master-name">Андрій</div>
- <div class="master-role">Майстер</div>
-</div>
- <div class="master-card" data-master="olena" onclick="selectMaster(this)">
- <div class="master-avatar"><img src="assets/img/master-olena.jpg" alt="Олена" /></div>
- <div class="master-name">Олена</div>
- <div class="master-role">Топ майстер</div>
-</div>
- <div class="master-card" data-master="liudmyla" onclick="selectMaster(this)">
- <div class="master-avatar"><img src="assets/img/master-liudmyla.jpg" alt="Людмила" /></div>
- <div class="master-name">Людмила</div>
- <div class="master-role">Майстер</div>
-</div>
-</div>
+ <div class="masters" id="mastersList" style="margin-bottom:32px"></div>
 
  <!-- СУМА -->
  <div class="field-label">Сума чайових</div>
@@ -170,7 +144,7 @@
  <textarea class="msg-input" id="msgInput" rows="2" placeholder="Напиши щось приємне (необов'язково)..."></textarea>
 
  <!-- КНОПКА -->
- <a id="payBtn" class="pay-btn" href="#" target="_blank" onclick="return handlePay(event)">
+ <a id="payBtn" class="pay-btn disabled" href="#" target="_blank" onclick="return handlePay(event)">
  <span class="mono-icon">
  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
  <rect width="32" height="32" rx="6" fill="#1C1C1E"/>
@@ -192,67 +166,99 @@
 </div>
 
 <script>
- const MASTERS = {
- yaroslav: { url: "https://send.monobank.ua/jar/YAROSLAV_URL" }, // ← замінити на посилання Ярослава
- maksym: { url: "https://send.monobank.ua/jar/5aQJss3RPW" },
- andrii: { url: "https://send.monobank.ua/jar/ANDRII_URL" }, // ← замінити на посилання Андрія
- olena: { url: "https://send.monobank.ua/jar/goKABUfbt" },
- liudmyla: { url: "https://send.monobank.ua/jar/5AgF2AwxSe" }
+ var FALLBACK_PHOTO = {
+   'Максим':  'assets/img/master-maksym.jpg',
+   'Людмила': 'assets/img/master-liudmyla.jpg',
+   'Ярослав': 'assets/img/master-yaroslav.jpg',
+   'Олена':   'assets/img/master-olena.jpg',
+   'Андрій':  'assets/img/master-andrii.jpg',
  };
 
- let selectedMaster = "yaroslav";
- let selectedAmt = 150;
+ var mastersData = []; // [{id, name, level, photo, mono_link}]
+ var selectedMasterId = null;
+ var selectedAmt = 150;
+
+ function renderMasters(list) {
+   var container = document.getElementById('mastersList');
+   // Показуємо тільки тих у кого є mono_link
+   var withLink = list.filter(function(m){ return m.mono_link; });
+   if (!withLink.length) {
+     container.innerHTML = '<p style="color:var(--text-dim);font-size:13px">Посилання майстрів ще не налаштовані</p>';
+     return;
+   }
+   mastersData = withLink;
+   container.innerHTML = withLink.map(function(m, i) {
+     var photo = m.photo || FALLBACK_PHOTO[m.name] || 'assets/img/master-maksym.jpg';
+     var role  = m.level || 'Майстер';
+     var isFirst = i === 0;
+     if (isFirst) selectedMasterId = m.id;
+     return '<div class="master-card' + (isFirst ? ' active' : '') + '" data-mid="' + m.id + '" onclick="selectMaster(this)">' +
+       '<div class="master-avatar"><img src="' + photo + '" alt="' + m.name + '" /></div>' +
+       '<div class="master-name">' + m.name + '</div>' +
+       '<div class="master-role">' + role + '</div>' +
+     '</div>';
+   }).join('');
+   updateBtn();
+ }
 
  function selectMaster(el) {
- document.querySelectorAll(".master-card").forEach(c => c.classList.remove("active"));
- el.classList.add("active");
- selectedMaster = el.dataset.master;
- updateBtn();
+   document.querySelectorAll('.master-card').forEach(function(c){ c.classList.remove('active'); });
+   el.classList.add('active');
+   selectedMasterId = parseInt(el.dataset.mid, 10);
+   updateBtn();
  }
 
  function selectAmt(el, amt) {
- document.querySelectorAll(".amt-btn").forEach(b => b.classList.remove("active"));
- el.classList.add("active");
- selectedAmt = amt;
- document.getElementById("customAmt").value = "";
- updateBtn();
+   document.querySelectorAll('.amt-btn').forEach(function(b){ b.classList.remove('active'); });
+   el.classList.add('active');
+   selectedAmt = amt;
+   document.getElementById('customAmt').value = '';
+   updateBtn();
  }
 
  function onCustomInput(input) {
- document.querySelectorAll(".amt-btn").forEach(b => b.classList.remove("active"));
- selectedAmt = parseInt(input.value) || 0;
- updateBtn();
+   document.querySelectorAll('.amt-btn').forEach(function(b){ b.classList.remove('active'); });
+   selectedAmt = parseInt(input.value) || 0;
+   updateBtn();
  }
 
  function updateBtn() {
- const btn = document.getElementById("payBtn");
- if (selectedAmt > 0 && selectedMaster) {
- btn.classList.remove("disabled");
- } else {
- btn.classList.add("disabled");
- }
+   var btn = document.getElementById('payBtn');
+   var master = mastersData.find(function(m){ return m.id === selectedMasterId; });
+   if (selectedAmt > 0 && master && master.mono_link) {
+     btn.classList.remove('disabled');
+   } else {
+     btn.classList.add('disabled');
+   }
  }
 
  function handlePay(e) {
- e.preventDefault();
- if (!selectedMaster || selectedAmt <= 0) return false;
- const url = MASTERS[selectedMaster].url + "?a=" + selectedAmt;
- window.open(url, "_blank");
- return false;
+   e.preventDefault();
+   var master = mastersData.find(function(m){ return m.id === selectedMasterId; });
+   if (!master || !master.mono_link || selectedAmt <= 0) return false;
+   var url = master.mono_link + '?a=' + selectedAmt;
+   window.open(url, '_blank');
+   return false;
  }
 
  function sharePage() {
- const url = window.location.href;
- if (navigator.share) {
- navigator.share({ title: "Чайові майстру — Oliva", url });
- } else {
- navigator.clipboard.writeText(url).then(() => {
- const btn = document.querySelector(".share-btn");
- btn.textContent = "Скопійовано!";
- setTimeout(() => btn.textContent = " Скопіювати посилання на цю сторінку", 2000);
- });
+   var url = window.location.href;
+   if (navigator.share) {
+     navigator.share({ title: 'Чайові майстру — Oliva', url: url });
+   } else {
+     navigator.clipboard.writeText(url).then(function() {
+       var btn = document.querySelector('.share-btn');
+       btn.textContent = 'Скопійовано!';
+       setTimeout(function(){ btn.textContent = ' Скопіювати посилання на цю сторінку'; }, 2000);
+     });
+   }
  }
- }
+
+ // Завантажуємо майстрів з API
+ fetch('/api/masters')
+   .then(function(r){ return r.json(); })
+   .then(function(j){ if (j.ok) renderMasters(j.masters); })
+   .catch(function(){});
 </script>
 <script src="assets/js/track.js"></script>
 </body>
