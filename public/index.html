@@ -614,12 +614,8 @@
     <h2 class="section-title reveal"><span data-i18n="team.title1">Фахівці, яким</span><br><span data-i18n="team.title2">довіряють</span></h2>
     <p class="section-sub reveal" data-i18n="team.sub">Кожен наш майстер — сертифікований спеціаліст з багаторічним досвідом у масажній терапії та відновленні тіла.</p>
     <!-- REPLACE_ME: ініціали-плейсхолдери. Додати фото майстрів у assets/img/ та підтвердити імена/ролі. -->
-    <div class="team-grid">
-      <div class="team-card reveal"><img src="assets/img/master-maksym.jpg" alt="Максим — топ-майстер студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"><div class="team-card-overlay"><div class="team-name">Максим</div><div class="team-role" data-i18n="team.roleTop">Топ-майстер</div><a href="https://bookon.ua/s/oliva_massage_studio" data-i18n="book" onclick="openBookingDrawer(event)">Записатися</a></div></div>
-      <div class="team-card reveal"><img src="assets/img/master-liudmyla.jpg" alt="Людмила — майстриня студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"><div class="team-card-overlay"><div class="team-name">Людмила</div><div class="team-role" data-i18n="team.roleMaster">Майстриня</div><a href="https://bookon.ua/s/oliva_massage_studio" data-i18n="book" onclick="openBookingDrawer(event)">Записатися</a></div></div>
-      <div class="team-card reveal"><img src="assets/img/master-yaroslav.jpg" alt="Ярослав — майстер студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"><div class="team-card-overlay"><div class="team-name">Ярослав</div><div class="team-role" data-i18n="team.roleTop">Топ-майстер</div><a href="https://bookon.ua/s/oliva_massage_studio" data-i18n="book" onclick="openBookingDrawer(event)">Записатися</a></div></div>
-      <div class="team-card reveal"><img src="assets/img/master-olena.jpg" alt="Олена — майстриня студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"><div class="team-card-overlay"><div class="team-name">Олена</div><div class="team-role" data-i18n="team.roleTop">Топ-майстер</div><a href="https://bookon.ua/s/oliva_massage_studio" data-i18n="book" onclick="openBookingDrawer(event)">Записатися</a></div></div>
-      <div class="team-card reveal"><img src="assets/img/master-andrii.jpg" alt="Андрій — майстер студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"><div class="team-card-overlay"><div class="team-name">Андрій</div><div class="team-role" data-i18n="team.roleMasterM">Майстер</div><a href="https://bookon.ua/s/oliva_massage_studio" data-i18n="book" onclick="openBookingDrawer(event)">Записатися</a></div></div>
+    <div class="team-grid" id="teamGrid">
+      <!-- завантажується динамічно з /api/masters -->
     </div>
   </div>
 </section>
@@ -1508,5 +1504,44 @@ function toggleRule(btn) {
 </script>
 
 <script src="assets/js/track.js"></script>
+<script>
+/* ---- Динамічний блок майстрів ---- */
+(function () {
+  var BOOKING_URL = 'https://bookon.ua/s/oliva_massage_studio';
+  var FALLBACK_PHOTOS = {
+    'Максим':  'assets/img/master-maksym.jpg',
+    'Людмила': 'assets/img/master-liudmyla.jpg',
+    'Ярослав': 'assets/img/master-yaroslav.jpg',
+    'Олена':   'assets/img/master-olena.jpg',
+    'Андрій':  'assets/img/master-andrii.jpg',
+  };
+
+  fetch('/api/masters')
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      var grid = document.getElementById('teamGrid');
+      if (!grid || !j.ok || !j.masters.length) return;
+      grid.innerHTML = j.masters.map(function (m) {
+        var photo = m.photo || FALLBACK_PHOTOS[m.name] || 'assets/img/master-maksym.jpg';
+        var role  = m.level || 'Майстер';
+        var bookBtn = m.mono_link
+          ? '<div class="team-card-btns">' +
+              '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>' +
+              '<a class="team-mono-btn" href="' + m.mono_link + '" target="_blank" rel="noopener">💳 Monobank</a>' +
+            '</div>'
+          : '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>';
+        return '<div class="team-card reveal">' +
+          '<img src="' + photo + '" alt="' + m.name + ' — ' + role + ' студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" />' +
+          '<div class="team-card-overlay">' +
+            '<div class="team-name">' + m.name + '</div>' +
+            '<div class="team-role">' + role.toUpperCase() + '</div>' +
+            bookBtn +
+          '</div>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function () {});
+})();
+</script>
 </body>
 </html>

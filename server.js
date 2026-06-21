@@ -396,6 +396,36 @@ app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
   res.json({ ok: true, url: "/api/blog-img/" + filename });
 });
 
+/* ---- Публічний список майстрів (для сайту) ---- */
+app.get("/api/masters", function (req, res) {
+  var rows = db.prepare(
+    "SELECT id, name, level, photo, mono_link FROM masters WHERE active=1 ORDER BY sort_order, id"
+  ).all();
+  res.json({ ok: true, masters: rows });
+});
+
+/* ---- Завантаження фото майстра (адмін) ---- */
+var MASTER_IMG_DIR = path.join(path.dirname(process.env.DB_FILE || path.join(__dirname, "data", "oliva.db")), "img", "masters");
+app.post("/api/admin/upload-master-photo", requireAdmin, function (req, res) {
+  var d = req.body || {};
+  var dataUrl = String(d.dataUrl || "");
+  var ext = String(d.ext || "jpg").replace(/[^a-z0-9]/gi, "").slice(0, 5) || "jpg";
+  var match = dataUrl.match(/^data:image\/[^;]+;base64,(.+)$/);
+  if (!match) return res.status(400).json({ ok: false, error: "invalid dataUrl" });
+  var buf = Buffer.from(match[1], "base64");
+  if (buf.length > 10 * 1024 * 1024) return res.status(413).json({ ok: false, error: "too large" });
+  var filename = crypto.randomBytes(12).toString("hex") + "." + ext;
+  fs.mkdirSync(MASTER_IMG_DIR, { recursive: true });
+  fs.writeFileSync(path.join(MASTER_IMG_DIR, filename), buf);
+  res.json({ ok: true, url: "/api/master-img/" + filename });
+});
+app.get("/api/master-img/:file", function (req, res) {
+  var f = path.basename(req.params.file);
+  var fp = path.join(MASTER_IMG_DIR, f);
+  if (!fs.existsSync(fp)) return res.status(404).end();
+  res.sendFile(fp);
+});
+
 /* ---- Публічний список активних послуг (для сайту) ---- */
 app.get("/api/services", function (req, res) {
   var rows = db.prepare(

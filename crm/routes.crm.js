@@ -248,11 +248,14 @@ router.put("/masters/:id", owner, function (req, res) {
   const m = db.prepare("SELECT * FROM masters WHERE id=?").get(id);
   if (!m) return res.status(404).json({ ok: false });
   const d = req.body || {};
-  db.prepare("UPDATE masters SET name=?, phone=?, color=?, sort_order=? WHERE id=?").run(
-    d.name !== undefined ? clean(d.name, 100) : m.name,
-    d.phone !== undefined ? clean(d.phone, 30) : m.phone,
-    d.color !== undefined ? clean(d.color, 20) : m.color,
+  db.prepare("UPDATE masters SET name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=? WHERE id=?").run(
+    d.name       !== undefined ? clean(d.name, 100)      : m.name,
+    d.phone      !== undefined ? clean(d.phone, 30)      : m.phone,
+    d.color      !== undefined ? clean(d.color, 20)      : m.color,
     d.sort_order !== undefined ? parseInt(d.sort_order, 10) || 0 : m.sort_order,
+    d.photo      !== undefined ? clean(d.photo, 500)     : m.photo,
+    d.level      !== undefined ? clean(d.level, 50)      : m.level,
+    d.mono_link  !== undefined ? clean(d.mono_link, 500) : m.mono_link,
     id
   );
   if (Array.isArray(d.service_ids)) setMasterServices(id, d.service_ids);
