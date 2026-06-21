@@ -46,6 +46,7 @@
  .master-card { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 14px; padding: 14px 10px; text-align: center; cursor: pointer; transition: all .2s; flex: 1 0 0; min-width: 80px; }
  .master-card:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.06); }
  .master-card.active { background: rgba(122,145,86,0.15); border-color: var(--olive-light); }
+ .master-card.no-link { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
  .master-avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--olive-mid); border: 2px solid var(--line); margin: 0 auto 10px; overflow: hidden; transition: border-color .2s; }
  .master-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
  .master-card.active .master-avatar { border-color: var(--olive-light); }
@@ -180,24 +181,26 @@
 
  function renderMasters(list) {
    var container = document.getElementById('mastersList');
-   // Показуємо тільки тих у кого є mono_link
-   var withLink = list.filter(function(m){ return m.mono_link; });
-   if (!withLink.length) {
-     container.innerHTML = '<p style="color:var(--text-dim);font-size:13px">Посилання майстрів ще не налаштовані</p>';
-     return;
-   }
-   mastersData = withLink;
-   container.innerHTML = withLink.map(function(m, i) {
+   mastersData = list;
+   var firstActive = null;
+   container.innerHTML = list.map(function(m) {
      var photo = m.photo || FALLBACK_PHOTO[m.name] || 'assets/img/master-maksym.jpg';
      var role  = m.level || 'Майстер';
-     var isFirst = i === 0;
-     if (isFirst) selectedMasterId = m.id;
-     return '<div class="master-card' + (isFirst ? ' active' : '') + '" data-mid="' + m.id + '" onclick="selectMaster(this)">' +
+     var hasLink = !!m.mono_link;
+     if (hasLink && !firstActive) firstActive = m.id;
+     var cls = 'master-card' + (!hasLink ? ' no-link' : '');
+     var onclick = hasLink ? ' onclick="selectMaster(this)"' : '';
+     return '<div class="' + cls + '" data-mid="' + m.id + '"' + onclick + '>' +
        '<div class="master-avatar"><img src="' + photo + '" alt="' + m.name + '" /></div>' +
        '<div class="master-name">' + m.name + '</div>' +
        '<div class="master-role">' + role + '</div>' +
      '</div>';
    }).join('');
+   if (firstActive) {
+     selectedMasterId = firstActive;
+     var el = container.querySelector('[data-mid="' + firstActive + '"]');
+     if (el) el.classList.add('active');
+   }
    updateBtn();
  }
 
