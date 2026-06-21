@@ -251,59 +251,7 @@
     <h2 class="section-title reveal" data-i18n="car.title">Оберіть свій сеанс</h2>
   </div>
   <div class="srv-carousel-wrap">
-    <div class="srv-carousel" id="srvCarousel">
-
-      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" onclick="openBookingDrawer(event)">
-        <img src="assets/img/srv-parni.jpg" alt="Парний масаж Київ" loading="lazy">
-        <div class="srv-slide-overlay"></div>
-        <div class="srv-slide-content">
-          <div class="srv-slide-name" data-i18n="car.s1name">Парний масаж</div>
-          <div class="srv-slide-price" data-i18n="car.s1price">від 2 700 грн</div>
-          <div class="srv-slide-btn" data-i18n="car.book">Записатися →</div>
-        </div>
-      </a>
-
-      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" onclick="openBookingDrawer(event)">
-        <img src="assets/img/srv-ozdorovchuy.jpg" alt="Загально-оздоровчий масаж Київ" loading="lazy">
-        <div class="srv-slide-overlay"></div>
-        <div class="srv-slide-content">
-          <div class="srv-slide-name" data-i18n="car.s2name">Загально-оздоровчий масаж</div>
-          <div class="srv-slide-price" data-i18n="car.s2price">від 700 грн</div>
-          <div class="srv-slide-btn" data-i18n="car.book">Записатися →</div>
-        </div>
-      </a>
-
-      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" onclick="openBookingDrawer(event)">
-        <img src="assets/img/srv-spa.jpg" alt="SPA ритуали Київ" loading="lazy">
-        <div class="srv-slide-overlay"></div>
-        <div class="srv-slide-content">
-          <div class="srv-slide-name" data-i18n="car.s3name">SPA-ритуали</div>
-          <div class="srv-slide-price" data-i18n="car.s3price">від 2 150 грн</div>
-          <div class="srv-slide-btn" data-i18n="car.book">Записатися →</div>
-        </div>
-      </a>
-
-      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" onclick="openBookingDrawer(event)">
-        <img src="assets/img/srv-shudnenia.jpg" alt="Обгортання для схуднення Київ" loading="lazy">
-        <div class="srv-slide-overlay"></div>
-        <div class="srv-slide-content">
-          <div class="srv-slide-name" data-i18n="car.s4name">Обгортання для схуднення</div>
-          <div class="srv-slide-price" data-i18n="car.s4price">від 1 600 грн</div>
-          <div class="srv-slide-btn" data-i18n="car.book">Записатися →</div>
-        </div>
-      </a>
-
-      <a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" onclick="openBookingDrawer(event)">
-        <img src="assets/img/srv-aparatni.jpg" alt="Апаратний масаж Київ" loading="lazy">
-        <div class="srv-slide-overlay"></div>
-        <div class="srv-slide-content">
-          <div class="srv-slide-name" data-i18n="car.s5name">Апаратні масажі</div>
-          <div class="srv-slide-price" data-i18n="car.s5price">від 700 грн</div>
-          <div class="srv-slide-btn" data-i18n="car.book">Записатися →</div>
-        </div>
-      </a>
-
-    </div>
+    <div class="srv-carousel" id="srvCarousel"></div>
     <button class="srv-carousel-arrow srv-carousel-prev" id="srvPrev" aria-label="Назад">&#8592;</button>
     <button class="srv-carousel-arrow srv-carousel-next" id="srvNext" aria-label="Вперед">&#8594;</button>
   </div>
@@ -785,108 +733,151 @@
 
 <script>
 (function(){
-  // Карусель тільки на мобільному
-  if (window.innerWidth >= 900) return;
+  // ── Fallback слайди (показуються одразу, до відповіді API) ───────────────
+  var FALLBACK = [
+    { name: 'Парний масаж',              price: 270000, img: 'assets/img/srv-parni.jpg' },
+    { name: 'Загально-оздоровчий масаж', price: 70000,  img: 'assets/img/srv-ozdorovchuy.jpg' },
+    { name: 'SPA-ритуали',               price: 215000, img: 'assets/img/srv-spa.jpg' },
+    { name: 'Обгортання для схуднення',  price: 160000, img: 'assets/img/srv-shudnenia.jpg' },
+    { name: 'Апаратні масажі',           price: 70000,  img: 'assets/img/srv-aparatni.jpg' },
+  ];
 
-  var wrap = document.getElementById('srvCarousel').parentElement;
-  var carousel = document.getElementById('srvCarousel');
-  var dotsWrap = document.getElementById('srvDots');
-  var prevBtn = document.getElementById('srvPrev');
-  var nextBtn = document.getElementById('srvNext');
-  if (!carousel) return;
+  var IMG_MAP = [
+    { key: 'Парний',     img: 'assets/img/srv-parni.jpg' },
+    { key: 'Загально',   img: 'assets/img/srv-ozdorovchuy.jpg' },
+    { key: 'Антистрес',  img: 'assets/img/srv-ozdorovchuy.jpg' },
+    { key: 'SPA',        img: 'assets/img/srv-spa.jpg' },
+    { key: 'Обгортання', img: 'assets/img/srv-shudnenia.jpg' },
+    { key: 'Апаратн',   img: 'assets/img/srv-aparatni.jpg' },
+    { key: 'Спортивн',  img: 'assets/img/srv-ozdorovchuy.jpg' },
+  ];
 
-  var origSlides = Array.from(carousel.querySelectorAll('.srv-slide'));
-  var total = origSlides.length;
-  var current = 1;
-  var isAnimating = false;
-  var gap = 16;
-
-  // Клонуємо крайні для зациклення
-  carousel.insertBefore(origSlides[total-1].cloneNode(true), origSlides[0]);
-  carousel.appendChild(origSlides[0].cloneNode(true));
-  var allSlides = Array.from(carousel.querySelectorAll('.srv-slide'));
-
-  function isMobile(){ return window.innerWidth < 900; }
-
-  function calcSizes(){
-    var visible = isMobile() ? 1 : 3;
-    var pad = isMobile() ? 20 : 48;
-    var totalGap = (visible - 1) * gap;
-    var w = (wrap.offsetWidth - pad * 2 - totalGap) / visible;
-    allSlides.forEach(function(s){ s.style.width = w + 'px'; s.style.flex = '0 0 ' + w + 'px'; });
-    return w + gap;
+  function getImg(name, imageUrl){
+    if (imageUrl) return imageUrl;
+    for (var i = 0; i < IMG_MAP.length; i++){
+      if (name.indexOf(IMG_MAP[i].key) !== -1) return IMG_MAP[i].img;
+    }
+    return 'assets/img/srv-ozdorovchuy.jpg';
   }
 
-  var stepW = calcSizes();
-
-  // Крапки
-  origSlides.forEach(function(_,i){
-    var d = document.createElement('button');
-    d.className = 'srv-carousel-dot' + (i===0?' active':'');
-    d.setAttribute('aria-label', 'Слайд '+(i+1));
-    d.addEventListener('click', function(){ goTo(i+1); });
-    dotsWrap.appendChild(d);
-  });
-
-  function updateDots(){
-    dotsWrap.querySelectorAll('.srv-carousel-dot').forEach(function(d,i){
-      d.classList.toggle('active', i === current - 1);
-    });
-  }
-
-  function setPos(animated){
-    var pad = isMobile() ? 20 : 48;
-    carousel.style.transition = animated ? 'transform .45s cubic-bezier(.4,0,.2,1)' : 'none';
-    carousel.style.transform = 'translateX(' + (pad - current * stepW) + 'px)';
-  }
-
-  setPos(false);
-
-  function goTo(n){
-    if (isAnimating) return;
-    isAnimating = true;
-    current = n;
-    setPos(true);
-    updateDots();
-  }
-
-  carousel.addEventListener('transitionend', function(){
-    isAnimating = false;
-    if (current === 0)       { current = total; setPos(false); }
-    if (current === total+1) { current = 1;     setPos(false); }
-  });
-
-  prevBtn.addEventListener('click', function(){ goTo(current - 1); });
-  nextBtn.addEventListener('click', function(){ goTo(current + 1); });
-
-  var autoTimer = setInterval(function(){ goTo(current + 1); }, 4000);
-  wrap.addEventListener('mouseenter', function(){ clearInterval(autoTimer); });
-  wrap.addEventListener('mouseleave', function(){
-    clearInterval(autoTimer);
-    autoTimer = setInterval(function(){ goTo(current + 1); }, 4000);
-  });
-
-  var startX = 0;
-  carousel.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; clearInterval(autoTimer); }, {passive:true});
-  carousel.addEventListener('touchend', function(e){
-    var diff = startX - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) goTo(diff > 0 ? current+1 : current-1);
-  }, {passive:true});
-
-  window.addEventListener('resize', function(){
-    stepW = calcSizes();
-    setPos(false);
-  });
-})();
-
-// ── Оновлення каруселі з API ──────────────────────────────────────────────
-(function(){
   function baseName(n){
     return n.replace(/\s*\(.*?\)/g,'').replace(/\s*\d+\s*хв/gi,'').trim();
   }
-  function fmtPrice(kopiyky){
-    return 'від ' + Math.round(kopiyky/100).toLocaleString('uk') + ' грн';
+
+  function fmtPrice(p){
+    return 'від ' + Math.round(p/100).toLocaleString('uk') + ' грн';
   }
+
+  function buildSlides(groups){
+    var old = document.getElementById('srvCarousel');
+    var el = old.cloneNode(false);
+    old.parentNode.replaceChild(el, old);
+    el.innerHTML = groups.map(function(g){
+      return '<a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" onclick="openBookingDrawer(event)">' +
+        '<img src="' + g.img + '" alt="' + g.name + ' Київ" loading="lazy">' +
+        '<div class="srv-slide-overlay"></div>' +
+        '<div class="srv-slide-content">' +
+          '<div class="srv-slide-name">' + g.name + '</div>' +
+          '<div class="srv-slide-price">' + fmtPrice(g.price) + '</div>' +
+          '<div class="srv-slide-btn">Записатися →</div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+  }
+
+  var _autoTimer = null;
+
+  function initCarousel(){
+    if (window.innerWidth >= 900) return;
+
+    var carousel = document.getElementById('srvCarousel');
+    var wrap     = carousel.parentElement;
+    var dotsWrap = document.getElementById('srvDots');
+
+    var oldPrev = document.getElementById('srvPrev');
+    var oldNext = document.getElementById('srvNext');
+    var prevBtn = oldPrev.cloneNode(true);
+    var nextBtn = oldNext.cloneNode(true);
+    oldPrev.parentNode.replaceChild(prevBtn, oldPrev);
+    oldNext.parentNode.replaceChild(nextBtn, oldNext);
+
+    if (_autoTimer) clearInterval(_autoTimer);
+    dotsWrap.innerHTML = '';
+
+    var origSlides = Array.from(carousel.querySelectorAll('.srv-slide'));
+    var total = origSlides.length;
+    if (!total) return;
+
+    var current = 1, isAnimating = false, gap = 16;
+
+    carousel.insertBefore(origSlides[total-1].cloneNode(true), origSlides[0]);
+    carousel.appendChild(origSlides[0].cloneNode(true));
+    var allSlides = Array.from(carousel.querySelectorAll('.srv-slide'));
+
+    function calcSizes(){
+      var pad = 20, w = (wrap.offsetWidth - pad*2) / 1;
+      allSlides.forEach(function(s){ s.style.width = w+'px'; s.style.flex = '0 0 '+w+'px'; });
+      return w + gap;
+    }
+    var stepW = calcSizes();
+
+    origSlides.forEach(function(_,i){
+      var d = document.createElement('button');
+      d.className = 'srv-carousel-dot'+(i===0?' active':'');
+      d.setAttribute('aria-label','Слайд '+(i+1));
+      d.addEventListener('click', function(){ goTo(i+1); });
+      dotsWrap.appendChild(d);
+    });
+
+    function updateDots(){
+      dotsWrap.querySelectorAll('.srv-carousel-dot').forEach(function(d,i){
+        d.classList.toggle('active', i===current-1);
+      });
+    }
+
+    function setPos(animated){
+      carousel.style.transition = animated ? 'transform .45s cubic-bezier(.4,0,.2,1)' : 'none';
+      carousel.style.transform  = 'translateX('+(20 - current*stepW)+'px)';
+    }
+    setPos(false);
+
+    function goTo(n){
+      if (isAnimating) return;
+      isAnimating = true; current = n;
+      setPos(true); updateDots();
+    }
+
+    carousel.addEventListener('transitionend', function(){
+      isAnimating = false;
+      if (current===0)       { current=total;   setPos(false); }
+      if (current===total+1) { current=1;        setPos(false); }
+    });
+
+    prevBtn.addEventListener('click', function(){ goTo(current-1); });
+    nextBtn.addEventListener('click', function(){ goTo(current+1); });
+
+    _autoTimer = setInterval(function(){ goTo(current+1); }, 4000);
+    wrap.addEventListener('mouseenter', function(){ clearInterval(_autoTimer); });
+    wrap.addEventListener('mouseleave', function(){
+      clearInterval(_autoTimer);
+      _autoTimer = setInterval(function(){ goTo(current+1); }, 4000);
+    });
+
+    var startX = 0;
+    carousel.addEventListener('touchstart', function(e){ startX=e.touches[0].clientX; clearInterval(_autoTimer); },{passive:true});
+    carousel.addEventListener('touchend', function(e){
+      var diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff)>40) goTo(diff>0 ? current+1 : current-1);
+    },{passive:true});
+
+    window.addEventListener('resize', function(){ stepW=calcSizes(); setPos(false); });
+  }
+
+  // ── Крок 1: відразу показуємо fallback ───────────────────────────────────
+  buildSlides(FALLBACK);
+  initCarousel();
+
+  // ── Крок 2: оновлюємо з API ──────────────────────────────────────────────
   fetch('/api/services')
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -894,43 +885,19 @@
       var featured = data.services.filter(function(s){ return s.featured; });
       if (!featured.length) return;
 
-      // Групуємо по baseName, беремо мінімальну ціну
       var groups = {}, order = [];
       featured.forEach(function(s){
         var bn = baseName(s.name);
-        if (!groups[bn]){ groups[bn] = { name: bn, minPrice: Infinity }; order.push(bn); }
+        if (!groups[bn]){ groups[bn]={ name:bn, minPrice:Infinity, img:null }; order.push(bn); }
         if (s.price < groups[bn].minPrice) groups[bn].minPrice = s.price;
+        if (s.image_url && !groups[bn].img) groups[bn].img = s.image_url;
       });
 
-      // Отримуємо всі slides (на desktop 5, на mobile 7 з клонами)
-      var allSlides = Array.from(document.querySelectorAll('#srvCarousel .srv-slide'));
-      var isMobile  = window.innerWidth < 900;
-      // Оригінали: desktop=[0..4], mobile=[1..5]
-      var offset = isMobile ? 1 : 0;
-      var total  = order.length;
-
-      order.forEach(function(bn, i){
+      buildSlides(order.map(function(bn){
         var g = groups[bn];
-        var slide = allSlides[i + offset];
-        if (!slide) return;
-        slide.querySelector('.srv-slide-name').textContent = g.name;
-        slide.querySelector('.srv-slide-price').textContent = fmtPrice(g.minPrice);
-      });
-
-      // Синхронізуємо клони (mobile only)
-      if (isMobile && allSlides.length > total){
-        var orig0   = allSlides[offset];             // перший оригінал
-        var origLast= allSlides[offset + total - 1]; // останній оригінал
-        var clFirst = allSlides[allSlides.length - 1]; // клон першого (в кінці)
-        var clLast  = allSlides[0];                    // клон останнього (на початку)
-        function syncText(from, to){
-          if (!from || !to) return;
-          to.querySelector('.srv-slide-name').textContent  = from.querySelector('.srv-slide-name').textContent;
-          to.querySelector('.srv-slide-price').textContent = from.querySelector('.srv-slide-price').textContent;
-        }
-        syncText(orig0,    clFirst);
-        syncText(origLast, clLast);
-      }
+        return { name: g.name, price: g.minPrice, img: getImg(g.name, g.img) };
+      }));
+      initCarousel();
     })
     .catch(function(){});
 })();
