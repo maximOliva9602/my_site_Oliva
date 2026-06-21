@@ -196,6 +196,8 @@
   .svc-card-actions .btn-del-svc:hover { border-color: #e07070; color: #e07070; }
   .svc-card-actions .btn-feat-svc { flex: 1.2; }
   .svc-card-actions .btn-feat-svc:hover { border-color: #c8a84b; color: #c8a84b; }
+  .svc-card.is-featured { border-color: rgba(200,168,75,0.5); box-shadow: 0 0 0 1px rgba(200,168,75,0.25); }
+  .svc-card.is-featured .btn-feat-svc { border-color: #c8a84b; color: #c8a84b; background: rgba(200,168,75,0.1); }
 
   /* Services editor */
   .svc-editor { display: none; flex-direction: column; gap: 18px; max-width: 720px; }
@@ -654,6 +656,7 @@
   var svcEditingId  = null;
   var svcAllItems   = [];
   var svcActiveFilter = "";
+  var svcFeatOnly = false;
   var svcSearchEl   = document.getElementById("svcSearch");
 
   svcSearchEl.addEventListener("input", function() { renderSvcList(); });
@@ -708,14 +711,26 @@
     if (!cats.length) return;
     var allBtn = document.createElement("button");
     allBtn.textContent = "Усі";
-    allBtn.className = svcActiveFilter === "" ? "active" : "";
-    allBtn.addEventListener("click", function () { svcActiveFilter = ""; svcSearchEl.value = ""; renderSvcFilter(); renderSvcList(); });
+    allBtn.className = (!svcActiveFilter && !svcFeatOnly) ? "active" : "";
+    allBtn.addEventListener("click", function () { svcActiveFilter = ""; svcFeatOnly = false; svcSearchEl.value = ""; renderSvcFilter(); renderSvcList(); });
     svcFilter.appendChild(allBtn);
+
+    // Карусель фільтр
+    var featBtn = document.createElement("button");
+    featBtn.textContent = "⭐ Карусель";
+    featBtn.className = svcFeatOnly ? "active" : "";
+    featBtn.style.cssText = svcFeatOnly ? "border-color:#c8a84b;color:#c8a84b" : "";
+    featBtn.addEventListener("click", function () {
+      svcFeatOnly = !svcFeatOnly; svcActiveFilter = ""; svcSearchEl.value = "";
+      renderSvcFilter(); renderSvcList();
+    });
+    svcFilter.appendChild(featBtn);
+
     cats.forEach(function (c) {
       var btn = document.createElement("button");
       btn.textContent = c;
       btn.className = svcActiveFilter === c ? "active" : "";
-      btn.addEventListener("click", function () { svcActiveFilter = c; svcSearchEl.value = ""; renderSvcFilter(); renderSvcList(); });
+      btn.addEventListener("click", function () { svcActiveFilter = c; svcFeatOnly = false; svcSearchEl.value = ""; renderSvcFilter(); renderSvcList(); });
       svcFilter.appendChild(btn);
     });
   }
@@ -724,9 +739,10 @@
     svcList.innerHTML = "";
     var q = (svcSearchEl.value || "").trim().toLowerCase();
     var items = svcAllItems.filter(function (s) {
-      var catOk = !svcActiveFilter || (s.category || "") === svcActiveFilter;
-      var qOk   = !q || s.name.toLowerCase().indexOf(q) !== -1;
-      return catOk && qOk;
+      var catOk  = !svcActiveFilter || (s.category || "") === svcActiveFilter;
+      var featOk = !svcFeatOnly || s.featured;
+      var qOk    = !q || s.name.toLowerCase().indexOf(q) !== -1;
+      return catOk && featOk && qOk;
     });
     if (!items.length) {
       svcList.innerHTML = '<div style="color:var(--text-dim);padding:32px;text-align:center;grid-column:1/-1">Послуг немає. Натисніть "+ Нова послуга"</div>';
@@ -734,7 +750,7 @@
     }
     items.forEach(function (s) {
       var card = document.createElement("div");
-      card.className = "svc-card";
+      card.className = "svc-card" + (s.featured ? " is-featured" : "");
       var imgHtml = s.image_url
         ? '<img class="svc-card-img" src="' + s.image_url + '" />'
         : '<div class="svc-card-img-placeholder">💆</div>';
@@ -749,18 +765,24 @@
           descHtml +
           '<div class="svc-card-actions">' +
             '<button data-edit>✏️ Редагувати</button>' +
-            '<button class="btn-feat-svc" data-feat title="Популярне">' + (s.featured ? '⭐ Популярне' : '☆ Популярне') + '</button>' +
+            '<button class="btn-feat-svc" data-feat title="Показувати у каруселі на головній">' + (s.featured ? '⭐ В каруселі' : '☆ В карусель') + '</button>' +
             '<button class="btn-del-svc" data-del>🗑 Видалити</button>' +
           '</div>' +
         '</div>';
       card.querySelector('[data-edit]').addEventListener('click', function () { openSvcEditor(s); });
       card.querySelector('[data-feat]').addEventListener('click', function () {
+        var btn = this;
         var newVal = s.featured ? 0 : 1;
         fetch('/api/admin/services/' + s.id, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ featured: newVal })
-        }).then(function () { loadServices(); });
+        }).then(function () {
+          s.featured = newVal;
+          btn.textContent = newVal ? '⭐ В каруселі' : '☆ В карусель';
+          card.classList.toggle('is-featured', !!newVal);
+          btn.classList.toggle('is-featured', !!newVal);
+        });
       });
       card.querySelector('[data-del]').addEventListener('click', function () {
         if (confirm('Видалити послугу "' + s.name + '"?')) deleteSvc(s.id);
