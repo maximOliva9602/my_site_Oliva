@@ -878,6 +878,62 @@
     setPos(false);
   });
 })();
+
+// ── Оновлення каруселі з API ──────────────────────────────────────────────
+(function(){
+  function baseName(n){
+    return n.replace(/\s*\(.*?\)/g,'').replace(/\s*\d+\s*хв/gi,'').trim();
+  }
+  function fmtPrice(kopiyky){
+    return 'від ' + Math.round(kopiyky/100).toLocaleString('uk') + ' грн';
+  }
+  fetch('/api/services')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.ok) return;
+      var featured = data.services.filter(function(s){ return s.featured; });
+      if (!featured.length) return;
+
+      // Групуємо по baseName, беремо мінімальну ціну
+      var groups = {}, order = [];
+      featured.forEach(function(s){
+        var bn = baseName(s.name);
+        if (!groups[bn]){ groups[bn] = { name: bn, minPrice: Infinity }; order.push(bn); }
+        if (s.price < groups[bn].minPrice) groups[bn].minPrice = s.price;
+      });
+
+      // Отримуємо всі slides (на desktop 5, на mobile 7 з клонами)
+      var allSlides = Array.from(document.querySelectorAll('#srvCarousel .srv-slide'));
+      var isMobile  = window.innerWidth < 900;
+      // Оригінали: desktop=[0..4], mobile=[1..5]
+      var offset = isMobile ? 1 : 0;
+      var total  = order.length;
+
+      order.forEach(function(bn, i){
+        var g = groups[bn];
+        var slide = allSlides[i + offset];
+        if (!slide) return;
+        slide.querySelector('.srv-slide-name').textContent = g.name;
+        slide.querySelector('.srv-slide-price').textContent = fmtPrice(g.minPrice);
+      });
+
+      // Синхронізуємо клони (mobile only)
+      if (isMobile && allSlides.length > total){
+        var orig0   = allSlides[offset];             // перший оригінал
+        var origLast= allSlides[offset + total - 1]; // останній оригінал
+        var clFirst = allSlides[allSlides.length - 1]; // клон першого (в кінці)
+        var clLast  = allSlides[0];                    // клон останнього (на початку)
+        function syncText(from, to){
+          if (!from || !to) return;
+          to.querySelector('.srv-slide-name').textContent  = from.querySelector('.srv-slide-name').textContent;
+          to.querySelector('.srv-slide-price').textContent = from.querySelector('.srv-slide-price').textContent;
+        }
+        syncText(orig0,    clFirst);
+        syncText(origLast, clLast);
+      }
+    })
+    .catch(function(){});
+})();
 </script>
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/script.js"></script>
