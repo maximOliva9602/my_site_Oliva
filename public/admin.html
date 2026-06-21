@@ -115,6 +115,14 @@
   .editor-area img { max-width: 100%; border-radius: 8px; margin: 10px 0; }
   .editor-area a { color: var(--olive-light); }
   .editor-area [data-placeholder]:empty::before { content: attr(data-placeholder); color: rgba(242,237,228,0.2); pointer-events: none; }
+  /* FAQ block preview in editor */
+  .editor-area .faq-block { background: rgba(46,61,34,0.3); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; margin: 20px 0; }
+  .editor-area .faq-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--cream); margin-bottom: 14px; }
+  .editor-area .faq-item { border-bottom: 1px solid var(--line); padding: 10px 0; }
+  .editor-area .faq-item:last-child { border-bottom: none; }
+  .editor-area .faq-q { color: var(--cream); font-weight: 600; margin-bottom: 4px; }
+  .editor-area .faq-a { color: var(--text-dim); margin: 0; }
+  .tb-btn[id="insertFaqBtn"] { width: auto; padding: 0 10px; font-size: 12px; }
 
   .blog-editor .publish-row { display: flex; align-items: center; gap: 10px; }
   .blog-editor .publish-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--olive-light); }
@@ -335,6 +343,8 @@
             <div class="tb-sep"></div>
             <button type="button" class="tb-btn tb-btn-img" id="insertImgBtn" title="Вставити фото">🖼 Фото</button>
             <input type="file" id="insertImgInput" class="upload-input" accept="image/*" />
+            <div class="tb-sep"></div>
+            <button type="button" class="tb-btn" id="insertFaqBtn" title="Блок: Часті питання">❓ FAQ</button>
           </div>
           <div class="editor-area" id="edBody" contenteditable="true" data-placeholder="Пишіть тут — просто текст, без жодного коду..."></div>
         </div>
@@ -752,9 +762,22 @@
     if (!file) return;
     uploadImage(file, function(url) {
       edBody.focus();
-      document.execCommand("insertHTML", false, '<img src="' + url + '" style="max-width:100%;border-radius:8px;margin:10px 0" />');
+      document.execCommand("insertHTML", false, '<img src="' + url + '" style="display:block;max-width:100%;border-radius:8px;margin:16px auto" />');
     });
     this.value = '';
+  });
+
+  /* -- Вставка FAQ блоку -- */
+  document.getElementById("insertFaqBtn").addEventListener("click", function () {
+    edBody.focus();
+    var faqHtml =
+      '<div class="faq-block">' +
+        '<h3 class="faq-title">Часті питання</h3>' +
+        '<div class="faq-item"><p class="faq-q">❓ Питання 1</p><p class="faq-a">Відповідь на питання 1.</p></div>' +
+        '<div class="faq-item"><p class="faq-q">❓ Питання 2</p><p class="faq-a">Відповідь на питання 2.</p></div>' +
+        '<div class="faq-item"><p class="faq-q">❓ Питання 3</p><p class="faq-a">Відповідь на питання 3.</p></div>' +
+      '</div><p><br></p>';
+    document.execCommand("insertHTML", false, faqHtml);
   });
 
   /* -- Завантаження файлу → стиснення canvas → base64 → сервер -- */

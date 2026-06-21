@@ -39,6 +39,25 @@
     .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--olive-light); text-decoration: none; margin-bottom: 36px; }
     .back-link:hover { color: var(--cream); }
 
+    /* FAQ block */
+    .post-body .faq-block { background: rgba(46,61,34,0.4); border: 1px solid rgba(122,145,86,0.25); border-radius: 16px; padding: 28px 32px; margin: 36px 0; }
+    .post-body .faq-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--cream); margin-bottom: 20px; }
+    .post-body .faq-item { border-bottom: 1px solid rgba(122,145,86,0.15); padding: 14px 0; }
+    .post-body .faq-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .post-body .faq-q { color: var(--cream); font-weight: 600; font-size: 15px; margin-bottom: 6px !important; }
+    .post-body .faq-a { color: var(--text-dim); margin: 0 !important; }
+
+    /* CTA block */
+    .post-cta { margin-top: 56px; padding: 40px 36px; background: linear-gradient(135deg, rgba(46,61,34,0.6), rgba(122,145,86,0.15)); border: 1px solid rgba(122,145,86,0.3); border-radius: 20px; text-align: center; }
+    .post-cta h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--cream); margin-bottom: 8px; }
+    .post-cta p { font-size: 14px; color: var(--text-dim); margin-bottom: 24px; }
+    .post-cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .post-cta-btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; border-radius: 50px; font-size: 15px; font-weight: 600; text-decoration: none; transition: all .2s; }
+    .post-cta-btn.primary { background: var(--olive-light); color: var(--black); }
+    .post-cta-btn.primary:hover { background: var(--cream); }
+    .post-cta-btn.secondary { background: transparent; border: 1.5px solid var(--olive-light); color: var(--olive-light); }
+    .post-cta-btn.secondary:hover { background: rgba(122,145,86,0.15); color: var(--cream); border-color: var(--cream); }
+
     .loading { text-align: center; padding: 80px 24px; color: var(--text-dim); }
   </style>
 </head>
@@ -73,7 +92,15 @@ fetch('/api/posts/' + slug)
       '<div class="post-date">' + dateStr + '</div>' +
       '<h1 class="post-title">' + p.title + '</h1>' +
       (p.cover ? '<img class="post-cover" src="' + p.cover + '" alt="' + p.title + '" />' : '') +
-      '<div class="post-body">' + (p.body || '') + '</div>';
+      '<div class="post-body">' + (p.body || '') + '</div>' +
+      '<div class="post-cta">' +
+        '<h3>Хочете спробувати?</h3>' +
+        '<p>Запишіться на масаж або подаруйте сертифікат близькій людині</p>' +
+        '<div class="post-cta-btns">' +
+          '<a href="/booking.html" class="post-cta-btn primary">📋 Записатися онлайн</a>' +
+          '<a href="/certificate.html" class="post-cta-btn secondary">🎁 Купити сертифікат</a>' +
+        '</div>' +
+      '</div>';
   })
   .catch(function(){
     document.getElementById('postContent').innerHTML = '<p>Статтю не знайдено. <a href="/blog" style="color:var(--olive-light)">← До блогу</a></p>';
