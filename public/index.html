@@ -1508,39 +1508,52 @@ function toggleRule(btn) {
 /* ---- Динамічний блок майстрів ---- */
 (function () {
   var BOOKING_URL = 'https://bookon.ua/s/oliva_massage_studio';
-  var FALLBACK_PHOTOS = {
-    'Максим':  'assets/img/master-maksym.jpg',
-    'Людмила': 'assets/img/master-liudmyla.jpg',
-    'Ярослав': 'assets/img/master-yaroslav.jpg',
-    'Олена':   'assets/img/master-olena.jpg',
-    'Андрій':  'assets/img/master-andrii.jpg',
+  var FALLBACK = [
+    { name: 'Максим',  level: 'Топ Майстер', photo: 'assets/img/master-maksym.jpg' },
+    { name: 'Людмила', level: 'Майстриня',   photo: 'assets/img/master-liudmyla.jpg' },
+    { name: 'Ярослав', level: 'Топ Майстер', photo: 'assets/img/master-yaroslav.jpg' },
+    { name: 'Олена',   level: 'Топ Майстер', photo: 'assets/img/master-olena.jpg' },
+    { name: 'Андрій',  level: 'Майстер',     photo: 'assets/img/master-andrii.jpg' },
+  ];
+  var FALLBACK_PHOTO = {
+    'Максим': 'assets/img/master-maksym.jpg', 'Людмила': 'assets/img/master-liudmyla.jpg',
+    'Ярослав': 'assets/img/master-yaroslav.jpg', 'Олена': 'assets/img/master-olena.jpg',
+    'Андрій': 'assets/img/master-andrii.jpg',
   };
 
+  function renderMasters(list) {
+    var grid = document.getElementById('teamGrid');
+    if (!grid) return;
+    grid.innerHTML = list.map(function (m) {
+      var photo = m.photo || FALLBACK_PHOTO[m.name] || 'assets/img/master-maksym.jpg';
+      var role  = m.level || 'Майстер';
+      var bookBtn = m.mono_link
+        ? '<div class="team-card-btns">' +
+            '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>' +
+            '<a class="team-mono-btn" href="' + m.mono_link + '" target="_blank" rel="noopener">💳 Monobank</a>' +
+          '</div>'
+        : '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>';
+      return '<div class="team-card visible">' +
+        '<img src="' + photo + '" alt="' + m.name + ' — ' + role + ' студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" />' +
+        '<div class="team-card-overlay">' +
+          '<div class="team-name">' + m.name + '</div>' +
+          '<div class="team-role">' + role.toUpperCase() + '</div>' +
+          bookBtn +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Одразу показуємо fallback — щоб майстри були видні без затримки
+  renderMasters(FALLBACK);
+
+  // Потім оновлюємо з API (якщо є фото або monobank посилання)
   fetch('/api/masters')
     .then(function (r) { return r.json(); })
     .then(function (j) {
-      var grid = document.getElementById('teamGrid');
-      if (!grid || !j.ok || !j.masters.length) return;
-      grid.innerHTML = j.masters.map(function (m) {
-        var photo = m.photo || FALLBACK_PHOTOS[m.name] || 'assets/img/master-maksym.jpg';
-        var role  = m.level || 'Майстер';
-        var bookBtn = m.mono_link
-          ? '<div class="team-card-btns">' +
-              '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>' +
-              '<a class="team-mono-btn" href="' + m.mono_link + '" target="_blank" rel="noopener">💳 Monobank</a>' +
-            '</div>'
-          : '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>';
-        return '<div class="team-card reveal">' +
-          '<img src="' + photo + '" alt="' + m.name + ' — ' + role + ' студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" />' +
-          '<div class="team-card-overlay">' +
-            '<div class="team-name">' + m.name + '</div>' +
-            '<div class="team-role">' + role.toUpperCase() + '</div>' +
-            bookBtn +
-          '</div>' +
-        '</div>';
-      }).join('');
+      if (j.ok && j.masters && j.masters.length) renderMasters(j.masters);
     })
-    .catch(function () {});
+    .catch(function () { /* залишаємо fallback */ });
 })();
 </script>
 </body>
