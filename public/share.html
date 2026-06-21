@@ -163,11 +163,6 @@
       <div class="field-label">Майстер (необов'язково)</div>
       <div class="master-chips" id="mastersRow">
         <div class="master-chip active" data-name="">Не вказувати</div>
-        <div class="master-chip" data-name="Ярослав">Ярослав</div>
-        <div class="master-chip" data-name="Максим">Максим</div>
-        <div class="master-chip" data-name="Андрій">Андрій</div>
-        <div class="master-chip" data-name="Олена">Олена</div>
-        <div class="master-chip" data-name="Людмила">Людмила</div>
       </div>
 
       <div class="field-label">Ваш відгук</div>
@@ -192,33 +187,7 @@
 <div class="panel" id="panelTips">
   <div class="form-wrap">
     <div class="field-label">Оберіть майстра</div>
-    <div class="masters-grid">
-      <div class="master-card active" data-master="yaroslav" onclick="selectMaster(this)">
-        <div class="master-avatar"><img src="assets/img/master-yaroslav.jpg" alt="Ярослав" /></div>
-        <div class="master-name">Ярослав</div>
-        <div class="master-role">Топ майстер</div>
-      </div>
-      <div class="master-card" data-master="maksym" onclick="selectMaster(this)">
-        <div class="master-avatar"><img src="assets/img/master-maksym.jpg" alt="Максим" /></div>
-        <div class="master-name">Максим</div>
-        <div class="master-role">Топ майстер</div>
-      </div>
-      <div class="master-card" data-master="andrii" onclick="selectMaster(this)">
-        <div class="master-avatar"><img src="assets/img/master-andrii.jpg" alt="Андрій" /></div>
-        <div class="master-name">Андрій</div>
-        <div class="master-role">Майстер</div>
-      </div>
-      <div class="master-card" data-master="olena" onclick="selectMaster(this)">
-        <div class="master-avatar"><img src="assets/img/master-olena.jpg" alt="Олена" /></div>
-        <div class="master-name">Олена</div>
-        <div class="master-role">Топ майстер</div>
-      </div>
-      <div class="master-card" data-master="liudmyla" onclick="selectMaster(this)">
-        <div class="master-avatar"><img src="assets/img/master-liudmyla.jpg" alt="Людмила" /></div>
-        <div class="master-name">Людмила</div>
-        <div class="master-role">Майстер</div>
-      </div>
-    </div>
+    <div class="masters-grid" id="tipsGrid"></div>
 
     <div class="field-label">Сума чайових</div>
     <div class="amounts">
@@ -279,14 +248,6 @@
     });
   });
 
-  document.querySelectorAll(".master-chip").forEach(function(chip) {
-    chip.addEventListener("click", function() {
-      document.querySelectorAll(".master-chip").forEach(function(c) { c.classList.remove("active"); });
-      this.classList.add("active");
-      reviewMaster = this.dataset.name;
-    });
-  });
-
   var reviewTextarea = document.getElementById("reviewText");
   reviewTextarea.addEventListener("input", function() {
     document.getElementById("charNum").textContent = this.value.length;
@@ -320,21 +281,57 @@
   });
 
   /* ── ЧАЙОВІ ── */
-  var MASTERS = {
-    yaroslav: { url: "https://send.monobank.ua/jar/YAROSLAV_URL" },
-    maksym:   { url: "https://send.monobank.ua/jar/5aQJss3RPW" },
-    andrii:   { url: "https://send.monobank.ua/jar/ANDRII_URL" },
-    olena:    { url: "https://send.monobank.ua/jar/goKABUfbt" },
-    liudmyla: { url: "https://send.monobank.ua/jar/5AgF2AwxSe" }
+  var FALLBACK_PHOTO = {
+    'Максим':  'assets/img/master-maksym.jpg',
+    'Людмила': 'assets/img/master-liudmyla.jpg',
+    'Ярослав': 'assets/img/master-yaroslav.jpg',
+    'Олена':   'assets/img/master-olena.jpg',
+    'Андрій':  'assets/img/master-andrii.jpg',
   };
 
-  var selectedMaster = "yaroslav";
+  var mastersData = [];
+  var selectedMasterId = null;
   var selectedAmt = 150;
+
+  function renderTipsGrid(list) {
+    var withLink = list.filter(function(m) { return m.mono_link; });
+    var grid = document.getElementById('tipsGrid');
+    if (!withLink.length) {
+      grid.innerHTML = '<p style="color:var(--text-dim);font-size:13px">Посилання майстрів ще не налаштовані</p>';
+      return;
+    }
+    mastersData = withLink;
+    grid.innerHTML = withLink.map(function(m, i) {
+      var photo = m.photo || FALLBACK_PHOTO[m.name] || 'assets/img/master-maksym.jpg';
+      if (i === 0) selectedMasterId = m.id;
+      return '<div class="master-card' + (i === 0 ? ' active' : '') + '" data-mid="' + m.id + '" onclick="selectMaster(this)">' +
+        '<div class="master-avatar"><img src="' + photo + '" alt="' + m.name + '" /></div>' +
+        '<div class="master-name">' + m.name + '</div>' +
+        '<div class="master-role">' + (m.level || 'Майстер') + '</div>' +
+      '</div>';
+    }).join('');
+    updatePayBtn();
+  }
+
+  function renderReviewChips(list) {
+    var row = document.getElementById('mastersRow');
+    var chips = list.map(function(m) {
+      return '<div class="master-chip" data-name="' + m.name + '">' + m.name + '</div>';
+    }).join('');
+    row.innerHTML = '<div class="master-chip active" data-name="">Не вказувати</div>' + chips;
+    row.querySelectorAll('.master-chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        row.querySelectorAll('.master-chip').forEach(function(c) { c.classList.remove('active'); });
+        this.classList.add('active');
+        reviewMaster = this.dataset.name;
+      });
+    });
+  }
 
   function selectMaster(el) {
     document.querySelectorAll(".master-card").forEach(function(c) { c.classList.remove("active"); });
     el.classList.add("active");
-    selectedMaster = el.dataset.master;
+    selectedMasterId = parseInt(el.dataset.mid, 10);
     updatePayBtn();
   }
 
@@ -354,7 +351,8 @@
 
   function updatePayBtn() {
     var btn = document.getElementById("payBtn");
-    if (selectedAmt > 0 && selectedMaster) {
+    var master = mastersData.find(function(m) { return m.id === selectedMasterId; });
+    if (selectedAmt > 0 && master && master.mono_link) {
       btn.classList.remove("disabled");
     } else {
       btn.classList.add("disabled");
@@ -363,11 +361,21 @@
 
   function handlePay(e) {
     e.preventDefault();
-    if (!selectedMaster || selectedAmt <= 0) return false;
-    var url = MASTERS[selectedMaster].url + "?a=" + selectedAmt;
-    window.open(url, "_blank");
+    var master = mastersData.find(function(m) { return m.id === selectedMasterId; });
+    if (!master || !master.mono_link || selectedAmt <= 0) return false;
+    window.open(master.mono_link + "?a=" + selectedAmt, "_blank");
     return false;
   }
+
+  fetch('/api/masters')
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (j.ok && j.masters) {
+        renderTipsGrid(j.masters);
+        renderReviewChips(j.masters);
+      }
+    })
+    .catch(function() {});
 
   function sharePage() {
     var url = window.location.href;
