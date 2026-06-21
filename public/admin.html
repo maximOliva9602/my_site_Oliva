@@ -849,8 +849,16 @@
             '<div style="color:var(--text-dim);font-size:12px">' + (m.level || '—') + (m.mono_link ? ' · 💳 Monobank' : '') + '</div>' +
           '</div>' +
         '</div>' +
-        '<button class="svc-edit-btn">✏️ Редагувати</button>';
+        '<button class="svc-edit-btn">✏️ Редагувати</button>' +
+        '<button class="btn-del" style="margin-left:8px" data-del>🗑</button>';
       row.querySelector(".svc-edit-btn").addEventListener("click", function () { openMasterEditor(m); });
+      row.querySelector("[data-del]").addEventListener("click", function () {
+        if (!confirm('Видалити майстра "' + m.name + '"? Він зникне з сайту та системи.')) return;
+        fetch("/api/crm/masters/" + m.id, { method: "DELETE", credentials: "same-origin" })
+          .then(function (r) { return r.json(); })
+          .then(function (j) { if (j.ok) loadMasters(); else alert("Помилка видалення"); })
+          .catch(function () { alert("Помилка мережі"); });
+      });
       masterList.appendChild(row);
     });
   }
