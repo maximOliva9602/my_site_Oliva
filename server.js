@@ -358,7 +358,7 @@ app.post("/api/admin/posts", requireAdmin, function (req, res) {
     id: id, slug: slug,
     title: title,
     excerpt: String(d.excerpt || "").slice(0, 500).trim(),
-    body: String(d.body || "").slice(0, 20000).trim(),
+    body: String(d.body || "").slice(0, 200000).trim(),
     cover: String(d.cover || "").slice(0, 500).trim(),
     date: new Date().toISOString().slice(0, 10),
     published: !!d.published

@@ -5,7 +5,7 @@ node_modules/
 референси/
 photo/
 # blog posts зберігаються через Railway Volume, не в git
-# data/posts.json
+data/posts.json
 
 # Локальна база CRM (SQLite) — на Railway лежить на Volume, не в git
 data/*.db
