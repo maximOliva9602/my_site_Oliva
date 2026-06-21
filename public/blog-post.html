@@ -3,7 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Блог — Studiya Oliva</title>
+  <title>Блог — Студія масажу Oliva</title>
+  <meta name="description" content="" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:site_name" content="Студія масажу Oliva" />
+  <meta property="og:title" content="" />
+  <meta property="og:description" content="" />
+  <meta property="og:url" content="" />
+  <meta property="og:image" content="https://site-oliva-production.up.railway.app/assets/img/og-image.jpg" />
+  <link rel="canonical" href="" />
   <link rel="icon" href="/assets/img/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -83,7 +93,16 @@ fetch('/api/posts/' + slug)
     return r.json();
   })
   .then(function(p){
-    document.title = p.title + ' — Studiya Oliva';
+    document.title = p.title + ' — Студія масажу Oliva';
+    var BASE = 'https://site-oliva-production.up.railway.app';
+    var pageUrl = BASE + location.pathname;
+    var ogImg = p.cover ? (p.cover.startsWith('http') ? p.cover : BASE + p.cover) : BASE + '/assets/img/og-image.jpg';
+    document.querySelector('meta[name="description"]').content = p.excerpt || p.title;
+    document.querySelector('meta[property="og:title"]').content = p.title + ' — Студія масажу Oliva';
+    document.querySelector('meta[property="og:description"]').content = p.excerpt || p.title;
+    document.querySelector('meta[property="og:url"]').content = pageUrl;
+    document.querySelector('meta[property="og:image"]').content = ogImg;
+    document.querySelector('link[rel="canonical"]').href = pageUrl;
     var months = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
     var parts = (p.date||'').split('-');
     var dateStr = parts.length === 3 ? parseInt(parts[2]) + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0] : '';
