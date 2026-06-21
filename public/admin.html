@@ -356,6 +356,7 @@
     <div class="svc-top">
       <h2>👥 Майстри</h2>
       <div style="flex:1"></div>
+      <button class="btn-new-svc" id="masterNewBtn">+ Новий майстер</button>
       <button class="svc-close-btn" id="masterCloseBtn">✕ Закрити</button>
     </div>
     <div class="svc-body" id="masterBody">
@@ -853,6 +854,7 @@
     masterOverlay.classList.remove("open");
     closeMasterEditor();
   });
+  document.getElementById("masterNewBtn").addEventListener("click", function () { openMasterEditor(null); });
   document.getElementById("meCancelBtn").addEventListener("click", closeMasterEditor);
 
   /* -- Завантаження фото майстра -- */
@@ -955,13 +957,13 @@
   }
 
   function openMasterEditor(m) {
-    meEditingId = m.id;
-    meName.value = m.name || "";
-    setLevelBtn(m.level || "Майстер");
-    meMonoLink.value = m.mono_link || "";
-    meSortOrder.value = m.sort_order || 0;
-    mePhotoUrl.value = m.photo || "";
-    if (m.photo) {
+    meEditingId = m ? m.id : null;
+    meName.value = m ? (m.name || "") : "";
+    setLevelBtn(m ? (m.level || "Майстер") : "Майстер");
+    meMonoLink.value = m ? (m.mono_link || "") : "";
+    meSortOrder.value = m ? (m.sort_order || 0) : 0;
+    mePhotoUrl.value = m ? (m.photo || "") : "";
+    if (m && m.photo) {
       mePhotoPreview.src = m.photo;
       mePhotoPreview.classList.add("show");
       document.getElementById("mePhotoPlaceholder").style.display = "none";
@@ -969,7 +971,8 @@
       mePhotoPreview.classList.remove("show");
       document.getElementById("mePhotoPlaceholder").style.display = "";
     }
-    masterEdTitle.textContent = m.name;
+    masterEdTitle.textContent = m ? m.name : "Новий майстер";
+    document.getElementById("meSaveBtn").textContent = m ? "💾 Зберегти зміни" : "✚ Додати майстра";
     masterList.style.display = "none";
     masterEditor.style.display = "block";
   }
@@ -980,27 +983,32 @@
   }
 
   document.getElementById("meSaveBtn").addEventListener("click", function () {
-    if (!meEditingId) return;
+    var name = meName.value.trim();
+    if (!name) { meName.focus(); meName.style.borderColor = "#e07070"; return; }
+    meName.style.borderColor = "";
     var btn = this;
     btn.textContent = "Збереження..."; btn.disabled = true;
     var data = {
-      name:       meName.value.trim(),
-      level:      meLevel.value,
+      name:       name,
+      level:      meLevel.value || "Майстер",
       mono_link:  meMonoLink.value.trim(),
       sort_order: parseInt(meSortOrder.value, 10) || 0,
     };
     if (mePhotoUrl.value) data.photo = mePhotoUrl.value;
-    fetch("/api/crm/masters/" + meEditingId, {
-      method: "PUT",
+    var isNew = !meEditingId;
+    var url    = isNew ? "/api/crm/masters" : "/api/crm/masters/" + meEditingId;
+    var method = isNew ? "POST" : "PUT";
+    fetch(url, {
+      method: method,
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     }).then(function (r) { return r.json(); })
       .then(function (j) {
-        btn.textContent = "💾 Зберегти"; btn.disabled = false;
+        btn.textContent = isNew ? "✚ Додати майстра" : "💾 Зберегти зміни"; btn.disabled = false;
         if (j.ok) { closeMasterEditor(); loadMasters(); }
         else alert("Помилка збереження");
-      }).catch(function () { btn.textContent = "💾 Зберегти"; btn.disabled = false; });
+      }).catch(function () { btn.textContent = isNew ? "✚ Додати майстра" : "💾 Зберегти зміни"; btn.disabled = false; });
   });
   /* ========== END MASTERS ========== */
 

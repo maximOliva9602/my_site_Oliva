@@ -239,8 +239,9 @@ router.post("/masters", owner, function (req, res) {
   const d = req.body || {};
   const name = clean(d.name, 100);
   if (!name) return res.status(400).json({ ok: false, error: "name required" });
-  const info = db.prepare("INSERT INTO masters (name,phone,color,active,sort_order,created_at) VALUES (?,?,?,1,?,?)")
-    .run(name, clean(d.phone, 30), clean(d.color, 20), parseInt(d.sort_order, 10) || 0, Date.now());
+  const info = db.prepare("INSERT INTO masters (name,phone,color,active,sort_order,created_at,photo,level,mono_link) VALUES (?,?,?,1,?,?,?,?,?)")
+    .run(name, clean(d.phone, 30), clean(d.color, 20), parseInt(d.sort_order, 10) || 0, Date.now(),
+      clean(d.photo, 500) || null, clean(d.level, 50) || 'Майстер', clean(d.mono_link, 500) || null);
   res.json({ ok: true, id: info.lastInsertRowid });
 });
 router.put("/masters/:id", owner, function (req, res) {
