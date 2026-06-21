@@ -753,6 +753,22 @@
     this.value = '';
   });
 
+  /* -- Вставка HTML в редактор (гарантує курсор всередині edBody) -- */
+  function insertIntoEditor(html) {
+    edBody.focus();
+    var sel = window.getSelection();
+    // якщо курсор не в edBody — ставимо в кінець
+    if (!sel || !sel.rangeCount || !edBody.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+      var range = document.createRange();
+      range.selectNodeContents(edBody);
+      range.collapse(false);
+      sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    document.execCommand("insertHTML", false, html);
+  }
+
   /* -- Вставка фото в текст -- */
   document.getElementById("insertImgBtn").addEventListener("click", function () {
     document.getElementById("insertImgInput").click();
@@ -761,15 +777,13 @@
     var file = this.files[0];
     if (!file) return;
     uploadImage(file, function(url) {
-      edBody.focus();
-      document.execCommand("insertHTML", false, '<img src="' + url + '" style="display:block;max-width:100%;border-radius:8px;margin:16px auto" />');
+      insertIntoEditor('<img src="' + url + '" style="display:block;max-width:100%;border-radius:8px;margin:16px auto" />');
     });
     this.value = '';
   });
 
   /* -- Вставка FAQ блоку -- */
   document.getElementById("insertFaqBtn").addEventListener("click", function () {
-    edBody.focus();
     var faqHtml =
       '<div class="faq-block">' +
         '<h3 class="faq-title">Часті питання</h3>' +
@@ -777,7 +791,7 @@
         '<div class="faq-item"><p class="faq-q">❓ Питання 2</p><p class="faq-a">Відповідь на питання 2.</p></div>' +
         '<div class="faq-item"><p class="faq-q">❓ Питання 3</p><p class="faq-a">Відповідь на питання 3.</p></div>' +
       '</div><p><br></p>';
-    document.execCommand("insertHTML", false, faqHtml);
+    insertIntoEditor(faqHtml);
   });
 
   /* -- Завантаження файлу → стиснення canvas → base64 → сервер -- */
