@@ -882,7 +882,7 @@
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (!data.ok) return;
-      var featured = data.services.filter(function(s){ return s.featured; });
+      var featured = data.services.filter(function(s){ return s.in_carousel; });
       if (!featured.length) return;
 
       var groups = {}, order = [];

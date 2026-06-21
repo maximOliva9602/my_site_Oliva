@@ -196,8 +196,12 @@
   .svc-card-actions .btn-del-svc:hover { border-color: #e07070; color: #e07070; }
   .svc-card-actions .btn-feat-svc { flex: 1.2; }
   .svc-card-actions .btn-feat-svc:hover { border-color: #c8a84b; color: #c8a84b; }
-  .svc-card.is-featured { border-color: rgba(200,168,75,0.5); box-shadow: 0 0 0 1px rgba(200,168,75,0.25); }
+  .svc-card.is-featured { border-color: rgba(200,168,75,0.4); }
   .svc-card.is-featured .btn-feat-svc { border-color: #c8a84b; color: #c8a84b; background: rgba(200,168,75,0.1); }
+  .svc-card-actions .btn-carousel-svc { flex: 1.2; }
+  .svc-card-actions .btn-carousel-svc:hover { border-color: #7a9156; color: #7a9156; }
+  .svc-card.is-carousel { box-shadow: 0 0 0 2px rgba(122,145,86,0.4); }
+  .svc-card.is-carousel .btn-carousel-svc { border-color: var(--olive-light); color: var(--olive-light); background: rgba(122,145,86,0.1); }
 
   /* Services editor */
   .svc-editor { display: none; flex-direction: column; gap: 18px; max-width: 720px; }
@@ -740,7 +744,7 @@
     var q = (svcSearchEl.value || "").trim().toLowerCase();
     var items = svcAllItems.filter(function (s) {
       var catOk  = !svcActiveFilter || (s.category || "") === svcActiveFilter;
-      var featOk = !svcFeatOnly || s.featured;
+      var featOk = !svcFeatOnly || s.in_carousel;
       var qOk    = !q || s.name.toLowerCase().indexOf(q) !== -1;
       return catOk && featOk && qOk;
     });
@@ -750,7 +754,7 @@
     }
     items.forEach(function (s) {
       var card = document.createElement("div");
-      card.className = "svc-card" + (s.featured ? " is-featured" : "");
+      card.className = "svc-card" + (s.featured ? " is-featured" : "") + (s.in_carousel ? " is-carousel" : "");
       var imgHtml = s.image_url
         ? '<img class="svc-card-img" src="' + s.image_url + '" />'
         : '<div class="svc-card-img-placeholder">💆</div>';
@@ -765,7 +769,8 @@
           descHtml +
           '<div class="svc-card-actions">' +
             '<button data-edit>✏️ Редагувати</button>' +
-            '<button class="btn-feat-svc" data-feat title="Показувати у каруселі на головній">' + (s.featured ? '⭐ В каруселі' : '☆ В карусель') + '</button>' +
+            '<button class="btn-feat-svc" data-feat title="Показувати у вкладці Популярні">' + (s.featured ? '⭐ Популярне' : '☆ Популярне') + '</button>' +
+            '<button class="btn-carousel-svc" data-carousel title="Показувати у каруселі на головній">' + (s.in_carousel ? '🎠 В каруселі' : '○ В карусель') + '</button>' +
             '<button class="btn-del-svc" data-del>🗑 Видалити</button>' +
           '</div>' +
         '</div>';
@@ -779,9 +784,21 @@
           body: JSON.stringify({ featured: newVal })
         }).then(function () {
           s.featured = newVal;
-          btn.textContent = newVal ? '⭐ В каруселі' : '☆ В карусель';
+          btn.textContent = newVal ? '⭐ Популярне' : '☆ Популярне';
           card.classList.toggle('is-featured', !!newVal);
-          btn.classList.toggle('is-featured', !!newVal);
+        });
+      });
+      card.querySelector('[data-carousel]').addEventListener('click', function () {
+        var btn = this;
+        var newVal = s.in_carousel ? 0 : 1;
+        fetch('/api/admin/services/' + s.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ in_carousel: newVal })
+        }).then(function () {
+          s.in_carousel = newVal;
+          btn.textContent = newVal ? '🎠 В каруселі' : '○ В карусель';
+          card.classList.toggle('is-carousel', !!newVal);
         });
       });
       card.querySelector('[data-del]').addEventListener('click', function () {
