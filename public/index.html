@@ -1550,12 +1550,7 @@ function toggleRule(btn) {
     grid.innerHTML = list.map(function (m) {
       var photo = m.photo || FALLBACK_PHOTO[m.name] || 'assets/img/master-maksym.jpg';
       var role  = m.level || 'Майстер';
-      var bookBtn = m.mono_link
-        ? '<div class="team-card-btns">' +
-            '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>' +
-            '<a class="team-mono-btn" href="' + m.mono_link + '" target="_blank" rel="noopener">💳 Monobank</a>' +
-          '</div>'
-        : '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>';
+      var bookBtn = '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>';
       return '<div class="team-card visible">' +
         '<img src="' + photo + '" alt="' + m.name + ' — ' + role + ' студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" />' +
         '<div class="team-card-overlay">' +
