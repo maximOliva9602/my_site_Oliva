@@ -235,6 +235,12 @@
     document.getElementById('tab' + (tab === 'review' ? 'Review' : 'Tips')).classList.add('active');
   }
 
+  /* ── DEEP LINK via hash ── */
+  (function() {
+    var hash = window.location.hash.replace('#', '');
+    if (hash === 'tips') switchTab('tips');
+  })();
+
   /* ── ВІДГУК ── */
   var rating = 0;
   var reviewMaster = "";
