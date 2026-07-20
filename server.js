@@ -57,7 +57,19 @@ async function sendTelegram(text) {
 
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: false, limit: "15mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+/* Явні заголовки кешу. Без них Cloudflare підставляє свій max-age=14400,
+   і правки в js/css доїжджають до користувачів лише через 4 години.
+   Код і розмітку віддаємо з обов'язковою ревалідацією (ETag все одно
+   поверне 304, якщо файл не змінився), медіа — кешуємо надовго. */
+app.use(express.static(path.join(__dirname, "public"), {
+  setHeaders: function (res, filePath) {
+    if (/\.(js|css|html|json)$/i.test(filePath)) {
+      res.setHeader("Cache-Control", "no-cache, must-revalidate");
+    } else {
+      res.setHeader("Cache-Control", "public, max-age=2592000"); // 30 днів
+    }
+  },
+}));
 
 /* ---------------- In-memory сховище ---------------- */
 // conversations: visitorId -> { id, name, messages:[{from,text,ts}], lastTs, unread }
