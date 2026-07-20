@@ -476,32 +476,60 @@ router.get("/dashboard", owner, function (req, res) {
   });
 
   // --- 2. Майстри ---
+  /* Записи — за той самий період, що й картка «1. Записи»: з початку
+     місяця по сьогодні включно, без скасованих. Інакше числа майстрів
+     не сходяться з підсумком по записах. */
   const masters = db.prepare(
     `SELECT m.id, m.name, m.photo, m.level,
             COUNT(a.id) bookings,
             SUM(CASE WHEN a.status='completed' THEN a.price ELSE 0 END) revenue
        FROM masters m
-       LEFT JOIN appointments a ON a.master_id=m.id AND a.date>=?
+       LEFT JOIN appointments a ON a.master_id=m.id
+                               AND a.date>=? AND a.date<=?
+                               AND a.status<>'cancelled'
       WHERE m.active=1
       GROUP BY m.id ORDER BY bookings DESC`
-  ).all(mStart);
+  ).all(mStart, today);
 
-  // Завантаженість: робочих годин на місяць (Пн-Сб, 12.5 год/день)
-  const daysInMonth = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
-  const workdays = Math.round(daysInMonth * 6 / 7);
-  const maxMinPerMaster = workdays * 750; // 12.5 год = 750 хв
+  /* Ємність рахуємо з реального графіка майстра (master_schedule) за
+     дні, що вже минули цього місяця, а не з умовних 12.5 год × 6/7 днів. */
+  const elapsedWeekdays = [];   // список weekday для кожного дня з mStart по today
+  for (let d = new Date(mStart + "T00:00:00"); d <= dt; d.setDate(d.getDate() + 1)) {
+    elapsedWeekdays.push(d.getDay());
+  }
+  const todayWeekday = dt.getDay();
 
   masters.forEach(function (m) {
+    const sched = db.prepare(
+      "SELECT weekday, work_start, work_end FROM master_schedule WHERE master_id=?"
+    ).all(m.id);
+    const minByWeekday = {};
+    sched.forEach(function (s) { minByWeekday[s.weekday] = (s.work_end - s.work_start); });
+
+    const capacityMin = elapsedWeekdays.reduce(function (sum, wd) {
+      return sum + (minByWeekday[wd] || 0);
+    }, 0);
+
     const usedMin = db.prepare(
       `SELECT COALESCE(SUM(duration_min),0) s FROM appointments
-        WHERE master_id=? AND date>=? AND status IN ('pending','confirmed','completed')`
-    ).get(m.id, mStart).s;
-    m.workload_pct = maxMinPerMaster > 0 ? Math.min(100, Math.round(usedMin / maxMinPerMaster * 100)) : 0;
-    // Вільні слоти сьогодні
-    const sched = db.prepare(
-      "SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=?"
-    ).get(m.id, dt.getDay() === 0 ? 0 : dt.getDay());
-    m.free_today_h = sched ? Math.round((sched.work_end - sched.work_start) / 60 * 10) / 10 : 0;
+        WHERE master_id=? AND date>=? AND date<=? AND status IN ('pending','confirmed','completed')`
+    ).get(m.id, mStart, today).s;
+
+    m.workload_pct = capacityMin > 0 ? Math.min(100, Math.round(usedMin / capacityMin * 100)) : 0;
+
+    /* Вільно сьогодні = зміна мінус уже зайняте сьогодні.
+       Раніше сюди йшла вся довжина зміни, тому в усіх майстрів
+       світилось однакове число незалежно від записів. */
+    const shiftMin = minByWeekday[todayWeekday] || 0;
+    if (!shiftMin) {
+      m.free_today_h = null;   // сьогодні не працює
+    } else {
+      const busyToday = db.prepare(
+        `SELECT COALESCE(SUM(duration_min),0) s FROM appointments
+          WHERE master_id=? AND date=? AND status IN ('pending','confirmed','completed')`
+      ).get(m.id, today).s;
+      m.free_today_h = Math.max(0, Math.round((shiftMin - busyToday) / 60 * 10) / 10);
+    }
   });
 
   // --- 3. Послуги ---
@@ -510,10 +538,12 @@ router.get("/dashboard", owner, function (req, res) {
             SUM(CASE WHEN a.status='completed' THEN a.price ELSE 0 END) revenue,
             AVG(CASE WHEN a.status='completed' THEN a.price ELSE NULL END) avg_price
        FROM services s
-       LEFT JOIN appointments a ON a.service_id=s.id AND a.date>=?
+       LEFT JOIN appointments a ON a.service_id=s.id
+                               AND a.date>=? AND a.date<=?
+                               AND a.status<>'cancelled'
       WHERE s.active=1
       GROUP BY s.id ORDER BY bookings DESC`
-  ).all(mStart);
+  ).all(mStart, today);
 
   // --- 4. Клієнти ---
   const clientStats = db.prepare(

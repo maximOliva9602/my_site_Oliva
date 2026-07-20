@@ -300,13 +300,16 @@
         });
         return g;
       }
+      /* Обгортка зі скролом: на телефоні широкі таблиці інакше
+         обрізаються по правому краю (остання колонка не видна). */
       function tbl(heads, rows) {
-        var t = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;">';
+        var t = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+        t += '<table style="width:100%;min-width:max-content;border-collapse:collapse;font-size:.82rem;white-space:nowrap;">';
         t += '<tr>' + heads.map(function(h) { return '<th style="text-align:left;color:var(--text-dim);padding:4px 6px;font-weight:500;border-bottom:1px solid var(--line);">' + h + '</th>'; }).join("") + '</tr>';
         rows.forEach(function(r) {
           t += '<tr>' + r.map(function(c) { return '<td style="padding:6px 6px;border-bottom:1px solid rgba(122,145,86,.08);color:var(--cream);">' + c + '</td>'; }).join("") + '</tr>';
         });
-        t += '</table>'; return t;
+        t += '</table></div>'; return t;
       }
 
       /* ---- 1. Записи ---- */
@@ -330,6 +333,11 @@
       }
       var apptCard = card("1. Записи", "");
       apptCard.querySelector("div:last-child").appendChild(s1);
+      /* Підпис обов'язковий: цей ряд рахується за місяць, а стоїть одразу
+         під рядом Сьогодні/Тиждень/Місяць — без нього читається як «сьогодні». */
+      var stHead = el("div", ""); stHead.style.cssText = "font-size:.78rem;color:var(--text-dim);margin:4px 0 6px;";
+      stHead.textContent = "Статуси за місяць";
+      apptCard.querySelector("div:last-child").appendChild(stHead);
       apptCard.querySelector("div:last-child").appendChild(s2);
       var upHead = el("div",""); upHead.style.cssText = "font-size:.78rem;color:var(--text-dim);margin:10px 0 6px;";
       upHead.textContent = "Найближчі записи сьогодні"; apptCard.querySelector("div:last-child").appendChild(upHead);
@@ -343,10 +351,10 @@
           m.bookings || 0,
           '<div style="display:flex;align-items:center;gap:6px;"><div style="background:rgba(46,61,34,.3);border-radius:4px;height:6px;width:60px;overflow:hidden;"><div style="background:var(--olive-light);height:100%;width:' + (m.workload_pct||0) + '%"></div></div><span>' + (m.workload_pct||0) + '%</span></div>',
           grn(m.revenue),
-          (m.free_today_h || 0) + " год",
+          m.free_today_h == null ? "вихідний" : m.free_today_h + " год",
         ];
       });
-      main.appendChild(card("2. Майстри",
+      main.appendChild(card("2. Майстри (місяць)",
         tbl(["Ім'я","Рівень","Записів","Завант.","Дохід","Вільно сьогодні"], mRows)
       ));
 
@@ -391,10 +399,13 @@
         { label: "Дохід тиждень",   val: grn(f.week.actual) },
         { label: "Дохід місяць",    val: grn(f.month.actual) },
       ]);
+      /* Було: forecast(сьогодні)+forecast(тиждень)+forecast(місяць) — періоди
+         вкладені один в одного, тому сьогоднішні записи рахувались тричі.
+         Місячний прогноз уже включає і тиждень, і сьогодні. */
       var f2 = row3([
-        { label: "Прогноз (є записи)", val: grn((f.today.forecast||0)+(f.week.forecast||0)+(f.month.forecast||0)) },
-        { label: "Середній чек",        val: grn(f.avg_check) },
-        { label: "",                    val: "" },
+        { label: "Прогноз (місяць)", val: grn(f.month.forecast || 0) },
+        { label: "Середній чек",     val: grn(f.avg_check) },
+        { label: "",                 val: "" },
       ]);
       var byMasterRows = (f.by_master||[]).map(function(m) { return [m.name, grn(m.revenue)]; });
       var bySvcRows    = (f.by_service||[]).map(function(s) {
