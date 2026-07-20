@@ -89,34 +89,62 @@
     }).catch(function(e) { console.error("[push] SW ready error:", e); });
   }
 
-  /* ── Кнопка 🔔 у topbar (запит дозволу тільки при кліку) ── */
+  /* ── Ініціалізація push: тихо якщо вже дозволено, тост якщо ні ── */
+  function initPush() {
+    if (!("Notification" in window) || !("PushManager" in window)) return;
+    if (Notification.permission === "granted") {
+      setTimeout(subscribePush, 1200);
+      return;
+    }
+    if (Notification.permission === "denied") return;
+    // Показуємо тост один раз на сесію
+    if (sessionStorage.getItem("push_asked")) return;
+    showPushToast();
+  }
+
+  function showPushToast() {
+    if (document.getElementById("push-toast")) return;
+    var t = document.createElement("div"); t.id = "push-toast";
+    t.innerHTML =
+      '<div class="pt-msg">🔔 Отримувати сповіщення про нові записи на цей телефон?</div>' +
+      '<div class="pt-btns">' +
+        '<button class="btn btn-primary btn-sm" id="pt-allow">Дозволити</button>' +
+        '<button class="btn btn-ghost btn-sm" id="pt-later">Пізніше</button>' +
+      '</div>';
+    document.body.appendChild(t);
+
+    document.getElementById("pt-allow").addEventListener("click", function() {
+      // Виклик тут — це жест користувача, iOS дозволяє requestPermission()
+      Notification.requestPermission().then(function(p) {
+        t.remove(); sessionStorage.setItem("push_asked", "1");
+        if (p === "granted") subscribePush();
+      }).catch(function() { t.remove(); });
+    });
+    document.getElementById("pt-later").addEventListener("click", function() {
+      t.remove(); sessionStorage.setItem("push_asked", "1");
+    });
+  }
+
+  /* Зберігаємо setupPushBtn для кнопки в topbar (опціонально) */
   function setupPushBtn() {
     var btn = document.getElementById("pushBtn");
     if (!btn) return;
-    if (!("Notification" in window) || !("PushManager" in window)) return; // не підтримується
-    btn.style.display = ""; // показати кнопку
+    if (!("Notification" in window) || !("PushManager" in window)) return;
+    btn.style.display = "";
     function upd() {
       if (Notification.permission === "granted") {
         btn.textContent = "🔔"; btn.title = "Сповіщення увімкнені"; btn.style.opacity = "1";
       } else if (Notification.permission === "denied") {
-        btn.textContent = "🔕"; btn.title = "Сповіщення заблоковані (налаштуйте браузер)"; btn.style.opacity = "0.4";
+        btn.textContent = "🔕"; btn.title = "Сповіщення заблоковані в налаштуваннях"; btn.style.opacity = "0.4";
       } else {
         btn.textContent = "🔕"; btn.title = "Натисніть щоб увімкнути сповіщення"; btn.style.opacity = "0.6";
       }
     }
     upd();
-    if (Notification.permission === "granted") { setTimeout(subscribePush, 1000); }
     btn.addEventListener("click", function() {
-      if (Notification.permission === "denied") {
-        alert("Сповіщення заблоковані. Дозвольте їх у налаштуваннях браузера.");
-        return;
-      }
-      if (Notification.permission === "granted") { subscribePush(); upd(); return; }
-      // Запитуємо дозвіл — тільки при явному натисканні користувачем
-      Notification.requestPermission().then(function(p) {
-        upd();
-        if (p === "granted") subscribePush();
-      }).catch(function() {});
+      if (Notification.permission === "denied") { alert("Дозвольте сповіщення в налаштуваннях телефону → Oliva → Сповіщення."); return; }
+      if (Notification.permission === "granted") { subscribePush(); return; }
+      Notification.requestPermission().then(function(p) { upd(); if (p === "granted") subscribePush(); }).catch(function(){});
     });
   }
 
@@ -231,7 +259,8 @@
     mobSheetLogout.onclick = function() { closeMobSheet(); $("logoutBtn").click(); };
 
     TABS[0].render();
-    setupPushBtn();
+    setupPushBtn(); // стан кнопки в topbar
+    initPush();     // тост або тиха підписка
     // Авто-оновлення коли повертаємось у додаток (напр. із фону)
     document.addEventListener("visibilitychange", function() {
       if (!document.hidden && window.__reloadAppts) {
