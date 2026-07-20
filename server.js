@@ -150,6 +150,21 @@ app.post("/api/push/subscribe", function (req, res) {
   }
 });
 
+/* Тест push — повертає кількість підписок і надсилає тестове сповіщення */
+app.post("/api/push/test", function (req, res) {
+  var token = auth.parseCookies(req.headers.cookie).oliva_admin;
+  var session = auth.getSession(token);
+  if (!session) return res.status(401).json({ ok: false, error: "unauthorized" });
+  var subs = [];
+  try { subs = db.prepare("SELECT id, created_at FROM push_subscriptions").all(); } catch(e) {}
+  if (subs.length === 0) {
+    return res.json({ ok: false, error: "no_subscriptions", count: 0 });
+  }
+  adminNotify.sendPushToAll("🔔 Тест сповіщення Oliva CRM — працює!")
+    .then(function() { res.json({ ok: true, count: subs.length }); })
+    .catch(function(e) { res.status(500).json({ ok: false, error: e.message, count: subs.length }); });
+});
+
 /* Відписатися */
 app.post("/api/push/unsubscribe", function (req, res) {
   var sub = req.body && req.body.subscription;

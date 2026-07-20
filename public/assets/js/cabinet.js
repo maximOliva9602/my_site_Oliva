@@ -1710,6 +1710,49 @@
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Журнал сповіщень"));
     main.appendChild(bar);
+
+    /* ── Push-сповіщення на телефон ── */
+    var pushCard = el("div", "item"); pushCard.style.marginBottom = "16px";
+    var pushTitle = el("div", "t"); pushTitle.textContent = "🔔 Push-сповіщення на телефон";
+    pushCard.appendChild(pushTitle);
+    var pushStatus = el("div", "sub"); pushStatus.style.margin = "6px 0 10px";
+    pushCard.appendChild(pushStatus);
+    var pushActs = el("div", "acts");
+
+    // Кнопка підписки
+    var subBtn = el("button", "btn btn-primary btn-sm", "Підписати цей пристрій");
+    subBtn.addEventListener("click", function() {
+      subBtn.disabled = true; subBtn.textContent = "…";
+      if (!("Notification" in window) || !("PushManager" in window)) {
+        pushStatus.textContent = "❌ Цей браузер не підтримує push"; subBtn.disabled = false; subBtn.textContent = "Підписати цей пристрій"; return;
+      }
+      Notification.requestPermission().then(function(p) {
+        if (p !== "granted") { pushStatus.textContent = "❌ Дозвіл відхилено — дозвольте в налаштуваннях браузера"; subBtn.disabled = false; subBtn.textContent = "Підписати цей пристрій"; return; }
+        subscribePush();
+        setTimeout(function() { pushStatus.textContent = "✅ Підписку надіслано — натисніть «Тест» щоб перевірити"; subBtn.disabled = false; subBtn.textContent = "Підписати цей пристрій"; }, 2000);
+      });
+    });
+    pushActs.appendChild(subBtn);
+
+    // Кнопка тест
+    var testBtn = el("button", "btn btn-ghost btn-sm", "📨 Надіслати тест");
+    testBtn.addEventListener("click", function() {
+      testBtn.disabled = true; testBtn.textContent = "Надсилаємо…";
+      api("POST", "/api/push/test").then(function(r) {
+        if (r.j.ok) {
+          pushStatus.textContent = "✅ Тест надіслано на " + r.j.count + " пристрій(ів) — перевір телефон";
+        } else if (r.j.error === "no_subscriptions") {
+          pushStatus.textContent = "❌ Немає підписок — спочатку натисни «Підписати цей пристрій»";
+        } else {
+          pushStatus.textContent = "❌ Помилка: " + (r.j.error || "невідома");
+        }
+        testBtn.disabled = false; testBtn.textContent = "📨 Надіслати тест";
+      });
+    });
+    pushActs.appendChild(testBtn);
+    pushCard.appendChild(pushActs);
+    main.appendChild(pushCard);
+
     var listEl = el("div", "list"); main.appendChild(listEl);
     var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 24г", reminder_2h: "Нагадування 2г" };
     var ST = { queued: "у черзі", sent: "відправлено", delivered: "доставлено", undelivered: "не доставлено", failed: "помилка" };
