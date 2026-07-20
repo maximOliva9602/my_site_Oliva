@@ -95,6 +95,12 @@ function createAppointment(d, session) {
     if (e.code === "SLOT_TAKEN") return { status: 409, body: { ok: false, error: "SLOT_TAKEN" } };
     return { status: 500, body: { ok: false, error: e.message } };
   }
+  // Сповіщення адміну в Telegram + PWA push
+  try {
+    const adminNotify = require("./admin-notify");
+    adminNotify.notifyNewAppt(appointmentId, "crm");
+  } catch (e) { console.error("[routes.crm] adminNotify error:", e.message); }
+
   return { status: 200, body: { ok: true, public_id: publicId, appointment: viewAppt(apptRow(appointmentId)) } };
 }
 

@@ -52,6 +52,38 @@
   // авто-вхід якщо є cookie
   api("GET", "/api/admin/me").then(function (res) { if (res.j && res.j.ok) boot(res.j); });
 
+  /* ── PWA Push підписка ── */
+  function subscribePush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    navigator.serviceWorker.ready.then(function(reg) {
+      // Перевіряємо поточний дозвіл
+      if (Notification.permission === "denied") return;
+      api("GET", "/api/push/vapid-public-key").then(function(r) {
+        if (!r.j || !r.j.publicKey) return;
+        var key = r.j.publicKey;
+        // Перетворюємо base64url → Uint8Array
+        var raw = atob(key.replace(/-/g,"+").replace(/_/g,"/"));
+        var arr = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+        reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: arr
+        }).then(function(sub) {
+          api("POST", "/api/push/subscribe", { subscription: sub.toJSON() });
+        }).catch(function() {}); // користувач відмовив — тихо ігноруємо
+      });
+    });
+  }
+  // Запит дозволу + підписка при першому логіні
+  function requestPushPermission() {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "granted") { subscribePush(); return; }
+    if (Notification.permission === "denied") return;
+    Notification.requestPermission().then(function(p) {
+      if (p === "granted") subscribePush();
+    });
+  }
+
   /* ============================================================
      BOOT + TABS
      ============================================================ */
@@ -163,6 +195,7 @@
     mobSheetLogout.onclick = function() { closeMobSheet(); $("logoutBtn").click(); };
 
     TABS[0].render();
+    requestPushPermission();
   }
 
   /* ============================================================

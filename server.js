@@ -123,6 +123,44 @@ app.use("/api/public", publicRoutes);
 app.use("/api/crm", crmRoutes);
 app.use("/api/webhooks", webhookRoutes);
 
+/* ---------------- Web Push API ---------------- */
+const adminNotify = require("./crm/admin-notify");
+
+/* Публічний ключ VAPID (для клієнта) */
+app.get("/api/push/vapid-public-key", function (req, res) {
+  res.json({ ok: true, publicKey: adminNotify.VAPID_PUBLIC || "" });
+});
+
+/* Підписатися на push (тільки залогінені) */
+app.post("/api/push/subscribe", function (req, res) {
+  var token = auth.parseCookies(req.headers.cookie).oliva_admin;
+  var session = auth.getSession(token);
+  if (!session) return res.status(401).json({ ok: false, error: "unauthorized" });
+  var sub = req.body && req.body.subscription;
+  if (!sub) return res.status(400).json({ ok: false, error: "no subscription" });
+  try {
+    var json = JSON.stringify(sub);
+    db.prepare(
+      "INSERT OR IGNORE INTO push_subscriptions (subscription_json, user_id, created_at) VALUES (?,?,?)"
+    ).run(json, session.userId || null, Date.now());
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/* Відписатися */
+app.post("/api/push/unsubscribe", function (req, res) {
+  var sub = req.body && req.body.subscription;
+  if (!sub) return res.status(400).json({ ok: false, error: "no subscription" });
+  try {
+    db.prepare("DELETE FROM push_subscriptions WHERE subscription_json=?").run(JSON.stringify(sub));
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 /* ---------------- Трекінг відвідувань сайту ---------------- */
 var trackRateMap = new Map(); // ip -> [timestamps]
 app.post("/api/track", function (req, res) {
@@ -200,6 +238,41 @@ app.get("/cabinet", function (req, res) {
 });
 app.get("/booking", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "booking.html"));
+});
+app.get("/master", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "master.html"));
+});
+
+// API для майстра — розклад
+app.get("/api/master/schedule", requireAdmin, function (req, res) {
+  var db = require("./crm/db");
+  var masterId = parseInt(req.query.master_id, 10);
+  if (!masterId) return res.status(400).json({ ok: false, error: "master_id required" });
+
+  var rows;
+  if (req.query.date) {
+    // один день
+    rows = db.prepare(`
+      SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.comment,
+             s.name service_name, c.name client_name, c.phone client_phone
+      FROM appointments a
+      JOIN services s ON s.id = a.service_id
+      JOIN clients  c ON c.id = a.client_id
+      WHERE a.master_id = ? AND a.date = ? AND a.status NOT IN ('cancelled')
+      ORDER BY a.start_min
+    `).all(masterId, req.query.date);
+  } else {
+    // діапазон for dots
+    var from = req.query.from || new Date().toISOString().slice(0,10);
+    var to   = req.query.to   || from;
+    rows = db.prepare(`
+      SELECT a.id, a.date, a.start_min, a.status
+      FROM appointments a
+      WHERE a.master_id = ? AND a.date >= ? AND a.date <= ? AND a.status NOT IN ('cancelled')
+      ORDER BY a.date, a.start_min
+    `).all(masterId, from, to);
+  }
+  res.json({ ok: true, appointments: rows });
 });
 
 app.get("/admin", function (req, res) {

@@ -826,5 +826,15 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
   console.log('[db] seedFeaturedServices: позначено ' + cnt + ' послуг як популярні.');
 })();
 
+/* ---------------- PWA Push підписки ---------------- */
+db.exec(`
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  subscription_json TEXT NOT NULL UNIQUE,
+  user_id          INTEGER,
+  created_at       INTEGER NOT NULL
+);
+`);
+
 module.exports = db;
 module.exports.DB_FILE = DB_FILE;
