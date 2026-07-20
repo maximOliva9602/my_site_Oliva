@@ -1,4 +1,4 @@
-var CACHE = 'oliva-v7';
+var CACHE = 'oliva-v8';
 var STATIC = ['/cabinet', '/manifest.json', '/assets/img/logo.png'];
 
 self.addEventListener('install', function(e) {
@@ -37,21 +37,23 @@ self.addEventListener('push', function(e) {
     badge:   data.badge  || '/assets/img/logo.png',
     tag:     data.tag    || 'oliva-notif',
     vibrate: [200, 100, 200],
-    data:    { url: '/cabinet' },
+    data:    { url: data.url || '/cabinet' },
   };
   e.waitUntil(self.registration.showNotification(title, options));
 });
 
-/* Клік по сповіщенню → відкрити /cabinet */
+/* Клік по сповіщенню → фокус уже відкритого вікна (/master або /cabinet), інакше — нове */
 self.addEventListener('notificationclick', function(e) {
   e.notification.close();
   var url = (e.notification.data && e.notification.data.url) || '/cabinet';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
       for (var i = 0; i < list.length; i++) {
-        if (list[i].url.includes('/cabinet')) { list[i].focus(); return; }
+        if (list[i].url.includes('/master') || list[i].url.includes('/cabinet')) {
+          return list[i].focus();
+        }
       }
-      clients.openWindow(url);
+      return clients.openWindow(url);
     })
   );
 });

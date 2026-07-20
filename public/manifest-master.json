@@ -1,0 +1,25 @@
+{
+  "name": "Oliva — Розклад майстра",
+  "short_name": "Oliva Майстер",
+  "description": "Розклад записів майстра студії масажу Oliva",
+  "start_url": "/master",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111710",
+  "theme_color": "#7A9156",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
