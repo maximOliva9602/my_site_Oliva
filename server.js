@@ -18,6 +18,7 @@ const { Server } = require("socket.io");
 /* ---------------- CRM-модулі ---------------- */
 const db = require("./crm/db");
 const auth = require("./crm/auth");
+const requireAdmin = auth.requireAuth();
 const notify = require("./crm/notify");
 const scheduler = require("./crm/scheduler");
 const publicRoutes = require("./crm/routes.public");
@@ -405,7 +406,6 @@ app.get("/api/posts/:slug", function (req, res) {
 });
 
 /* Адмін ендпоінти (захищені токеном) */
-const requireAdmin = auth.requireAuth();
 
 app.get("/api/admin/posts", requireAdmin, function (req, res) {
   res.json(stmtAllPosts.all());
