@@ -344,19 +344,38 @@
       apptCard.querySelector("div:last-child").insertAdjacentHTML("beforeend", upcomingHtml);
       main.appendChild(apptCard);
 
-      /* ---- 2. Майстри ---- */
-      var mRows = d.masters.map(function(m) {
-        return [m.name,
-          '<span style="font-size:.72rem;color:var(--text-dim);">' + (m.level || "—") + '</span>',
-          m.bookings || 0,
-          '<div style="display:flex;align-items:center;gap:6px;"><div style="background:rgba(46,61,34,.3);border-radius:4px;height:6px;width:60px;overflow:hidden;"><div style="background:var(--olive-light);height:100%;width:' + (m.workload_pct||0) + '%"></div></div><span>' + (m.workload_pct||0) + '%</span></div>',
-          grn(m.revenue),
-          m.free_today_h == null ? "вихідний" : m.free_today_h + " год",
-        ];
-      });
-      main.appendChild(card("2. Майстри (місяць)",
-        tbl(["Ім'я","Рівень","Записів","Завант.","Дохід","Вільно сьогодні"], mRows)
-      ));
+      /* ---- 2. Майстри ----
+         Картками, а не таблицею: шість колонок не влазять у 375px і
+         вимагали скролу вбік, через що остання губилась з очей. */
+      var mHtml = d.masters.map(function(m) {
+        var pct  = m.workload_pct || 0;
+        var free = m.free_today_h == null ? "вихідний" : m.free_today_h + " год";
+        function cell(label, val) {
+          return '<div>' +
+            '<div style="font-size:.7rem;color:var(--text-dim);margin-bottom:2px;">' + label + '</div>' +
+            '<div style="color:var(--cream);font-size:.88rem;font-weight:600;">' + val + '</div>' +
+          '</div>';
+        }
+        return '<div style="border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:8px;background:rgba(46,61,34,.14);">' +
+          '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:9px;">' +
+            '<span style="color:var(--cream);font-weight:600;font-size:.95rem;">' + m.name + '</span>' +
+            '<span style="font-size:.72rem;color:var(--text-dim);">' + (m.level || "—") + '</span>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:9px;">' +
+            cell("Записів", m.bookings || 0) +
+            cell("Дохід", grn(m.revenue)) +
+            cell("Вільно сьогодні", free) +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<span style="font-size:.7rem;color:var(--text-dim);flex-shrink:0;">Завант.</span>' +
+            '<div style="flex:1;background:rgba(46,61,34,.35);border-radius:4px;height:6px;overflow:hidden;">' +
+              '<div style="background:var(--olive-light);height:100%;width:' + pct + '%"></div>' +
+            '</div>' +
+            '<span style="font-size:.75rem;color:var(--cream);flex-shrink:0;">' + pct + '%</span>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+      main.appendChild(card("2. Майстри (місяць)", mHtml));
 
       /* ---- 3. Послуги ---- */
       var svcRows = d.services.slice(0,10).map(function(s) {
