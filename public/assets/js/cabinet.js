@@ -56,12 +56,10 @@
   function subscribePush() {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     navigator.serviceWorker.ready.then(function(reg) {
-      // Перевіряємо поточний дозвіл
-      if (Notification.permission === "denied") return;
+      if (Notification.permission !== "granted") return;
       api("GET", "/api/push/vapid-public-key").then(function(r) {
         if (!r.j || !r.j.publicKey) return;
         var key = r.j.publicKey;
-        // Перетворюємо base64url → Uint8Array
         var raw = atob(key.replace(/-/g,"+").replace(/_/g,"/"));
         var arr = new Uint8Array(raw.length);
         for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
@@ -70,17 +68,39 @@
           applicationServerKey: arr
         }).then(function(sub) {
           api("POST", "/api/push/subscribe", { subscription: sub.toJSON() });
-        }).catch(function() {}); // користувач відмовив — тихо ігноруємо
+        }).catch(function() {});
       });
-    });
+    }).catch(function() {});
   }
-  // Запит дозволу + підписка при першому логіні
-  function requestPushPermission() {
-    if (!("Notification" in window)) return;
-    if (Notification.permission === "granted") { subscribePush(); return; }
-    if (Notification.permission === "denied") return;
-    Notification.requestPermission().then(function(p) {
-      if (p === "granted") subscribePush();
+
+  /* ── Кнопка 🔔 у topbar (запит дозволу тільки при кліку) ── */
+  function setupPushBtn() {
+    var btn = document.getElementById("pushBtn");
+    if (!btn) return;
+    if (!("Notification" in window) || !("PushManager" in window)) return; // не підтримується
+    btn.style.display = ""; // показати кнопку
+    function upd() {
+      if (Notification.permission === "granted") {
+        btn.textContent = "🔔"; btn.title = "Сповіщення увімкнені"; btn.style.opacity = "1";
+      } else if (Notification.permission === "denied") {
+        btn.textContent = "🔕"; btn.title = "Сповіщення заблоковані (налаштуйте браузер)"; btn.style.opacity = "0.4";
+      } else {
+        btn.textContent = "🔕"; btn.title = "Натисніть щоб увімкнути сповіщення"; btn.style.opacity = "0.6";
+      }
+    }
+    upd();
+    if (Notification.permission === "granted") { setTimeout(subscribePush, 1000); }
+    btn.addEventListener("click", function() {
+      if (Notification.permission === "denied") {
+        alert("Сповіщення заблоковані. Дозвольте їх у налаштуваннях браузера.");
+        return;
+      }
+      if (Notification.permission === "granted") { subscribePush(); upd(); return; }
+      // Запитуємо дозвіл — тільки при явному натисканні користувачем
+      Notification.requestPermission().then(function(p) {
+        upd();
+        if (p === "granted") subscribePush();
+      }).catch(function() {});
     });
   }
 
@@ -195,7 +215,13 @@
     mobSheetLogout.onclick = function() { closeMobSheet(); $("logoutBtn").click(); };
 
     TABS[0].render();
-    requestPushPermission();
+    setupPushBtn();
+    // Авто-оновлення коли повертаємось у додаток (напр. із фону)
+    document.addEventListener("visibilitychange", function() {
+      if (!document.hidden && window.__reloadAppts) {
+        try { window.__reloadAppts(); } catch(e) {}
+      }
+    });
   }
 
   /* ============================================================
