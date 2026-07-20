@@ -6,6 +6,12 @@
 <meta name="robots" content="noindex, nofollow" />
 <title>Oliva — Кабінет CRM</title>
 <link rel="icon" href="assets/img/logo.png" />
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#7A9156" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Oliva CRM" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -149,5 +155,10 @@
 <div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
 <script src="assets/js/cabinet.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  }
+</script>
 </body>
 </html>

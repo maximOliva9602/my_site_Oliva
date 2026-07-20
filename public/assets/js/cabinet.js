@@ -331,17 +331,16 @@
       var mastersPr = api("GET", "/api/crm/masters");
       var apptUrl = ME.role === "owner"
         ? "/api/crm/appointments?date=" + apptDate + (masterFilter ? "&master=" + masterFilter : "")
-        : "/api/crm/me/appointments?from=" + apptDate + "&to=" + apptDate;
+        : "/api/crm/schedule?date=" + apptDate;
       var apptsPr = api("GET", apptUrl);
 
       Promise.all([mastersPr, apptsPr]).then(function(rs) {
         var allMasters = rs[0].j.masters || [];
         var appts = rs[1].j.appointments || [];
 
-        // Фільтр майстрів: показуємо лише тих у кого є записи або (для власника) всіх
+        // Власник: може фільтрувати по майстру; Майстер: бачить всіх (загальний розклад)
         var masters = allMasters;
         if (masterFilter) masters = allMasters.filter(function(m) { return String(m.id) === String(masterFilter); });
-        else if (ME.role !== "owner") masters = allMasters.filter(function(m) { return m.id === ME.masterId; });
 
         contentEl.innerHTML = "";
         var wrap = el("div");
@@ -601,8 +600,9 @@
       '<label>Майстер</label><select id="mMaster"></select>' +
       '<label>Дата</label><input type="date" id="mDate" />' +
       '<label>Вільний час</label><div id="mSlots" class="muted">Оберіть послугу, майстра й дату</div>' +
-      '<div class="grid2"><div><label>Ім\'я</label><input type="text" id="mName" maxlength="100"/></div>' +
-      '<div><label>Телефон</label><input type="tel" id="mPhone" maxlength="30"/></div></div>' +
+      '<div class="grid2"><div><label>Ім\'я</label><input type="text" id="mName" placeholder="Олена" maxlength="60"/></div>' +
+      '<div><label>Прізвище</label><input type="text" id="mSurname" placeholder="Коваленко" maxlength="60"/></div></div>' +
+      '<div><label>Телефон</label><input type="tel" id="mPhone" maxlength="30"/></div>' +
       '<label>Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<div class="err" id="mErr"></div>' +
       '<div class="modal-foot"><button class="btn btn-ghost" id="mCancel">Скасувати</button>' +
@@ -611,7 +611,11 @@
     var chosen = { start_min: null };
     $("mCancel").addEventListener("click", closeModal);
     $("mDate").value = apptDate; $("mDate").min = todayStr();
-    if (prefill.clientName) $("mName").value = prefill.clientName;
+    if (prefill.clientName) {
+      var parts = prefill.clientName.split(" ");
+      $("mName").value = parts[0] || "";
+      $("mSurname").value = parts.slice(1).join(" ") || "";
+    }
     if (prefill.clientPhone) $("mPhone").value = prefill.clientPhone;
 
     // послуги
@@ -664,11 +668,14 @@
     $("mSave").addEventListener("click", function () {
       var err = $("mErr"); err.textContent = "";
       if (chosen.start_min == null) { err.textContent = "Оберіть час"; return; }
-      if (!$("mName").value.trim() || $("mPhone").value.replace(/\D/g, "").length < 9) { err.textContent = "Вкажіть ім'я і телефон"; return; }
+      var firstName = $("mName").value.trim();
+      var lastName  = $("mSurname").value.trim();
+      if (!firstName || $("mPhone").value.replace(/\D/g, "").length < 9) { err.textContent = "Вкажіть ім'я і телефон"; return; }
+      var fullName = lastName ? firstName + " " + lastName : firstName;
       var url = ME.role === "owner" ? "/api/crm/appointments" : "/api/crm/me/appointments";
       api("POST", url, {
         service: $("mService").value, master: $("mMaster").value, date: $("mDate").value,
-        start_min: chosen.start_min, name: $("mName").value.trim(), phone: $("mPhone").value.trim(),
+        start_min: chosen.start_min, name: fullName, phone: $("mPhone").value.trim(),
         comment: $("mComment").value.trim()
       }).then(function (res) {
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }

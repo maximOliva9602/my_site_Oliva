@@ -226,6 +226,16 @@ router.post("/appointments", owner, function (req, res) {
   res.status(r.status).json(r.body);
 });
 
+/* ---- Розклад (для майстрів — загальний вигляд) ---- */
+router.get("/schedule", any, function (req, res) {
+  const date = clean(req.query.date, 10) || new Date().toISOString().slice(0, 10);
+  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.price, a.paid, " +
+              "c.name client_name, s.name service_name, m.name master_name " +
+              "FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id " +
+              "WHERE a.date=? AND a.status NOT IN ('cancelled','no_show') ORDER BY a.start_min";
+  res.json({ ok: true, appointments: db.prepare(sql).all(date).map(viewAppt) });
+});
+
 /* ---- Майстри ---- */
 router.get("/masters", any, function (req, res) {
   const rows = db.prepare("SELECT * FROM masters WHERE active=1 ORDER BY sort_order, id").all();
