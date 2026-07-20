@@ -199,7 +199,6 @@ app.get("/cabinet", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "cabinet.html"));
 });
 app.get("/booking", function (req, res) {
-  return res.redirect(301, "https://bookon.ua/s/oliva_massage_studio");
   res.sendFile(path.join(__dirname, "public", "booking.html"));
 });
 
