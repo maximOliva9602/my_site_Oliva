@@ -143,6 +143,12 @@ router.post("/book", function (req, res) {
   // Одразу надсилаємо підтвердження клієнту (не чекаємо scheduler)
   notify.flushQueued().catch(function(e) { console.warn("[book] flush err:", e.message); });
 
+  // Push + Telegram сповіщення адміну про новий запис із сайту
+  try {
+    const adminNotify = require("./admin-notify");
+    adminNotify.notifyNewAppt(appointmentId, "site");
+  } catch (e) { console.warn("[book] adminNotify error:", e.message); }
+
   // Повідомлення майстру (SMS/Viber на його телефон)
   try {
     const masterRow = db.prepare("SELECT name, phone FROM masters WHERE id=?").get(masterId);

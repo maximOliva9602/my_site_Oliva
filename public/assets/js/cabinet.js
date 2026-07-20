@@ -55,22 +55,38 @@
   /* ── PWA Push підписка ── */
   function subscribePush() {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    if (Notification.permission !== "granted") return;
     navigator.serviceWorker.ready.then(function(reg) {
-      if (Notification.permission !== "granted") return;
       api("GET", "/api/push/vapid-public-key").then(function(r) {
-        if (!r.j || !r.j.publicKey) return;
+        if (!r.j || !r.j.publicKey) { console.warn("[push] VAPID ключ не налаштований на сервері"); return; }
         var key = r.j.publicKey;
         var raw = atob(key.replace(/-/g,"+").replace(/_/g,"/"));
         var arr = new Uint8Array(raw.length);
         for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-        reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: arr
-        }).then(function(sub) {
-          api("POST", "/api/push/subscribe", { subscription: sub.toJSON() });
-        }).catch(function() {});
+
+        function doSubscribe() {
+          reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: arr
+          }).then(function(sub) {
+            console.log("[push] підписка створена:", sub.endpoint.slice(0, 60) + "…");
+            return api("POST", "/api/push/subscribe", { subscription: sub.toJSON() }).then(function(r2) {
+              console.log("[push] збережено на сервері:", r2.j);
+            });
+          }).catch(function(e) { console.error("[push] subscribe помилка:", e); });
+        }
+
+        // Спочатку скасовуємо стару підписку (могла бути з іншим ключем)
+        reg.pushManager.getSubscription().then(function(existing) {
+          if (existing) {
+            console.log("[push] скасовуємо стару підписку…");
+            existing.unsubscribe().then(doSubscribe).catch(doSubscribe);
+          } else {
+            doSubscribe();
+          }
+        }).catch(doSubscribe);
       });
-    }).catch(function() {});
+    }).catch(function(e) { console.error("[push] SW ready error:", e); });
   }
 
   /* ── Кнопка 🔔 у topbar (запит дозволу тільки при кліку) ── */
