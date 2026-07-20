@@ -122,6 +122,64 @@
   .sched-row input[type=time] { width:88px; flex-shrink:0; padding:6px 7px; font-size:.83rem; }
   .err { color:var(--err); font-size:.82rem; min-height:18px; margin-top:6px; }
   .muted { color:var(--text-dim); font-size:.82rem; }
+
+  /* ── МОБІЛЬНА НАВІГАЦІЯ ── */
+  #mob-nav { display:none; }
+  @media(max-width:680px){
+    /* Шапка: прибрати вкладки та кнопку виходу */
+    .topbar .tabs-inline { display:none !important; }
+    .topbar .logout { display:none !important; }
+    .topbar { padding:8px 12px; gap:8px; }
+    /* Головний контент: відступ знизу для nav-bar */
+    .main { padding-bottom:84px; padding-left:10px; padding-right:10px; }
+    /* Модалка: відступ знизу щоб клавіатура не перекривала */
+    .modal { padding:12px 10px 92px; align-items:flex-end; }
+    .modal-card { border-radius:16px; }
+    /* Таблиці в картках — горизонтальний скрол */
+    .item { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    /* Кнопки «Записи» — в ряд на весь рядок */
+    .acts { gap:8px; }
+    .acts .btn { flex:1; font-size:.8rem; padding:8px 6px; }
+    /* grid2 → одна колонка */
+    .grid2 { grid-template-columns:1fr; }
+    /* bar — переносити на новий рядок */
+    .bar { gap:8px; }
+    .bar input[type=date] { font-size:.85rem; padding:7px 8px; }
+    /* нижня навігація */
+    #mob-nav {
+      display:flex;
+      position:fixed; bottom:0; left:0; right:0; z-index:50;
+      background:var(--panel); border-top:1px solid var(--line);
+      padding:6px 0 max(8px, env(safe-area-inset-bottom, 8px));
+    }
+  }
+  .mob-tab {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    background:none; border:none; color:var(--text-dim); font-size:.6rem;
+    padding:5px 2px; min-width:0; transition:color .15s; cursor:pointer;
+  }
+  .mob-tab .mico { font-size:1.3rem; line-height:1.15; }
+  .mob-tab.on { color:var(--olive-light); }
+  /* Backdrop */
+  #mob-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; }
+  #mob-backdrop.open { display:block; }
+  /* Drawer знизу */
+  #mob-sheet {
+    position:fixed; bottom:0; left:0; right:0; z-index:61;
+    background:var(--panel-2); border:1px solid var(--line); border-top-color:var(--olive-light);
+    border-radius:18px 18px 0 0;
+    padding-bottom:max(16px, env(safe-area-inset-bottom, 16px));
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  #mob-sheet.open { transform:translateY(0); }
+  .mob-sheet-handle { width:44px; height:4px; background:var(--line); border-radius:2px; margin:12px auto 8px; }
+  .mob-sheet-item {
+    display:flex; align-items:center; gap:14px; width:100%; background:none; border:none;
+    color:var(--text); font-size:.95rem; padding:14px 24px; text-align:left; cursor:pointer;
+  }
+  .mob-sheet-item:active { background:rgba(122,145,86,.07); }
+  .mob-sheet-item.on { color:var(--olive-light); background:rgba(122,145,86,.1); }
+  .mob-sheet-sep { height:1px; background:var(--line); margin:6px 16px; }
 </style>
 </head>
 <body>
@@ -160,5 +218,15 @@
     navigator.serviceWorker.register('/sw.js').catch(function(){});
   }
 </script>
+
+<!-- МОБІЛЬНА НАВІГАЦІЯ -->
+<div id="mob-backdrop"></div>
+<div id="mob-sheet">
+  <div class="mob-sheet-handle"></div>
+  <div id="mob-sheet-list"></div>
+  <div class="mob-sheet-sep"></div>
+  <button id="mob-sheet-logout" class="mob-sheet-item" style="color:var(--err);">🚪&nbsp; Вийти</button>
+</div>
+<div id="mob-nav"></div>
 </body>
 </html>

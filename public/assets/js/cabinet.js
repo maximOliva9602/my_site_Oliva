@@ -77,18 +77,91 @@
       TABS.push({ id: "users", name: "Доступи", render: renderUsers });
       TABS.push({ id: "notif", name: "Сповіщення", render: renderNotif });
     }
-    var tabsEl = $("tabs"); tabsEl.innerHTML = "";
-    TABS.forEach(function (t, i) {
-      var b = el("button", "tab" + (i === 0 ? " on" : ""), t.name);
-      b.addEventListener("click", function () {
-        tabsEl.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("on"); });
-        // Прибрати overlay календаря якщо є
-        var ov = document.getElementById("cal-overlay");
-        if (ov) ov.remove();
-        b.classList.add("on"); t.render();
+    /* ── Іконки і короткі назви для мобільного nav ── */
+    var TAB_ICOS  = { dashboard:"📊", appts:"📅", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔" };
+    var TAB_SHORT = { dashboard:"Дашборд", appts:"Записи", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення" };
+    var BOTTOM_COUNT = Math.min(3, TABS.length);
+    var hasDrawer    = TABS.length > BOTTOM_COUNT;
+
+    var tabsEl       = $("tabs");        tabsEl.innerHTML = "";
+    var mobNav       = document.getElementById("mob-nav");       mobNav.innerHTML = "";
+    var mobSheetList = document.getElementById("mob-sheet-list"); mobSheetList.innerHTML = "";
+    var mobBackdrop  = document.getElementById("mob-backdrop");
+    var mobSheet     = document.getElementById("mob-sheet");
+
+    function clearOverlay() { var ov = document.getElementById("cal-overlay"); if (ov) ov.remove(); }
+    function closeMobSheet() { mobBackdrop.classList.remove("open"); mobSheet.classList.remove("open"); }
+    function openMobSheet()  { mobBackdrop.classList.add("open");    mobSheet.classList.add("open"); }
+
+    function activateTab(i) {
+      clearOverlay();
+      // Desktop вкладки
+      tabsEl.querySelectorAll(".tab").forEach(function(b, j) { b.classList.toggle("on", j === i); });
+      // Мобільна нижня панель
+      var mBtns = mobNav.querySelectorAll(".mob-tab");
+      mBtns.forEach(function(b) { b.classList.remove("on"); });
+      if (i < BOTTOM_COUNT) {
+        if (mBtns[i]) mBtns[i].classList.add("on");
+      } else {
+        var moreBtn = document.getElementById("mob-more-btn");
+        if (moreBtn) moreBtn.classList.add("on");
+      }
+      // Елементи drawer
+      mobSheetList.querySelectorAll(".mob-sheet-item").forEach(function(b, j) {
+        b.classList.toggle("on", (j + BOTTOM_COUNT) === i);
       });
+      closeMobSheet();
+      TABS[i].render();
+    }
+
+    /* Desktop вкладки */
+    TABS.forEach(function(t, i) {
+      var b = el("button", "tab" + (i === 0 ? " on" : ""), t.name);
+      b.addEventListener("click", function() { activateTab(i); });
       tabsEl.appendChild(b);
     });
+
+    /* Мобільна нижня панель — перші BOTTOM_COUNT вкладок */
+    TABS.slice(0, BOTTOM_COUNT).forEach(function(t, i) {
+      var b = document.createElement("button");
+      b.className = "mob-tab" + (i === 0 ? " on" : "");
+      b.innerHTML = '<span class="mico">' + (TAB_ICOS[t.id] || "📋") + '</span><span>' + (TAB_SHORT[t.id] || t.name) + '</span>';
+      b.addEventListener("click", function() { activateTab(i); });
+      mobNav.appendChild(b);
+    });
+
+    if (hasDrawer) {
+      /* Кнопка "Ще" відкриває drawer */
+      var moreB = document.createElement("button");
+      moreB.id = "mob-more-btn";
+      moreB.className = "mob-tab";
+      moreB.innerHTML = '<span class="mico">☰</span><span>Ще</span>';
+      moreB.addEventListener("click", openMobSheet);
+      mobNav.appendChild(moreB);
+
+      /* Елементи drawer (решта вкладок) */
+      TABS.slice(BOTTOM_COUNT).forEach(function(t, j) {
+        var i = j + BOTTOM_COUNT;
+        var b = document.createElement("button");
+        b.className = "mob-sheet-item";
+        b.innerHTML = (TAB_ICOS[t.id] || "📋") + "&nbsp;&nbsp;" + (TAB_SHORT[t.id] || t.name);
+        b.addEventListener("click", function() { activateTab(i); });
+        mobSheetList.appendChild(b);
+      });
+    } else {
+      /* Для майстра (2 вкладки) — кнопка виходу в нижній панелі */
+      var logB = document.createElement("button");
+      logB.className = "mob-tab";
+      logB.innerHTML = '<span class="mico">🚪</span><span>Вийти</span>';
+      logB.addEventListener("click", function() { $("logoutBtn").click(); });
+      mobNav.appendChild(logB);
+    }
+
+    /* Backdrop і кнопка виходу в drawer */
+    mobBackdrop.onclick = closeMobSheet;
+    var mobSheetLogout = document.getElementById("mob-sheet-logout");
+    mobSheetLogout.onclick = function() { closeMobSheet(); $("logoutBtn").click(); };
+
     TABS[0].render();
   }
 
