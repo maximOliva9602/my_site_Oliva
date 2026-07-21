@@ -494,7 +494,9 @@
         ? "/api/crm/appointments?date=" + apptDate + (masterId ? "&master=" + masterId : "")
         : "/api/crm/me/appointments?from=" + apptDate + "&to=" + apptDate;
       api("GET", url).then(function (res) {
-        var list = res.j.appointments || [];
+        /* Скасовані ховаємо зі списку — вони й так порахуються в
+           дашборді (окремий запит до БД, цього фільтра не бачить). */
+        var list = (res.j.appointments || []).filter(function (a) { return a.status !== "cancelled"; });
         contentEl.innerHTML = "";
         var listEl = el("div", "list"); contentEl.appendChild(listEl);
         if (!list.length) { listEl.appendChild(el("div", "empty", "На " + ddmm(apptDate) + " записів немає")); return; }
@@ -511,7 +513,13 @@
 
       // Вимірюємо точний відступ від верху viewport до початку контентної зони
       var contentTop = Math.round(contentEl.getBoundingClientRect().top);
-      var availH = window.innerHeight - contentTop - 8; // 8px відступ знизу
+      /* Нижня мобільна навігація — position:fixed поверх усього (z-index:50).
+         Оверлей раніше йшов до самого bottom:0 екрана, тому навігація лежала
+         зверху останніх ~60px розкладу (рядки 20:00–21:30) — вони не
+         прокручувались НІКОЛИ, бо навігація сама нікуди не рухається. */
+      var navEl = document.getElementById("mob-nav");
+      var navH = navEl ? Math.ceil(navEl.getBoundingClientRect().height) : 0;
+      var availH = window.innerHeight - contentTop - navH - 8; // 8px відступ знизу
       var SLOT_H = Math.max(18, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
 
       // Оверлей з position:fixed — не впливає на решту CRM
@@ -519,7 +527,10 @@
       if (old) old.remove();
       var overlay = document.createElement("div");
       overlay.id = "cal-overlay";
-      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:0;z-index:10;background:var(--black);padding:0 8px 8px;overflow-x:auto;overflow-y:hidden;";
+      /* overflow-y:auto, не hidden: якщо заголовок майстра переносить рядок
+         (довге ім'я/рівень) або екран нижчий за очікуване, SLOT_H (мінімум
+         18px) все одно не влазить — тепер це просто прокручується. */
+      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + navH + "px;z-index:10;background:var(--black);padding:0 8px 8px;overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;";
       document.body.appendChild(overlay);
 
       var mastersPr = api("GET", "/api/crm/masters");
@@ -530,7 +541,7 @@
 
       Promise.all([mastersPr, apptsPr]).then(function(rs) {
         var allMasters = rs[0].j.masters || [];
-        var appts = rs[1].j.appointments || [];
+        var appts = (rs[1].j.appointments || []).filter(function(a) { return a.status !== "cancelled"; });
 
         // Власник: може фільтрувати по майстру; Майстер: бачить всіх (загальний розклад)
         var masters = allMasters;
@@ -645,7 +656,11 @@
         }
 
         wrap.appendChild(table);
-        wrap.style.cssText = "overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:100%;min-width:" + (50 + masters.length * 140) + "px;";
+        /* overflow-y:auto, не hidden: це головний контейнер розкладу — коли
+           SLOT_H впирається в мінімум 18px (короткий екран, довгі імена
+           майстрів у два рядки), таблиця стає вищою за height:100% і саме
+           тут, а не в overlay, обрізався кінець дня без можливості доскролити. */
+        wrap.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:100%;min-width:" + (50 + masters.length * 140) + "px;";
         overlay.appendChild(wrap);
 
         if (!appts.length) {
