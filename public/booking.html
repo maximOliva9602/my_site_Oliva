@@ -192,7 +192,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     <label class="fld">Ім'я</label>
     <input type="text" id="nameInput" placeholder="Ваше ім'я" maxlength="100" />
     <label class="fld">Телефон</label>
-    <input type="tel" id="phoneInput" placeholder="+380 __ ___ __ __" maxlength="30" />
+    <input type="tel" id="phoneInput" placeholder="+380667894576" maxlength="13" inputmode="numeric" />
     <label class="fld">Коментар (необов'язково)</label>
     <textarea id="commentInput" maxlength="500" placeholder="Побажання…"></textarea>
     <div class="err" id="bookErr"></div>
@@ -294,6 +294,40 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
 
   function $(id) { return document.getElementById(id); }
   function money(kop) { return kop ? Math.round(kop / 100).toLocaleString("uk-UA") + " грн" : ""; }
+
+  /* Телефон: жорстко +380 і рівно 9 цифр після — не більше й не менше.
+     Розбираємо на "префікс" + "хвіст цифр", а не на суцільний рядок:
+     якщо парсити все наскрізь (включно з уже вставленим +380), перша
+     цифра "0" від локального номера ("0667894576") плутається з тим
+     самим "380" з префікса й губиться. */
+  function isValidPhone(v) { return /^\+380\d{9}$/.test(v); }
+  var phoneInput = document.getElementById("phoneInput");
+  phoneInput.value = "+380";
+  phoneInput.addEventListener("input", function () {
+    var v = this.value, suffix;
+    if (v.slice(0, 4) === "+380") {
+      suffix = v.slice(4);
+    } else if ("+380".indexOf(v) === 0) {
+      // Стерли (бекспейсом) частину префікса — просто починаємо занову.
+      suffix = "";
+    } else {
+      // Вставили щось довільне (напр. без "+") — розбираємо з нуля.
+      var raw = v.replace(/\D/g, "");
+      if (raw.indexOf("380") === 0) raw = raw.slice(3);
+      suffix = raw;
+    }
+    suffix = suffix.replace(/\D/g, "");
+    /* Хтось, не помітивши вже підставлений префікс, за звичкою додає
+       свій власний "380" або "0" на початку хвоста — прибираємо теж. */
+    if (suffix.indexOf("380") === 0) suffix = suffix.slice(3);
+    else if (suffix.charAt(0) === "0") suffix = suffix.slice(1);
+    suffix = suffix.slice(0, 9);
+    this.value = "+380" + suffix;
+    this.setSelectionRange(this.value.length, this.value.length);
+  });
+  phoneInput.addEventListener("focus", function () {
+    if (!this.value) this.value = "+380";
+  });
 
   /* Кнопки "← Назад" через data-атрибут, не onclick: goStep живе всередині
      цього IIFE, а onclick="" виконується в глобальному просторі й не бачив її. */
@@ -490,7 +524,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     var name = $("nameInput").value.trim(), phone = $("phoneInput").value.trim();
     var err = $("bookErr"); err.textContent = "";
     if (!name) { err.textContent = "Вкажіть ім'я"; return; }
-    if (phone.replace(/\D/g,"").length < 9) { err.textContent = "Вкажіть коректний телефон"; return; }
+    if (!isValidPhone(phone)) { err.textContent = "Ви вказали невірний номер — формат: +380667894576"; return; }
     var btn = this; btn.disabled = true; btn.textContent = "Зачекайте…";
     fetch("/api/public/book", {
       method: "POST", headers: { "Content-Type": "application/json" },
