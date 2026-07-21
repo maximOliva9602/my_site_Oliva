@@ -43,13 +43,37 @@ header p { color: var(--text-dim); font-size: 0.82rem; margin-top: 3px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
 .card-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1rem; font-weight: 500; margin-bottom: 16px; }
 
-/* category grid */
+/* category grid (крок 2 — конкретні послуги всередині групи) */
 .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.cat-card { background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 12px; padding: 13px 12px; cursor: pointer; transition: all .2s; text-align: left; width: 100%; }
+.cat-card { background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 12px; padding: 13px 12px; cursor: pointer; transition: all .2s; text-align: left; width: 100%; overflow: hidden; position: relative; }
 .cat-card:hover { border-color: var(--olive-light); background: rgba(46,61,34,0.30); }
+.cat-card-photo { width: 100%; height: 78px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; display: block; }
 .cat-icon { font-size: 1.4rem; margin-bottom: 6px; }
 .cat-name { font-size: 0.85rem; color: var(--cream); font-weight: 500; line-height: 1.3; }
 .cat-from { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+
+/* group grid (крок 1 — верхньорівневі категорії) */
+.grp-list { display: flex; flex-direction: column; gap: 11px; }
+.grp-card {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  border: 1px solid rgba(217,185,120,0.22); border-radius: 16px; padding: 16px 14px;
+  cursor: pointer; transition: transform .15s, border-color .2s; color: inherit; font-family: inherit;
+}
+.grp-card:hover { border-color: rgba(217,185,120,0.5); transform: translateY(-1px); }
+.grp-1 { background: linear-gradient(135deg, #2b2420, #17130f); }
+.grp-2 { background: linear-gradient(135deg, #3c2440, #22132a); }
+.grp-3 { background: linear-gradient(135deg, #1f2c42, #121a29); }
+.grp-4 { background: linear-gradient(135deg, #4a2f18, #2a1a0d); }
+.grp-5 { background: linear-gradient(135deg, #16362f, #0d211c); }
+.grp-ico {
+  flex-shrink: 0; width: 54px; height: 54px; border-radius: 50%; border: 1px solid rgba(217,185,120,0.45);
+  display: flex; align-items: center; justify-content: center; color: #D9B978;
+}
+.grp-ico svg { width: 26px; height: 26px; }
+.grp-body { flex: 1; min-width: 0; }
+.grp-title { font-family: 'Playfair Display', serif; color: #D9B978; font-size: 1.05rem; font-weight: 600; margin-bottom: 3px; }
+.grp-sub { font-size: 0.78rem; color: #B9AFA0; line-height: 1.35; }
+.grp-arrow { flex-shrink: 0; color: #D9B978; font-size: 1.3rem; opacity: .8; }
 
 /* master grid */
 .master-grid { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; }
@@ -121,41 +145,49 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     <div class="ps" data-s="3"></div>
     <div class="ps" data-s="4"></div>
     <div class="ps" data-s="5"></div>
+    <div class="ps" data-s="6"></div>
   </div>
   <div class="breadcrumb" id="breadcrumb"></div>
 
-  <!-- 1. Категорія -->
+  <!-- 1. Категорія послуг -->
   <div class="card" id="step1">
-    <div class="card-title">1. Оберіть послугу</div>
-    <div class="cat-grid" id="catGrid"><div class="empty">Завантаження…</div></div>
+    <div class="card-title">1. Оберіть категорію послуг</div>
+    <div class="grp-list" id="groupGrid"></div>
   </div>
 
-  <!-- 2. Майстер -->
+  <!-- 2. Конкретна послуга -->
   <div class="card hide" id="step2">
-    <div class="card-title">2. Оберіть майстра</div>
-    <div class="master-grid" id="masterGrid"></div>
+    <div class="card-title">2. Оберіть послугу</div>
+    <div class="cat-grid" id="catGrid"><div class="empty">Завантаження…</div></div>
     <div class="row"><button class="btn btn-ghost" data-back="1">← Назад</button></div>
   </div>
 
-  <!-- 3. Тривалість -->
+  <!-- 3. Майстер -->
   <div class="card hide" id="step3">
-    <div class="card-title">3. Тривалість сеансу</div>
-    <div class="dur-list" id="durList"></div>
+    <div class="card-title">3. Оберіть майстра</div>
+    <div class="master-grid" id="masterGrid"></div>
     <div class="row"><button class="btn btn-ghost" data-back="2">← Назад</button></div>
   </div>
 
-  <!-- 4. Дата + час -->
+  <!-- 4. Тривалість -->
   <div class="card hide" id="step4">
-    <div class="card-title">4. Дата та час</div>
+    <div class="card-title">4. Тривалість сеансу</div>
+    <div class="dur-list" id="durList"></div>
+    <div class="row"><button class="btn btn-ghost" data-back="3">← Назад</button></div>
+  </div>
+
+  <!-- 5. Дата + час -->
+  <div class="card hide" id="step5">
+    <div class="card-title">5. Дата та час</div>
     <label class="fld">Дата</label>
     <input type="date" id="dateInput" />
     <div id="slotsWrap"><div class="empty">Оберіть дату</div></div>
-    <div class="row" style="margin-top:14px"><button class="btn btn-ghost" data-back="3">← Назад</button></div>
+    <div class="row" style="margin-top:14px"><button class="btn btn-ghost" data-back="4">← Назад</button></div>
   </div>
 
-  <!-- 5. Дані клієнта -->
-  <div class="card hide" id="step5">
-    <div class="card-title">5. Ваші дані</div>
+  <!-- 6. Дані клієнта -->
+  <div class="card hide" id="step6">
+    <div class="card-title">6. Ваші дані</div>
     <div class="summary" id="summary"></div>
     <label class="fld">Ім'я</label>
     <input type="text" id="nameInput" placeholder="Ваше ім'я" maxlength="100" />
@@ -165,7 +197,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     <textarea id="commentInput" maxlength="500" placeholder="Побажання…"></textarea>
     <div class="err" id="bookErr"></div>
     <div class="row">
-      <button class="btn btn-ghost" data-back="4">← Назад</button>
+      <button class="btn btn-ghost" data-back="5">← Назад</button>
       <button class="btn btn-primary" id="bookBtn">Підтвердити запис</button>
     </div>
   </div>
@@ -183,7 +215,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
 
 <script>
 (function () {
-  var state = { category: null, master: null, service: null, date: "", start_min: null };
+  var state = { group: null, category: null, master: null, service: null, date: "", start_min: null };
   var allServices = [], allMasters = [];
   var DOW = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
   var ICONS = {
@@ -197,6 +229,60 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     "Дитячий масаж": "👶", "Масаж в чотири руки": "🤲",
     "Масаж гарячим камінням": "🪨", "Спортивний масаж": "💪",
   };
+
+  /* ---------- Групи (крок 1) ---------- */
+  var GRP_ICONS = {
+    general: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 13c2-3 4-4 8-4s6 1 8 4"/><path d="M6 13v3a2 2 0 002 2h8a2 2 0 002-2v-3"/><circle cx="12" cy="6" r="2"/></svg>',
+    spa2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="6" r="2.2"/><circle cx="16" cy="6" r="2.2"/><path d="M4 20v-3c0-2.2 1.8-4 4-4s4 1.8 4 4v3"/><path d="M12 20v-3c0-2.2 1.8-4 4-4s4 1.8 4 4v3"/></svg>',
+    spa1: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="5" r="2.3"/><path d="M7 20v-4c0-2.8 2.2-5 5-5s5 2.2 5 5v4"/><path d="M9 10c0 2 1 4 3 4"/></svg>',
+    body: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 4c0 2-1.5 3-1.5 5s1.5 2 1.5 4-1.5 2-1.5 4 1.5 3 1.5 3"/><path d="M15 4c0 2 1.5 3 1.5 5s-1.5 2-1.5 4 1.5 2 1.5 4-1.5 3-1.5 3"/></svg>',
+    extra: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 3c0 3-2 3-2 6a2 2 0 004 0c0-3-2-3-2-6z"/><path d="M6 21v-5a6 6 0 0112 0v5"/><path d="M4 21h16"/></svg>',
+  };
+  var GROUPS = [
+    { key: "general", name: "Загальні масажі",        sub: "Оздоровлення та відновлення для тіла і душі" },
+    { key: "spa2",    name: "SPA-масажі для двох",     sub: "Парні масажі та SPA для вас і ваших близьких" },
+    { key: "spa1",    name: "SPA-масажі для одного",   sub: "Індивідуальний релакс та глибоке розслаблення" },
+    { key: "body",    name: "Корекція фігури",         sub: "Моделювання та покращення контурів тіла" },
+    { key: "extra",   name: "Додаткові послуги",       sub: "Додатковий догляд для краси та гармонії" },
+  ];
+  /* Категорія послуги (parseName().cat) → група. Керується тут; якщо власник
+     додасть нову послугу з новою назвою, її категорія без пари в цьому
+     словнику потрапить у "Додаткові послуги" (див. дефолт у groupOf). */
+  var GROUP_MAP = {
+    "Загально-оздоровчий масаж": "general", "Антистресовий масаж": "general",
+    "Масаж спини": "general", "Масаж шийно-комірцевої зони": "general",
+    "Спортивний масаж": "general", "Міофасціальний масаж": "general",
+    "Relax масаж": "general", "Медовий масаж": "general",
+    "Масаж для вагітних": "general", "Масаж голови": "general",
+    "Масаж стоп": "general", "Вісцеральний масаж": "general",
+    "Дитячий масаж": "general",
+
+    "Парний масаж": "spa2",
+    'Тепловий SPA-ритуал "Глибоке прогрівання для двох"': "spa2",
+    "Масаж в чотири руки": "spa2",
+
+    "Паріння у фітобочці": "spa1", 'SPA Ритуал "Фіто-оновлення тіла"': "spa1",
+    "Масаж гарячим камінням": "spa1", "Кобідо": "spa1",
+    "Гуа-ша обличчя": "spa1", "Букальний масаж": "spa1",
+    "Класичний масаж обличчя": "spa1", "Антивіковий масаж обличчя": "spa1",
+    "Пластичний масаж обличчя": "spa1", "Скульптуруючий масаж обличчя": "spa1",
+    "Лімфодренажний масаж обличчя": "spa1", "Relax масаж обличчя": "spa1",
+    "Моделюючий масаж обличчя": "spa1",
+
+    "Антицелюлітний масаж": "body", "Моделюючий масаж": "body",
+    "Лімфодренажний масаж": "body", "Вакуумно-баночний масаж": "body",
+    "Апаратно-вакуумний масаж": "body",
+    "Обгортання Amore Shemen (гаряче)": "body",
+    "Обгортання Amore Shemen (холодне)": "body",
+    "Обгортання Bruno Vassari Detox": "body",
+    "Гаряче обгортання SPA Seaweed": "body",
+    "Гаряча експрес-трансформація тіла": "body",
+    "Гаряче моделювання тіла": "body", "Холодне моделювання тіла": "body",
+    "Сольове обгортання": "body",
+
+    "Кінезіотейпування": "extra",
+  };
+  function groupOf(cat) { return GROUP_MAP[cat] || "extra"; }
 
   function $(id) { return document.getElementById(id); }
   function money(kop) { return kop ? Math.round(kop / 100).toLocaleString("uk-UA") + " грн" : ""; }
@@ -221,19 +307,20 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   }
 
   function goStep(n) {
-    ["step1","step2","step3","step4","step5","stepDone"].forEach(function(id) { $(id).classList.add("hide"); });
+    ["step1","step2","step3","step4","step5","step6","stepDone"].forEach(function(id) { $(id).classList.add("hide"); });
     $(n === "done" ? "stepDone" : "step" + n).classList.remove("hide");
     // progress
-    var num = n === "done" ? 5 : n;
+    var num = n === "done" ? 6 : n;
     document.querySelectorAll(".ps").forEach(function(el) {
       el.classList.toggle("on", parseInt(el.dataset.s) <= num);
     });
     // breadcrumb
     var bc = $("breadcrumb"); bc.innerHTML = "";
     var items = [];
-    if (state.category) items.push({ label: ICONS[state.category] || "" + " " + state.category, step: 1 });
-    if (state.master)   items.push({ label: state.master.name, step: 2 });
-    if (state.service)  items.push({ label: state.service.duration_min + " хв · " + money(state.service.price), step: 3 });
+    if (state.group)    items.push({ label: (GROUPS.filter(function(g){return g.key===state.group;})[0]||{}).name || "", step: 1 });
+    if (state.category) items.push({ label: (ICONS[state.category] || "") + " " + state.category, step: 2 });
+    if (state.master)   items.push({ label: state.master.name, step: 3 });
+    if (state.service)  items.push({ label: state.service.duration_min + " хв · " + money(state.service.price), step: 4 });
     items.forEach(function(it, i) {
       var sp = document.createElement("span"); sp.className = "bc-item"; sp.textContent = it.label;
       sp.addEventListener("click", function() { goStep(it.step); }); bc.appendChild(sp);
@@ -249,35 +336,57 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   ]).then(function(rs) {
     allServices = rs[0].ok ? rs[0].services : [];
     allMasters  = rs[1].ok ? rs[1].masters  : [];
-    renderCats();
+    renderGroups();
   }).catch(function() {
-    $("catGrid").innerHTML = '<div class="empty">Помилка завантаження. Оновіть сторінку.</div>';
+    $("groupGrid").innerHTML = '<div class="empty">Помилка завантаження. Оновіть сторінку.</div>';
   });
 
-  // Крок 1: Категорії
-  function renderCats() {
-    var box = $("catGrid"); box.innerHTML = "";
+  // Крок 1: Групи послуг
+  function renderGroups() {
+    var box = $("groupGrid"); box.innerHTML = "";
     if (!allServices.length) { box.innerHTML = '<div class="empty">Послуги тимчасово недоступні</div>'; return; }
-    var cats = {};
-    allServices.forEach(function(s) {
-      var p = parseName(s.name);
-      if (!cats[p.cat]) cats[p.cat] = { min: Infinity };
-      if (s.price < cats[p.cat].min) cats[p.cat].min = s.price;
-    });
-    Object.keys(cats).forEach(function(cat) {
-      var btn = document.createElement("button"); btn.className = "cat-card";
-      btn.innerHTML = '<div class="cat-icon">' + (ICONS[cat] || "🌿") + '</div>' +
-        '<div class="cat-name">' + cat + '</div>' +
-        '<div class="cat-from">від ' + money(cats[cat].min) + '</div>';
+    GROUPS.forEach(function(g, i) {
+      var btn = document.createElement("button"); btn.className = "grp-card grp-" + (i + 1);
+      btn.innerHTML =
+        '<div class="grp-ico">' + (GRP_ICONS[g.key] || "") + '</div>' +
+        '<div class="grp-body"><div class="grp-title">' + g.name + '</div><div class="grp-sub">' + g.sub + '</div></div>' +
+        '<div class="grp-arrow">›</div>';
       btn.addEventListener("click", function() {
-        state.category = cat; state.master = null; state.service = null; state.start_min = null;
-        renderMasters(); goStep(2);
+        state.group = g.key; state.category = null; state.master = null; state.service = null; state.start_min = null;
+        renderCats(); goStep(2);
       });
       box.appendChild(btn);
     });
   }
 
-  // Крок 2: Майстри
+  // Крок 2: Конкретні послуги в межах обраної групи
+  function renderCats() {
+    var box = $("catGrid"); box.innerHTML = "";
+    var cats = {};
+    allServices.forEach(function(s) {
+      var p = parseName(s.name);
+      if (groupOf(p.cat) !== state.group) return;
+      if (!cats[p.cat]) cats[p.cat] = { min: Infinity, img: null };
+      if (s.price < cats[p.cat].min) cats[p.cat].min = s.price;
+      if (!cats[p.cat].img && s.image_url) cats[p.cat].img = s.image_url;
+    });
+    var names = Object.keys(cats);
+    if (!names.length) { box.innerHTML = '<div class="empty">У цій категорії поки немає послуг.</div>'; return; }
+    names.forEach(function(cat) {
+      var btn = document.createElement("button"); btn.className = "cat-card";
+      btn.innerHTML =
+        (cats[cat].img ? '<img class="cat-card-photo" src="' + cats[cat].img + '" alt="" />' : '<div class="cat-icon">' + (ICONS[cat] || "🌿") + '</div>') +
+        '<div class="cat-name">' + cat + '</div>' +
+        '<div class="cat-from">від ' + money(cats[cat].min) + '</div>';
+      btn.addEventListener("click", function() {
+        state.category = cat; state.master = null; state.service = null; state.start_min = null;
+        renderMasters(); goStep(3);
+      });
+      box.appendChild(btn);
+    });
+  }
+
+  // Крок 3: Майстри
   function renderMasters() {
     var box = $("masterGrid"); box.innerHTML = "";
     var catIds = allServices.filter(function(s) { return parseName(s.name).cat === state.category; }).map(function(s) { return s.id; });
@@ -290,7 +399,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
         (m.photo ? '<img class="master-photo" src="' + m.photo + '" alt="' + m.name + '" />' : '<div class="master-any-ico">👤</div>') +
         '<div class="master-name">' + m.name + '</div>' +
         '<span class="lv ' + (isTop ? "lv-top" : "lv-reg") + '">' + (m.level || "Майстер") + '</span>';
-      card.addEventListener("click", function() { state.master = m; renderDurations(); goStep(3); });
+      card.addEventListener("click", function() { state.master = m; renderDurations(); goStep(4); });
       box.appendChild(card);
     });
 
@@ -300,7 +409,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     }
   }
 
-  // Крок 3: Тривалість
+  // Крок 4: Тривалість
   function renderDurations() {
     var box = $("durList"); box.innerHTML = "";
     var opts;
@@ -316,12 +425,12 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
       var label = d >= 60 ? Math.floor(d/60) + " год" + (d%60 ? " " + d%60 + " хв" : "") : d + " хв";
       var row = document.createElement("div"); row.className = "dur-opt";
       row.innerHTML = '<span class="dur-time">' + label + '</span><span class="dur-price">' + money(s.price) + '</span>';
-      row.addEventListener("click", function() { state.service = s; goDate(); goStep(4); });
+      row.addEventListener("click", function() { state.service = s; goDate(); goStep(5); });
       box.appendChild(row);
     });
   }
 
-  // Крок 4: Дата + слоти
+  // Крок 5: Дата + слоти
   function goDate() {
     var d = $("dateInput");
     var min = new Date().toISOString().slice(0,10);
@@ -345,7 +454,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
           b.addEventListener("click", function() {
             grid.querySelectorAll(".slot").forEach(function(x) { x.classList.remove("sel"); });
             b.classList.add("sel"); state.start_min = s.start_min;
-            setTimeout(function() { renderSummary(); goStep(5); }, 150);
+            setTimeout(function() { renderSummary(); goStep(6); }, 150);
           });
           grid.appendChild(b);
         });
@@ -353,7 +462,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
       }).catch(function() { wrap.innerHTML = '<div class="empty">Помилка завантаження.</div>'; });
   }
 
-  // Крок 5: Резюме
+  // Крок 6: Резюме
   function renderSummary() {
     var dt = new Date(state.date + "T00:00:00");
     var h = Math.floor(state.start_min/60), m = state.start_min%60;
@@ -381,7 +490,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     }).then(function(r) { return r.json().then(function(j) { return { code: r.status, j: j }; }); })
       .then(function(res) {
         btn.disabled = false; btn.textContent = "Підтвердити запис";
-        if (res.code === 409) { err.textContent = "Це віконце щойно зайняли. Оберіть інший час."; setTimeout(function() { goStep(4); goDate(); }, 1000); return; }
+        if (res.code === 409) { err.textContent = "Це віконце щойно зайняли. Оберіть інший час."; setTimeout(function() { goStep(5); goDate(); }, 1000); return; }
         if (!res.j.ok) { err.textContent = "Помилка. Спробуйте ще раз."; return; }
         var p = parseName(state.service.name);
         var h = Math.floor(state.start_min/60), m = state.start_min%60;
