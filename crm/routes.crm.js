@@ -255,9 +255,11 @@ router.post("/masters", owner, function (req, res) {
   const d = req.body || {};
   const name = clean(d.name, 100);
   if (!name) return res.status(400).json({ ok: false, error: "name required" });
-  const info = db.prepare("INSERT INTO masters (name,phone,color,active,sort_order,created_at,photo,level,mono_link) VALUES (?,?,?,1,?,?,?,?,?)")
-    .run(name, clean(d.phone, 30), clean(d.color, 20), parseInt(d.sort_order, 10) || 0, Date.now(),
-      clean(d.photo, 500) || null, clean(d.level, 50) || 'Майстер', clean(d.mono_link, 500) || null);
+  const level = clean(d.level, 50) || 'Майстер';
+  const info = db.prepare("INSERT INTO masters (name,last_name,phone,color,active,sort_order,created_at,photo,level,mono_link) VALUES (?,?,?,?,1,?,?,?,?,?)")
+    .run(name, clean(d.last_name, 100) || null, clean(d.phone, 30), clean(d.color, 20), parseInt(d.sort_order, 10) || 0, Date.now(),
+      clean(d.photo, 500) || null, level, clean(d.mono_link, 500) || null);
+  autoAssignServicesByLevel(info.lastInsertRowid, level);
   res.json({ ok: true, id: info.lastInsertRowid });
 });
 router.put("/masters/:id", owner, function (req, res) {
@@ -265,8 +267,9 @@ router.put("/masters/:id", owner, function (req, res) {
   const m = db.prepare("SELECT * FROM masters WHERE id=?").get(id);
   if (!m) return res.status(404).json({ ok: false });
   const d = req.body || {};
-  db.prepare("UPDATE masters SET name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=? WHERE id=?").run(
+  db.prepare("UPDATE masters SET name=?, last_name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=? WHERE id=?").run(
     d.name       !== undefined ? clean(d.name, 100)      : m.name,
+    d.last_name  !== undefined ? clean(d.last_name, 100) : m.last_name,
     d.phone      !== undefined ? clean(d.phone, 30)      : m.phone,
     d.color      !== undefined ? clean(d.color, 20)      : m.color,
     d.sort_order !== undefined ? parseInt(d.sort_order, 10) || 0 : m.sort_order,
@@ -275,6 +278,8 @@ router.put("/masters/:id", owner, function (req, res) {
     d.mono_link  !== undefined ? clean(d.mono_link, 500) : m.mono_link,
     id
   );
+  // Посада визначає прайс — міняється рівень, перерахувати список послуг.
+  if (d.level !== undefined && clean(d.level, 50) !== m.level) autoAssignServicesByLevel(id, clean(d.level, 50));
   if (Array.isArray(d.service_ids)) setMasterServices(id, d.service_ids);
   res.json({ ok: true });
 });
@@ -290,6 +295,22 @@ function setMasterServices(masterId, ids) {
     ids.forEach(function (sid) { const n = parseInt(sid, 10); if (n) ins.run(masterId, n); });
   });
   txn();
+}
+
+/* Прайс визначається посадою: майстер отримує всі послуги з позначкою
+   "(Майстер)" у назві, топ-майстер — з "(Топ Майстер)", а спільні послуги
+   без позначки рівня (SPA-ритуали, обгортання тощо) йдуть усім однаково.
+   Викликається при створенні майстра і при зміні його посади — вручну
+   послуги більше не обираються. */
+function autoAssignServicesByLevel(masterId, level) {
+  const isTop = level === "Топ Майстер";
+  const tagged = db.prepare(
+    "SELECT id FROM services WHERE active=1 AND name LIKE ?" + (isTop ? "" : " AND name NOT LIKE '%(Топ Майстер)%'")
+  ).all(isTop ? "%(Топ Майстер)%" : "%(Майстер)%");
+  const shared = db.prepare(
+    "SELECT id FROM services WHERE active=1 AND name NOT LIKE '%(Майстер)%' AND name NOT LIKE '%(Топ Майстер)%'"
+  ).all();
+  setMasterServices(masterId, tagged.concat(shared).map(function (r) { return r.id; }));
 }
 router.put("/masters/:id/services", owner, function (req, res) {
   const ids = (req.body && req.body.service_ids) || [];

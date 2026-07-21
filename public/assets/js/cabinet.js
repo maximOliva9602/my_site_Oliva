@@ -1559,17 +1559,17 @@
     var listEl = el("div", "list"); main.appendChild(listEl);
     function load() {
       listEl.innerHTML = '<div class="empty">Завантаження…</div>';
-      Promise.all([api("GET", "/api/crm/masters"), api("GET", "/api/crm/services")]).then(function (rs) {
-        var masters = rs[0].j.masters || [], services = rs[1].j.services || [];
+      api("GET", "/api/crm/masters").then(function (res) {
+        var masters = res.j.masters || [];
         listEl.innerHTML = "";
         masters.forEach(function (m) {
           var item = el("div", "item"); var row = el("div", "row1");
           var info = el("div");
-          var svcNames = (m.service_ids || []).map(function (id) { var s = services.find(function (x) { return x.id === id; }); return s ? s.name : null; }).filter(Boolean);
-          info.appendChild(el("div", "t", m.name));
-          info.appendChild(el("div", "sub", (m.phone || "—") + " · послуги: " + (svcNames.join(", ") || "не задано")));
+          var svcCount = (m.service_ids || []).length;
+          info.appendChild(el("div", "t", m.name + (m.last_name ? " " + m.last_name : "")));
+          info.appendChild(el("div", "sub", (m.level || "Майстер") + " · " + (m.phone || "—") + " · " + svcCount + " послуг"));
           row.appendChild(info); row.appendChild(el("span", "sp"));
-          var prof = el("button", "btn btn-sm btn-ghost", "Профіль"); prof.addEventListener("click", function () { masterModal(m, services); });
+          var prof = el("button", "btn btn-sm btn-ghost", "Профіль"); prof.addEventListener("click", function () { masterModal(m); });
           var sch = el("button", "btn btn-sm btn-ghost", "Графік"); sch.addEventListener("click", function () { scheduleModal(m); });
           var off = el("button", "btn btn-sm btn-ghost", "Вихідні"); off.addEventListener("click", function () { timeoffModal(m); });
           var del = el("button", "btn btn-sm btn-ghost", "Видалити");
@@ -1583,39 +1583,49 @@
     window.__reloadMasters = load; load();
   }
 
-  function masterModal(m, services) {
-    var svcP = services ? Promise.resolve(services) : api("GET", "/api/crm/services").then(function (r) { return r.j.services || []; });
-    Promise.resolve(svcP).then(function (svcs) {
-      openModal(
-        '<h3>' + (m ? "Профіль майстра" : "Новий майстер") + '</h3>' +
-        '<label>Ім\'я</label><input type="text" id="mmName" maxlength="100" />' +
-        '<label>Телефон</label><input type="text" id="mmPhone" maxlength="30" />' +
-        '<label>Послуги майстра</label><div class="chips" id="mmChips"></div>' +
-        '<div class="err" id="mmErr"></div>' +
-        '<div class="modal-foot"><button class="btn btn-ghost" id="mmCancel">Скасувати</button><button class="btn btn-primary" id="mmSave">Зберегти</button></div>'
-      );
-      if (m) { $("mmName").value = m.name; $("mmPhone").value = m.phone || ""; }
-      var sel = new Set(m && m.service_ids ? m.service_ids : []);
-      var chips = $("mmChips");
-      svcs.forEach(function (s) {
-        var c = el("span", "chip" + (sel.has(s.id) ? " on" : ""), s.name);
-        c.addEventListener("click", function () { if (sel.has(s.id)) { sel.delete(s.id); c.classList.remove("on"); } else { sel.add(s.id); c.classList.add("on"); } });
-        chips.appendChild(c);
-      });
-      $("mmCancel").addEventListener("click", closeModal);
-      $("mmSave").addEventListener("click", function () {
-        var name = $("mmName").value.trim();
-        if (!name) { $("mmErr").textContent = "Вкажіть ім'я"; return; }
-        var ids = Array.from(sel);
-        if (m) {
-          api("PUT", "/api/crm/masters/" + m.id, { name: name, phone: $("mmPhone").value.trim(), service_ids: ids })
-            .then(function () { closeModal(); window.__reloadMasters(); });
-        } else {
-          api("POST", "/api/crm/masters", { name: name, phone: $("mmPhone").value.trim() }).then(function (res) {
-            var id = res.j.id;
-            api("PUT", "/api/crm/masters/" + id + "/services", { service_ids: ids }).then(function () { closeModal(); window.__reloadMasters(); });
-          });
-        }
+  /* Послуги майстра більше не обираються вручну — прайс підставляється
+     сервером за посадою (Майстер/Топ Майстер), див. autoAssignServicesByLevel
+     у crm/routes.crm.js. Тут лишається тільки ім'я, прізвище, ім'я для
+     додатку (публічне) і посада. */
+  function masterModal(m) {
+    openModal(
+      '<h3>' + (m ? "Профіль майстра" : "Новий майстер") + '</h3>' +
+      '<label>Ім\'я</label><input type="text" id="mmFirstName" maxlength="60" placeholder="Максим" />' +
+      '<label>Прізвище</label><input type="text" id="mmLastName" maxlength="60" placeholder="необов\'язково" />' +
+      '<label>Ім\'я для додатку</label><input type="text" id="mmDisplayName" maxlength="100" placeholder="Як бачитимуть клієнти" />' +
+      '<label>Посада</label><select id="mmLevel"><option value="Майстер">Майстер</option><option value="Майстриня">Майстриня</option><option value="Топ Майстер">Топ Майстер</option></select>' +
+      '<label>Телефон</label><input type="text" id="mmPhone" maxlength="30" />' +
+      '<div class="err" id="mmErr"></div>' +
+      '<div class="modal-foot"><button class="btn btn-ghost" id="mmCancel">Скасувати</button><button class="btn btn-primary" id="mmSave">Зберегти</button></div>'
+    );
+    if (m) {
+      $("mmFirstName").value = m.name || "";
+      $("mmLastName").value = m.last_name || "";
+      $("mmDisplayName").value = m.name || "";
+      $("mmLevel").value = m.level || "Майстер";
+      $("mmPhone").value = m.phone || "";
+    }
+    // Ім'я для додатку саме підтягується за ім'ям, поки його не зміняли вручну.
+    var displayTouched = false;
+    $("mmDisplayName").addEventListener("input", function () { displayTouched = true; });
+    $("mmFirstName").addEventListener("input", function () {
+      if (!displayTouched) $("mmDisplayName").value = $("mmFirstName").value;
+    });
+    $("mmCancel").addEventListener("click", closeModal);
+    $("mmSave").addEventListener("click", function () {
+      var firstName = $("mmFirstName").value.trim();
+      var displayName = $("mmDisplayName").value.trim() || firstName;
+      if (!firstName) { $("mmErr").textContent = "Вкажіть ім'я"; return; }
+      var body = {
+        name: displayName,
+        last_name: $("mmLastName").value.trim(),
+        level: $("mmLevel").value,
+        phone: $("mmPhone").value.trim()
+      };
+      var p = m ? api("PUT", "/api/crm/masters/" + m.id, body) : api("POST", "/api/crm/masters", body);
+      p.then(function (res) {
+        if (!res.j.ok) { $("mmErr").textContent = "Помилка: " + (res.j.error || ""); return; }
+        closeModal(); window.__reloadMasters();
       });
     });
   }
