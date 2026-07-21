@@ -134,14 +134,14 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   <div class="card hide" id="step2">
     <div class="card-title">2. Оберіть майстра</div>
     <div class="master-grid" id="masterGrid"></div>
-    <div class="row"><button class="btn btn-ghost" onclick="goStep(1)">← Назад</button></div>
+    <div class="row"><button class="btn btn-ghost" data-back="1">← Назад</button></div>
   </div>
 
   <!-- 3. Тривалість -->
   <div class="card hide" id="step3">
     <div class="card-title">3. Тривалість сеансу</div>
     <div class="dur-list" id="durList"></div>
-    <div class="row"><button class="btn btn-ghost" onclick="goStep(2)">← Назад</button></div>
+    <div class="row"><button class="btn btn-ghost" data-back="2">← Назад</button></div>
   </div>
 
   <!-- 4. Дата + час -->
@@ -150,7 +150,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     <label class="fld">Дата</label>
     <input type="date" id="dateInput" />
     <div id="slotsWrap"><div class="empty">Оберіть дату</div></div>
-    <div class="row" style="margin-top:14px"><button class="btn btn-ghost" onclick="goStep(3)">← Назад</button></div>
+    <div class="row" style="margin-top:14px"><button class="btn btn-ghost" data-back="3">← Назад</button></div>
   </div>
 
   <!-- 5. Дані клієнта -->
@@ -165,7 +165,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     <textarea id="commentInput" maxlength="500" placeholder="Побажання…"></textarea>
     <div class="err" id="bookErr"></div>
     <div class="row">
-      <button class="btn btn-ghost" onclick="goStep(4)">← Назад</button>
+      <button class="btn btn-ghost" data-back="4">← Назад</button>
       <button class="btn btn-primary" id="bookBtn">Підтвердити запис</button>
     </div>
   </div>
@@ -200,6 +200,13 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
 
   function $(id) { return document.getElementById(id); }
   function money(kop) { return kop ? Math.round(kop / 100).toLocaleString("uk-UA") + " грн" : ""; }
+
+  /* Кнопки "← Назад" через data-атрибут, не onclick: goStep живе всередині
+     цього IIFE, а onclick="" виконується в глобальному просторі й не бачив її. */
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-back]");
+    if (btn) goStep(parseInt(btn.dataset.back, 10));
+  });
 
   function parseName(name) {
     var lm = name.match(/\((Топ Майстер|Майстер)\)/);
