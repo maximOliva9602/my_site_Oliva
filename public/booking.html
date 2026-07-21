@@ -283,6 +283,14 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     "Кінезіотейпування": "extra",
   };
   function groupOf(cat) { return GROUP_MAP[cat] || "extra"; }
+  /* services.category (редагується в /admin) може перекрити автоматичне
+     групування за назвою — досить записати туди одну з 5 назв групи.
+     Порожнє/незнайоме значення — як і раніше, групуємо за GROUP_MAP. */
+  function resolveGroup(s, parsedCat) {
+    var raw = (s.category || "").trim();
+    var g = GROUPS.filter(function (x) { return x.name === raw; })[0];
+    return g ? g.key : groupOf(parsedCat);
+  }
 
   function $(id) { return document.getElementById(id); }
   function money(kop) { return kop ? Math.round(kop / 100).toLocaleString("uk-UA") + " грн" : ""; }
@@ -365,7 +373,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     var cats = {};
     allServices.forEach(function(s) {
       var p = parseName(s.name);
-      if (groupOf(p.cat) !== state.group) return;
+      if (resolveGroup(s, p.cat) !== state.group) return;
       if (!cats[p.cat]) cats[p.cat] = { min: Infinity, img: null };
       if (s.price < cats[p.cat].min) cats[p.cat].min = s.price;
       if (!cats[p.cat].img && s.image_url) cats[p.cat].img = s.image_url;

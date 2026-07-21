@@ -320,9 +320,15 @@
           <input type="text" id="svcName" placeholder="Наприклад: Антистресовий масаж 60 хв" />
         </div>
         <div>
-          <label>Категорія</label>
-          <input type="text" id="svcCategory" placeholder="Наприклад: Загальний масаж, SPA, Дитячий..." list="svcCategoryList" />
-          <datalist id="svcCategoryList"></datalist>
+          <label>Група на сторінці запису</label>
+          <select id="svcCategory">
+            <option value="">— Авто (визначається за назвою) —</option>
+            <option value="Загальні масажі">Загальні масажі</option>
+            <option value="SPA-масажі для двох">SPA-масажі для двох</option>
+            <option value="SPA-масажі для одного">SPA-масажі для одного</option>
+            <option value="Корекція фігури">Корекція фігури</option>
+            <option value="Додаткові послуги">Додаткові послуги</option>
+          </select>
         </div>
         <div class="svc-row2">
           <div>
@@ -656,7 +662,6 @@
   var svcImgUrl     = document.getElementById("svcImgUrl");
   var svcImgPreview = document.getElementById("svcImgPreview");
   var svcImgName    = document.getElementById("svcImgName");
-  var svcCategoryList = document.getElementById("svcCategoryList");
   var svcEditingId  = null;
   var svcAllItems   = [];
   var svcActiveFilter = "";
@@ -704,11 +709,6 @@
     svcAllItems.forEach(function (s) {
       var c = (s.category || "").trim();
       if (c && cats.indexOf(c) === -1) cats.push(c);
-    });
-    // update datalist
-    svcCategoryList.innerHTML = "";
-    cats.forEach(function (c) {
-      var opt = document.createElement("option"); opt.value = c; svcCategoryList.appendChild(opt);
     });
     // build filter buttons
     svcFilter.innerHTML = "";
