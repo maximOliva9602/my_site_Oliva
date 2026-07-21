@@ -101,8 +101,12 @@
   .modal-card h3 { font-family:'Playfair Display',serif; color:var(--cream); font-size:1.15rem; margin-bottom:16px; font-weight:500; }
   .modal-card label { display:block; font-size:.78rem; color:var(--text-dim); margin:10px 0 5px; }
   .modal-card input, .modal-card select, .modal-card textarea { width:100%; }
-  .modal-foot { display:flex; gap:10px; margin-top:18px; }
-  .modal-foot .btn { flex:1; }
+  /* flex-wrap: в деталях запису тут може бути аж 5 кнопок одночасно
+     (Підтвердити/Завершити/Не прийшов/Скасувати/Закрити) — без переносу
+     вони не стискались нижче ширини свого тексту й вилазили за картку
+     й за екран на вузьких телефонах. */
+  .modal-foot { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .modal-foot .btn { flex:1; min-width:110px; }
   .pass-wrap { position:relative; display:block; }
   .pass-wrap input { width:100%; padding-right:44px; box-sizing:border-box; }
   .pass-wrap input::-ms-reveal, .pass-wrap input::-ms-clear { display:none !important; }
