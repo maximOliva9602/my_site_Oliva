@@ -144,7 +144,11 @@
     /* Головний контент: відступ знизу для nav-bar */
     .main { padding-bottom:84px; padding-left:10px; padding-right:10px; }
     /* Модалка: відступ знизу щоб клавіатура не перекривала */
-    .modal { padding:12px 10px 92px; align-items:flex-end; }
+    /* safe flex-end, не просто flex-end: коли картка вища за екран (напр.
+       графік на 7 днів), звичайний flex-end анкорить її знизу і робить
+       верх недоступним для скролу — scrollHeight у браузера рахувався
+       рівним clientHeight, хоча заголовок фізично стояв за межами екрана. */
+    .modal { padding:12px 10px 92px; align-items:safe flex-end; }
     .modal-card { border-radius:16px; }
     /* Таблиці в картках — горизонтальний скрол */
     .item { overflow-x:auto; -webkit-overflow-scrolling:touch; }
