@@ -120,11 +120,14 @@
   .slot { background:rgba(46,61,34,.2); border:1px solid var(--line); border-radius:8px; padding:9px 0; text-align:center; font-size:.85rem; color:var(--cream); }
   .slot.sel { background:var(--olive-light); color:var(--black); font-weight:600; }
   .sched-grid { display:flex; flex-direction:column; gap:5px; margin-top:10px; }
-  .sched-row { display:flex; align-items:center; gap:6px; background:rgba(46,61,34,.18); border:1px solid var(--line); border-radius:10px; padding:8px 12px; transition:opacity .2s; }
+  /* flex-wrap: у рядку день + робочі години + "перерва" + її години —
+     забагато для вузького екрана в один рядок; work-group/break-group
+     тепер переносяться цілим блоком, а не обрізаються по краю картки. */
+  .sched-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; background:rgba(46,61,34,.18); border:1px solid var(--line); border-radius:10px; padding:8px 12px; transition:opacity .2s; }
   .sched-row.day-off { opacity:.4; }
   .sched-row .wd { width:28px; font-size:.8rem; font-weight:700; color:var(--olive-light); text-align:center; flex-shrink:0; }
   .sched-row.day-off .wd { color:var(--text-dim); }
-  .sched-row .sched-div { width:1px; height:24px; background:var(--line); margin:0 4px; flex-shrink:0; }
+  .sched-row .sched-group { display:flex; align-items:center; gap:6px; flex-shrink:0; }
   .sched-row .sched-lbl { font-size:.7rem; color:var(--text-dim); margin-right:2px; flex-shrink:0; }
   .sched-row .sched-sep { color:var(--text-dim); font-size:.85rem; flex-shrink:0; }
   .sched-row input[type=time] { width:88px; flex-shrink:0; padding:6px 7px; font-size:.83rem; }
@@ -233,7 +236,7 @@
 <!-- MODAL -->
 <div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
-<script src="assets/js/cabinet.js?v=7"></script>
+<script src="assets/js/cabinet.js?v=8"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(){});

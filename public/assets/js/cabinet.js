@@ -1649,19 +1649,22 @@
         var we = el("input"); we.type = "time"; we.dataset.wd = wd; we.dataset.k = "we";
         if (sched[wd]) { ws.value = fmtMin(sched[wd].work_start); we.value = fmtMin(sched[wd].work_end); }
 
-        r.appendChild(ws);
-        r.appendChild(el("span", "sched-sep", "–"));
-        r.appendChild(we);
-        r.appendChild(el("span", "sched-div", ""));
-        r.appendChild(el("span", "sched-lbl", "перерва"));
+        var workGroup = el("div", "sched-group");
+        workGroup.appendChild(ws);
+        workGroup.appendChild(el("span", "sched-sep", "–"));
+        workGroup.appendChild(we);
+        r.appendChild(workGroup);
 
         var bs = el("input"); bs.type = "time"; bs.dataset.wd = wd; bs.dataset.k = "bs";
         var be = el("input"); be.type = "time"; be.dataset.wd = wd; be.dataset.k = "be";
         if (brk[wd]) { bs.value = fmtMin(brk[wd].break_start); be.value = fmtMin(brk[wd].break_end); }
 
-        r.appendChild(bs);
-        r.appendChild(el("span", "sched-sep", "–"));
-        r.appendChild(be);
+        var breakGroup = el("div", "sched-group");
+        breakGroup.appendChild(el("span", "sched-lbl", "перерва"));
+        breakGroup.appendChild(bs);
+        breakGroup.appendChild(el("span", "sched-sep", "–"));
+        breakGroup.appendChild(be);
+        r.appendChild(breakGroup);
 
         function refreshDayOff() { r.className = "sched-row" + (ws.value || we.value ? "" : " day-off"); }
         ws.addEventListener("change", refreshDayOff); we.addEventListener("change", refreshDayOff);
