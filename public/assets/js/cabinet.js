@@ -570,7 +570,11 @@
         for (var min = 0; min < TOTAL_MIN; min += 30) {
           var h = HOUR_START + Math.floor(min / 60);
           var m = min % 60;
-          var absMin = HOUR_START * 60 + min;
+          /* let, не var: цю змінну ловить замикання кліку по клітинці нижче,
+             а обробник спрацьовує вже після завершення всього циклу — з var
+             усі клітинки бачили б останнє значення (кінець дня) замість
+             свого власного рядка. */
+          let absMin = HOUR_START * 60 + min;
 
           var timeCell = el("div");
           timeCell.style.cssText = "border-top:1px solid var(--line);border-right:1px solid var(--line);display:flex;align-items:flex-start;justify-content:center;padding-top:3px;height:" + SLOT_H + "px;";
@@ -583,7 +587,16 @@
 
           masters.forEach(function(master) {
             var cell = el("div");
-            cell.style.cssText = "border-top:1px solid rgba(122,145,86,.08);border-right:1px solid rgba(122,145,86,.06);height:" + SLOT_H + "px;position:relative;";
+            cell.style.cssText = "border-top:1px solid rgba(122,145,86,.08);border-right:1px solid rgba(122,145,86,.06);height:" + SLOT_H + "px;position:relative;cursor:pointer;";
+            cell.addEventListener("mouseenter", function () { cell.style.background = "rgba(122,145,86,.08)"; });
+            cell.addEventListener("mouseleave", function () { cell.style.background = ""; });
+            /* Клік по порожній клітинці — одразу відкрити новий запис із
+               підставленими майстром/датою/часом. Блоки записів усередині
+               роблять stopPropagation, тому сюди долітає тільки клік по
+               реально вільному місцю. */
+            cell.addEventListener("click", function () {
+              apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: absMin } });
+            });
 
             // Знайти записи що починаються В МЕЖАХ цього 30-хв слоту
             appts.filter(function(a) {
@@ -819,7 +832,7 @@
     );
     var chosen = { start_min: null };
     $("mCancel").addEventListener("click", closeModal);
-    $("mDate").value = apptDate; $("mDate").min = todayStr();
+    $("mDate").value = prefill.date || apptDate; $("mDate").min = todayStr();
     if (prefill.clientName) {
       var parts = prefill.clientName.split(" ");
       $("mName").value = parts[0] || "";
@@ -856,6 +869,11 @@
       chosen.start_min = null;
       var sid = $("mService").value, mid = $("mMaster").value, date = $("mDate").value;
       if (!sid || !mid || !date) return;
+      /* Клік по клітинці календаря передає бажаний час одноразово — після
+         першого рендера слотів прибираємо, щоб зміна послуги/дати вручну
+         не продовжувала мовчки тягнути за собою старий вибір. */
+      var wantStartMin = prefill.startMin;
+      prefill.startMin = null;
       var box = $("mSlots"); box.className = ""; box.innerHTML = "Завантаження…";
       api("GET", "/api/public/slots?service=" + sid + "&master=" + mid + "&date=" + date).then(function (res) {
         var slots = res.j.slots || [];
@@ -869,6 +887,7 @@
             c.classList.add("sel"); chosen.start_min = s.start_min;
           });
           grid.appendChild(c);
+          if (wantStartMin != null && s.start_min === wantStartMin) c.click();
         });
         box.appendChild(grid);
       });
