@@ -45,8 +45,19 @@
   }
   $("loginBtn").addEventListener("click", doLogin);
   $("loginPass").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
-  $("logoutBtn").addEventListener("click", function () {
+  function doLogout() {
     api("POST", "/api/admin/logout").then(function () { location.reload(); });
+  }
+  $("logoutBtn").addEventListener("click", function () {
+    openModal(
+      '<h3>Вийти з кабінету?</h3>' +
+      '<div style="display:flex;gap:8px;margin-top:18px;">' +
+        '<button class="btn btn-ghost" id="logoutCancel" style="flex:1;">Скасувати</button>' +
+        '<button class="btn btn-primary" id="logoutYes" style="flex:1;">Вийти</button>' +
+      '</div>'
+    );
+    document.getElementById("logoutCancel").addEventListener("click", closeModal);
+    document.getElementById("logoutYes").addEventListener("click", doLogout);
   });
 
   // авто-вхід якщо є cookie
@@ -122,29 +133,6 @@
     });
     document.getElementById("pt-later").addEventListener("click", function() {
       t.remove(); sessionStorage.setItem("push_asked", "1");
-    });
-  }
-
-  /* Зберігаємо setupPushBtn для кнопки в topbar (опціонально) */
-  function setupPushBtn() {
-    var btn = document.getElementById("pushBtn");
-    if (!btn) return;
-    if (!("Notification" in window) || !("PushManager" in window)) return;
-    btn.style.display = "";
-    function upd() {
-      if (Notification.permission === "granted") {
-        btn.textContent = "🔔"; btn.title = "Сповіщення увімкнені"; btn.style.opacity = "1";
-      } else if (Notification.permission === "denied") {
-        btn.textContent = "🔕"; btn.title = "Сповіщення заблоковані в налаштуваннях"; btn.style.opacity = "0.4";
-      } else {
-        btn.textContent = "🔕"; btn.title = "Натисніть щоб увімкнути сповіщення"; btn.style.opacity = "0.6";
-      }
-    }
-    upd();
-    btn.addEventListener("click", function() {
-      if (Notification.permission === "denied") { alert("Дозвольте сповіщення в налаштуваннях телефону → Oliva → Сповіщення."); return; }
-      if (Notification.permission === "granted") { subscribePush(); return; }
-      Notification.requestPermission().then(function(p) { upd(); if (p === "granted") subscribePush(); }).catch(function(){});
     });
   }
 
@@ -259,7 +247,6 @@
     mobSheetLogout.onclick = function() { closeMobSheet(); $("logoutBtn").click(); };
 
     TABS[0].render();
-    setupPushBtn(); // стан кнопки в topbar
     initPush();     // тост або тиха підписка
     // Авто-оновлення коли повертаємось у додаток (напр. із фону)
     document.addEventListener("visibilitychange", function() {
