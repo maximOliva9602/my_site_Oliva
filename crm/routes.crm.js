@@ -248,8 +248,10 @@ router.post("/appointments", owner, function (req, res) {
 router.get("/schedule", any, function (req, res) {
   const date = clean(req.query.date, 10) || new Date().toISOString().slice(0, 10);
   const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.price, a.paid, a.color_marker, a.comment, " +
-              "c.name client_name, s.name service_name, m.name master_name " +
+              "c.name client_name, c.phone client_phone, s.name service_name, m.name master_name, " +
+              "r.rating review_rating, r.comment review_comment " +
               "FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id " +
+              "LEFT JOIN reviews r ON r.appointment_id=a.id " +
               "WHERE a.date=? AND a.status NOT IN ('cancelled','no_show') ORDER BY a.start_min";
   res.json({ ok: true, appointments: db.prepare(sql).all(date).map(viewAppt) });
 });
@@ -672,95 +674,110 @@ router.get("/dashboard", owner, function (req, res) {
 router.get("/dashboard/analytics", owner, function (req, res) {
   const now = tz.nowKyiv();
   const today = now.date;
-  const dt = new Date(today + "T00:00:00");
-  const dow = dt.getDay() === 0 ? 6 : dt.getDay() - 1;
-  const weekStart = new Date(dt); weekStart.setDate(dt.getDate() - dow);
-  const wStart = weekStart.toISOString().slice(0, 10);
   const mStart = today.slice(0, 7) + "-01";
 
-  // Дохід по днях за останні 30 днів
-  const thirtyAgo = new Date(dt); thirtyAgo.setDate(dt.getDate() - 29);
-  const thirtyStart = thirtyAgo.toISOString().slice(0, 10);
+  const from = clean(req.query.from, 10) || mStart;
+  const to   = clean(req.query.to,   10) || today;
+
+  // ── Статистика за вибраний період ──────────────────────────────
+  const periodRevenue = db.prepare(
+    `SELECT COALESCE(SUM(price),0) v FROM appointments WHERE status='completed' AND date>=? AND date<=?`
+  ).get(from, to).v;
+
+  const periodClients = db.prepare(
+    `SELECT COUNT(DISTINCT client_id) v FROM appointments WHERE status='completed' AND date>=? AND date<=?`
+  ).get(from, to).v;
+
+  const periodReviews = db.prepare(
+    `SELECT COUNT(*) v FROM reviews r
+       JOIN appointments a ON a.id=r.appointment_id WHERE a.date>=? AND a.date<=?`
+  ).get(from, to).v;
+
+  const totalClients = db.prepare("SELECT COUNT(*) v FROM clients").get().v;
+
+  // Дохід по днях за вибраний період
   const revenueByDay = db.prepare(
     `SELECT date, SUM(price) revenue FROM appointments
       WHERE status='completed' AND date>=? AND date<=? GROUP BY date ORDER BY date`
-  ).all(thirtyStart, today);
+  ).all(from, to);
 
-  /* ---- Повернення клієнтів: загальна аналітика (весь час) ---- */
-  const clientsTotal = db.prepare("SELECT COUNT(*) n FROM clients").get().n;
-  const clientsReturning = db.prepare("SELECT COUNT(*) n FROM clients WHERE visit_count>1").get().n;
+  // ── Повернення клієнтів: загальна аналітика (весь час) ─────────
+  const clientsReturning = db.prepare("SELECT COUNT(*) v FROM clients WHERE visit_count>1").get().v;
   const clientsOverall = {
-    total: clientsTotal,
+    total: totalClients,
     returning: clientsReturning,
-    one_time: clientsTotal - clientsReturning,
-    returning_pct: clientsTotal ? Math.round(clientsReturning / clientsTotal * 100) : 0,
+    one_time: totalClients - clientsReturning,
+    returning_pct: totalClients ? Math.round(clientsReturning / totalClients * 100) : 0,
   };
 
-  /* Клієнти, що не повернулись — один-єдиний завершений візит, найдавніші першими,
-     щоб було видно, кого вже точно "втратили", а не просто ще не встигли повернутись. */
   const clientsNotReturned = db.prepare(
     `SELECT name, phone, last_visit_at FROM clients
       WHERE visit_count=1 AND last_visit_at IS NOT NULL
       ORDER BY last_visit_at ASC LIMIT 30`
   ).all();
 
-  /* Повернення за ЦЕЙ місяць: серед клієнтів із завершеним записом цього місяця,
-     скільки мали завершений запис і РАНІШЕ (тобто повернулися саме цього місяця),
-     а скільки прийшли вперше. */
-  const monthClientFlags = db.prepare(
+  // ── Клієнти за вибраний період (нові vs повторні) ───────────────
+  const periodClientFlags = db.prepare(
     `SELECT a.client_id,
             EXISTS(SELECT 1 FROM appointments a2 WHERE a2.client_id=a.client_id AND a2.status='completed' AND a2.date<?) is_returning
-       FROM appointments a WHERE a.status='completed' AND a.date>=?
+       FROM appointments a WHERE a.status='completed' AND a.date>=? AND a.date<=?
       GROUP BY a.client_id`
-  ).all(mStart, mStart);
-  const monthReturning = monthClientFlags.filter(function (r) { return r.is_returning; }).length;
-  const monthTotal = monthClientFlags.length;
-  const clientsMonth = {
-    total: monthTotal,
-    returning: monthReturning,
-    new: monthTotal - monthReturning,
-    returning_pct: monthTotal ? Math.round(monthReturning / monthTotal * 100) : 0,
+  ).all(from, from, to);
+  const periodReturning = periodClientFlags.filter(function(r) { return r.is_returning; }).length;
+  const clientsPeriod = {
+    total: periodClientFlags.length,
+    returning: periodReturning,
+    new: periodClientFlags.length - periodReturning,
   };
 
-  // Лояльність до майстра (клієнти що повернулися до ТОГО Ж майстра)
+  // ── Лояльність до майстра ────────────────────────────────────────
   const masters = db.prepare("SELECT id, name FROM masters WHERE active=1").all();
   const masterLoyalty = masters.map(function(m) {
     const total = db.prepare(
-      `SELECT COUNT(DISTINCT client_id) n FROM appointments WHERE master_id=? AND status='completed'`
-    ).get(m.id).n;
+      `SELECT COUNT(DISTINCT client_id) v FROM appointments WHERE master_id=? AND status='completed'`
+    ).get(m.id).v;
     const returning = db.prepare(
-      `SELECT COUNT(*) n FROM (
+      `SELECT COUNT(*) v FROM (
          SELECT client_id FROM appointments
           WHERE master_id=? AND status='completed'
           GROUP BY client_id HAVING COUNT(*)>1
        )`
-    ).get(m.id).n;
+    ).get(m.id).v;
     return { id: m.id, name: m.name, total_clients: total, returning: returning,
              loyalty_pct: total > 0 ? Math.round(returning / total * 100) : 0 };
   });
 
-  // Середній чек по місяцях (останні 6 місяців)
+  // ── Динаміка по місяцях (останні 6) ─────────────────────────────
   const avgByMonth = db.prepare(
     `SELECT substr(date,1,7) month, AVG(price) avg_check, SUM(price) revenue, COUNT(*) cnt
        FROM appointments WHERE status='completed' AND date>=date('now','-6 months')
        GROUP BY month ORDER BY month`
   ).all();
 
-  // Відгуки
+  // ── Відгуки за вибраний період ───────────────────────────────────
   const reviews = db.prepare(
-    `SELECT r.*, c.name client_name, m.name master_name
-       FROM reviews r JOIN clients c ON c.id=r.client_id JOIN masters m ON m.id=r.master_id
+    `SELECT r.rating, r.comment, r.created_at, c.name client_name, m.name master_name
+       FROM reviews r
+       JOIN appointments a ON a.id=r.appointment_id
+       JOIN clients c ON c.id=r.client_id
+       JOIN masters m ON m.id=r.master_id
+      WHERE a.date>=? AND a.date<=?
       ORDER BY r.created_at DESC LIMIT 20`
-  ).all();
+  ).all(from, to);
 
   res.json({
     ok: true,
-    revenue_by_day: revenueByDay,
-    master_loyalty: masterLoyalty,
-    avg_by_month: avgByMonth,
-    reviews: reviews,
+    period: { from, to },
+    period_revenue:  periodRevenue,
+    period_clients:  periodClients,
+    period_reviews:  periodReviews,
+    total_clients:   totalClients,
+    clients_period:  clientsPeriod,
+    revenue_by_day:  revenueByDay,
+    master_loyalty:  masterLoyalty,
+    avg_by_month:    avgByMonth,
+    reviews:         reviews,
     clients_overall: clientsOverall,
-    clients_month: clientsMonth,
     clients_not_returned: clientsNotReturned,
   });
 });
@@ -848,6 +865,32 @@ router.get("/reviews", owner, function (req, res) {
       ORDER BY r.created_at DESC LIMIT 100`
   ).all();
   res.json({ ok: true, reviews: rows });
+});
+
+router.post("/reviews", any, function (req, res) {
+  const b = req.body || {};
+  const apptId = parseInt(b.appointment_id, 10);
+  const rating = parseInt(b.rating, 10);
+  if (!apptId || !rating || rating < 1 || rating > 5)
+    return res.status(400).json({ ok: false, err: "bad params" });
+
+  const a = db.prepare("SELECT id, master_id, client_id, status FROM appointments WHERE id=?").get(apptId);
+  if (!a || a.status !== "completed") return res.status(400).json({ ok: false, err: "not completed" });
+  if (req.session.role !== "owner" && a.master_id !== req.session.masterId)
+    return res.status(403).json({ ok: false });
+
+  const comment = clean(b.comment, 500) || null;
+  try {
+    db.prepare(
+      `INSERT INTO reviews (appointment_id, master_id, client_id, rating, comment, created_at)
+       VALUES (?,?,?,?,?,?)`
+    ).run(apptId, a.master_id, a.client_id, rating, comment, Date.now());
+  } catch (e) {
+    db.prepare(
+      `UPDATE reviews SET rating=?, comment=?, created_at=? WHERE appointment_id=?`
+    ).run(rating, comment, Date.now(), apptId);
+  }
+  res.json({ ok: true });
 });
 
 /* ---- Журнал сповіщень ---- */

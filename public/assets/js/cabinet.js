@@ -799,6 +799,14 @@
       '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
       '<label style="margin-top:14px;display:block;">Колір маркеру</label><div id="dMarkerWrap"></div>';
 
+    // Оцінка (лише для завершених)
+    if (a.status === "completed") {
+      html += '<label style="margin-top:14px;display:block;">Оцінка візиту</label>' +
+        '<div id="dStarsWrap" style="display:flex;gap:4px;margin-top:4px;"></div>' +
+        '<div id="dReviewCommentWrap" style="margin-top:6px;display:none;">' +
+        '<textarea id="dReviewComment" placeholder="Коментар (необов\'язково)" rows="2" style="width:100%;font-size:.85rem;"></textarea></div>';
+    }
+
     // Оплата
     html += '<div style="margin-top:14px;"><label style="font-size:.78rem;color:var(--text-dim);">Оплата</label>' +
       '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">' +
@@ -822,8 +830,49 @@
 
     $("dMarkerWrap").appendChild(markerPicker(a.color_marker || null, function(c) {
       api("PATCH", "/api/crm/appointments/" + a.id + "/color-marker", { color_marker: c });
-      a.color_marker = c; // оновити локально щоб перезавантаження не скинуло
+      a.color_marker = c;
     }));
+
+    // Зірки оцінки
+    if (a.status === "completed" && $("dStarsWrap")) {
+      var currentRating = a.review_rating || 0;
+      function renderStars(val) {
+        var wrap = $("dStarsWrap"); wrap.innerHTML = "";
+        for (var s = 1; s <= 5; s++) {
+          (function(star) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = star <= val ? "★" : "☆";
+            btn.style.cssText = "background:none;border:none;font-size:1.6rem;cursor:pointer;padding:0 2px;color:" + (star <= val ? "#f5a623" : "#ccc") + ";line-height:1;";
+            btn.addEventListener("mouseenter", function() { renderStars(star); });
+            btn.addEventListener("mouseleave", function() { renderStars(currentRating); });
+            btn.addEventListener("click", function() {
+              currentRating = star;
+              renderStars(star);
+              var commentWrap = $("dReviewCommentWrap");
+              if (commentWrap) commentWrap.style.display = "block";
+              var comment = $("dReviewComment") ? $("dReviewComment").value.trim() : "";
+              api("POST", "/api/crm/reviews", { appointment_id: a.id, rating: star, comment: comment });
+              a.review_rating = star;
+            });
+            wrap.appendChild(btn);
+          })(s);
+        }
+      }
+      renderStars(currentRating);
+      if (currentRating > 0 && $("dReviewCommentWrap")) {
+        $("dReviewCommentWrap").style.display = "block";
+        if ($("dReviewComment") && a.review_comment) $("dReviewComment").value = a.review_comment;
+      }
+      // Зберігати коментар при зміні
+      if ($("dReviewComment")) {
+        $("dReviewComment").addEventListener("change", function() {
+          if (currentRating > 0) {
+            api("POST", "/api/crm/reviews", { appointment_id: a.id, rating: currentRating, comment: this.value.trim() });
+          }
+        });
+      }
+    }
 
     function setStatus(status) {
       api("PATCH", "/api/crm/appointments/" + a.id + "/status", { status: status }).then(function(res) {
@@ -1143,11 +1192,31 @@
      АНАЛІТИКА (власник)
      ============================================================ */
   function renderAnalytics() {
-    var main = $("main"); main.innerHTML = '<div class="empty">Завантаження…</div>';
-    api("GET", "/api/crm/dashboard/analytics").then(function(res) {
-      if (!res.j.ok) { main.innerHTML = '<div class="empty">Помилка</div>'; return; }
-      var d = res.j;
-      main.innerHTML = "";
+    var main = $("main");
+    var today = new Date().toISOString().slice(0,10);
+    var defaultFrom = today.slice(0,7) + "-01";
+
+    // ── Шапка з фільтром дат ──────────────────────────────────────
+    main.innerHTML = "";
+    var filterBar = document.createElement("div");
+    filterBar.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;";
+    filterBar.innerHTML =
+      '<span style="font-size:.82rem;color:var(--text-dim);flex-shrink:0;">Статистика за:</span>' +
+      '<input type="date" id="aFrom" value="' + defaultFrom + '" style="width:140px;">' +
+      '<span style="color:var(--text-dim);font-size:.85rem;">—</span>' +
+      '<input type="date" id="aTo" value="' + today + '" style="width:140px;">' +
+      '<button class="btn btn-primary btn-sm" id="aApply">Застосувати</button>';
+    main.appendChild(filterBar);
+
+    var statsArea = document.createElement("div");
+    main.appendChild(statsArea);
+
+    function loadStats(from, to) {
+      statsArea.innerHTML = '<div class="empty">Завантаження…</div>';
+      api("GET", "/api/crm/dashboard/analytics?from=" + from + "&to=" + to).then(function(res) {
+        if (!res.j.ok) { statsArea.innerHTML = '<div class="empty">Помилка</div>'; return; }
+        var d = res.j;
+        statsArea.innerHTML = "";
 
       var MONTHNAMES = ["Січ","Лют","Бер","Кві","Тра","Чер","Лип","Сер","Вер","Жов","Лис","Гру"];
       var currentMonth = new Date().toISOString().slice(0,7);
@@ -1167,23 +1236,23 @@
         return '<div style="font-family:\'Playfair Display\',serif;color:var(--cream);font-size:1rem;font-weight:500;margin-bottom:14px;">' + t + '</div>';
       }
 
-      /* ---- KPI картки ---- */
-      var thisMonth = (d.avg_by_month||[]).filter(function(m){return m.month===currentMonth;})[0] || {};
+      /* ---- KPI картки за період ---- */
       var kpiRow = document.createElement("div");
-      kpiRow.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;";
+      kpiRow.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;";
       [
-        { icon:"💰", val: grn(thisMonth.revenue||0), lbl:"Дохід місяця" },
-        { icon:"📋", val: (thisMonth.cnt||0)+"",      lbl:"Записів місяця" },
-        { icon:"💳", val: grn(thisMonth.avg_check||0),lbl:"Середній чек" },
+        { icon:"💰", val: grn(d.period_revenue||0),   lbl:"Всього доходу" },
+        { icon:"👤", val: (d.period_clients||0)+"",    lbl:"К-ть клієнтів" },
+        { icon:"🧑‍🤝‍🧑", val: (d.total_clients||0)+"",  lbl:"Всього клієнтів" },
+        { icon:"⭐", val: (d.period_reviews||0)+"",    lbl:"Відгуків" },
       ].forEach(function(k) {
         var c = document.createElement("div");
         c.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 14px;";
         c.innerHTML = '<div style="font-size:1.4rem;margin-bottom:6px;">'+k.icon+'</div>'+
-          '<div style="font-size:1.25rem;font-weight:700;color:var(--cream);font-family:\'Playfair Display\',serif;line-height:1.1;">'+k.val+'</div>'+
+          '<div style="font-size:1.4rem;font-weight:700;color:var(--cream);font-family:\'Playfair Display\',serif;line-height:1.1;">'+k.val+'</div>'+
           '<div style="font-size:.72rem;color:var(--text-dim);margin-top:5px;">'+k.lbl+'</div>';
         kpiRow.appendChild(c);
       });
-      main.appendChild(kpiRow);
+      statsArea.appendChild(kpiRow);
 
       /* ---- Area chart: дохід за 30 днів ---- */
       var days = d.revenue_by_day || [];
@@ -1230,13 +1299,11 @@
           '<path d="'+aPath+'" fill="url(#ag)"/>'+
           '<path d="'+lPath+'" fill="none" stroke="var(--olive-light)" stroke-width="2"/>'+
           dots+'</svg>';
-        main.appendChild(section(title("📈 Дохід за 30 днів")+svg));
+        statsArea.appendChild(section(title("📈 Дохід за обраний період")+svg));
       }
 
-      /* ---- Повернення клієнтів: загальна аналітика + за цей місяць ---- */
-      var co = d.clients_overall || {}, cm = d.clients_month || {};
-      /* minmax(0,1fr), не просто 1fr: інакше довгі підписи ("Всього клієнтів")
-         не дають колонці стиснутись і картка вилазить за екран на телефоні. */
+      /* ---- Клієнти за обраний період ---- */
+      var cp = d.clients_period || {}, co = d.clients_overall || {};
       function clientKpi(items) {
         var h = '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">';
         items.forEach(function(k) {
@@ -1246,44 +1313,41 @@
         });
         return h + '</div>';
       }
-      /* auto-fit: на вузькому екрані обидві картки складаються в один
-         стовпець (кожна отримує повну ширину — трьом підписам усередині
-         є де дихати), на широкому — стають поруч. */
       var clientsRow = document.createElement("div");
       clientsRow.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:14px;";
       clientsRow.appendChild(section(
-        title("👤 Клієнти — загальна аналітика") +
+        title("👤 Клієнти за період") +
         clientKpi([
-          { val: co.total||0, lbl: "Всього клієнтів" },
-          { val: (co.returning_pct||0)+"%", lbl: "Повернулись", col: "var(--olive-light)" },
-          { val: co.one_time||0, lbl: "Не повернулись", col: co.one_time ? "var(--err)" : "var(--cream)" },
+          { val: cp.total||0, lbl: "Всього записів" },
+          { val: cp.returning||0, lbl: "Повторних", col: "var(--olive-light)" },
+          { val: cp.new||0, lbl: "Нових" },
         ])
       ));
       clientsRow.appendChild(section(
-        title("📅 Клієнти — цього місяця") +
+        title("📊 Загальна база") +
         clientKpi([
-          { val: cm.total||0, lbl: "Записались" },
-          { val: cm.returning||0, lbl: "Повторних", col: "var(--olive-light)" },
-          { val: cm.new||0, lbl: "Нових" },
+          { val: co.total||0, lbl: "Всього клієнтів" },
+          { val: (co.returning_pct||0)+"%", lbl: "Повернулись", col: "var(--olive-light)" },
+          { val: co.one_time||0, lbl: "Разові", col: co.one_time ? "var(--err)" : "var(--cream)" },
         ])
       ));
-      main.appendChild(clientsRow);
+      statsArea.appendChild(clientsRow);
 
-      // Клієнти, що не повернулись — щоб було кого доганяти
+      // Клієнти, що не повернулись
       var notReturned = d.clients_not_returned || [];
       if (notReturned.length) {
         var nrHtml = title("⚠️ Не повернулись — варто нагадати про себе");
         nrHtml += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">';
         notReturned.forEach(function(c) {
-          var days = c.last_visit_at ? Math.round((Date.now()-c.last_visit_at)/86400000) : null;
+          var daysAgo = c.last_visit_at ? Math.round((Date.now()-c.last_visit_at)/86400000) : null;
           nrHtml += '<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;">' +
             '<div style="font-size:.85rem;color:var(--cream);font-weight:500;">'+c.name+'</div>' +
             '<div style="font-size:.75rem;color:var(--text-dim);margin-top:2px;">'+(c.phone||"")+'</div>' +
-            (days!=null ? '<div style="font-size:.7rem;color:var(--err);margin-top:3px;">'+days+' дн. тому</div>' : '') +
+            (daysAgo!=null ? '<div style="font-size:.7rem;color:var(--err);margin-top:3px;">'+daysAgo+' дн. тому</div>' : '') +
             '</div>';
         });
         nrHtml += '</div>';
-        main.appendChild(section(nrHtml));
+        statsArea.appendChild(section(nrHtml));
       }
 
       /* ---- Майстри ---- */
@@ -1297,12 +1361,12 @@
             '<div style="font-size:.88rem;font-weight:600;color:var(--cream);margin-bottom:6px;">'+m.name+'</div>'+
             '<div style="font-size:1.7rem;font-weight:700;color:'+col+';font-family:\'Playfair Display\',serif;line-height:1;">'+m.loyalty_pct+'%</div>'+
             '<div style="font-size:.65rem;color:var(--text-dim);margin:3px 0 8px;">повторних</div>'+
-            '<div style="background:rgba(46,61,34,.4);border-radius:3px;height:4px;margin-bottom:8px;">'+
+            '<div style="background:rgba(0,0,0,.08);border-radius:3px;height:4px;margin-bottom:8px;">'+
             '<div style="width:'+m.loyalty_pct+'%;height:100%;background:'+col+';border-radius:3px;"></div></div>'+
             '<div style="font-size:.7rem;color:var(--text-dim);">'+m.returning+' з '+m.total_clients+'</div></div>';
         });
         mHtml += '</div>';
-        main.appendChild(section(mHtml));
+        statsArea.appendChild(section(mHtml));
       }
 
       /* ---- Місячна динаміка (бари) ---- */
@@ -1319,7 +1383,7 @@
           var bh=Math.max(2,Math.round((m.revenue||0)/maxMRev*mph));
           var by=MT+mph-bh;
           var isCur=m.month===currentMonth;
-          mBars+='<rect x="'+x+'" y="'+by+'" width="'+barW+'" height="'+bh+'" fill="'+(isCur?"var(--olive-light)":"rgba(122,145,86,.4)")+'" rx="3">'+
+          mBars+='<rect x="'+x+'" y="'+by+'" width="'+barW+'" height="'+bh+'" fill="'+(isCur?"var(--olive-light)":"rgba(110,145,69,.4)")+'" rx="3">'+
             '<title>'+m.month+': '+grn(m.revenue)+' / '+m.cnt+' зап.</title></rect>';
           if(m.revenue){mBars+='<text x="'+(x+barW/2)+'" y="'+(by-4)+'" text-anchor="middle" font-size="8" fill="var(--text-dim)">'+grnShort(m.revenue)+'к</text>';}
           var mn=parseInt(m.month.slice(5))-1;
@@ -1327,19 +1391,19 @@
         });
         var myg=""; for(var yi=0;yi<=3;yi++){
           var yv2=maxMRev*yi/3, yp2=MT+mph-mph*yi/3;
-          myg+='<line x1="'+ML+'" y1="'+yp2+'" x2="'+(MW-MR)+'" y2="'+yp2+'" stroke="rgba(122,145,86,.07)"/>';
+          myg+='<line x1="'+ML+'" y1="'+yp2+'" x2="'+(MW-MR)+'" y2="'+yp2+'" stroke="rgba(0,0,0,.05)"/>';
           myg+='<text x="'+(ML-5)+'" y="'+(yp2+4)+'" text-anchor="end" font-size="8" fill="var(--text-dim)">'+grnShort(yv2)+'к</text>';
         }
         var mSvg='<svg viewBox="0 0 '+MW+' '+MH+'" style="width:100%;height:auto;">'+myg+mBars+mLbls+'</svg>';
-        main.appendChild(section(title("📅 Динаміка по місяцях")+mSvg));
+        statsArea.appendChild(section(title("📅 Динаміка по місяцях")+mSvg));
       }
 
-      /* ---- Останні відгуки ---- */
+      /* ---- Відгуки за період ---- */
       var reviews = d.reviews || [];
       if (reviews.length) {
-        var rHtml = title("💬 Останні відгуки");
+        var rHtml = title("⭐ Відгуки за період");
         rHtml += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;">';
-        reviews.slice(0,6).forEach(function(r){
+        reviews.forEach(function(r){
           var col=r.rating>=4?"var(--olive-light)":r.rating>=3?"var(--warn)":"var(--err)";
           rHtml+='<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px;">'+
             '<div style="color:'+col+';font-size:.95rem;margin-bottom:4px;">'+"★".repeat(r.rating)+"☆".repeat(5-r.rating)+'</div>'+
@@ -1349,9 +1413,21 @@
             '</div>';
         });
         rHtml += '</div>';
-        main.appendChild(section(rHtml));
+        statsArea.appendChild(section(rHtml));
+      } else {
+        statsArea.appendChild(section(title("⭐ Відгуки за період") +
+          '<div style="color:var(--text-dim);font-size:.88rem;">Відгуків за цей період немає</div>'));
       }
+
+      }); // end api call
+    } // end loadStats
+
+    $("aApply").addEventListener("click", function() {
+      var f = $("aFrom").value, t = $("aTo").value;
+      if (f && t && f <= t) loadStats(f, t);
     });
+
+    loadStats(defaultFrom, today);
   }
 
   /* ============================================================
