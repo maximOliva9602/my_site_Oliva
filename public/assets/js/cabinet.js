@@ -507,182 +507,245 @@
     function loadCalendar(masterFilter) {
       contentEl.innerHTML = "";
       var HOUR_START = 8, HOUR_END = 22;
-      var TOTAL_SLOTS = (HOUR_END - HOUR_START) * 2; // 28 слотів по 30 хв
-      var CAL_HEADER_H = 44;
+      var STEP = 10;           // хв на слот
+      var SLOT_H = 20;         // px на 10-хв слот
+      var TIME_COL_W = 44;     // px для колонки з часом
+      var MASTER_COL_W = 150;  // мін. px на колонку майстра
+      var HEADER_H = 66;       // px для рядка заголовка
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
+      var TOTAL_H = (TOTAL_MIN / STEP) * SLOT_H;
 
-      // Вимірюємо точний відступ від верху viewport до початку контентної зони
-      var contentTop = Math.round(contentEl.getBoundingClientRect().top);
-      /* Нижня мобільна навігація — position:fixed поверх усього (z-index:50).
-         Оверлей раніше йшов до самого bottom:0 екрана, тому навігація лежала
-         зверху останніх ~60px розкладу (рядки 20:00–21:30) — вони не
-         прокручувались НІКОЛИ, бо навігація сама нікуди не рухається. */
-      var navEl = document.getElementById("mob-nav");
-      var navH = navEl ? Math.ceil(navEl.getBoundingClientRect().height) : 0;
-      var availH = window.innerHeight - contentTop - navH - 8; // 8px відступ знизу
-      var SLOT_H = Math.max(18, Math.floor((availH - CAL_HEADER_H) / TOTAL_SLOTS));
-
-      // Оверлей з position:fixed — не впливає на решту CRM
       var old = document.getElementById("cal-overlay");
       if (old) old.remove();
+      var navEl = document.getElementById("mob-nav");
+      var navH = navEl ? Math.ceil(navEl.getBoundingClientRect().height) : 0;
+      var contentTop = Math.round(contentEl.getBoundingClientRect().top);
+
       var overlay = document.createElement("div");
       overlay.id = "cal-overlay";
-      /* overflow-y:auto, не hidden: якщо заголовок майстра переносить рядок
-         (довге ім'я/рівень) або екран нижчий за очікуване, SLOT_H (мінімум
-         18px) все одно не влазить — тепер це просто прокручується. */
-      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + navH + "px;z-index:10;background:var(--black);padding:0 8px 8px;overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;";
+      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + navH + "px;z-index:10;background:var(--black);";
       document.body.appendChild(overlay);
 
-      var mastersPr = api("GET", "/api/crm/masters");
+      var wd = new Date(apptDate + "T00:00:00").getDay();
       var apptUrl = ME.role === "owner"
         ? "/api/crm/appointments?date=" + apptDate + (masterFilter ? "&master=" + masterFilter : "")
         : "/api/crm/schedule?date=" + apptDate;
-      var apptsPr = api("GET", apptUrl);
 
-      Promise.all([mastersPr, apptsPr]).then(function(rs) {
+      Promise.all([
+        api("GET", "/api/crm/masters"),
+        api("GET", apptUrl),
+        api("GET", "/api/crm/day-schedules?weekday=" + wd)
+      ]).then(function(rs) {
         var allMasters = rs[0].j.masters || [];
         var appts = (rs[1].j.appointments || []).filter(function(a) { return a.status !== "cancelled"; });
+        var dayScheds = rs[2].j.schedules || [];
+        var dayBreaks = rs[2].j.breaks || [];
 
-        // Власник: може фільтрувати по майстру; Майстер: бачить всіх (загальний розклад)
-        var masters = allMasters;
-        if (masterFilter) masters = allMasters.filter(function(m) { return String(m.id) === String(masterFilter); });
+        var masters = masterFilter
+          ? allMasters.filter(function(m) { return String(m.id) === String(masterFilter); })
+          : allMasters;
 
-        contentEl.innerHTML = "";
-        var wrap = el("div");
-        wrap.style.cssText = "overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);";
+        // schedMap[mid] = { ws, we, bks:[{s,e}] }
+        var schedMap = {};
+        dayScheds.forEach(function(s) { schedMap[s.master_id] = { ws: s.work_start, we: s.work_end, bks: [] }; });
+        dayBreaks.forEach(function(b) { if (schedMap[b.master_id]) schedMap[b.master_id].bks.push({ s: b.break_start, e: b.break_end }); });
 
-        var table = el("div");
-        table.style.cssText = "display:grid;grid-template-columns:50px repeat(" + masters.length + ",minmax(140px,1fr));min-width:" + (50 + masters.length * 140) + "px;";
+        function isUnavail(mid, absMin) {
+          var s = schedMap[mid];
+          if (!s) return true;
+          if (absMin < s.ws || absMin >= s.we) return true;
+          for (var i = 0; i < s.bks.length; i++) { if (absMin >= s.bks[i].s && absMin < s.bks[i].e) return true; }
+          return false;
+        }
 
-        // Заголовки
-        var cornerCell = el("div");
-        cornerCell.style.cssText = "position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);border-right:1px solid var(--line);";
-        table.appendChild(cornerCell);
+        // Прокручуваний контейнер
+        var scroller = document.createElement("div");
+        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;height:100%;width:100%;";
+        overlay.appendChild(scroller);
+
+        var inner = document.createElement("div");
+        inner.style.cssText = "display:inline-flex;flex-direction:column;min-width:" + (TIME_COL_W + masters.length * MASTER_COL_W) + "px;width:100%;";
+        scroller.appendChild(inner);
+
+        // ── Липкий заголовок ──
+        var header = document.createElement("div");
+        header.style.cssText = "display:flex;position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:2px solid var(--line);flex-shrink:0;";
+        inner.appendChild(header);
+
+        var corner = document.createElement("div");
+        corner.style.cssText = "flex:0 0 " + TIME_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid var(--line);";
+        header.appendChild(corner);
 
         masters.forEach(function(m) {
-          var h = el("div");
-          h.style.cssText = "position:sticky;top:0;z-index:4;background:var(--panel-2);border-bottom:1px solid var(--line);border-right:1px solid rgba(122,145,86,.1);padding:10px 8px;text-align:center;";
-          h.innerHTML = '<div style="font-size:.85rem;font-weight:600;color:var(--cream);">' + m.name + '</div><div style="font-size:.7rem;color:var(--olive-light);">' + (m.level||'') + '</div>';
-          table.appendChild(h);
+          var hCell = document.createElement("div");
+          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;overflow:hidden;";
+          var initials = (m.name||'?').charAt(0).toUpperCase() + (m.last_name ? m.last_name.charAt(0).toUpperCase() : '');
+          var avHtml = m.photo
+            ? '<img src="' + m.photo + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--olive-light);flex-shrink:0;" alt="">'
+            : '<div style="width:34px;height:34px;border-radius:50%;background:var(--olive);display:flex;align-items:center;justify-content:center;color:var(--olive-light);font-weight:700;font-size:.78rem;flex-shrink:0;">' + initials + '</div>';
+          hCell.innerHTML = avHtml +
+            '<div style="text-align:center;line-height:1.2;">' +
+            '<div style="font-size:.73rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
+            '<div style="font-size:.6rem;color:var(--olive-light);margin-top:1px;">' + (m.level||'') + '</div>' +
+            '</div>';
+          header.appendChild(hCell);
         });
 
-        // Рядки по 30 хвилин
-        for (var min = 0; min < TOTAL_MIN; min += 30) {
-          var h = HOUR_START + Math.floor(min / 60);
-          var m = min % 60;
-          /* let, не var: цю змінну ловить замикання кліку по клітинці нижче,
-             а обробник спрацьовує вже після завершення всього циклу — з var
-             усі клітинки бачили б останнє значення (кінець дня) замість
-             свого власного рядка. */
-          let absMin = HOUR_START * 60 + min;
+        // ── Тіло: колонка часу + колонки майстрів ──
+        var body = document.createElement("div");
+        body.style.cssText = "display:flex;flex:1;";
+        inner.appendChild(body);
 
-          var timeCell = el("div");
-          timeCell.style.cssText = "border-top:1px solid var(--line);border-right:1px solid var(--line);display:flex;align-items:flex-start;justify-content:center;padding-top:3px;height:" + SLOT_H + "px;";
-          if (m === 0) {
-            var tl = el("span"); tl.style.cssText = "font-size:.68rem;color:var(--text-dim);";
-            tl.textContent = String(h).padStart(2,"0") + ":00";
-            timeCell.appendChild(tl);
+        // Колонка часу
+        var tCol = document.createElement("div");
+        tCol.style.cssText = "flex:0 0 " + TIME_COL_W + "px;border-right:1px solid var(--line);position:relative;height:" + TOTAL_H + "px;background:var(--panel);";
+        for (var hh = HOUR_START; hh <= HOUR_END; hh++) {
+          var ty = ((hh - HOUR_START) * 60 / STEP) * SLOT_H;
+          var sep = document.createElement("div");
+          sep.style.cssText = "position:absolute;top:" + ty + "px;left:0;right:0;border-top:1px solid var(--line);pointer-events:none;";
+          tCol.appendChild(sep);
+          if (hh < HOUR_END) {
+            var lbl = document.createElement("div");
+            lbl.style.cssText = "position:absolute;top:" + (ty + 2) + "px;left:0;right:0;text-align:center;font-size:.6rem;color:var(--text-dim);pointer-events:none;";
+            lbl.textContent = String(hh).padStart(2,"0") + ":00";
+            tCol.appendChild(lbl);
           }
-          table.appendChild(timeCell);
+        }
+        body.appendChild(tCol);
 
-          masters.forEach(function(master) {
-            var cell = el("div");
-            cell.style.cssText = "border-top:1px solid rgba(122,145,86,.08);border-right:1px solid rgba(122,145,86,.06);height:" + SLOT_H + "px;position:relative;cursor:pointer;";
-            cell.addEventListener("mouseenter", function () { cell.style.background = "rgba(122,145,86,.08)"; });
-            cell.addEventListener("mouseleave", function () { cell.style.background = ""; });
-            /* Клік по порожній клітинці — одразу відкрити новий запис із
-               підставленими майстром/датою/часом. Блоки записів усередині
-               роблять stopPropagation, тому сюди долітає тільки клік по
-               реально вільному місцю. */
-            cell.addEventListener("click", function () {
-              apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: absMin } });
-            });
+        // Колонки майстрів
+        masters.forEach(function(master) {
+          var mCol = document.createElement("div");
+          mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid var(--line);position:relative;height:" + TOTAL_H + "px;";
 
-            // Знайти записи що починаються В МЕЖАХ цього 30-хв слоту
-            appts.filter(function(a) {
-              return a.master_id === master.id &&
-                     a.start_min >= absMin && a.start_min < absMin + 30;
-            }).forEach(function(a) {
-              var heightPx = Math.max(a.duration_min / 30 * SLOT_H - 3, SLOT_H - 3);
-              // Зміщення всередині слоту (напр. 20:45 → 15 хв від 20:30 → 0.5 * SLOT_H)
-              var offsetPx = (a.start_min - absMin) / 30 * SLOT_H;
-              var bgColor = a.status === "completed" ? "rgba(122,145,86,0.35)" :
-                            a.status === "cancelled" || a.status === "no_show" ? "rgba(224,129,107,0.2)" :
-                            a.status === "confirmed" ? "rgba(122,145,86,0.22)" : "rgba(202,164,90,0.18)";
-              var borderColor = a.status === "completed" ? "var(--olive-light)" :
-                                a.status === "cancelled" || a.status === "no_show" ? "var(--err)" :
-                                a.status === "confirmed" ? "var(--olive-light)" : "var(--warn)";
-              var block = el("div");
-              block.style.cssText = "position:absolute;left:2px;right:2px;top:" + (offsetPx + 2) + "px;height:" + heightPx + "px;background:" + bgColor + ";border:1px solid " + borderColor + ";border-radius:7px;padding:4px 6px;overflow:hidden;cursor:pointer;z-index:2;";
-              block.innerHTML = '<div style="font-size:.77rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + a.client_name + '</div>' +
-                '<div style="font-size:.68rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (a.service_name||'').split('(')[0].trim() + '</div>' +
-                (a.price ? '<div style="font-size:.68rem;color:var(--olive-light);">' + Math.round(a.price/100) + ' грн</div>' : '');
-              block.addEventListener("click", function(e) {
-                e.stopPropagation();
-                // Видаляємо старий попап якщо є
-                var old = document.getElementById("cal-popup");
-                if (old) old.remove();
-                var popup = document.createElement("div");
-                popup.id = "cal-popup";
-                var timeStr = fmtMin(a.start_min) + "–" + fmtMin(a.end_min || (a.start_min + a.duration_min));
-                var statusBadge = '<span class="badge b-' + a.status + '" style="font-size:.7rem;">' + (STATUS_LABEL[a.status]||a.status) + '</span>';
-                popup.innerHTML =
-                  '<div style="font-size:.95rem;font-weight:600;color:var(--cream);margin-bottom:6px;">' + a.client_name + '</div>' +
-                  '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:3px;">🕐 ' + timeStr + '</div>' +
-                  '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:3px;">💆 ' + (a.service_name||'').split('(')[0].trim() + '</div>' +
-                  '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:8px;">👤 ' + (a.master_name||'') + '</div>' +
-                  (a.price ? '<div style="font-size:.82rem;color:var(--olive-light);margin-bottom:8px;">' + Math.round(a.price/100) + ' грн' + (a.paid ? ' ✓' : '') + '</div>' : '') +
-                  '<div style="margin-bottom:10px;">' + statusBadge + '</div>' +
-                  '<div style="display:flex;gap:6px;">' +
-                  '<button id="cal-popup-detail" style="flex:1;background:var(--olive-light);color:var(--black);border:none;border-radius:7px;padding:6px 10px;font-size:.78rem;font-weight:600;cursor:pointer;">Детальніше</button>' +
-                  '<button id="cal-popup-close" style="background:none;border:1px solid var(--line);color:var(--text-dim);border-radius:7px;padding:6px 10px;font-size:.78rem;cursor:pointer;">✕</button>' +
-                  '</div>';
-                // Позиціонування: поруч з блоком
-                var rect = block.getBoundingClientRect();
-                var popW = 220;
-                var left = rect.right + 8;
-                if (left + popW > window.innerWidth - 10) left = rect.left - popW - 8;
-                if (left < 8) left = 8;
-                var top = Math.min(rect.top, window.innerHeight - 280);
-                popup.style.cssText = "position:fixed;left:" + left + "px;top:" + top + "px;width:" + popW + "px;background:var(--panel);border:1px solid var(--olive-light);border-radius:12px;padding:14px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.5);";
-                document.body.appendChild(popup);
-                document.getElementById("cal-popup-close").addEventListener("click", function(ev) {
-                  ev.stopPropagation(); popup.remove();
-                });
-                document.getElementById("cal-popup-detail").addEventListener("click", function(ev) {
-                  ev.stopPropagation(); popup.remove(); window.apptDetailModal(a);
-                });
-                // Закрити при кліку деінде
-                setTimeout(function() {
-                  document.addEventListener("click", function h() {
-                    var p = document.getElementById("cal-popup");
-                    if (p) p.remove();
-                    document.removeEventListener("click", h);
-                  });
-                }, 10);
-              });
-              cell.appendChild(block);
-            });
+          // Лінії годин і напівгодин
+          for (var hh2 = HOUR_START + 1; hh2 <= HOUR_END; hh2++) {
+            var hl = document.createElement("div");
+            hl.style.cssText = "position:absolute;top:" + (((hh2 - HOUR_START) * 60 / STEP) * SLOT_H) + "px;left:0;right:0;border-top:1px solid var(--line);pointer-events:none;z-index:1;";
+            mCol.appendChild(hl);
+          }
+          for (var hh3 = HOUR_START; hh3 < HOUR_END; hh3++) {
+            var hly = ((hh3 - HOUR_START) * 60 / STEP + 3) * SLOT_H;
+            var hld = document.createElement("div");
+            hld.style.cssText = "position:absolute;top:" + hly + "px;left:0;right:0;border-top:1px dashed rgba(122,145,86,.1);pointer-events:none;z-index:1;";
+            mCol.appendChild(hld);
+          }
 
-            table.appendChild(cell);
+          // Штрихування для неробочих проміжків
+          var sched = schedMap[master.id];
+          var unavRanges = [];
+          if (!sched) {
+            unavRanges.push({ s: HOUR_START * 60, e: HOUR_END * 60 });
+          } else {
+            if (sched.ws > HOUR_START * 60) unavRanges.push({ s: HOUR_START * 60, e: sched.ws });
+            sched.bks.forEach(function(b) { unavRanges.push({ s: b.s, e: b.e }); });
+            if (sched.we < HOUR_END * 60) unavRanges.push({ s: sched.we, e: HOUR_END * 60 });
+          }
+          unavRanges.forEach(function(r) {
+            var yt = ((r.s - HOUR_START * 60) / STEP) * SLOT_H;
+            var yh = ((r.e - r.s) / STEP) * SLOT_H;
+            var stripe = document.createElement("div");
+            stripe.style.cssText = "position:absolute;left:0;right:0;top:" + yt + "px;height:" + yh + "px;" +
+              "background-color:rgba(0,0,0,.18);background-image:repeating-linear-gradient(-45deg,rgba(255,255,255,.022) 0,rgba(255,255,255,.022) 3px,transparent 3px,transparent 9px);pointer-events:none;z-index:1;";
+            mCol.appendChild(stripe);
           });
-        }
 
-        wrap.appendChild(table);
-        /* overflow-y:auto, не hidden: це головний контейнер розкладу — коли
-           SLOT_H впирається в мінімум 18px (короткий екран, довгі імена
-           майстрів у два рядки), таблиця стає вищою за height:100% і саме
-           тут, а не в overlay, обрізався кінець дня без можливості доскролити. */
-        wrap.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:100%;min-width:" + (50 + masters.length * 140) + "px;";
-        overlay.appendChild(wrap);
+          // Клік по порожній клітинці — відкрити запис
+          mCol.addEventListener("click", function(e) {
+            var rect = mCol.getBoundingClientRect();
+            var relMin = Math.floor((e.clientY - rect.top) / SLOT_H) * STEP;
+            var clickAbsMin = HOUR_START * 60 + relMin;
+            if (isUnavail(master.id, clickAbsMin)) return;
+            apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: clickAbsMin } });
+          });
 
-        if (!appts.length) {
-          var empty = document.createElement("div");
-          empty.className = "empty";
-          empty.textContent = "На " + ddmm(apptDate) + " записів немає";
-          empty.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);";
-          overlay.appendChild(empty);
+          // Блоки записів
+          appts.filter(function(a) { return a.master_id === master.id; }).forEach(function(a) {
+            var startRel = a.start_min - HOUR_START * 60;
+            if (startRel < 0 || startRel >= TOTAL_MIN) return;
+            var topPx = (startRel / STEP) * SLOT_H + 1;
+            var heightPx = Math.max((a.duration_min / STEP) * SLOT_H - 2, SLOT_H * 2 - 2);
+
+            var borderColor = a.status === "completed" ? "var(--olive-light)" :
+                              a.status === "no_show" ? "var(--err)" :
+                              a.status === "confirmed" ? "var(--olive-light)" : "var(--warn)";
+            var bgColor = a.status === "completed" ? "rgba(122,145,86,.22)" :
+                          a.status === "no_show" ? "rgba(224,129,107,.18)" :
+                          "rgba(82,112,180,.22)";
+            var tColor = a.status === "completed" ? "var(--olive-light)" :
+                         a.status === "no_show" ? "var(--err)" : "#8ab4f8";
+            var timeStr = fmtMin(a.start_min) + " – " + fmtMin(a.end_min || (a.start_min + a.duration_min));
+            var svcName = (a.service_name||'').replace(/\s*\([^)]*\)\s*/g,'').trim();
+            var hasNote = !!(a.comment && a.comment.trim());
+
+            var block = document.createElement("div");
+            block.style.cssText = "position:absolute;left:2px;right:2px;top:" + topPx + "px;height:" + heightPx + "px;" +
+              "background:" + bgColor + ";border-left:3px solid " + borderColor + ";border-radius:5px;" +
+              "padding:3px 5px 2px 4px;overflow:hidden;cursor:pointer;z-index:3;";
+
+            var html = "";
+            if (heightPx >= 22) {
+              html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:2px;margin-bottom:1px;">' +
+                '<span style="font-size:.58rem;font-weight:600;color:' + tColor + ';white-space:nowrap;">' + timeStr + '</span>' +
+                (hasNote ? '<span style="font-size:.58rem;opacity:.55;flex-shrink:0;line-height:1;">💬</span>' : '') +
+                '</div>';
+            }
+            html += '<div style="font-size:.68rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
+            if (heightPx >= 44) html += '<div style="font-size:.58rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
+            if (heightPx >= 60 && a.price) html += '<div style="font-size:.58rem;color:var(--olive-light);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
+            block.innerHTML = html;
+
+            block.addEventListener("click", function(e) {
+              e.stopPropagation();
+              var oldP = document.getElementById("cal-popup");
+              if (oldP) oldP.remove();
+              var popup = document.createElement("div");
+              popup.id = "cal-popup";
+              var ts2 = fmtMin(a.start_min) + "–" + fmtMin(a.end_min || (a.start_min + a.duration_min));
+              popup.innerHTML =
+                '<div style="font-size:.95rem;font-weight:600;color:var(--cream);margin-bottom:6px;">' + a.client_name + '</div>' +
+                '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:3px;">🕐 ' + ts2 + '</div>' +
+                '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:3px;">💆 ' + svcName + '</div>' +
+                '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:8px;">👤 ' + (a.master_name||'') + '</div>' +
+                (a.price ? '<div style="font-size:.82rem;color:var(--olive-light);margin-bottom:8px;">' + Math.round(a.price/100) + ' ₴' + (a.paid ? ' ✓' : '') + '</div>' : '') +
+                '<div style="margin-bottom:' + (hasNote ? '8' : '10') + 'px;"><span class="badge b-' + a.status + '" style="font-size:.7rem;">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
+                (hasNote ? '<div style="font-size:.78rem;color:var(--text-dim);margin-bottom:10px;">💬 ' + a.comment + '</div>' : '') +
+                '<div style="display:flex;gap:6px;">' +
+                '<button id="cal-popup-detail" style="flex:1;background:var(--olive-light);color:var(--black);border:none;border-radius:7px;padding:6px 10px;font-size:.78rem;font-weight:600;cursor:pointer;">Детальніше</button>' +
+                '<button id="cal-popup-close" style="background:none;border:1px solid var(--line);color:var(--text-dim);border-radius:7px;padding:6px 10px;font-size:.78rem;cursor:pointer;">✕</button>' +
+                '</div>';
+              var rect2 = block.getBoundingClientRect();
+              var popW = 230;
+              var left = rect2.right + 8;
+              if (left + popW > window.innerWidth - 10) left = rect2.left - popW - 8;
+              if (left < 8) left = 8;
+              var top = Math.min(Math.max(10, rect2.top), window.innerHeight - 320);
+              popup.style.cssText = "position:fixed;left:" + left + "px;top:" + top + "px;width:" + popW + "px;background:var(--panel);border:1px solid var(--olive-light);border-radius:12px;padding:14px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.5);";
+              document.body.appendChild(popup);
+              document.getElementById("cal-popup-close").addEventListener("click", function(ev) { ev.stopPropagation(); popup.remove(); });
+              document.getElementById("cal-popup-detail").addEventListener("click", function(ev) { ev.stopPropagation(); popup.remove(); window.apptDetailModal(a); });
+              setTimeout(function() {
+                document.addEventListener("click", function onDocClick() {
+                  var p = document.getElementById("cal-popup"); if (p) p.remove();
+                  document.removeEventListener("click", onDocClick);
+                });
+              }, 10);
+            });
+            mCol.appendChild(block);
+          });
+
+          body.appendChild(mCol);
+        });
+
+        // Авто-прокрутка: сьогодні → поточний час - 30 хв, інші дні → 9:00
+        var scrollMin;
+        if (apptDate === todayStr()) {
+          var now = new Date();
+          scrollMin = Math.max(0, now.getHours() * 60 + now.getMinutes() - 30 - HOUR_START * 60);
+        } else {
+          scrollMin = Math.max(0, 9 * 60 - HOUR_START * 60);
         }
+        scroller.scrollTop = (scrollMin / STEP) * SLOT_H;
       });
     }
 

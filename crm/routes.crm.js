@@ -327,6 +327,19 @@ router.get("/masters/:id/schedule", any, function (req, res) {
     breaks: db.prepare("SELECT id, weekday, break_start, break_end FROM master_breaks WHERE master_id=? ORDER BY weekday, break_start").all(id),
   });
 });
+/* Всі графіки+перерви для конкретного дня тижня — одним запитом (для календаря) */
+router.get("/day-schedules", any, function (req, res) {
+  const wd = parseInt(req.query.weekday, 10);
+  if (isNaN(wd) || wd < 0 || wd > 6) return res.status(400).json({ ok: false });
+  const schedules = db.prepare(
+    "SELECT ms.master_id, ms.work_start, ms.work_end FROM master_schedule ms JOIN masters m ON m.id=ms.master_id WHERE ms.weekday=? AND m.active=1"
+  ).all(wd);
+  const breaks = db.prepare(
+    "SELECT mb.master_id, mb.break_start, mb.break_end FROM master_breaks mb JOIN masters m ON m.id=mb.master_id WHERE mb.weekday=? AND m.active=1"
+  ).all(wd);
+  res.json({ ok: true, schedules, breaks });
+});
+
 router.put("/masters/:id/schedule", owner, function (req, res) {
   const id = parseInt(req.params.id, 10);
   const sched = (req.body && req.body.schedule) || []; // [{weekday,work_start,work_end}]
