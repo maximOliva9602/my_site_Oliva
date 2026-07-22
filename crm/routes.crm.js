@@ -641,20 +641,41 @@ router.get("/dashboard/analytics", owner, function (req, res) {
       WHERE status='completed' AND date>=? AND date<=? GROUP BY date ORDER BY date`
   ).all(thirtyStart, today);
 
-  // Завантаженість по годинах (кількість записів у кожній годині)
-  const byHour = db.prepare(
-    `SELECT (start_min/60) hour, COUNT(*) cnt FROM appointments
-      WHERE status IN ('completed','confirmed','pending') AND date>=?
-      GROUP BY hour ORDER BY hour`
-  ).all(mStart);
+  /* ---- Повернення клієнтів: загальна аналітика (весь час) ---- */
+  const clientsTotal = db.prepare("SELECT COUNT(*) n FROM clients").get().n;
+  const clientsReturning = db.prepare("SELECT COUNT(*) n FROM clients WHERE visit_count>1").get().n;
+  const clientsOverall = {
+    total: clientsTotal,
+    returning: clientsReturning,
+    one_time: clientsTotal - clientsReturning,
+    returning_pct: clientsTotal ? Math.round(clientsReturning / clientsTotal * 100) : 0,
+  };
 
-  // Топ послуг місяця
-  const topServices = db.prepare(
-    `SELECT s.name, COUNT(*) cnt, SUM(a.price) revenue
-       FROM appointments a JOIN services s ON s.id=a.service_id
-      WHERE a.status='completed' AND a.date>=?
-      GROUP BY a.service_id ORDER BY revenue DESC LIMIT 8`
-  ).all(mStart);
+  /* Клієнти, що не повернулись — один-єдиний завершений візит, найдавніші першими,
+     щоб було видно, кого вже точно "втратили", а не просто ще не встигли повернутись. */
+  const clientsNotReturned = db.prepare(
+    `SELECT name, phone, last_visit_at FROM clients
+      WHERE visit_count=1 AND last_visit_at IS NOT NULL
+      ORDER BY last_visit_at ASC LIMIT 30`
+  ).all();
+
+  /* Повернення за ЦЕЙ місяць: серед клієнтів із завершеним записом цього місяця,
+     скільки мали завершений запис і РАНІШЕ (тобто повернулися саме цього місяця),
+     а скільки прийшли вперше. */
+  const monthClientFlags = db.prepare(
+    `SELECT a.client_id,
+            EXISTS(SELECT 1 FROM appointments a2 WHERE a2.client_id=a.client_id AND a2.status='completed' AND a2.date<?) is_returning
+       FROM appointments a WHERE a.status='completed' AND a.date>=?
+      GROUP BY a.client_id`
+  ).all(mStart, mStart);
+  const monthReturning = monthClientFlags.filter(function (r) { return r.is_returning; }).length;
+  const monthTotal = monthClientFlags.length;
+  const clientsMonth = {
+    total: monthTotal,
+    returning: monthReturning,
+    new: monthTotal - monthReturning,
+    returning_pct: monthTotal ? Math.round(monthReturning / monthTotal * 100) : 0,
+  };
 
   // Лояльність до майстра (клієнти що повернулися до ТОГО Ж майстра)
   const masters = db.prepare("SELECT id, name FROM masters WHERE active=1").all();
@@ -686,17 +707,16 @@ router.get("/dashboard/analytics", owner, function (req, res) {
        FROM reviews r JOIN clients c ON c.id=r.client_id JOIN masters m ON m.id=r.master_id
       ORDER BY r.created_at DESC LIMIT 20`
   ).all();
-  const avgRating = db.prepare("SELECT AVG(rating) v FROM reviews").get().v || 0;
 
   res.json({
     ok: true,
     revenue_by_day: revenueByDay,
-    by_hour: byHour,
-    top_services: topServices,
     master_loyalty: masterLoyalty,
     avg_by_month: avgByMonth,
     reviews: reviews,
-    avg_rating: Math.round(avgRating * 10) / 10,
+    clients_overall: clientsOverall,
+    clients_month: clientsMonth,
+    clients_not_returned: clientsNotReturned,
   });
 });
 

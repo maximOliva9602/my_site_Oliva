@@ -1071,12 +1071,11 @@
       /* ---- KPI картки ---- */
       var thisMonth = (d.avg_by_month||[]).filter(function(m){return m.month===currentMonth;})[0] || {};
       var kpiRow = document.createElement("div");
-      kpiRow.style.cssText = "display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;";
+      kpiRow.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;";
       [
         { icon:"💰", val: grn(thisMonth.revenue||0), lbl:"Дохід місяця" },
         { icon:"📋", val: (thisMonth.cnt||0)+"",      lbl:"Записів місяця" },
         { icon:"💳", val: grn(thisMonth.avg_check||0),lbl:"Середній чек" },
-        { icon:"⭐", val: d.avg_rating ? (+d.avg_rating).toFixed(1)+" / 5" : "—", lbl:"Рейтинг" },
       ].forEach(function(k) {
         var c = document.createElement("div");
         c.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 14px;";
@@ -1135,48 +1134,58 @@
         main.appendChild(section(title("📈 Дохід за 30 днів")+svg));
       }
 
-      /* ---- Середній рядок: heatmap годин + топ послуг ---- */
-      var midRow = document.createElement("div");
-      midRow.style.cssText = "display:grid;grid-template-columns:1fr 1.5fr;gap:14px;margin-bottom:14px;";
-
-      // Heatmap годин
-      var byHour = d.by_hour || [];
-      var maxHCnt = Math.max.apply(null, byHour.map(function(x){return x.cnt||0;})) || 1;
-      var heatHtml = title("🕐 Пік годин");
-      heatHtml += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;">';
-      for (var hh=8;hh<=21;hh++){
-        var hFound=byHour.filter(function(x){return x.hour===hh;})[0];
-        var hCnt=hFound?hFound.cnt:0;
-        var alpha=0.08+hCnt/maxHCnt*0.88;
-        heatHtml+='<div style="background:rgba(122,145,86,'+alpha.toFixed(2)+');border-radius:7px;padding:7px 3px;text-align:center;" title="'+String(hh).padStart(2,"0")+':00 — '+hCnt+' зап.">'+
-          '<div style="font-size:.78rem;font-weight:700;color:var(--cream);">'+hCnt+'</div>'+
-          '<div style="font-size:.62rem;color:rgba(212,207,198,.55);margin-top:2px;">'+String(hh).padStart(2,"0")+'</div></div>';
+      /* ---- Повернення клієнтів: загальна аналітика + за цей місяць ---- */
+      var co = d.clients_overall || {}, cm = d.clients_month || {};
+      /* minmax(0,1fr), не просто 1fr: інакше довгі підписи ("Всього клієнтів")
+         не дають колонці стиснутись і картка вилазить за екран на телефоні. */
+      function clientKpi(items) {
+        var h = '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">';
+        items.forEach(function(k) {
+          h += '<div style="text-align:center;min-width:0;">' +
+            '<div style="font-size:1.5rem;font-weight:700;color:'+(k.col||"var(--cream)")+';font-family:\'Playfair Display\',serif;">'+k.val+'</div>' +
+            '<div style="font-size:.7rem;color:var(--text-dim);margin-top:3px;">'+k.lbl+'</div></div>';
+        });
+        return h + '</div>';
       }
-      heatHtml+='</div>';
-      heatHtml+='<div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:.68rem;color:var(--text-dim);">'+
-        '<span>Менше</span><div style="flex:1;height:5px;border-radius:3px;background:linear-gradient(to right,rgba(122,145,86,.08),rgba(122,145,86,.96));"></div><span>Більше</span></div>';
-      midRow.appendChild(section(heatHtml));
+      /* auto-fit: на вузькому екрані обидві картки складаються в один
+         стовпець (кожна отримує повну ширину — трьом підписам усередині
+         є де дихати), на широкому — стають поруч. */
+      var clientsRow = document.createElement("div");
+      clientsRow.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:14px;";
+      clientsRow.appendChild(section(
+        title("👤 Клієнти — загальна аналітика") +
+        clientKpi([
+          { val: co.total||0, lbl: "Всього клієнтів" },
+          { val: (co.returning_pct||0)+"%", lbl: "Повернулись", col: "var(--olive-light)" },
+          { val: co.one_time||0, lbl: "Не повернулись", col: co.one_time ? "var(--err)" : "var(--cream)" },
+        ])
+      ));
+      clientsRow.appendChild(section(
+        title("📅 Клієнти — цього місяця") +
+        clientKpi([
+          { val: cm.total||0, lbl: "Записались" },
+          { val: cm.returning||0, lbl: "Повторних", col: "var(--olive-light)" },
+          { val: cm.new||0, lbl: "Нових" },
+        ])
+      ));
+      main.appendChild(clientsRow);
 
-      // Топ послуг — горизонтальні бари
-      var topSvcs = d.top_services || [];
-      var maxSvcRev = Math.max.apply(null, topSvcs.map(function(x){return x.revenue||0;})) || 1;
-      var svcHtml = title("🏆 Топ послуг місяця");
-      topSvcs.forEach(function(s,i){
-        var nm=(s.name||"").split("(")[0].trim();
-        if(nm.length>30)nm=nm.slice(0,30)+"…";
-        var pct=Math.round((s.revenue||0)/maxSvcRev*100);
-        var opacities=["1","0.85","0.7","0.55","0.42","0.33","0.25","0.18"];
-        var op=opacities[Math.min(i,opacities.length-1)];
-        svcHtml+='<div style="margin-bottom:9px;">'+
-          '<div style="display:flex;justify-content:space-between;margin-bottom:3px;">'+
-          '<span style="font-size:.8rem;color:var(--cream);">'+nm+'</span>'+
-          '<span style="font-size:.75rem;color:var(--olive-light);white-space:nowrap;margin-left:6px;">'+grn(s.revenue)+'</span></div>'+
-          '<div style="background:rgba(46,61,34,.4);border-radius:4px;height:7px;">'+
-          '<div style="width:'+pct+'%;height:100%;background:rgba(122,145,86,'+op+');border-radius:4px;"></div></div>'+
-          '<div style="font-size:.68rem;color:var(--text-dim);margin-top:2px;">'+s.cnt+' записів</div></div>';
-      });
-      midRow.appendChild(section(svcHtml));
-      main.appendChild(midRow);
+      // Клієнти, що не повернулись — щоб було кого доганяти
+      var notReturned = d.clients_not_returned || [];
+      if (notReturned.length) {
+        var nrHtml = title("⚠️ Не повернулись — варто нагадати про себе");
+        nrHtml += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">';
+        notReturned.forEach(function(c) {
+          var days = c.last_visit_at ? Math.round((Date.now()-c.last_visit_at)/86400000) : null;
+          nrHtml += '<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;">' +
+            '<div style="font-size:.85rem;color:var(--cream);font-weight:500;">'+c.name+'</div>' +
+            '<div style="font-size:.75rem;color:var(--text-dim);margin-top:2px;">'+(c.phone||"")+'</div>' +
+            (days!=null ? '<div style="font-size:.7rem;color:var(--err);margin-top:3px;">'+days+' дн. тому</div>' : '') +
+            '</div>';
+        });
+        nrHtml += '</div>';
+        main.appendChild(section(nrHtml));
+      }
 
       /* ---- Майстри ---- */
       var loyalty = d.master_loyalty || [];
