@@ -1156,6 +1156,7 @@
         '<div><label>Прізвище</label><input type="text" id="mSurname" placeholder="Коваленко" maxlength="60"/></div></div>' +
         '<label style="margin-top:8px;display:block;">Телефон</label><input type="tel" id="mPhone" maxlength="30"/>' +
       '</div>' +
+      '<div id="mSubBadge" style="margin-top:8px;"></div>' +
       '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
       '<div class="err" id="mErr"></div>' +
@@ -1171,6 +1172,27 @@
     $("mDate").value = prefill.date || apptDate; $("mDate").min = todayStr();
 
     // ── Пошук клієнта ────────────────────────────────────────────────
+    function checkSubBadge() {
+      var badge = document.getElementById("mSubBadge");
+      if (!badge) return;
+      badge.innerHTML = "";
+      if (!selectedClient || !selectedClient.id || !$("mService").value) return;
+      api("GET", "/api/crm/subscriptions/check?client_id=" + selectedClient.id + "&service_id=" + $("mService").value).then(function(r) {
+        if (!r.j.active) return;
+        var sub = r.j.active;
+        var rem = sub.total_sessions - sub.used_sessions;
+        badge.innerHTML =
+          '<div style="background:' + (rem > 0 ? "#e8f5e9" : "#fde8e8") + ';border:1px solid ' + (rem > 0 ? "#a5d6a7" : "#ef9a9a") + ';' +
+          'border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;">' +
+          '<span style="font-size:1rem;">🎟</span>' +
+          '<span style="color:' + (rem > 0 ? "#2e7d32" : "#c04040") + ';font-weight:600;">' +
+            (rem > 0 ? 'Абонемент: залишилось ' + rem + ' сеанс' + (rem===1?'':'ів') : 'Абонемент вичерпано') +
+          '</span>' +
+          '<span style="color:var(--text-dim);">(' + sub.used_sessions + '/' + sub.total_sessions + ' використано)</span>' +
+          '</div>';
+      });
+    }
+
     function showChip(c) {
       selectedClient = c;
       $("mClientSearch").style.display = "none";
@@ -1179,6 +1201,7 @@
       chip.style.display = "flex";
       $("mChipName").textContent = c.name;
       $("mChipPhone").textContent = c.phone || "";
+      checkSubBadge();
     }
 
     function showNewForm(nameVal) {
@@ -1274,7 +1297,7 @@
       });
     }
 
-    $("mService").addEventListener("change", loadSlots);
+    $("mService").addEventListener("change", function() { loadSlots(); checkSubBadge(); });
     $("mMaster").addEventListener("change", loadSlots);
     $("mDate").addEventListener("change", loadSlots);
 
@@ -1628,6 +1651,120 @@
       histSection.appendChild(histHead);
       histSection.appendChild(histBody);
       main.appendChild(histSection);
+
+      // ── Абонементи клієнта ──────────────────────────────────────────
+      var subsSection = document.createElement("div");
+      subsSection.style.cssText = "margin-bottom:14px;";
+
+      function renderSubs() {
+        subsSection.innerHTML = "";
+        api("GET", "/api/crm/subscriptions?client_id=" + id).then(function(res) {
+          var subs = res.j.subscriptions || [];
+          var wrap = document.createElement("div");
+          wrap.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;";
+
+          var head = document.createElement("div");
+          head.style.cssText = "padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;";
+          head.innerHTML = '<span style="font-size:1rem;">🎟</span>' +
+            '<span style="font-weight:600;color:var(--cream);font-size:.9rem;">Абонементи</span>' +
+            '<span style="margin-left:auto;color:var(--text-dim);font-size:.8rem;">' + subs.length + '</span>';
+
+          if (ME.role === "owner") {
+            var addBtn = el("button", "btn btn-sm btn-primary", "+ Новий");
+            addBtn.style.marginLeft = "8px";
+            addBtn.addEventListener("click", function() {
+              api("GET", "/api/crm/services").then(function(sr) {
+                var opts = (sr.j.services||[]).map(function(s) {
+                  return '<option value="' + s.id + '">' + s.name + '</option>';
+                }).join("");
+                var html = '<h3>🎟 Новий абонемент</h3>' +
+                  '<div class="muted" style="margin-bottom:10px;">' + c.name + '</div>' +
+                  '<label>Послуга</label><select id="sbSvc">' + opts + '</select>' +
+                  '<label style="margin-top:10px;display:block;">К-ть сеансів</label>' +
+                  '<input type="number" id="sbSess" value="10" min="1" max="100">' +
+                  '<label style="margin-top:10px;display:block;">Сума оплати (грн)</label>' +
+                  '<input type="number" id="sbPrice" value="0" min="0">' +
+                  '<label style="margin-top:10px;display:block;">Нотатка</label>' +
+                  '<input type="text" id="sbNote" placeholder="Необов\'язково" maxlength="300">' +
+                  '<div class="err" id="sbErr"></div>' +
+                  '<div class="modal-foot"><button class="btn btn-primary" id="sbSave">Зберегти</button>' +
+                  '<button class="btn btn-ghost" id="sbClose">Скасувати</button></div>';
+                openModal(html);
+                $("sbSave").addEventListener("click", function() {
+                  var sess = parseInt($("sbSess").value, 10);
+                  if (!sess || sess < 1) { $("sbErr").textContent = "Вкажи к-ть сеансів"; return; }
+                  var priceKop = Math.round(parseFloat($("sbPrice").value || 0) * 100);
+                  api("POST", "/api/crm/subscriptions", {
+                    client_id: id, service_id: $("sbSvc").value,
+                    total_sessions: sess, price: priceKop,
+                    note: $("sbNote").value.trim() || null
+                  }).then(function(r) {
+                    if (!r.j.ok) { $("sbErr").textContent = "Помилка"; return; }
+                    closeModal(); renderSubs();
+                  });
+                });
+                $("sbClose").addEventListener("click", closeModal);
+              });
+            });
+            head.appendChild(addBtn);
+          }
+          wrap.appendChild(head);
+
+          if (!subs.length) {
+            var empty = el("div", "empty", "Абонементів немає");
+            empty.style.padding = "14px 16px";
+            wrap.appendChild(empty);
+          } else {
+            subs.forEach(function(sub) {
+              var rem = sub.total_sessions - sub.used_sessions;
+              var pct = Math.round((sub.used_sessions / sub.total_sessions) * 100);
+              var isExpired = rem <= 0;
+              var row = document.createElement("div");
+              row.style.cssText = "padding:12px 16px;border-bottom:1px solid var(--line);";
+              row.innerHTML =
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+                  '<span style="font-size:.88rem;font-weight:600;color:var(--cream);flex:1;">' + sub.service_name + '</span>' +
+                  '<span style="font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:20px;' +
+                    (isExpired ? 'background:#fde8e8;color:#c04040;' : 'background:#e8f5e9;color:#2e7d32;') + '">' +
+                    (isExpired ? 'Вичерпано' : 'Залишилось: ' + rem) + '</span>' +
+                '</div>' +
+                '<div style="background:#e8ebe4;border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px;">' +
+                  '<div style="width:' + pct + '%;height:100%;background:' + (isExpired ? '#c04040' : '#6e9145') + ';border-radius:4px;transition:width .3s;"></div>' +
+                '</div>' +
+                '<div style="display:flex;gap:12px;font-size:.75rem;color:var(--text-dim);">' +
+                  '<span>Використано: ' + sub.used_sessions + ' / ' + sub.total_sessions + '</span>' +
+                  (sub.price ? '<span>Оплачено: ' + Math.round(sub.price/100).toLocaleString("uk-UA") + ' грн</span>' : '') +
+                  (sub.note ? '<span>📝 ' + sub.note + '</span>' : '') +
+                '</div>' +
+                '<div class="acts" style="margin-top:8px;" id="sub-acts-' + sub.id + '"></div>';
+              var actsDiv = row.querySelector("#sub-acts-" + sub.id);
+              if (!isExpired) {
+                var useBtn = el("button", "btn btn-sm btn-primary", "✓ Списати сеанс");
+                useBtn.addEventListener("click", function() {
+                  api("PATCH", "/api/crm/subscriptions/" + sub.id + "/use").then(function(r) {
+                    if (!r.j.ok) return;
+                    renderSubs();
+                  });
+                });
+                actsDiv.appendChild(useBtn);
+              }
+              if (ME.role === "owner") {
+                var delBtn = el("button", "btn btn-sm btn-ghost", "Видалити");
+                delBtn.style.color = "#c04040";
+                delBtn.addEventListener("click", function() {
+                  if (!confirm("Видалити абонемент?")) return;
+                  api("DELETE", "/api/crm/subscriptions/" + sub.id).then(function() { renderSubs(); });
+                });
+                actsDiv.appendChild(delBtn);
+              }
+              wrap.appendChild(row);
+            });
+          }
+          subsSection.appendChild(wrap);
+        });
+      }
+      renderSubs();
+      main.appendChild(subsSection);
     });
   }
 

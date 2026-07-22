@@ -316,6 +316,23 @@ CREATE TABLE IF NOT EXISTS day_blocks (
 CREATE INDEX IF NOT EXISTS idx_day_blocks_date ON day_blocks(date, master_id);
 `);
 
+/* Абонементи */
+db.exec(`
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id      INTEGER NOT NULL,
+  service_id     INTEGER NOT NULL,
+  total_sessions INTEGER NOT NULL,
+  used_sessions  INTEGER NOT NULL DEFAULT 0,
+  price          INTEGER NOT NULL DEFAULT 0,
+  note           TEXT,
+  created_at     INTEGER NOT NULL,
+  FOREIGN KEY (client_id)  REFERENCES clients(id)  ON DELETE CASCADE,
+  FOREIGN KEY (service_id) REFERENCES services(id)
+);
+CREATE INDEX IF NOT EXISTS idx_subs_client ON subscriptions(client_id);
+`);
+
 /* Таблиця відгуків */
 db.exec(`
 CREATE TABLE IF NOT EXISTS reviews (

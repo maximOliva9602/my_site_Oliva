@@ -903,6 +903,60 @@ router.delete("/day-blocks/:id", any, function (req, res) {
   res.json({ ok: true });
 });
 
+/* ---- Абонементи ---- */
+router.get("/subscriptions", any, function (req, res) {
+  const clientId = parseInt(req.query.client_id, 10);
+  if (!clientId) return res.status(400).json({ ok: false });
+  const rows = db.prepare(
+    `SELECT sub.*, s.name service_name, s.duration_min
+       FROM subscriptions sub JOIN services s ON s.id=sub.service_id
+      WHERE sub.client_id=? ORDER BY sub.created_at DESC`
+  ).all(clientId);
+  res.json({ ok: true, subscriptions: rows });
+});
+
+router.get("/subscriptions/check", any, function (req, res) {
+  const clientId  = parseInt(req.query.client_id,  10);
+  const serviceId = parseInt(req.query.service_id, 10);
+  if (!clientId || !serviceId) return res.json({ ok: true, active: null });
+  const row = db.prepare(
+    `SELECT sub.*, s.name service_name FROM subscriptions sub JOIN services s ON s.id=sub.service_id
+      WHERE sub.client_id=? AND sub.service_id=? AND sub.used_sessions < sub.total_sessions
+      ORDER BY sub.created_at ASC LIMIT 1`
+  ).get(clientId, serviceId);
+  res.json({ ok: true, active: row || null });
+});
+
+router.post("/subscriptions", owner, function (req, res) {
+  const b = req.body || {};
+  const clientId  = parseInt(b.client_id,  10);
+  const serviceId = parseInt(b.service_id, 10);
+  const total     = parseInt(b.total_sessions, 10);
+  const price     = parseInt(b.price || 0, 10);
+  const note      = clean(b.note, 300) || null;
+  if (!clientId || !serviceId || !total || total < 1)
+    return res.status(400).json({ ok: false, error: "missing fields" });
+  const info = db.prepare(
+    "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at) VALUES (?,?,?,0,?,?,?)"
+  ).run(clientId, serviceId, total, price, note, Date.now());
+  res.json({ ok: true, id: info.lastInsertRowid });
+});
+
+router.patch("/subscriptions/:id/use", any, function (req, res) {
+  const id  = parseInt(req.params.id, 10);
+  const sub = db.prepare("SELECT * FROM subscriptions WHERE id=?").get(id);
+  if (!sub) return res.status(404).json({ ok: false });
+  if (sub.used_sessions >= sub.total_sessions) return res.status(400).json({ ok: false, error: "exhausted" });
+  db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(id);
+  res.json({ ok: true, remaining: sub.total_sessions - sub.used_sessions - 1 });
+});
+
+router.delete("/subscriptions/:id", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  db.prepare("DELETE FROM subscriptions WHERE id=?").run(id);
+  res.json({ ok: true });
+});
+
 /* ---- Відгуки ---- */
 router.get("/reviews", owner, function (req, res) {
   const rows = db.prepare(
