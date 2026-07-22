@@ -225,6 +225,18 @@ router.patch("/appointments/:id/color-marker", any, function (req, res) {
 /* ============================================================
    ВЛАСНИК: записи (усі), майстри, послуги, клієнти, користувачі
    ============================================================ */
+router.get("/appointments/month-counts", any, function (req, res) {
+  const ym = clean(req.query.month, 7); // "2026-07"
+  if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return res.status(400).json({ ok: false });
+  const from = ym + "-01", to = ym + "-31";
+  const rows = req.session.role === "owner"
+    ? db.prepare("SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled') GROUP BY date").all(from, to)
+    : db.prepare("SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled') AND master_id=? GROUP BY date").all(from, to, req.session.masterId);
+  const counts = {};
+  rows.forEach(function(r) { counts[r.date] = r.n; });
+  res.json({ ok: true, counts: counts });
+});
+
 router.get("/appointments", owner, function (req, res) {
   const date = clean(req.query.date, 10), from = clean(req.query.from, 10), to = clean(req.query.to, 10);
   const master = parseInt(req.query.master, 10);

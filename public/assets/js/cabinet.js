@@ -464,30 +464,16 @@
   }
 
   var apptDate = todayStr();
-  var apptViewMode = "calendar"; // "list" | "calendar"
+  var apptViewMode = "month"; // "month" | "calendar" | "list"
+  var apptMonth = todayStr().slice(0, 7); // "YYYY-MM"
+
+  var MONTH_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
+  var DOW_UA = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
 
   function renderAppts() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar");
     bar.appendChild(el("h2", null, "Записи"));
-    var dateInp = el("input"); dateInp.type = "date"; dateInp.value = apptDate;
-    dateInp.addEventListener("change", function () { apptDate = dateInp.value; reloadView(); });
-    bar.appendChild(dateInp);
-
-    // Перемикач вигляду (список / календар)
-    var viewToggle = el("button", "btn btn-ghost", apptViewMode === "calendar" ? "📋 Список" : "📅 Календар");
-    viewToggle.addEventListener("click", function () {
-      if (apptViewMode === "calendar") {
-        // Прибрати overlay календаря якщо є
-        var ov = document.getElementById("cal-overlay");
-        if (ov) ov.remove();
-      }
-      apptViewMode = apptViewMode === "calendar" ? "list" : "calendar";
-      viewToggle.textContent = apptViewMode === "calendar" ? "📋 Список" : "📅 Календар";
-      reloadView();
-    });
-    bar.appendChild(viewToggle);
-
     var newBtn = el("button", "btn btn-primary", "+ Новий запис");
     newBtn.addEventListener("click", function () { apptModal(); });
     bar.appendChild(newBtn);
@@ -515,11 +501,106 @@
 
     function reloadView(masterId) {
       if (masterId !== undefined) activeMasterFilter = masterId;
-      if (apptViewMode === "calendar") {
+      if (apptViewMode === "month") {
+        loadMonthView();
+      } else if (apptViewMode === "calendar") {
         loadCalendar(activeMasterFilter);
       } else {
         loadAppts(activeMasterFilter);
       }
+    }
+
+    function loadMonthView() {
+      var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
+      var ce = $("apptContent"); ce.innerHTML = "";
+
+      // ── Шапка місяця ───────────────────────────────────────────
+      var hdr = document.createElement("div");
+      hdr.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px;";
+      var yr = parseInt(apptMonth.slice(0,4)), mo = parseInt(apptMonth.slice(5,7)) - 1;
+      var prevBtn = el("button","btn btn-ghost btn-sm","‹");
+      var nextBtn = el("button","btn btn-ghost btn-sm","›");
+      prevBtn.style.cssText = nextBtn.style.cssText = "font-size:1.3rem;padding:4px 10px;";
+      var titleEl = document.createElement("div");
+      titleEl.style.cssText = "font-size:1rem;font-weight:700;color:var(--cream);";
+      titleEl.textContent = MONTH_UA[mo] + " " + yr;
+      hdr.appendChild(prevBtn); hdr.appendChild(titleEl); hdr.appendChild(nextBtn);
+      ce.appendChild(hdr);
+
+      prevBtn.addEventListener("click", function() {
+        var d = new Date(yr, mo - 1, 1);
+        apptMonth = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+        loadMonthView();
+      });
+      nextBtn.addEventListener("click", function() {
+        var d = new Date(yr, mo + 1, 1);
+        apptMonth = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+        loadMonthView();
+      });
+
+      // ── Дні тижня ──────────────────────────────────────────────
+      var grid = document.createElement("div");
+      grid.style.cssText = "display:grid;grid-template-columns:repeat(7,1fr);gap:2px;";
+      DOW_UA.forEach(function(d) {
+        var cell = document.createElement("div");
+        cell.style.cssText = "text-align:center;font-size:.7rem;color:var(--text-dim);font-weight:600;padding-bottom:6px;";
+        cell.textContent = d; grid.appendChild(cell);
+      });
+
+      // Завантажити к-ть записів і відрендерити
+      api("GET", "/api/crm/appointments/month-counts?month=" + apptMonth).then(function(res) {
+        var counts = (res.j && res.j.counts) || {};
+        var today = todayStr();
+
+        // Перший день місяця (0=Нд..6=Сб → конвертуємо в Пн=0)
+        var firstDay = new Date(yr, mo, 1);
+        var startDow = (firstDay.getDay() + 6) % 7; // 0=Пн
+        var daysInMonth = new Date(yr, mo + 1, 0).getDate();
+
+        // Порожні клітинки на початку
+        for (var i = 0; i < startDow; i++) {
+          var empty = document.createElement("div"); grid.appendChild(empty);
+        }
+
+        for (var d2 = 1; d2 <= daysInMonth; d2++) {
+          var dateStr = yr + "-" + String(mo+1).padStart(2,"0") + "-" + String(d2).padStart(2,"0");
+          var cnt = counts[dateStr] || 0;
+          var isToday = dateStr === today;
+          var isSelected = dateStr === apptDate && apptViewMode !== "month";
+
+          var cell = document.createElement("div");
+          cell.style.cssText = "display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;cursor:pointer;position:relative;" +
+            (isToday ? "background:var(--olive-light);color:#fff;" : "");
+          cell.addEventListener("click", (function(ds) {
+            return function() {
+              apptDate = ds;
+              apptMonth = ds.slice(0,7);
+              apptViewMode = "calendar";
+              reloadView();
+            };
+          })(dateStr));
+
+          var numEl = document.createElement("div");
+          numEl.style.cssText = "font-size:.95rem;font-weight:" + (isToday ? "700" : "500") + ";color:" + (isToday ? "#fff" : "var(--cream)") + ";line-height:1.4;";
+          numEl.textContent = d2;
+          cell.appendChild(numEl);
+
+          if (cnt > 0) {
+            var badge = document.createElement("div");
+            badge.style.cssText = "width:20px;height:20px;border-radius:50%;background:" +
+              (isToday ? "rgba(255,255,255,.3)" : "#1a2016") +
+              ";color:#fff;font-size:.62rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px;";
+            badge.textContent = cnt;
+            cell.appendChild(badge);
+          } else {
+            var spacer = document.createElement("div");
+            spacer.style.height = "22px";
+            cell.appendChild(spacer);
+          }
+          grid.appendChild(cell);
+        }
+        ce.appendChild(grid);
+      });
     }
 
     function loadAppts(masterId) {
@@ -603,9 +684,35 @@
           return false;
         }
 
+        // ── Навігація дати ────────────────────────────────────────
+        var dateNav = document.createElement("div");
+        dateNav.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#f0f2ee;flex-shrink:0;border-bottom:1px solid #d8ddd4;";
+        var dnPrev = document.createElement("button");
+        dnPrev.innerHTML = "&#8249;"; dnPrev.title = "Попередній день";
+        dnPrev.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 10px;line-height:1;";
+        var dnNext = document.createElement("button");
+        dnNext.innerHTML = "&#8250;"; dnNext.title = "Наступний день";
+        dnNext.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 10px;line-height:1;";
+        var dnLbl = document.createElement("div");
+        dnLbl.style.cssText = "font-weight:600;font-size:.88rem;color:#1a2016;text-align:center;flex:1;";
+        var DAY_UA = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
+        var dnD = new Date(apptDate + "T00:00:00");
+        dnLbl.textContent = dnD.getDate() + " " + ["січ","лют","бер","квіт","трав","черв","лип","серп","вер","жовт","лист","груд"][dnD.getMonth()] + " · " + DAY_UA[dnD.getDay()];
+        dateNav.appendChild(dnPrev); dateNav.appendChild(dnLbl); dateNav.appendChild(dnNext);
+        overlay.appendChild(dateNav);
+        function shiftDate(delta) {
+          var d = new Date(apptDate + "T00:00:00");
+          d.setDate(d.getDate() + delta);
+          apptDate = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+          apptMonth = apptDate.slice(0,7);
+          loadCalendar(activeMasterFilter);
+        }
+        dnPrev.addEventListener("click", function() { shiftDate(-1); });
+        dnNext.addEventListener("click", function() { shiftDate(1); });
+
         // Прокручуваний контейнер
         var scroller = document.createElement("div");
-        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;height:100%;width:100%;touch-action:pan-x pan-y;";
+        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;height:calc(100% - 42px);width:100%;touch-action:pan-x pan-y;";
         overlay.appendChild(scroller);
 
         // Стан touch/long-press для всіх колонок
@@ -711,7 +818,18 @@
         inner.appendChild(header);
 
         var corner = document.createElement("div");
-        corner.style.cssText = "flex:0 0 " + TIME_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;background:#f8f8f6;position:sticky;left:0;z-index:25;";
+        corner.style.cssText = "flex:0 0 " + TIME_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;background:#f8f8f6;position:sticky;left:0;z-index:25;display:flex;align-items:center;justify-content:center;";
+        var backToMonth = document.createElement("button");
+        backToMonth.title = "Місяць";
+        backToMonth.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+        backToMonth.style.cssText = "background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:#5a7a48;display:flex;align-items:center;justify-content:center;";
+        backToMonth.addEventListener("click", function() {
+          var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
+          apptViewMode = "month";
+          apptMonth = apptDate.slice(0,7);
+          reloadView();
+        });
+        corner.appendChild(backToMonth);
         header.appendChild(corner);
 
         masters.forEach(function(m) {
