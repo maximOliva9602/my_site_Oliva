@@ -279,7 +279,8 @@
     var mobSheetLogout = document.getElementById("mob-sheet-logout");
     mobSheetLogout.onclick = function() { closeMobSheet(); $("logoutBtn").click(); };
 
-    TABS[0].render();
+    var apptTabIdx = TABS.findIndex(function(t) { return t.id === "appts"; });
+    activateTab(apptTabIdx >= 0 ? apptTabIdx : 0);
     initPush();     // тост або тиха підписка
     // Авто-оновлення коли повертаємось у додаток (напр. із фону)
     document.addEventListener("visibilitychange", function() {
@@ -463,7 +464,7 @@
   }
 
   var apptDate = todayStr();
-  var apptViewMode = "list"; // "list" | "calendar"
+  var apptViewMode = "calendar"; // "list" | "calendar"
 
   function renderAppts() {
     var main = $("main"); main.innerHTML = "";
