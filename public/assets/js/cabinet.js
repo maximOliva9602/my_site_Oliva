@@ -632,15 +632,18 @@
         // Колонка часу
         var tCol = document.createElement("div");
         tCol.style.cssText = "flex:0 0 " + TIME_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#f8f8f6;";
-        for (var hh = HOUR_START; hh <= HOUR_END; hh++) {
-          var ty = ((hh - HOUR_START) * 60 / STEP) * SLOT_H;
+        for (var tm = HOUR_START * 60; tm <= HOUR_END * 60; tm += STEP) {
+          var ty = ((tm - HOUR_START * 60) / STEP) * SLOT_H;
+          var isHour = (tm % 60 === 0);
           var sep = document.createElement("div");
-          sep.style.cssText = "position:absolute;top:" + ty + "px;left:0;right:0;border-top:1px solid #d8ddd4;pointer-events:none;";
+          sep.style.cssText = "position:absolute;top:" + ty + "px;left:0;right:0;border-top:1px solid " + (isHour ? "#c8cfc4" : "#e2e6de") + ";pointer-events:none;";
           tCol.appendChild(sep);
-          if (hh < HOUR_END) {
+          if (tm < HOUR_END * 60) {
             var lbl = document.createElement("div");
-            lbl.style.cssText = "position:absolute;top:" + (ty + 2) + "px;left:0;right:0;text-align:center;font-size:.6rem;color:#777;pointer-events:none;";
-            lbl.textContent = String(hh).padStart(2,"0") + ":00";
+            var hPart = Math.floor(tm / 60), mPart = tm % 60;
+            lbl.style.cssText = "position:absolute;top:" + (ty + 2) + "px;left:0;right:2px;text-align:right;font-size:.55rem;pointer-events:none;" +
+              (isHour ? "color:#444;font-weight:600;" : "color:#aaa;");
+            lbl.textContent = String(hPart).padStart(2,"0") + ":" + String(mPart).padStart(2,"0");
             tCol.appendChild(lbl);
           }
         }
@@ -651,17 +654,13 @@
           var mCol = document.createElement("div");
           mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;";
 
-          // Лінії годин і напівгодин
-          for (var hh2 = HOUR_START + 1; hh2 <= HOUR_END; hh2++) {
+          // Лінії кожні 10 хвилин
+          for (var tm2 = (HOUR_START + 1) * 60; tm2 <= HOUR_END * 60; tm2 += STEP) {
+            var isHour2 = (tm2 % 60 === 0);
             var hl = document.createElement("div");
-            hl.style.cssText = "position:absolute;top:" + (((hh2 - HOUR_START) * 60 / STEP) * SLOT_H) + "px;left:0;right:0;border-top:1px solid #e0e4dc;pointer-events:none;z-index:1;";
+            hl.style.cssText = "position:absolute;top:" + (((tm2 - HOUR_START * 60) / STEP) * SLOT_H) + "px;left:0;right:0;" +
+              "border-top:1px solid " + (isHour2 ? "#d8ddd4" : "#eeefec") + ";pointer-events:none;z-index:1;";
             mCol.appendChild(hl);
-          }
-          for (var hh3 = HOUR_START; hh3 < HOUR_END; hh3++) {
-            var hly = ((hh3 - HOUR_START) * 60 / STEP + 3) * SLOT_H;
-            var hld = document.createElement("div");
-            hld.style.cssText = "position:absolute;top:" + hly + "px;left:0;right:0;border-top:1px dashed #eaeae8;pointer-events:none;z-index:1;";
-            mCol.appendChild(hld);
           }
 
           // Штрихування для неробочих проміжків
