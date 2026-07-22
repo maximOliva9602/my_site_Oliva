@@ -184,6 +184,7 @@
       TABS.push({ id: "dashboard", name: "📊 Дашборд", render: renderDashboard });
     }
     TABS.push({ id: "appts", name: "📅 Записи", render: renderAppts });
+    TABS.push({ id: "schedule", name: "🗓 Розклад", render: renderScheduleTab });
     TABS.push({ id: "clients", name: "Клієнти", render: renderClients });
     if (me.role === "owner") {
       TABS.push({ id: "analytics", name: "📈 Аналітика", render: renderAnalytics });
@@ -195,8 +196,8 @@
       TABS.push({ id: "notif", name: "Сповіщення", render: renderNotif });
     }
     /* ── Іконки і короткі назви для мобільного nav ── */
-    var TAB_ICOS  = { dashboard:"📊", appts:"📅", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔" };
-    var TAB_SHORT = { dashboard:"Дашборд", appts:"Записи", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення" };
+    var TAB_ICOS  = { dashboard:"📊", appts:"📅", schedule:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔" };
+    var TAB_SHORT = { dashboard:"Дашборд", appts:"Записи", schedule:"Розклад", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення" };
     var BOTTOM_COUNT = Math.min(3, TABS.length);
     var hasDrawer    = TABS.length > BOTTOM_COUNT;
 
@@ -1653,6 +1654,19 @@
         closeModal(); if (window.__reloadAppts) window.__reloadAppts();
       });
     });
+  }
+
+  /* ============================================================
+     РОЗКЛАД (день) — відкриває денний вид одразу
+     ============================================================ */
+  function renderScheduleTab() {
+    apptViewMode = "calendar";
+    renderAppts();
+    // Перемінюємо заголовок після рендеру
+    setTimeout(function() {
+      var h2 = document.querySelector("#main h2");
+      if (h2 && h2.textContent === "Записи") h2.textContent = "Розклад";
+    }, 0);
   }
 
   /* ============================================================
