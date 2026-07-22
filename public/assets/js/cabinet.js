@@ -542,10 +542,10 @@
       contentEl.innerHTML = "";
       var HOUR_START = 8, HOUR_END = 22;
       var STEP = 10;           // хв на слот
-      var SLOT_H = 20;         // px на 10-хв слот
+      var SLOT_H = 22;         // px на 10-хв слот (трохи більше для зручності пальцем)
       var TIME_COL_W = 44;     // px для колонки з часом
-      var MASTER_COL_W = 150;  // мін. px на колонку майстра
-      var HEADER_H = 66;       // px для рядка заголовка
+      var MASTER_COL_W = window.innerWidth < 600 ? 160 : 170;
+      var HEADER_H = 70;       // px для рядка заголовка
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
       var TOTAL_H = (TOTAL_MIN / STEP) * SLOT_H;
 
@@ -605,8 +605,20 @@
 
         // Прокручуваний контейнер
         var scroller = document.createElement("div");
-        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;height:100%;width:100%;";
+        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;height:100%;width:100%;touch-action:pan-x pan-y;";
         overlay.appendChild(scroller);
+
+        // Відстежуємо свайп щоб не відкривати меню під час скролу
+        var calTouchMoved = false, calTX = 0, calTY = 0;
+        scroller.addEventListener("touchstart", function(e) {
+          calTouchMoved = false;
+          calTX = e.touches[0].clientX;
+          calTY = e.touches[0].clientY;
+        }, { passive: true });
+        scroller.addEventListener("touchmove", function(e) {
+          if (Math.abs(e.touches[0].clientX - calTX) > 6 || Math.abs(e.touches[0].clientY - calTY) > 6)
+            calTouchMoved = true;
+        }, { passive: true });
 
         var inner = document.createElement("div");
         inner.style.cssText = "display:inline-flex;flex-direction:column;min-width:" + (TIME_COL_W + masters.length * MASTER_COL_W) + "px;width:100%;";
@@ -664,7 +676,7 @@
         // Колонки майстрів
         masters.forEach(function(master) {
           var mCol = document.createElement("div");
-          mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;";
+          mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;touch-action:pan-x pan-y;";
 
           // Лінії кожні 10 хвилин
           for (var tm2 = (HOUR_START + 1) * 60; tm2 <= HOUR_END * 60; tm2 += STEP) {
@@ -717,6 +729,7 @@
 
           // Клік по колонці — контекстне меню
           mCol.addEventListener("click", function(e) {
+            if (calTouchMoved) { calTouchMoved = false; return; }
             var oldCtx = document.getElementById("cal-ctx");
             if (oldCtx) { oldCtx.remove(); return; }
             var rect = mCol.getBoundingClientRect();
