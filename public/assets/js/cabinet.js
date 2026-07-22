@@ -557,7 +557,7 @@
 
       var overlay = document.createElement("div");
       overlay.id = "cal-overlay";
-      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + navH + "px;z-index:10;background:#f0f2ee;";
+      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + navH + "px;z-index:10;background:#f0f2ee;-webkit-user-select:none;user-select:none;";
       document.body.appendChild(overlay);
 
       var wd = new Date(apptDate + "T00:00:00").getDay();
@@ -618,7 +618,7 @@
           removeLpInd();
           var yt = ((absMin - HOUR_START * 60) / STEP) * SLOT_H;
           var d = document.createElement("div");
-          d.style.cssText = "position:absolute;left:3px;right:3px;top:" + yt + "px;height:" + (SLOT_H * 6) + "px;" +
+          d.style.cssText = "position:absolute;left:3px;right:3px;top:" + yt + "px;height:" + (SLOT_H * 1) + "px;" +
             "border:2px dashed #6e9145;border-radius:8px;background:rgba(110,145,69,.07);z-index:15;pointer-events:none;" +
             "display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;";
           d.innerHTML =
