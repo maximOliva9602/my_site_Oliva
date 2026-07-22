@@ -711,7 +711,7 @@
         inner.appendChild(header);
 
         var corner = document.createElement("div");
-        corner.style.cssText = "flex:0 0 " + TIME_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;background:#f8f8f6;";
+        corner.style.cssText = "flex:0 0 " + TIME_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;background:#f8f8f6;position:sticky;left:0;z-index:25;";
         header.appendChild(corner);
 
         masters.forEach(function(m) {
@@ -736,7 +736,7 @@
 
         // Колонка часу
         var tCol = document.createElement("div");
-        tCol.style.cssText = "flex:0 0 " + TIME_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#f8f8f6;";
+        tCol.style.cssText = "flex:0 0 " + TIME_COL_W + "px;border-right:1px solid #d8ddd4;position:sticky;left:0;z-index:11;height:" + TOTAL_H + "px;background:#f8f8f6;";
         for (var tm = HOUR_START * 60; tm <= HOUR_END * 60; tm += STEP) {
           var ty = ((tm - HOUR_START * 60) / STEP) * SLOT_H;
           var isHour = (tm % 60 === 0);
@@ -1135,7 +1135,16 @@
     var prefill = (opts && opts.prefill) || {};
     openModal(
       '<h3>Новий запис</h3>' +
-      '<label>Послуга</label><select id="mService"></select>' +
+      '<label>Послуга</label>' +
+      '<div id="mSvcWrap" style="position:relative;">' +
+        '<input type="text" id="mSvcQ" placeholder="Пошук послуги…" autocomplete="off">' +
+        '<div id="mSvcDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:200px;overflow-y:auto;margin-top:3px;"></div>' +
+      '</div>' +
+      '<div id="mSvcChip" style="display:none;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:4px;display:none;align-items:center;gap:8px;">' +
+        '<span id="mSvcChipName" style="flex:1;font-size:.88rem;font-weight:600;color:var(--cream);"></span>' +
+        '<button id="mSvcClear" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:.9rem;padding:2px 4px;">✕</button>' +
+      '</div>' +
+      '<select id="mService" style="display:none;"></select>' +
       '<label>Майстер</label><select id="mMaster"></select>' +
       '<label>Дата</label><input type="date" id="mDate" />' +
       '<label>Вільний час</label><div id="mSlots" class="muted">Оберіть послугу, майстра й дату</div>' +
@@ -1182,6 +1191,49 @@
     $("mCancel").addEventListener("click", closeModal);
     $("mMarkerWrap").appendChild(markerPicker(null, function(c) { chosen.color_marker = c; }));
     $("mDate").value = prefill.date || apptDate; $("mDate").min = todayStr();
+
+    // ── Пошук послуги ────────────────────────────────────────────────
+    var allServices = [];
+    function renderSvcDrop(q) {
+      var drop = $("mSvcDrop");
+      var filtered = q ? allServices.filter(function(s) {
+        return s.name.toLowerCase().indexOf(q.toLowerCase()) > -1;
+      }) : allServices;
+      drop.innerHTML = "";
+      filtered.forEach(function(s) {
+        var row = document.createElement("div");
+        row.style.cssText = "padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line);font-size:.88rem;color:var(--cream);";
+        row.innerHTML = '<span style="font-weight:600;">' + s.name + '</span>' +
+          '<span style="color:var(--text-dim);font-size:.78rem;margin-left:8px;">' + s.duration_min + ' хв · ' + money(s.price) + '</span>';
+        row.addEventListener("mousedown", function(e) {
+          e.preventDefault();
+          $("mService").value = s.id;
+          $("mSvcQ").value = "";
+          $("mSvcChipName").textContent = s.name + " · " + s.duration_min + " хв";
+          $("mSvcChip").style.display = "flex";
+          $("mSvcWrap").style.display = "none";
+          drop.style.display = "none";
+          if ($("mMaster").options.length > 0) { loadSlots(); } else { loadMasters(); }
+          checkSubBadge();
+        });
+        drop.appendChild(row);
+      });
+      drop.style.display = filtered.length ? "block" : "none";
+    }
+
+    $("mSvcQ").addEventListener("input", function() { renderSvcDrop(this.value.trim()); });
+    $("mSvcQ").addEventListener("focus", function() { renderSvcDrop(this.value.trim()); });
+    $("mSvcQ").addEventListener("blur", function() {
+      setTimeout(function() { var d = $("mSvcDrop"); if (d) d.style.display = "none"; }, 150);
+    });
+    $("mSvcClear").addEventListener("click", function() {
+      $("mService").value = "";
+      $("mSvcChip").style.display = "none";
+      $("mSvcWrap").style.display = "block";
+      $("mSvcQ").value = "";
+      $("mSvcQ").focus();
+      checkSubBadge();
+    });
 
     // ── Пошук клієнта ────────────────────────────────────────────────
     function checkSubBadge() {
@@ -1306,10 +1358,19 @@
     // ── Послуги і майстри ────────────────────────────────────────────
     api("GET", "/api/crm/services").then(function (res) {
       var sel = $("mService");
-      (res.j.services || []).forEach(function (s) {
+      allServices = (res.j.services || []);
+      allServices.forEach(function (s) {
         var o = new Option(s.name + " (" + s.duration_min + " хв)", s.id); o.dataset.dur = s.duration_min; sel.appendChild(o);
       });
-      if (prefill.serviceId) sel.value = prefill.serviceId;
+      if (prefill.serviceId) {
+        sel.value = prefill.serviceId;
+        var found = allServices.find(function(s) { return String(s.id) === String(prefill.serviceId); });
+        if (found) {
+          $("mSvcChipName").textContent = found.name + " · " + found.duration_min + " хв";
+          $("mSvcChip").style.display = "flex";
+          $("mSvcWrap").style.display = "none";
+        }
+      }
       loadMasters();
     });
 
