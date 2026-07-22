@@ -11,7 +11,8 @@ const db = require("./db");
 const tz = require("./tz");
 
 const STEP = 15;                                  // крок стартів, хв
-const LEAD_MIN = parseInt(process.env.LEAD_MIN || "0", 10); // мін. запас від «зараз», хв
+const LEAD_MIN   = parseInt(process.env.LEAD_MIN   || "0",  10); // мін. запас від «зараз», хв
+const BUFFER_MIN = parseInt(process.env.BUFFER_MIN || "10", 10); // буфер між записами, хв
 
 function ceilToStep(min, step) { return Math.ceil(min / step) * step; }
 function overlaps(aStart, aEnd, bStart, bEnd) { return aStart < bEnd && aEnd > bStart; }
@@ -53,7 +54,7 @@ function blockedIntervals(masterId, date) {
   const appts = db.prepare(
     "SELECT start_min, end_min FROM appointments WHERE master_id = ? AND date = ? AND status IN ('pending','confirmed')"
   ).all(masterId, date);
-  for (const a of appts) blocked.push([a.start_min, a.end_min]);
+  for (const a of appts) blocked.push([a.start_min, a.end_min + BUFFER_MIN]);
 
   return blocked;
 }
@@ -108,7 +109,7 @@ function isSlotFree(masterId, date, startMin, durationMin, nowMs) {
 }
 
 module.exports = {
-  STEP, LEAD_MIN,
+  STEP, LEAD_MIN, BUFFER_MIN,
   computeSlots, blockedIntervals,
   freeSlots, freeSlotsAny, mastersForService, isSlotFree,
 };
