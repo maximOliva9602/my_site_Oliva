@@ -1157,6 +1157,18 @@
         '<label style="margin-top:8px;display:block;">Телефон</label><input type="tel" id="mPhone" maxlength="30"/>' +
       '</div>' +
       '<div id="mSubBadge" style="margin-top:8px;"></div>' +
+      '<div id="mSubNew" style="display:none;margin-top:8px;background:#f0f7ee;border:1px solid #b8d4a8;border-radius:10px;padding:12px;">' +
+        '<div style="font-size:.82rem;font-weight:600;color:#3d5430;margin-bottom:8px;">🎟 Новий абонемент</div>' +
+        '<div class="grid2">' +
+          '<div><label>К-ть сеансів</label><input type="number" id="mSubSess" value="10" min="1" max="200"></div>' +
+          '<div><label>Сума (грн)</label><input type="number" id="mSubPrice" value="0" min="0"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div id="mSubToggleWrap" style="display:none;margin-top:6px;">' +
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.83rem;color:var(--text-dim);">' +
+          '<input type="checkbox" id="mSubCheck" style="width:16px;height:16px;"> Одразу оформити абонемент' +
+        '</label>' +
+      '</div>' +
       '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
       '<div class="err" id="mErr"></div>' +
@@ -1174,24 +1186,40 @@
     // ── Пошук клієнта ────────────────────────────────────────────────
     function checkSubBadge() {
       var badge = document.getElementById("mSubBadge");
+      var toggleWrap = document.getElementById("mSubToggleWrap");
+      var subNew = document.getElementById("mSubNew");
       if (!badge) return;
       badge.innerHTML = "";
+      if (toggleWrap) toggleWrap.style.display = "none";
+      if (subNew) subNew.style.display = "none";
       if (!selectedClient || !selectedClient.id || !$("mService").value) return;
       api("GET", "/api/crm/subscriptions/check?client_id=" + selectedClient.id + "&service_id=" + $("mService").value).then(function(r) {
-        if (!r.j.active) return;
         var sub = r.j.active;
-        var rem = sub.total_sessions - sub.used_sessions;
-        badge.innerHTML =
-          '<div style="background:' + (rem > 0 ? "#e8f5e9" : "#fde8e8") + ';border:1px solid ' + (rem > 0 ? "#a5d6a7" : "#ef9a9a") + ';' +
-          'border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;">' +
-          '<span style="font-size:1rem;">🎟</span>' +
-          '<span style="color:' + (rem > 0 ? "#2e7d32" : "#c04040") + ';font-weight:600;">' +
-            (rem > 0 ? 'Абонемент: залишилось ' + rem + ' сеанс' + (rem===1?'':'ів') : 'Абонемент вичерпано') +
-          '</span>' +
-          '<span style="color:var(--text-dim);">(' + sub.used_sessions + '/' + sub.total_sessions + ' використано)</span>' +
-          '</div>';
+        if (sub) {
+          var rem = sub.total_sessions - sub.used_sessions;
+          badge.innerHTML =
+            '<div style="background:' + (rem > 0 ? "#e8f5e9" : "#fde8e8") + ';border:1px solid ' + (rem > 0 ? "#a5d6a7" : "#ef9a9a") + ';' +
+            'border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;">' +
+            '<span style="font-size:1rem;">🎟</span>' +
+            '<span style="color:' + (rem > 0 ? "#2e7d32" : "#c04040") + ';font-weight:600;">' +
+              (rem > 0 ? 'Абонемент: залишилось ' + rem + ' сеанс' + (rem===1?'':'ів') : 'Абонемент вичерпано') +
+            '</span>' +
+            '<span style="color:var(--text-dim);">(' + sub.used_sessions + '/' + sub.total_sessions + ' використано)</span>' +
+            '</div>';
+        } else {
+          // Нема абонементу — показуємо чекбокс для створення
+          if (toggleWrap) toggleWrap.style.display = "block";
+        }
       });
     }
+
+    // Чекбокс показує/ховає форму абонементу
+    document.addEventListener("change", function(e) {
+      if (e.target && e.target.id === "mSubCheck") {
+        var subNew = document.getElementById("mSubNew");
+        if (subNew) subNew.style.display = e.target.checked ? "block" : "none";
+      }
+    });
 
     function showChip(c) {
       selectedClient = c;
@@ -1348,6 +1376,17 @@
       }).then(function (res) {
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
         if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); return; }
+        // Якщо обрано "Оформити абонемент" і є id клієнта з бази
+        var subCheck = document.getElementById("mSubCheck");
+        var clientId = res.j.appointment && res.j.appointment.client_id;
+        if (subCheck && subCheck.checked && clientId) {
+          var sess  = parseInt(($("mSubSess")  ? $("mSubSess").value  : 0), 10) || 10;
+          var price = Math.round(parseFloat($("mSubPrice") ? $("mSubPrice").value : 0) * 100);
+          api("POST", "/api/crm/subscriptions", {
+            client_id: clientId, service_id: $("mService").value,
+            total_sessions: sess, price: price, note: null
+          });
+        }
         closeModal(); if (window.__reloadAppts) window.__reloadAppts();
       });
     });
