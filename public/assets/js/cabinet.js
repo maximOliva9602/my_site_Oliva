@@ -1001,6 +1001,7 @@
             var hasNote = !!(a.comment && a.comment.trim());
 
             var block = document.createElement("div");
+            block.id = "cal-block-" + a.id;
             block.style.cssText = "position:absolute;left:2px;right:2px;top:" + topPx + "px;height:" + heightPx + "px;" +
               "background:" + bgColor + ";border-left:3px solid " + markerHex + ";border-radius:5px;" +
               "padding:3px 5px 2px 4px;overflow:hidden;cursor:pointer;z-index:3;";
@@ -1126,6 +1127,14 @@
     $("dMarkerWrap").appendChild(markerPicker(a.color_marker || null, function(c) {
       api("PATCH", "/api/crm/appointments/" + a.id + "/color-marker", { color_marker: c });
       a.color_marker = c;
+      // Оновити блок в календарі одразу
+      var blk = document.getElementById("cal-block-" + a.id);
+      if (blk) {
+        blk.style.background = c + "22";
+        blk.style.borderLeftColor = c;
+        var timeSpan = blk.querySelector("span");
+        if (timeSpan) timeSpan.style.color = c;
+      }
     }));
 
     // Зірки оцінки
