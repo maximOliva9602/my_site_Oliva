@@ -449,6 +449,26 @@ router.patch("/clients/:id", any, function (req, res) {
   res.json({ ok: true });
 });
 
+/* ---- Імпорт клієнтів (bulk, owner only) ---- */
+router.post("/clients/import", owner, function (req, res) {
+  const rows = Array.isArray(req.body) ? req.body : (req.body && Array.isArray(req.body.clients) ? req.body.clients : []);
+  if (!rows.length) return res.status(400).json({ ok: false, error: "empty" });
+  const ins = db.prepare("INSERT OR IGNORE INTO clients (phone, name, note, visit_count, last_visit_at, created_at) VALUES (?,?,?,?,?,?)");
+  const txn = db.transaction(function () {
+    let inserted = 0;
+    rows.forEach(function (r) {
+      const phone = String(r.phone || "").trim();
+      const name = String(r.name || "").trim();
+      if (!phone || !name) return;
+      const result = ins.run(phone, name, r.note || null, r.visit_count || 0, r.last_visit_at || null, r.created_at || Date.now());
+      if (result.changes) inserted++;
+    });
+    return inserted;
+  });
+  const inserted = txn();
+  res.json({ ok: true, inserted, total: rows.length });
+});
+
 /* ---- Користувачі (акаунти майстрів) ---- */
 router.get("/users", owner, function (req, res) { res.json({ ok: true, users: auth.listUsers() }); });
 router.post("/users", owner, function (req, res) {
