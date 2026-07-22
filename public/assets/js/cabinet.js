@@ -1139,27 +1139,120 @@
       '<label>Майстер</label><select id="mMaster"></select>' +
       '<label>Дата</label><input type="date" id="mDate" />' +
       '<label>Вільний час</label><div id="mSlots" class="muted">Оберіть послугу, майстра й дату</div>' +
-      '<div class="grid2"><div><label>Ім\'я</label><input type="text" id="mName" placeholder="Олена" maxlength="60"/></div>' +
-      '<div><label>Прізвище</label><input type="text" id="mSurname" placeholder="Коваленко" maxlength="60"/></div></div>' +
-      '<div><label>Телефон</label><input type="tel" id="mPhone" maxlength="30"/></div>' +
-      '<label>Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
+      '<label>Клієнт</label>' +
+      '<div id="mClientSearch" style="position:relative;">' +
+        '<input type="text" id="mClientQ" placeholder="Пошук за іменем або телефоном…" autocomplete="off" style="padding-right:36px;">' +
+        '<div id="mClientDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:220px;overflow-y:auto;margin-top:3px;"></div>' +
+      '</div>' +
+      '<div id="mClientChip" style="display:none;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:none;align-items:center;gap:10px;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div id="mChipName" style="font-weight:600;font-size:.9rem;color:var(--cream);"></div>' +
+          '<div id="mChipPhone" style="font-size:.78rem;color:var(--text-dim);"></div>' +
+        '</div>' +
+        '<button id="mClientClear" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:1rem;padding:4px;">✕</button>' +
+      '</div>' +
+      '<div id="mClientNew" style="display:none;">' +
+        '<div class="grid2"><div><label>Ім\'я</label><input type="text" id="mName" placeholder="Олена" maxlength="60"/></div>' +
+        '<div><label>Прізвище</label><input type="text" id="mSurname" placeholder="Коваленко" maxlength="60"/></div></div>' +
+        '<label style="margin-top:8px;display:block;">Телефон</label><input type="tel" id="mPhone" maxlength="30"/>' +
+      '</div>' +
+      '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
       '<div class="err" id="mErr"></div>' +
       '<div class="modal-foot"><button class="btn btn-ghost" id="mCancel">Скасувати</button>' +
       '<button class="btn btn-primary" id="mSave">Створити</button></div>'
     );
+
     var chosen = { start_min: null, color_marker: null };
+    var selectedClient = null; // { id, name, phone } або null = новий
+
     $("mCancel").addEventListener("click", closeModal);
     $("mMarkerWrap").appendChild(markerPicker(null, function(c) { chosen.color_marker = c; }));
     $("mDate").value = prefill.date || apptDate; $("mDate").min = todayStr();
-    if (prefill.clientName) {
-      var parts = prefill.clientName.split(" ");
-      $("mName").value = parts[0] || "";
-      $("mSurname").value = parts.slice(1).join(" ") || "";
-    }
-    if (prefill.clientPhone) $("mPhone").value = prefill.clientPhone;
 
-    // послуги
+    // ── Пошук клієнта ────────────────────────────────────────────────
+    function showChip(c) {
+      selectedClient = c;
+      $("mClientSearch").style.display = "none";
+      $("mClientNew").style.display = "none";
+      var chip = $("mClientChip");
+      chip.style.display = "flex";
+      $("mChipName").textContent = c.name;
+      $("mChipPhone").textContent = c.phone || "";
+    }
+
+    function showNewForm(nameVal) {
+      selectedClient = null;
+      $("mClientSearch").style.display = "none";
+      $("mClientChip").style.display = "none";
+      $("mClientNew").style.display = "block";
+      if (nameVal) {
+        var parts = nameVal.trim().split(" ");
+        $("mName").value = parts[0] || "";
+        $("mSurname").value = parts.slice(1).join(" ") || "";
+      }
+      setTimeout(function() { $("mName").focus(); }, 50);
+    }
+
+    function resetToSearch() {
+      selectedClient = null;
+      $("mClientChip").style.display = "none";
+      $("mClientNew").style.display = "none";
+      $("mClientSearch").style.display = "block";
+      $("mClientQ").value = "";
+      $("mClientQ").focus();
+    }
+
+    $("mClientClear").addEventListener("click", resetToSearch);
+
+    var searchTimer = null;
+    $("mClientQ").addEventListener("input", function() {
+      clearTimeout(searchTimer);
+      var q = this.value.trim();
+      var drop = $("mClientDrop");
+      if (!q) { drop.style.display = "none"; return; }
+      searchTimer = setTimeout(function() {
+        api("GET", "/api/crm/clients?q=" + encodeURIComponent(q)).then(function(res) {
+          var list = (res.j.clients || []).slice(0, 8);
+          drop.innerHTML = "";
+          list.forEach(function(c) {
+            var row = document.createElement("div");
+            row.style.cssText = "padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;";
+            var initials = (c.name||"").split(" ").map(function(w){return w[0]||"";}).join("").slice(0,2).toUpperCase();
+            row.innerHTML =
+              '<div style="width:32px;height:32px;border-radius:50%;background:var(--olive-light);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;">' + (initials||"?") + '</div>' +
+              '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:.88rem;font-weight:600;color:var(--cream);">' + c.name + '</div>' +
+                '<div style="font-size:.75rem;color:var(--text-dim);">' + (c.phone||"") + ' · візитів: ' + (c.visit_count||0) + '</div>' +
+              '</div>';
+            row.addEventListener("mousedown", function(e) { e.preventDefault(); showChip(c); drop.style.display = "none"; });
+            drop.appendChild(row);
+          });
+          // Опція "Новий клієнт"
+          var newRow = document.createElement("div");
+          newRow.style.cssText = "padding:10px 14px;cursor:pointer;color:var(--olive-light);font-size:.88rem;font-weight:600;display:flex;align-items:center;gap:8px;";
+          newRow.innerHTML = '<span style="font-size:1.1rem;">＋</span> Новий клієнт «' + q + '»';
+          newRow.addEventListener("mousedown", function(e) { e.preventDefault(); drop.style.display = "none"; showNewForm(q); });
+          drop.appendChild(newRow);
+          drop.style.display = list.length || q ? "block" : "none";
+        });
+      }, 220);
+    });
+
+    $("mClientQ").addEventListener("blur", function() {
+      setTimeout(function() { var d = $("mClientDrop"); if (d) d.style.display = "none"; }, 150);
+    });
+    $("mClientQ").addEventListener("keydown", function(e) {
+      if (e.key === "Escape") { $("mClientDrop").style.display = "none"; }
+    });
+
+    // Prefill клієнта (rebook або з календаря)
+    if (prefill.clientName || prefill.clientPhone) {
+      showNewForm(prefill.clientName || "");
+      if (prefill.clientPhone) $("mPhone").value = prefill.clientPhone;
+    }
+
+    // ── Послуги і майстри ────────────────────────────────────────────
     api("GET", "/api/crm/services").then(function (res) {
       var sel = $("mService");
       (res.j.services || []).forEach(function (s) {
@@ -1168,7 +1261,7 @@
       if (prefill.serviceId) sel.value = prefill.serviceId;
       loadMasters();
     });
-    // майстри (власник — усі; майстер — лише себе фіксовано)
+
     function loadMasters() {
       api("GET", "/api/crm/masters").then(function (res) {
         var sel = $("mMaster");
@@ -1180,6 +1273,7 @@
         loadSlots();
       });
     }
+
     $("mService").addEventListener("change", loadSlots);
     $("mMaster").addEventListener("change", loadSlots);
     $("mDate").addEventListener("change", loadSlots);
@@ -1188,9 +1282,6 @@
       chosen.start_min = null;
       var sid = $("mService").value, mid = $("mMaster").value, date = $("mDate").value;
       if (!sid || !mid || !date) return;
-      /* Клік по клітинці календаря передає бажаний час одноразово — після
-         першого рендера слотів прибираємо, щоб зміна послуги/дати вручну
-         не продовжувала мовчки тягнути за собою старий вибір. */
       var wantStartMin = prefill.startMin;
       prefill.startMin = null;
       var box = $("mSlots"); box.className = ""; box.innerHTML = "Завантаження…";
@@ -1215,14 +1306,21 @@
     $("mSave").addEventListener("click", function () {
       var err = $("mErr"); err.textContent = "";
       if (chosen.start_min == null) { err.textContent = "Оберіть час"; return; }
-      var firstName = $("mName").value.trim();
-      var lastName  = $("mSurname").value.trim();
-      if (!firstName || $("mPhone").value.replace(/\D/g, "").length < 9) { err.textContent = "Вкажіть ім'я і телефон"; return; }
-      var fullName = lastName ? firstName + " " + lastName : firstName;
+      var name, phone;
+      if (selectedClient) {
+        name = selectedClient.name; phone = selectedClient.phone;
+      } else {
+        var firstName = ($("mName") ? $("mName").value.trim() : "");
+        var lastName  = ($("mSurname") ? $("mSurname").value.trim() : "");
+        phone = ($("mPhone") ? $("mPhone").value.trim() : "");
+        if (!firstName || phone.replace(/\D/g, "").length < 9) { err.textContent = "Вкажіть ім'я і телефон"; return; }
+        name = lastName ? firstName + " " + lastName : firstName;
+      }
+      if (!name) { err.textContent = "Оберіть або введіть клієнта"; return; }
       var url = ME.role === "owner" ? "/api/crm/appointments" : "/api/crm/me/appointments";
       api("POST", url, {
         service: $("mService").value, master: $("mMaster").value, date: $("mDate").value,
-        start_min: chosen.start_min, name: fullName, phone: $("mPhone").value.trim(),
+        start_min: chosen.start_min, name: name, phone: phone,
         comment: $("mComment").value.trim(), color_marker: chosen.color_marker || null
       }).then(function (res) {
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
