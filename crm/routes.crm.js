@@ -939,7 +939,7 @@ router.get("/subscriptions/check", any, function (req, res) {
   res.json({ ok: true, active: row || null });
 });
 
-router.post("/subscriptions", owner, function (req, res) {
+router.post("/subscriptions", any, function (req, res) {
   const b = req.body || {};
   const clientId  = parseInt(b.client_id,  10);
   const serviceId = parseInt(b.service_id, 10);
@@ -948,9 +948,10 @@ router.post("/subscriptions", owner, function (req, res) {
   const note      = clean(b.note, 300) || null;
   if (!clientId || !serviceId || !total || total < 1)
     return res.status(400).json({ ok: false, error: "missing fields" });
+  const usedInit = Math.min(parseInt(b.used_sessions || 0, 10) || 0, total);
   const info = db.prepare(
-    "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at) VALUES (?,?,?,0,?,?,?)"
-  ).run(clientId, serviceId, total, price, note, Date.now());
+    "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at) VALUES (?,?,?,?,?,?,?)"
+  ).run(clientId, serviceId, total, usedInit, price, note, Date.now());
   res.json({ ok: true, id: info.lastInsertRowid });
 });
 
