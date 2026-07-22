@@ -608,17 +608,98 @@
         scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;height:100%;width:100%;touch-action:pan-x pan-y;";
         overlay.appendChild(scroller);
 
-        // Відстежуємо свайп щоб не відкривати меню під час скролу
-        var calTouchMoved = false, calTX = 0, calTY = 0;
-        scroller.addEventListener("touchstart", function(e) {
-          calTouchMoved = false;
-          calTX = e.touches[0].clientX;
-          calTY = e.touches[0].clientY;
-        }, { passive: true });
-        scroller.addEventListener("touchmove", function(e) {
-          if (Math.abs(e.touches[0].clientX - calTX) > 6 || Math.abs(e.touches[0].clientY - calTY) > 6)
-            calTouchMoved = true;
-        }, { passive: true });
+        // Стан touch/long-press для всіх колонок
+        var calTouchMoved = false, calTX = 0, calTY = 0, calLpHandled = false;
+        var lpActive = false, lpTimer = null, lpInd = null, lpAbsMin = 0, lpMasterRef = null;
+
+        function removeLpInd() { if (lpInd) { lpInd.remove(); lpInd = null; } }
+
+        function showLpInd(col, absMin) {
+          removeLpInd();
+          var yt = ((absMin - HOUR_START * 60) / STEP) * SLOT_H;
+          var d = document.createElement("div");
+          d.style.cssText = "position:absolute;left:3px;right:3px;top:" + yt + "px;height:" + (SLOT_H * 6) + "px;" +
+            "border:2px dashed #6e9145;border-radius:8px;background:rgba(110,145,69,.07);z-index:15;pointer-events:none;" +
+            "display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;";
+          d.innerHTML =
+            '<div style="width:30px;height:30px;border-radius:50%;background:#6e9145;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;line-height:1;font-weight:300;">+</div>' +
+            '<div id="lp-time-label" style="background:#6e9145;color:#fff;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;">' + fmtMin(absMin) + '</div>';
+          col.appendChild(d);
+          lpInd = d;
+        }
+
+        function moveLpInd(absMin) {
+          if (!lpInd) return;
+          var yt = ((absMin - HOUR_START * 60) / STEP) * SLOT_H;
+          lpInd.style.top = yt + "px";
+          var lbl = document.getElementById("lp-time-label");
+          if (lbl) lbl.textContent = fmtMin(absMin);
+        }
+
+        // Вміст контекстного меню (спільний для click і long-press)
+        function openCalCtx(master, absMin, screenX, screenY) {
+          var oldCtx = document.getElementById("cal-ctx");
+          if (oldCtx) { oldCtx.remove(); return; }
+          var unavail = isUnavail(master.id, absMin);
+          var ctx = document.createElement("div");
+          ctx.id = "cal-ctx";
+          ctx.style.cssText = "position:fixed;left:" + (screenX + 8) + "px;top:" + (screenY - 10) + "px;" +
+            "background:#fff;border:1px solid #d8ddd4;border-radius:10px;padding:6px;z-index:200;" +
+            "box-shadow:0 6px 24px rgba(0,0,0,.15);min-width:180px;";
+          ctx.innerHTML =
+            '<div style="font-size:.68rem;color:#888;padding:4px 8px 6px;border-bottom:1px solid #eee;font-weight:500;">' +
+            fmtMin(absMin) + ' · ' + (master.name || '') + '</div>' +
+            (!unavail ? '<button id="ctx-appt" style="display:block;width:100%;text-align:left;background:none;border:none;padding:10px 10px;font-size:.9rem;cursor:pointer;border-radius:6px;">📅 Новий запис</button>' : '') +
+            '<button id="ctx-break" style="display:block;width:100%;text-align:left;background:none;border:none;padding:10px 10px;font-size:.9rem;cursor:pointer;border-radius:6px;">⏸ Перерва</button>';
+          document.body.appendChild(ctx);
+
+          var ctxR = ctx.getBoundingClientRect();
+          if (ctxR.right > window.innerWidth - 8) ctx.style.left = (screenX - ctxR.width - 8) + "px";
+          if (ctxR.bottom > window.innerHeight - 8) ctx.style.top = (screenY - ctxR.height + 10) + "px";
+
+          function closeCtx() { var c = document.getElementById("cal-ctx"); if (c) c.remove(); }
+
+          if (document.getElementById("ctx-appt")) {
+            document.getElementById("ctx-appt").addEventListener("click", function() {
+              closeCtx();
+              apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: absMin } });
+            });
+          }
+          document.getElementById("ctx-break").addEventListener("click", function() {
+            closeCtx();
+            var endMin = Math.min(absMin + 60, HOUR_END * 60);
+            var html = '<h3>⏸ Перерва — ' + (master.name || '') + '</h3>' +
+              '<div class="grid2"><div><label>Від</label><input type="time" id="bkFrom" value="' + fmtMin(absMin) + '"></div>' +
+              '<div><label>До</label><input type="time" id="bkTo" value="' + fmtMin(endMin) + '"></div></div>' +
+              '<label style="margin-top:10px;display:block;">Нотатка</label>' +
+              '<input type="text" id="bkNote" placeholder="Необов\'язково">' +
+              '<div class="err" id="bkErr"></div>' +
+              '<div class="modal-foot">' +
+              '<button class="btn btn-primary" id="bkSave">Зберегти</button>' +
+              '<button class="btn btn-ghost" id="bkClose">Скасувати</button></div>';
+            openModal(html);
+            $("bkSave").addEventListener("click", function() {
+              var f = $("bkFrom").value.split(":"), t2 = $("bkTo").value.split(":");
+              var sm = parseInt(f[0]) * 60 + parseInt(f[1]);
+              var em = parseInt(t2[0]) * 60 + parseInt(t2[1]);
+              if (em <= sm) { $("bkErr").textContent = "«До» має бути пізніше «Від»"; return; }
+              api("POST", "/api/crm/day-blocks", {
+                master_id: master.id, date: apptDate, start_min: sm, end_min: em,
+                note: $("bkNote").value.trim() || null
+              }).then(function(res) {
+                if (!res.j.ok) { $("bkErr").textContent = "Помилка"; return; }
+                closeModal(); loadCalendar(activeMasterFilter);
+              });
+            });
+            $("bkClose").addEventListener("click", closeModal);
+          });
+
+          setTimeout(function() {
+            document.addEventListener("click", function onDoc() {
+              closeCtx(); document.removeEventListener("click", onDoc);
+            });
+          }, 50);
+        }
 
         var inner = document.createElement("div");
         inner.style.cssText = "display:inline-flex;flex-direction:column;min-width:" + (TIME_COL_W + masters.length * MASTER_COL_W) + "px;width:100%;";
@@ -727,74 +808,59 @@
             mCol.appendChild(blkDiv);
           });
 
-          // Клік по колонці — контекстне меню
+          // ── Touch: long-press → індикатор + drag ──────────────────
+          mCol.addEventListener("touchstart", function(e) {
+            var t = e.touches[0];
+            calTX = t.clientX; calTY = t.clientY; calTouchMoved = false;
+            var rect = mCol.getBoundingClientRect();
+            var relMin = Math.floor((t.clientY - rect.top) / SLOT_H) * STEP;
+            lpAbsMin = Math.max(HOUR_START * 60, Math.min(HOUR_END * 60 - STEP, HOUR_START * 60 + relMin));
+            lpMasterRef = master;
+            clearTimeout(lpTimer);
+            lpTimer = setTimeout(function() {
+              lpActive = true;
+              if (navigator.vibrate) navigator.vibrate(30);
+              showLpInd(mCol, lpAbsMin);
+            }, 380);
+          }, { passive: true });
+
+          mCol.addEventListener("touchmove", function(e) {
+            if (lpActive) {
+              e.preventDefault();
+              var t = e.touches[0];
+              var rect = mCol.getBoundingClientRect();
+              var relMin = Math.round((t.clientY - rect.top) / SLOT_H) * STEP;
+              var newMin = Math.max(HOUR_START * 60, Math.min(HOUR_END * 60 - STEP, HOUR_START * 60 + relMin));
+              if (newMin !== lpAbsMin) { lpAbsMin = newMin; moveLpInd(newMin); }
+            } else {
+              var moved = Math.abs(e.touches[0].clientX - calTX) > 6 || Math.abs(e.touches[0].clientY - calTY) > 6;
+              if (moved) { clearTimeout(lpTimer); lpTimer = null; calTouchMoved = true; }
+            }
+          }, { passive: false });
+
+          mCol.addEventListener("touchend", function(e) {
+            clearTimeout(lpTimer); lpTimer = null;
+            if (lpActive) {
+              lpActive = false; removeLpInd();
+              calLpHandled = true;
+              setTimeout(function() { calLpHandled = false; }, 600);
+              var t = e.changedTouches[0];
+              openCalCtx(master, lpAbsMin, t.clientX, t.clientY);
+            }
+          });
+
+          mCol.addEventListener("touchcancel", function() {
+            clearTimeout(lpTimer); lpTimer = null;
+            lpActive = false; removeLpInd();
+          });
+
+          // ── Клік мишею (десктоп) ──────────────────────────────────
           mCol.addEventListener("click", function(e) {
-            if (calTouchMoved) { calTouchMoved = false; return; }
-            var oldCtx = document.getElementById("cal-ctx");
-            if (oldCtx) { oldCtx.remove(); return; }
+            if (calTouchMoved || calLpHandled) { calTouchMoved = false; return; }
             var rect = mCol.getBoundingClientRect();
             var relMin = Math.floor((e.clientY - rect.top) / SLOT_H) * STEP;
             var clickAbsMin = HOUR_START * 60 + relMin;
-            var unavail = isUnavail(master.id, clickAbsMin);
-
-            var ctx = document.createElement("div");
-            ctx.id = "cal-ctx";
-            ctx.style.cssText = "position:fixed;left:" + (e.clientX + 8) + "px;top:" + (e.clientY - 10) + "px;" +
-              "background:#fff;border:1px solid #d8ddd4;border-radius:10px;padding:6px;z-index:200;" +
-              "box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:164px;";
-            ctx.innerHTML =
-              '<div style="font-size:.68rem;color:#888;padding:4px 8px 6px;border-bottom:1px solid #eee;font-weight:500;">' +
-              fmtMin(clickAbsMin) + ' · ' + (master.name || '') + '</div>' +
-              (!unavail ? '<button id="ctx-appt" style="display:block;width:100%;text-align:left;background:none;border:none;padding:7px 10px;font-size:.85rem;cursor:pointer;border-radius:6px;">📅 Новий запис</button>' : '') +
-              '<button id="ctx-break" style="display:block;width:100%;text-align:left;background:none;border:none;padding:7px 10px;font-size:.85rem;cursor:pointer;border-radius:6px;">⏸ Перерва</button>';
-            document.body.appendChild(ctx);
-
-            var ctxR = ctx.getBoundingClientRect();
-            if (ctxR.right > window.innerWidth - 8) ctx.style.left = (e.clientX - ctxR.width - 8) + "px";
-            if (ctxR.bottom > window.innerHeight - 8) ctx.style.top = (e.clientY - ctxR.height + 10) + "px";
-
-            function closeCtx() { var c = document.getElementById("cal-ctx"); if (c) c.remove(); }
-
-            if (document.getElementById("ctx-appt")) {
-              document.getElementById("ctx-appt").addEventListener("click", function() {
-                closeCtx();
-                apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: clickAbsMin } });
-              });
-            }
-            document.getElementById("ctx-break").addEventListener("click", function() {
-              closeCtx();
-              var endMin = Math.min(clickAbsMin + 60, HOUR_END * 60);
-              var html = '<h3>⏸ Перерва — ' + (master.name || '') + '</h3>' +
-                '<div class="grid2"><div><label>Від</label><input type="time" id="bkFrom" value="' + fmtMin(clickAbsMin) + '"></div>' +
-                '<div><label>До</label><input type="time" id="bkTo" value="' + fmtMin(endMin) + '"></div></div>' +
-                '<label style="margin-top:10px;display:block;">Нотатка</label>' +
-                '<input type="text" id="bkNote" placeholder="Необов\'язково">' +
-                '<div class="err" id="bkErr"></div>' +
-                '<div class="modal-foot">' +
-                '<button class="btn btn-primary" id="bkSave">Зберегти</button>' +
-                '<button class="btn btn-ghost" id="bkClose">Скасувати</button></div>';
-              openModal(html);
-              $("bkSave").addEventListener("click", function() {
-                var f = $("bkFrom").value.split(":"), t = $("bkTo").value.split(":");
-                var sm = parseInt(f[0]) * 60 + parseInt(f[1]);
-                var em = parseInt(t[0]) * 60 + parseInt(t[1]);
-                if (em <= sm) { $("bkErr").textContent = "«До» має бути пізніше «Від»"; return; }
-                api("POST", "/api/crm/day-blocks", {
-                  master_id: master.id, date: apptDate, start_min: sm, end_min: em,
-                  note: $("bkNote").value.trim() || null
-                }).then(function(res) {
-                  if (!res.j.ok) { $("bkErr").textContent = "Помилка"; return; }
-                  closeModal(); loadCalendar(activeMasterFilter);
-                });
-              });
-              $("bkClose").addEventListener("click", closeModal);
-            });
-
-            setTimeout(function() {
-              document.addEventListener("click", function onDoc() {
-                closeCtx(); document.removeEventListener("click", onDoc);
-              });
-            }, 50);
+            openCalCtx(master, clickAbsMin, e.clientX, e.clientY);
           });
 
           // Блоки записів
