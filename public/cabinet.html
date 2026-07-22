@@ -16,13 +16,13 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --black:#1e2819; --panel:#27341f; --panel-2:#2f3e26;
-    --olive:#3d5430; --olive-light:#8aA462; --cream:#F5F0E8;
-    --text:#ddd8d0; --text-dim:#9c9890; --line:rgba(138,164,98,0.24); --err:#e0816b;
-    --ok:#8aA462; --warn:#caa45a;
+    --black:#1a2016; --panel:#ffffff; --panel-2:#f4f6f1;
+    --olive:#3d5430; --olive-light:#6e9145; --cream:#1c2818;
+    --text:#323d2a; --text-dim:#6a7a60; --line:rgba(0,0,0,.1); --err:#c04040;
+    --ok:#6e9145; --warn:#9b7820;
   }
   html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
-  body { font-family:'Inter',sans-serif; background:var(--black); color:var(--text); min-height:100vh;
+  body { font-family:'Inter',sans-serif; background:#f0f2ee; color:var(--text); min-height:100vh;
     overflow-x:hidden; overscroll-behavior:none; touch-action:manipulation;
     -webkit-tap-highlight-color:transparent; }
   .pf { font-family:'Playfair Display',serif; }
@@ -35,7 +35,7 @@
   .login-card img { width:60px; height:60px; object-fit:contain; margin:0 auto 12px; display:block; }
   .login-card h1 { font-size:1.3rem; color:var(--cream); margin-bottom:4px; }
   .login-card p { font-size:.83rem; color:var(--text-dim); margin-bottom:20px; }
-  .login-card input { width:100%; background:rgba(46,61,34,.25); border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--cream); font-size:.95rem; margin-bottom:10px; }
+  .login-card input { width:100%; background:#f5f5f3; border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--cream); font-size:.95rem; margin-bottom:10px; }
   .login-card button { width:100%; background:var(--olive-light); color:var(--black); border:none; border-radius:10px; padding:12px; font-size:.95rem; font-weight:600; }
   .login-err { color:var(--err); font-size:.82rem; margin-top:10px; min-height:18px; }
 
@@ -61,7 +61,7 @@
   .bar h2 { font-family:'Playfair Display',serif; color:var(--cream); font-size:1.2rem; font-weight:500; margin-right:auto; }
   input[type=date], input[type=text], input[type=tel], input[type=number],
   input[type=password], input[type=time], select, textarea {
-    background:rgba(46,61,34,.22); border:1px solid var(--line); border-radius:9px; padding:9px 12px; color:var(--cream); font-size:.9rem; color-scheme:dark; outline:none;
+    background:#f5f5f3; border:1px solid var(--line); border-radius:9px; padding:9px 12px; color:var(--cream); font-size:.9rem; outline:none;
   }
   input[type=date]:focus, input[type=text]:focus, input[type=tel]:focus, input[type=number]:focus,
   input[type=password]:focus, input[type=time]:focus, select:focus, textarea:focus {
@@ -110,20 +110,20 @@
   .pass-wrap { position:relative; display:block; }
   .pass-wrap input { width:100%; padding-right:44px; box-sizing:border-box; }
   .pass-wrap input::-ms-reveal, .pass-wrap input::-ms-clear { display:none !important; }
-  .pass-eye { position:absolute; right:0; top:0; bottom:0; width:42px; display:flex; align-items:center; justify-content:center; background:rgba(46,61,34,.22); border:none; border-left:1px solid var(--line); border-radius:0 9px 9px 0; cursor:pointer; color:var(--text-dim); transition:color .2s; }
+  .pass-eye { position:absolute; right:0; top:0; bottom:0; width:42px; display:flex; align-items:center; justify-content:center; background:#eeeeeb; border:none; border-left:1px solid var(--line); border-radius:0 9px 9px 0; cursor:pointer; color:var(--text-dim); transition:color .2s; }
   .pass-eye:hover { color:var(--olive-light); }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
   .chip { border:1px solid var(--line); border-radius:20px; padding:6px 12px; font-size:.8rem; color:var(--text-dim); }
   .chip.on { background:rgba(122,145,86,.18); color:var(--cream); border-color:var(--olive-light); }
   .slots { display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:7px; margin-top:6px; }
-  .slot { background:rgba(46,61,34,.2); border:1px solid var(--line); border-radius:8px; padding:9px 0; text-align:center; font-size:.85rem; color:var(--cream); }
+  .slot { background:rgba(0,0,0,.04); border:1px solid var(--line); border-radius:8px; padding:9px 0; text-align:center; font-size:.85rem; color:var(--cream); }
   .slot.sel { background:var(--olive-light); color:var(--black); font-weight:600; }
   .sched-grid { display:flex; flex-direction:column; gap:5px; margin-top:10px; }
   /* flex-wrap: у рядку день + робочі години + "перерва" + її години —
      забагато для вузького екрана в один рядок; work-group/break-group
      тепер переносяться цілим блоком, а не обрізаються по краю картки. */
-  .sched-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; background:rgba(46,61,34,.18); border:1px solid var(--line); border-radius:10px; padding:8px 12px; transition:opacity .2s; }
+  .sched-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; background:rgba(0,0,0,.03); border:1px solid var(--line); border-radius:10px; padding:8px 12px; transition:opacity .2s; }
   .sched-row.day-off { opacity:.4; }
   .sched-row .wd { width:28px; font-size:.8rem; font-weight:700; color:var(--olive-light); text-align:center; flex-shrink:0; }
   .sched-row.day-off .wd { color:var(--text-dim); }
@@ -202,7 +202,7 @@
     background:var(--panel-2); border:1px solid var(--olive-light);
     border-radius:14px; padding:14px 16px;
     display:flex; flex-direction:column; gap:10px;
-    box-shadow:0 4px 28px rgba(0,0,0,.5);
+    box-shadow:0 4px 28px rgba(0,0,0,.12);
     animation:pushToastIn .3s cubic-bezier(.4,0,.2,1);
   }
   @keyframes pushToastIn { from{transform:translateY(80px);opacity:0} to{transform:translateY(0);opacity:1} }
