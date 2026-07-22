@@ -857,6 +857,41 @@ router.get("/analytics/visits", owner, function (req, res) {
   });
 });
 
+/* ---- Разові блокування (перерви на конкретну дату) ---- */
+router.get("/day-blocks", any, function (req, res) {
+  const date = clean(req.query.date, 10);
+  if (!date) return res.status(400).json({ ok: false });
+  const rows = req.session.role === "owner"
+    ? db.prepare("SELECT * FROM day_blocks WHERE date=? ORDER BY master_id, start_min").all(date)
+    : db.prepare("SELECT * FROM day_blocks WHERE date=? AND master_id=? ORDER BY start_min").all(date, req.session.masterId);
+  res.json({ ok: true, blocks: rows });
+});
+
+router.post("/day-blocks", any, function (req, res) {
+  const b = req.body || {};
+  const masterId = req.session.role === "owner" ? parseInt(b.master_id, 10) : req.session.masterId;
+  const date = clean(b.date, 10);
+  const startMin = parseInt(b.start_min, 10);
+  const endMin   = parseInt(b.end_min,   10);
+  if (!masterId || !date || isNaN(startMin) || isNaN(endMin) || endMin <= startMin)
+    return res.status(400).json({ ok: false });
+  const note = clean(b.note, 200) || null;
+  const info = db.prepare(
+    "INSERT INTO day_blocks (master_id,date,start_min,end_min,note,created_at) VALUES (?,?,?,?,?,?)"
+  ).run(masterId, date, startMin, endMin, note, Date.now());
+  res.json({ ok: true, id: info.lastInsertRowid });
+});
+
+router.delete("/day-blocks/:id", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const blk = db.prepare("SELECT id, master_id FROM day_blocks WHERE id=?").get(id);
+  if (!blk) return res.status(404).json({ ok: false });
+  if (req.session.role !== "owner" && blk.master_id !== req.session.masterId)
+    return res.status(403).json({ ok: false });
+  db.prepare("DELETE FROM day_blocks WHERE id=?").run(id);
+  res.json({ ok: true });
+});
+
 /* ---- Відгуки ---- */
 router.get("/reviews", owner, function (req, res) {
   const rows = db.prepare(

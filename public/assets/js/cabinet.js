@@ -568,12 +568,14 @@
       Promise.all([
         api("GET", "/api/crm/masters"),
         api("GET", apptUrl),
-        api("GET", "/api/crm/day-schedules?weekday=" + wd)
+        api("GET", "/api/crm/day-schedules?weekday=" + wd),
+        api("GET", "/api/crm/day-blocks?date=" + apptDate)
       ]).then(function(rs) {
         var allMasters = rs[0].j.masters || [];
         var appts = (rs[1].j.appointments || []).filter(function(a) { return a.status !== "cancelled"; });
         var dayScheds = rs[2].j.schedules || [];
         var dayBreaks = rs[2].j.breaks || [];
+        var dayBlocksArr = (rs[3].j && rs[3].j.blocks) || [];
 
         var masters = masterFilter
           ? allMasters.filter(function(m) { return String(m.id) === String(masterFilter); })
@@ -584,11 +586,20 @@
         dayScheds.forEach(function(s) { schedMap[s.master_id] = { ws: s.work_start, we: s.work_end, bks: [] }; });
         dayBreaks.forEach(function(b) { if (schedMap[b.master_id]) schedMap[b.master_id].bks.push({ s: b.break_start, e: b.break_end }); });
 
+        // dayBlocksMap[mid] = [{id, start_min, end_min, note}]
+        var dayBlocksMap = {};
+        dayBlocksArr.forEach(function(blk) {
+          if (!dayBlocksMap[blk.master_id]) dayBlocksMap[blk.master_id] = [];
+          dayBlocksMap[blk.master_id].push(blk);
+        });
+
         function isUnavail(mid, absMin) {
           var s = schedMap[mid];
           if (!s) return true;
           if (absMin < s.ws || absMin >= s.we) return true;
           for (var i = 0; i < s.bks.length; i++) { if (absMin >= s.bks[i].s && absMin < s.bks[i].e) return true; }
+          var dbs = dayBlocksMap[mid] || [];
+          for (var j = 0; j < dbs.length; j++) { if (absMin >= dbs[j].start_min && absMin < dbs[j].end_min) return true; }
           return false;
         }
 
@@ -683,13 +694,94 @@
             mCol.appendChild(stripe);
           });
 
-          // Клік по порожній клітинці — відкрити запис
+          // Перерви на конкретну дату (day_blocks)
+          (dayBlocksMap[master.id] || []).forEach(function(blk) {
+            var yt = ((blk.start_min - HOUR_START * 60) / STEP) * SLOT_H;
+            var yh = ((blk.end_min - blk.start_min) / STEP) * SLOT_H;
+            var blkDiv = document.createElement("div");
+            blkDiv.style.cssText = "position:absolute;left:0;right:0;top:" + yt + "px;height:" + yh + "px;" +
+              "background:#fff8ee;border-left:3px solid #e8a020;z-index:2;" +
+              "display:flex;align-items:flex-start;justify-content:space-between;padding:3px 5px 2px;overflow:hidden;";
+            var lbl = fmtMin(blk.start_min) + "–" + fmtMin(blk.end_min) + (blk.note ? " · " + blk.note : "");
+            blkDiv.innerHTML =
+              '<span style="font-size:.6rem;color:#a06010;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">⏸ ' + lbl + '</span>' +
+              '<button style="background:none;border:none;cursor:pointer;font-size:.7rem;color:#a06010;padding:0;flex-shrink:0;line-height:1;">✕</button>';
+            blkDiv.querySelector("button").addEventListener("click", function(e) {
+              e.stopPropagation();
+              api("DELETE", "/api/crm/day-blocks/" + blk.id).then(function(res) {
+                if (res.j.ok) loadCalendar(activeMasterFilter);
+              });
+            });
+            mCol.appendChild(blkDiv);
+          });
+
+          // Клік по колонці — контекстне меню
           mCol.addEventListener("click", function(e) {
+            var oldCtx = document.getElementById("cal-ctx");
+            if (oldCtx) { oldCtx.remove(); return; }
             var rect = mCol.getBoundingClientRect();
             var relMin = Math.floor((e.clientY - rect.top) / SLOT_H) * STEP;
             var clickAbsMin = HOUR_START * 60 + relMin;
-            if (isUnavail(master.id, clickAbsMin)) return;
-            apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: clickAbsMin } });
+            var unavail = isUnavail(master.id, clickAbsMin);
+
+            var ctx = document.createElement("div");
+            ctx.id = "cal-ctx";
+            ctx.style.cssText = "position:fixed;left:" + (e.clientX + 8) + "px;top:" + (e.clientY - 10) + "px;" +
+              "background:#fff;border:1px solid #d8ddd4;border-radius:10px;padding:6px;z-index:200;" +
+              "box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:164px;";
+            ctx.innerHTML =
+              '<div style="font-size:.68rem;color:#888;padding:4px 8px 6px;border-bottom:1px solid #eee;font-weight:500;">' +
+              fmtMin(clickAbsMin) + ' · ' + (master.name || '') + '</div>' +
+              (!unavail ? '<button id="ctx-appt" style="display:block;width:100%;text-align:left;background:none;border:none;padding:7px 10px;font-size:.85rem;cursor:pointer;border-radius:6px;">📅 Новий запис</button>' : '') +
+              '<button id="ctx-break" style="display:block;width:100%;text-align:left;background:none;border:none;padding:7px 10px;font-size:.85rem;cursor:pointer;border-radius:6px;">⏸ Перерва</button>';
+            document.body.appendChild(ctx);
+
+            var ctxR = ctx.getBoundingClientRect();
+            if (ctxR.right > window.innerWidth - 8) ctx.style.left = (e.clientX - ctxR.width - 8) + "px";
+            if (ctxR.bottom > window.innerHeight - 8) ctx.style.top = (e.clientY - ctxR.height + 10) + "px";
+
+            function closeCtx() { var c = document.getElementById("cal-ctx"); if (c) c.remove(); }
+
+            if (document.getElementById("ctx-appt")) {
+              document.getElementById("ctx-appt").addEventListener("click", function() {
+                closeCtx();
+                apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: clickAbsMin } });
+              });
+            }
+            document.getElementById("ctx-break").addEventListener("click", function() {
+              closeCtx();
+              var endMin = Math.min(clickAbsMin + 60, HOUR_END * 60);
+              var html = '<h3>⏸ Перерва — ' + (master.name || '') + '</h3>' +
+                '<div class="grid2"><div><label>Від</label><input type="time" id="bkFrom" value="' + fmtMin(clickAbsMin) + '"></div>' +
+                '<div><label>До</label><input type="time" id="bkTo" value="' + fmtMin(endMin) + '"></div></div>' +
+                '<label style="margin-top:10px;display:block;">Нотатка</label>' +
+                '<input type="text" id="bkNote" placeholder="Необов\'язково">' +
+                '<div class="err" id="bkErr"></div>' +
+                '<div class="modal-foot">' +
+                '<button class="btn btn-primary" id="bkSave">Зберегти</button>' +
+                '<button class="btn btn-ghost" id="bkClose">Скасувати</button></div>';
+              openModal(html);
+              $("bkSave").addEventListener("click", function() {
+                var f = $("bkFrom").value.split(":"), t = $("bkTo").value.split(":");
+                var sm = parseInt(f[0]) * 60 + parseInt(f[1]);
+                var em = parseInt(t[0]) * 60 + parseInt(t[1]);
+                if (em <= sm) { $("bkErr").textContent = "«До» має бути пізніше «Від»"; return; }
+                api("POST", "/api/crm/day-blocks", {
+                  master_id: master.id, date: apptDate, start_min: sm, end_min: em,
+                  note: $("bkNote").value.trim() || null
+                }).then(function(res) {
+                  if (!res.j.ok) { $("bkErr").textContent = "Помилка"; return; }
+                  closeModal(); loadCalendar(activeMasterFilter);
+                });
+              });
+              $("bkClose").addEventListener("click", closeModal);
+            });
+
+            setTimeout(function() {
+              document.addEventListener("click", function onDoc() {
+                closeCtx(); document.removeEventListener("click", onDoc);
+              });
+            }, 50);
           });
 
           // Блоки записів
@@ -1005,7 +1097,7 @@
           if (ME.role !== "owner" && m.id !== ME.masterId) return;
           sel.appendChild(new Option(m.name, m.id));
         });
-        if (prefill.masterId) sel.value = prefill.masterId;
+        if (prefill.masterId) sel.value = String(prefill.masterId);
         loadSlots();
       });
     }

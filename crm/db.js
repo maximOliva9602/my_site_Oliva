@@ -300,6 +300,21 @@ try { db.exec("ALTER TABLE appointments ADD COLUMN paid INTEGER NOT NULL DEFAULT
 try { db.exec("ALTER TABLE appointments ADD COLUMN pay_method TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN color_marker TEXT"); } catch(e) {}
 
+/* Разові блокування часу в календарі */
+db.exec(`
+CREATE TABLE IF NOT EXISTS day_blocks (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  master_id  INTEGER NOT NULL,
+  date       TEXT    NOT NULL,
+  start_min  INTEGER NOT NULL,
+  end_min    INTEGER NOT NULL,
+  note       TEXT,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_day_blocks_date ON day_blocks(date, master_id);
+`);
+
 /* Таблиця відгуків */
 db.exec(`
 CREATE TABLE IF NOT EXISTS reviews (
