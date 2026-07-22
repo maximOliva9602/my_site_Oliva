@@ -1194,12 +1194,54 @@
 
     // ── Пошук послуги ────────────────────────────────────────────────
     var allServices = [];
+    var SUB_PRESETS = [5, 10, 15];
+
+    function openSubFromSearch(sessions) {
+      // Потрібен клієнт
+      if (!selectedClient || !selectedClient.id) {
+        $("mErr").textContent = "Спочатку оберіть клієнта вище";
+        return;
+      }
+      var svcOpts = allServices.map(function(s) {
+        return '<option value="' + s.id + '">' + s.name + ' (' + s.duration_min + ' хв)</option>';
+      }).join("");
+      var html =
+        '<h3>🎟 Абонемент × ' + sessions + ' сеансів</h3>' +
+        '<div class="muted" style="margin-bottom:12px;">' + selectedClient.name + '</div>' +
+        '<label>Послуга</label><select id="sbSvc2">' + svcOpts + '</select>' +
+        '<label style="margin-top:10px;display:block;">Сума оплати (грн)</label>' +
+        '<input type="number" id="sbPrice2" value="0" min="0">' +
+        '<label style="margin-top:10px;display:block;">Нотатка</label>' +
+        '<input type="text" id="sbNote2" placeholder="Необов\'язково" maxlength="300">' +
+        '<div class="err" id="sbErr2"></div>' +
+        '<div class="modal-foot">' +
+        '<button class="btn btn-primary" id="sbSave2">Зберегти абонемент</button>' +
+        '<button class="btn btn-ghost" id="sbClose2">Скасувати</button></div>';
+      openModal(html);
+      $("sbSave2").addEventListener("click", function() {
+        var priceKop = Math.round(parseFloat($("sbPrice2").value || 0) * 100);
+        api("POST", "/api/crm/subscriptions", {
+          client_id: selectedClient.id,
+          service_id: $("sbSvc2").value,
+          total_sessions: sessions,
+          price: priceKop,
+          note: $("sbNote2").value.trim() || null
+        }).then(function(r) {
+          if (!r.j.ok) { $("sbErr2").textContent = "Помилка"; return; }
+          closeModal();
+        });
+      });
+      $("sbClose2").addEventListener("click", closeModal);
+    }
+
     function renderSvcDrop(q) {
       var drop = $("mSvcDrop");
       var filtered = q ? allServices.filter(function(s) {
         return s.name.toLowerCase().indexOf(q.toLowerCase()) > -1;
       }) : allServices;
       drop.innerHTML = "";
+
+      // Звичайні послуги
       filtered.forEach(function(s) {
         var row = document.createElement("div");
         row.style.cssText = "padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line);font-size:.88rem;color:var(--cream);";
@@ -1218,7 +1260,31 @@
         });
         drop.appendChild(row);
       });
-      drop.style.display = filtered.length ? "block" : "none";
+
+      // Абонементи — показувати якщо запит містить "абон" або порожній
+      var showSubs = !q || "абонемент".indexOf(q.toLowerCase()) > -1 || q.toLowerCase().indexOf("абон") > -1;
+      if (showSubs) {
+        var subHeader = document.createElement("div");
+        subHeader.style.cssText = "padding:6px 14px 4px;font-size:.7rem;color:var(--text-dim);font-weight:600;background:var(--panel-2);text-transform:uppercase;letter-spacing:.04em;";
+        subHeader.textContent = "🎟 Абонементи";
+        drop.appendChild(subHeader);
+        SUB_PRESETS.forEach(function(n) {
+          var row = document.createElement("div");
+          row.style.cssText = "padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line);font-size:.88rem;display:flex;align-items:center;gap:8px;";
+          row.innerHTML =
+            '<span style="width:28px;height:28px;border-radius:50%;background:#6e9145;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;">' + n + '</span>' +
+            '<span style="font-weight:600;color:var(--cream);">Абонемент × ' + n + ' сеансів</span>';
+          row.addEventListener("mousedown", function(e) {
+            e.preventDefault();
+            drop.style.display = "none";
+            $("mSvcQ").value = "";
+            openSubFromSearch(n);
+          });
+          drop.appendChild(row);
+        });
+      }
+
+      drop.style.display = (filtered.length || showSubs) ? "block" : "none";
     }
 
     $("mSvcQ").addEventListener("input", function() { renderSvcDrop(this.value.trim()); });
