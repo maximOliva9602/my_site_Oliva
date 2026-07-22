@@ -16,10 +16,10 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --black:#080A07; --panel:#12160e; --panel-2:#171c11;
-    --olive:#2E3D22; --olive-light:#7A9156; --cream:#F2EDE4;
-    --text:#D4CFC6; --text-dim:#8A8880; --line:rgba(122,145,86,0.18); --err:#e0816b;
-    --ok:#7A9156; --warn:#caa45a;
+    --black:#1e2819; --panel:#27341f; --panel-2:#2f3e26;
+    --olive:#3d5430; --olive-light:#8aA462; --cream:#F5F0E8;
+    --text:#ddd8d0; --text-dim:#9c9890; --line:rgba(138,164,98,0.24); --err:#e0816b;
+    --ok:#8aA462; --warn:#caa45a;
   }
   html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body { font-family:'Inter',sans-serif; background:var(--black); color:var(--text); min-height:100vh;
@@ -240,7 +240,7 @@
 <!-- MODAL -->
 <div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
-<script src="assets/js/cabinet.js?v=10"></script>
+<script src="assets/js/cabinet.js?v=11"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(){});
