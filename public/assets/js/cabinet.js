@@ -471,10 +471,12 @@
   var MONTH_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
   var DOW_UA = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
 
-  function renderAppts() {
+  function renderAppts(opts) {
+    var tabTitle = (opts && opts.title) || "Записи";
+    if (!opts || !opts.keepMode) apptViewMode = "month";
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar");
-    bar.appendChild(el("h2", null, "Записи"));
+    bar.appendChild(el("h2", null, tabTitle));
     var newBtn = el("button", "btn btn-primary", "+ Новий запис");
     newBtn.addEventListener("click", function () { apptModal(); });
     bar.appendChild(newBtn);
@@ -820,17 +822,20 @@
 
         var corner = document.createElement("div");
         corner.style.cssText = "flex:0 0 " + TIME_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;background:#f8f8f6;position:sticky;left:0;z-index:25;display:flex;align-items:center;justify-content:center;";
-        var backToMonth = document.createElement("button");
-        backToMonth.title = "Місяць";
-        backToMonth.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
-        backToMonth.style.cssText = "background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:#5a7a48;display:flex;align-items:center;justify-content:center;";
-        backToMonth.addEventListener("click", function() {
-          var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
-          apptViewMode = "month";
-          apptMonth = apptDate.slice(0,7);
-          reloadView();
-        });
-        corner.appendChild(backToMonth);
+        // Кнопка "← місяць" тільки з вкладки "Записи" (не Розклад)
+        if (tabTitle === "Записи") {
+          var backToMonth = document.createElement("button");
+          backToMonth.title = "Місяць";
+          backToMonth.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+          backToMonth.style.cssText = "background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:#5a7a48;display:flex;align-items:center;justify-content:center;";
+          backToMonth.addEventListener("click", function() {
+            var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
+            apptViewMode = "month";
+            apptMonth = apptDate.slice(0,7);
+            reloadView();
+          });
+          corner.appendChild(backToMonth);
+        }
         header.appendChild(corner);
 
         masters.forEach(function(m) {
@@ -1661,12 +1666,7 @@
      ============================================================ */
   function renderScheduleTab() {
     apptViewMode = "calendar";
-    renderAppts();
-    // Перемінюємо заголовок після рендеру
-    setTimeout(function() {
-      var h2 = document.querySelector("#main h2");
-      if (h2 && h2.textContent === "Записи") h2.textContent = "Розклад";
-    }, 0);
+    renderAppts({ keepMode: true, title: "Розклад" });
   }
 
   /* ============================================================
