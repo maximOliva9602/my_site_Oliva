@@ -58,6 +58,7 @@ function createAppointment(d, session) {
   const name = clean(d.name, 100);
   const phone = tz.normPhone(clean(d.phone, 30));
   const comment = clean(d.comment, 500);
+  const colorMarker = clean(d.color_marker, 20) || null;
 
   // майстер може створювати лише собі
   if (session.role !== "owner") masterId = session.masterId;
@@ -86,9 +87,9 @@ function createAppointment(d, session) {
       }
       publicId = crypto.randomBytes(8).toString("hex");
       const info = db.prepare(
-        `INSERT INTO appointments (public_id,client_id,master_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?)`
-      ).run(publicId, client.id, masterId, serviceId, date, startMin, startMin + svc.duration_min, svc.duration_min, svc.price, comment, now, now);
+        `INSERT INTO appointments (public_id,client_id,master_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,created_at,updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?)`
+      ).run(publicId, client.id, masterId, serviceId, date, startMin, startMin + svc.duration_min, svc.duration_min, svc.price, comment, colorMarker, now, now);
       appointmentId = info.lastInsertRowid;
     })();
   } catch (e) {
@@ -210,6 +211,17 @@ router.patch("/appointments/:id/payment", any, function (req, res) {
   res.json({ ok: true });
 });
 
+router.patch("/appointments/:id/color-marker", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = db.prepare("SELECT id, master_id FROM appointments WHERE id=?").get(id);
+  if (!a) return res.status(404).json({ ok: false });
+  if (req.session.role !== "owner" && a.master_id !== req.session.masterId)
+    return res.status(403).json({ ok: false });
+  const color = clean((req.body || {}).color_marker, 20) || null;
+  db.prepare("UPDATE appointments SET color_marker=?, updated_at=? WHERE id=?").run(color, Date.now(), id);
+  res.json({ ok: true });
+});
+
 /* ============================================================
    ВЛАСНИК: записи (усі), майстри, послуги, клієнти, користувачі
    ============================================================ */
@@ -235,7 +247,7 @@ router.post("/appointments", owner, function (req, res) {
 /* ---- Розклад (для майстрів — загальний вигляд) ---- */
 router.get("/schedule", any, function (req, res) {
   const date = clean(req.query.date, 10) || new Date().toISOString().slice(0, 10);
-  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.price, a.paid, " +
+  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.price, a.paid, a.color_marker, a.comment, " +
               "c.name client_name, s.name service_name, m.name master_name " +
               "FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id " +
               "WHERE a.date=? AND a.status NOT IN ('cancelled','no_show') ORDER BY a.start_min";

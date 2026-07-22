@@ -8,6 +8,39 @@
   var ME = { role: null, masterId: null };
   var DOW = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
   var STATUS_LABEL = { pending: "Очікує", confirmed: "Підтверджено", completed: "Завершено", cancelled: "Скасовано", no_show: "Не прийшов" };
+  var MARKER_COLORS = ["#4f86f7","#8b5cf6","#ec4899","#10b981","#f59e0b","#f97316","#ef4444","#06b6d4"];
+  var DEFAULT_MARKER = "#4f86f7"; // якщо маркер не встановлений
+
+  /* Будує рядок кольорових маркерів. selected — поточний hex або ''.
+     onChange(hex|null) викликається при виборі. */
+  function markerPicker(selected, onChange) {
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0 10px;";
+    // "без маркера"
+    var noBtn = document.createElement("div");
+    noBtn.title = "Без маркера";
+    noBtn.style.cssText = "width:22px;height:22px;border-radius:50%;border:2px solid #ccc;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#aaa;flex-shrink:0;" + (!selected ? "border-color:#333;" : "");
+    noBtn.textContent = "✕";
+    noBtn.addEventListener("click", function() {
+      wrap.querySelectorAll("[data-mc]").forEach(function(d) { d.style.boxShadow = ""; d.style.outline = ""; });
+      noBtn.style.borderColor = "#333";
+      onChange(null);
+    });
+    wrap.appendChild(noBtn);
+    MARKER_COLORS.forEach(function(c) {
+      var dot = document.createElement("div");
+      dot.setAttribute("data-mc", c);
+      dot.style.cssText = "width:22px;height:22px;border-radius:50%;background:" + c + ";cursor:pointer;flex-shrink:0;transition:transform .1s;" + (selected === c ? "box-shadow:0 0 0 3px #fff,0 0 0 5px " + c + ";" : "");
+      dot.addEventListener("click", function() {
+        wrap.querySelectorAll("[data-mc]").forEach(function(d) { d.style.boxShadow = ""; });
+        noBtn.style.borderColor = "#ccc";
+        dot.style.boxShadow = "0 0 0 3px #fff,0 0 0 5px " + c;
+        onChange(c);
+      });
+      wrap.appendChild(dot);
+    });
+    return wrap;
+  }
 
   /* ---------- helpers ---------- */
   function $(id) { return document.getElementById(id); }
@@ -523,7 +556,7 @@
 
       var overlay = document.createElement("div");
       overlay.id = "cal-overlay";
-      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + navH + "px;z-index:10;background:var(--black);";
+      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + navH + "px;z-index:10;background:#f0f2ee;";
       document.body.appendChild(overlay);
 
       var wd = new Date(apptDate + "T00:00:00").getDay();
@@ -569,24 +602,24 @@
 
         // ── Липкий заголовок ──
         var header = document.createElement("div");
-        header.style.cssText = "display:flex;position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:2px solid var(--line);flex-shrink:0;";
+        header.style.cssText = "display:flex;position:sticky;top:0;z-index:20;background:#ffffff;border-bottom:2px solid #d8ddd4;flex-shrink:0;";
         inner.appendChild(header);
 
         var corner = document.createElement("div");
-        corner.style.cssText = "flex:0 0 " + TIME_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid var(--line);";
+        corner.style.cssText = "flex:0 0 " + TIME_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;background:#f8f8f6;";
         header.appendChild(corner);
 
         masters.forEach(function(m) {
           var hCell = document.createElement("div");
-          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;overflow:hidden;";
+          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;overflow:hidden;background:#fff;";
           var initials = (m.name||'?').charAt(0).toUpperCase() + (m.last_name ? m.last_name.charAt(0).toUpperCase() : '');
           var avHtml = m.photo
-            ? '<img src="' + m.photo + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--olive-light);flex-shrink:0;" alt="">'
-            : '<div style="width:34px;height:34px;border-radius:50%;background:var(--olive);display:flex;align-items:center;justify-content:center;color:var(--olive-light);font-weight:700;font-size:.78rem;flex-shrink:0;">' + initials + '</div>';
+            ? '<img src="' + m.photo + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
+            : '<div style="width:34px;height:34px;border-radius:50%;background:#3d5430;display:flex;align-items:center;justify-content:center;color:#8aA462;font-weight:700;font-size:.78rem;flex-shrink:0;">' + initials + '</div>';
           hCell.innerHTML = avHtml +
             '<div style="text-align:center;line-height:1.2;">' +
-            '<div style="font-size:.73rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
-            '<div style="font-size:.6rem;color:var(--olive-light);margin-top:1px;">' + (m.level||'') + '</div>' +
+            '<div style="font-size:.73rem;font-weight:600;color:#1a2016;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
+            '<div style="font-size:.6rem;color:#5a7a48;margin-top:1px;">' + (m.level||'') + '</div>' +
             '</div>';
           header.appendChild(hCell);
         });
@@ -598,15 +631,15 @@
 
         // Колонка часу
         var tCol = document.createElement("div");
-        tCol.style.cssText = "flex:0 0 " + TIME_COL_W + "px;border-right:1px solid var(--line);position:relative;height:" + TOTAL_H + "px;background:var(--panel);";
+        tCol.style.cssText = "flex:0 0 " + TIME_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#f8f8f6;";
         for (var hh = HOUR_START; hh <= HOUR_END; hh++) {
           var ty = ((hh - HOUR_START) * 60 / STEP) * SLOT_H;
           var sep = document.createElement("div");
-          sep.style.cssText = "position:absolute;top:" + ty + "px;left:0;right:0;border-top:1px solid var(--line);pointer-events:none;";
+          sep.style.cssText = "position:absolute;top:" + ty + "px;left:0;right:0;border-top:1px solid #d8ddd4;pointer-events:none;";
           tCol.appendChild(sep);
           if (hh < HOUR_END) {
             var lbl = document.createElement("div");
-            lbl.style.cssText = "position:absolute;top:" + (ty + 2) + "px;left:0;right:0;text-align:center;font-size:.6rem;color:var(--text-dim);pointer-events:none;";
+            lbl.style.cssText = "position:absolute;top:" + (ty + 2) + "px;left:0;right:0;text-align:center;font-size:.6rem;color:#777;pointer-events:none;";
             lbl.textContent = String(hh).padStart(2,"0") + ":00";
             tCol.appendChild(lbl);
           }
@@ -616,18 +649,18 @@
         // Колонки майстрів
         masters.forEach(function(master) {
           var mCol = document.createElement("div");
-          mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid var(--line);position:relative;height:" + TOTAL_H + "px;";
+          mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;";
 
           // Лінії годин і напівгодин
           for (var hh2 = HOUR_START + 1; hh2 <= HOUR_END; hh2++) {
             var hl = document.createElement("div");
-            hl.style.cssText = "position:absolute;top:" + (((hh2 - HOUR_START) * 60 / STEP) * SLOT_H) + "px;left:0;right:0;border-top:1px solid var(--line);pointer-events:none;z-index:1;";
+            hl.style.cssText = "position:absolute;top:" + (((hh2 - HOUR_START) * 60 / STEP) * SLOT_H) + "px;left:0;right:0;border-top:1px solid #e0e4dc;pointer-events:none;z-index:1;";
             mCol.appendChild(hl);
           }
           for (var hh3 = HOUR_START; hh3 < HOUR_END; hh3++) {
             var hly = ((hh3 - HOUR_START) * 60 / STEP + 3) * SLOT_H;
             var hld = document.createElement("div");
-            hld.style.cssText = "position:absolute;top:" + hly + "px;left:0;right:0;border-top:1px dashed rgba(122,145,86,.1);pointer-events:none;z-index:1;";
+            hld.style.cssText = "position:absolute;top:" + hly + "px;left:0;right:0;border-top:1px dashed #eaeae8;pointer-events:none;z-index:1;";
             mCol.appendChild(hld);
           }
 
@@ -646,7 +679,7 @@
             var yh = ((r.e - r.s) / STEP) * SLOT_H;
             var stripe = document.createElement("div");
             stripe.style.cssText = "position:absolute;left:0;right:0;top:" + yt + "px;height:" + yh + "px;" +
-              "background-color:rgba(0,0,0,.18);background-image:repeating-linear-gradient(-45deg,rgba(255,255,255,.022) 0,rgba(255,255,255,.022) 3px,transparent 3px,transparent 9px);pointer-events:none;z-index:1;";
+              "background-color:#ebebea;background-image:repeating-linear-gradient(-45deg,rgba(0,0,0,.04) 0,rgba(0,0,0,.04) 3px,transparent 3px,transparent 9px);pointer-events:none;z-index:1;";
             mCol.appendChild(stripe);
           });
 
@@ -666,33 +699,27 @@
             var topPx = (startRel / STEP) * SLOT_H + 1;
             var heightPx = Math.max((a.duration_min / STEP) * SLOT_H - 2, SLOT_H * 2 - 2);
 
-            var borderColor = a.status === "completed" ? "var(--olive-light)" :
-                              a.status === "no_show" ? "var(--err)" :
-                              a.status === "confirmed" ? "var(--olive-light)" : "var(--warn)";
-            var bgColor = a.status === "completed" ? "rgba(122,145,86,.22)" :
-                          a.status === "no_show" ? "rgba(224,129,107,.18)" :
-                          "rgba(82,112,180,.22)";
-            var tColor = a.status === "completed" ? "var(--olive-light)" :
-                         a.status === "no_show" ? "var(--err)" : "#8ab4f8";
+            var markerHex = a.color_marker || DEFAULT_MARKER;
+            var bgColor = markerHex + "22";
             var timeStr = fmtMin(a.start_min) + " – " + fmtMin(a.end_min || (a.start_min + a.duration_min));
             var svcName = (a.service_name||'').replace(/\s*\([^)]*\)\s*/g,'').trim();
             var hasNote = !!(a.comment && a.comment.trim());
 
             var block = document.createElement("div");
             block.style.cssText = "position:absolute;left:2px;right:2px;top:" + topPx + "px;height:" + heightPx + "px;" +
-              "background:" + bgColor + ";border-left:3px solid " + borderColor + ";border-radius:5px;" +
+              "background:" + bgColor + ";border-left:3px solid " + markerHex + ";border-radius:5px;" +
               "padding:3px 5px 2px 4px;overflow:hidden;cursor:pointer;z-index:3;";
 
             var html = "";
             if (heightPx >= 22) {
               html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:2px;margin-bottom:1px;">' +
-                '<span style="font-size:.58rem;font-weight:600;color:' + tColor + ';white-space:nowrap;">' + timeStr + '</span>' +
-                (hasNote ? '<span style="font-size:.58rem;opacity:.55;flex-shrink:0;line-height:1;">💬</span>' : '') +
+                '<span style="font-size:.58rem;font-weight:600;color:' + markerHex + ';white-space:nowrap;">' + timeStr + '</span>' +
+                (hasNote ? '<span style="font-size:.58rem;opacity:.6;flex-shrink:0;line-height:1;">💬</span>' : '') +
                 '</div>';
             }
-            html += '<div style="font-size:.68rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
-            if (heightPx >= 44) html += '<div style="font-size:.58rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
-            if (heightPx >= 60 && a.price) html += '<div style="font-size:.58rem;color:var(--olive-light);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
+            html += '<div style="font-size:.68rem;font-weight:600;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
+            if (heightPx >= 44) html += '<div style="font-size:.58rem;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
+            if (heightPx >= 60 && a.price) html += '<div style="font-size:.58rem;color:#666;margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
             block.innerHTML = html;
 
             block.addEventListener("click", function(e) {
@@ -702,17 +729,18 @@
               var popup = document.createElement("div");
               popup.id = "cal-popup";
               var ts2 = fmtMin(a.start_min) + "–" + fmtMin(a.end_min || (a.start_min + a.duration_min));
+              var popMarker = a.color_marker || DEFAULT_MARKER;
               popup.innerHTML =
-                '<div style="font-size:.95rem;font-weight:600;color:var(--cream);margin-bottom:6px;">' + a.client_name + '</div>' +
-                '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:3px;">🕐 ' + ts2 + '</div>' +
-                '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:3px;">💆 ' + svcName + '</div>' +
-                '<div style="font-size:.8rem;color:var(--text-dim);margin-bottom:8px;">👤 ' + (a.master_name||'') + '</div>' +
-                (a.price ? '<div style="font-size:.82rem;color:var(--olive-light);margin-bottom:8px;">' + Math.round(a.price/100) + ' ₴' + (a.paid ? ' ✓' : '') + '</div>' : '') +
+                '<div style="font-size:.95rem;font-weight:600;color:#111;margin-bottom:6px;">' + a.client_name + '</div>' +
+                '<div style="font-size:.8rem;color:#555;margin-bottom:3px;">🕐 ' + ts2 + '</div>' +
+                '<div style="font-size:.8rem;color:#555;margin-bottom:3px;">💆 ' + svcName + '</div>' +
+                '<div style="font-size:.8rem;color:#555;margin-bottom:8px;">👤 ' + (a.master_name||'') + '</div>' +
+                (a.price ? '<div style="font-size:.82rem;color:#3d6b28;margin-bottom:8px;">' + Math.round(a.price/100) + ' ₴' + (a.paid ? ' ✓' : '') + '</div>' : '') +
                 '<div style="margin-bottom:' + (hasNote ? '8' : '10') + 'px;"><span class="badge b-' + a.status + '" style="font-size:.7rem;">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
-                (hasNote ? '<div style="font-size:.78rem;color:var(--text-dim);margin-bottom:10px;">💬 ' + a.comment + '</div>' : '') +
+                (hasNote ? '<div style="font-size:.78rem;color:#555;margin-bottom:10px;">💬 ' + a.comment + '</div>' : '') +
                 '<div style="display:flex;gap:6px;">' +
-                '<button id="cal-popup-detail" style="flex:1;background:var(--olive-light);color:var(--black);border:none;border-radius:7px;padding:6px 10px;font-size:.78rem;font-weight:600;cursor:pointer;">Детальніше</button>' +
-                '<button id="cal-popup-close" style="background:none;border:1px solid var(--line);color:var(--text-dim);border-radius:7px;padding:6px 10px;font-size:.78rem;cursor:pointer;">✕</button>' +
+                '<button id="cal-popup-detail" style="flex:1;background:' + popMarker + ';color:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:.78rem;font-weight:600;cursor:pointer;">Детальніше</button>' +
+                '<button id="cal-popup-close" style="background:none;border:1px solid #ccc;color:#555;border-radius:7px;padding:6px 10px;font-size:.78rem;cursor:pointer;">✕</button>' +
                 '</div>';
               var rect2 = block.getBoundingClientRect();
               var popW = 230;
@@ -720,7 +748,7 @@
               if (left + popW > window.innerWidth - 10) left = rect2.left - popW - 8;
               if (left < 8) left = 8;
               var top = Math.min(Math.max(10, rect2.top), window.innerHeight - 320);
-              popup.style.cssText = "position:fixed;left:" + left + "px;top:" + top + "px;width:" + popW + "px;background:var(--panel);border:1px solid var(--olive-light);border-radius:12px;padding:14px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.5);";
+              popup.style.cssText = "position:fixed;left:" + left + "px;top:" + top + "px;width:" + popW + "px;background:#fff;border:1px solid " + popMarker + ";border-radius:12px;padding:14px;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.18);";
               document.body.appendChild(popup);
               document.getElementById("cal-popup-close").addEventListener("click", function(ev) { ev.stopPropagation(); popup.remove(); });
               document.getElementById("cal-popup-detail").addEventListener("click", function(ev) { ev.stopPropagation(); popup.remove(); window.apptDetailModal(a); });
@@ -768,7 +796,8 @@
       '<div class="sub" style="margin-bottom:12px;">' + a.service_name + ' · ' + fmtMin(a.start_min) + '–' + fmtMin(a.end_min || (a.start_min + a.duration_min)) + ' · ' + a.master_name + '</div>' +
       '<div class="sub">' + a.client_phone + '</div>' +
       (a.comment ? '<div class="sub" style="margin-top:8px;">💬 ' + a.comment + '</div>' : '') +
-      '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>';
+      '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
+      '<label style="margin-top:14px;display:block;">Колір маркеру</label><div id="dMarkerWrap"></div>';
 
     // Оплата
     html += '<div style="margin-top:14px;"><label style="font-size:.78rem;color:var(--text-dim);">Оплата</label>' +
@@ -790,6 +819,11 @@
     html += '<button class="btn btn-ghost" id="dClose">Закрити</button></div>';
 
     openModal(html);
+
+    $("dMarkerWrap").appendChild(markerPicker(a.color_marker || null, function(c) {
+      api("PATCH", "/api/crm/appointments/" + a.id + "/color-marker", { color_marker: c });
+      a.color_marker = c; // оновити локально щоб перезавантаження не скинуло
+    }));
 
     function setStatus(status) {
       api("PATCH", "/api/crm/appointments/" + a.id + "/status", { status: status }).then(function(res) {
@@ -889,12 +923,14 @@
       '<div><label>Прізвище</label><input type="text" id="mSurname" placeholder="Коваленко" maxlength="60"/></div></div>' +
       '<div><label>Телефон</label><input type="tel" id="mPhone" maxlength="30"/></div>' +
       '<label>Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
+      '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
       '<div class="err" id="mErr"></div>' +
       '<div class="modal-foot"><button class="btn btn-ghost" id="mCancel">Скасувати</button>' +
       '<button class="btn btn-primary" id="mSave">Створити</button></div>'
     );
-    var chosen = { start_min: null };
+    var chosen = { start_min: null, color_marker: null };
     $("mCancel").addEventListener("click", closeModal);
+    $("mMarkerWrap").appendChild(markerPicker(null, function(c) { chosen.color_marker = c; }));
     $("mDate").value = prefill.date || apptDate; $("mDate").min = todayStr();
     if (prefill.clientName) {
       var parts = prefill.clientName.split(" ");
@@ -967,7 +1003,7 @@
       api("POST", url, {
         service: $("mService").value, master: $("mMaster").value, date: $("mDate").value,
         start_min: chosen.start_min, name: fullName, phone: $("mPhone").value.trim(),
-        comment: $("mComment").value.trim()
+        comment: $("mComment").value.trim(), color_marker: chosen.color_marker || null
       }).then(function (res) {
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
         if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); return; }
