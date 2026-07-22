@@ -455,11 +455,22 @@ router.patch("/clients/:id", any, function (req, res) {
   const d = req.body || {};
   const c = db.prepare("SELECT * FROM clients WHERE id=?").get(id);
   if (!c) return res.status(404).json({ ok: false });
-  db.prepare("UPDATE clients SET name=?, note=? WHERE id=?").run(
-    d.name !== undefined ? clean(d.name, 100) : c.name,
-    d.note !== undefined ? clean(d.note, 1000) : c.note,
+  db.prepare("UPDATE clients SET name=?, phone=?, note=?, blacklisted=? WHERE id=?").run(
+    d.name        !== undefined ? clean(d.name,  100)  : c.name,
+    d.phone       !== undefined ? clean(d.phone,  30)  : c.phone,
+    d.note        !== undefined ? clean(d.note, 1000)  : c.note,
+    d.blacklisted !== undefined ? (d.blacklisted ? 1 : 0) : (c.blacklisted || 0),
     id
   );
+  res.json({ ok: true });
+});
+
+router.delete("/clients/:id", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const c = db.prepare("SELECT id FROM clients WHERE id=?").get(id);
+  if (!c) return res.status(404).json({ ok: false });
+  db.prepare("DELETE FROM appointments WHERE client_id=?").run(id);
+  db.prepare("DELETE FROM clients WHERE id=?").run(id);
   res.json({ ok: true });
 });
 

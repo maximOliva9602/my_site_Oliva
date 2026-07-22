@@ -1216,15 +1216,20 @@
         if (!list.length) { listEl.appendChild(el("div", "empty", "Клієнтів не знайдено")); return; }
         list.forEach(function (c) {
           var item = el("div", "item");
+          item.style.cursor = "pointer";
+          item.addEventListener("click", function () { renderClientCard(c.id); });
           var row = el("div", "row1");
+          var initials = (c.name || "").split(" ").map(function(w){return w[0]||"";}).join("").slice(0,2).toUpperCase();
+          var ava = document.createElement("div");
+          ava.style.cssText = "width:38px;height:38px;border-radius:50%;background:var(--olive-light);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;margin-right:10px;";
+          ava.textContent = initials || "?";
+          row.appendChild(ava);
           var info = el("div");
-          info.appendChild(el("div", "t", c.name));
-          info.appendChild(el("div", "sub", c.phone + " · візитів: " + c.visit_count +
-            (c.last_visit_at ? " · останній: " + new Date(c.last_visit_at).toLocaleDateString("uk-UA") : "")));
+          info.appendChild(el("div", "t", c.name + (c.blacklisted ? " 🚫" : "")));
+          info.appendChild(el("div", "sub", c.phone + " · візитів: " + (c.visit_count || 0) +
+            (c.last_visit_at ? " · " + new Date(c.last_visit_at).toLocaleDateString("uk-UA") : "")));
           row.appendChild(info); row.appendChild(el("span", "sp"));
-          var open = el("button", "btn btn-sm btn-ghost", "Картка");
-          open.addEventListener("click", function () { clientModal(c.id); });
-          row.appendChild(open);
+          row.appendChild(el("span", null, "›"));
           item.appendChild(row);
           if (c.note) item.appendChild(el("div", "sub", "📝 " + c.note));
           listEl.appendChild(item);
@@ -1234,49 +1239,218 @@
     load("");
   }
 
-  function clientModal(id) {
-    openModal('<h3>Картка клієнта</h3><div id="cBody" class="muted">Завантаження…</div>');
+  function renderClientCard(id) {
+    var main = $("main"); main.innerHTML = '<div class="empty">Завантаження…</div>';
     api("GET", "/api/crm/clients/" + id).then(function (res) {
-      if (!res.j.ok) { $("cBody").textContent = "Не знайдено"; return; }
+      if (!res.j.ok) { main.innerHTML = '<div class="empty">Не знайдено</div>'; return; }
       var c = res.j.client, h = res.j.history || [];
-      var box = $("cBody"); box.className = ""; box.innerHTML = "";
-      box.appendChild(el("div", "t", c.name));
-      box.appendChild(el("div", "sub", c.phone + " · візитів: " + c.visit_count));
-      box.appendChild(el("label", null, "Коментар по клієнту"));
-      var note = el("textarea"); note.value = c.note || ""; note.maxLength = 1000; box.appendChild(note);
-      var saveNote = el("button", "btn btn-sm btn-primary", "Зберегти коментар");
-      saveNote.style.marginTop = "6px";
-      saveNote.addEventListener("click", function () {
-        api("PATCH", "/api/crm/clients/" + id, { note: note.value.trim() }).then(function () { saveNote.textContent = "Збережено ✓"; });
-      });
-      box.appendChild(saveNote);
-      box.appendChild(el("label", null, "Історія записів (" + h.length + ")"));
-      var hist = el("div", "list");
-      if (!h.length) hist.appendChild(el("div", "muted", "Поки порожньо"));
-      h.forEach(function (a) {
-        var it = el("div", "item");
-        var r = el("div", "row1");
-        r.appendChild(el("span", "t", ddmm(a.date) + " " + a.time));
-        var inf = el("div"); inf.style.marginLeft = "6px";
-        inf.appendChild(el("div", "sub", a.service_name + " · " + a.master_name));
-        r.appendChild(inf); r.appendChild(el("span", "sp"));
-        r.appendChild(el("span", "badge b-" + a.status, STATUS_LABEL[a.status] || a.status));
-        it.appendChild(r); hist.appendChild(it);
-      });
-      box.appendChild(hist);
-      var foot = el("div", "modal-foot");
-      var close = el("button", "btn btn-ghost", "Закрити"); close.addEventListener("click", closeModal);
-      // Кнопка "Записати повторно" — остання завершена послуга
-      var lastCompleted = h.find(function(a) { return a.status === "completed"; });
-      if (lastCompleted) {
-        var rebook = el("button", "btn btn-primary", "🔄 Записати повторно");
-        rebook.addEventListener("click", function() {
-          closeModal();
-          apptModal({ prefill: { clientName: c.name, clientPhone: c.phone, serviceId: lastCompleted.service_id, masterId: lastCompleted.master_id } });
+      main.innerHTML = "";
+
+      // ── Шапка ──────────────────────────────────────────────────────
+      var topBar = document.createElement("div");
+      topBar.style.cssText = "display:flex;align-items:center;gap:8px;padding:12px 0 8px;";
+      var backBtn = el("button", "btn btn-ghost btn-sm", "← Клієнти");
+      backBtn.style.cssText = "padding:6px 10px;font-size:.82rem;";
+      backBtn.addEventListener("click", renderClients);
+      topBar.appendChild(backBtn);
+      topBar.appendChild(el("span", "sp"));
+
+      // Three-dot menu
+      var menuBtn = document.createElement("button");
+      menuBtn.className = "btn btn-ghost btn-sm";
+      menuBtn.style.cssText = "font-size:1.2rem;padding:4px 8px;";
+      menuBtn.textContent = "⋮";
+      menuBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        var old = document.getElementById("client-ctx"); if (old) { old.remove(); return; }
+        var ctx = document.createElement("div");
+        ctx.id = "client-ctx";
+        ctx.style.cssText = "position:fixed;right:16px;top:56px;background:#fff;border:1px solid var(--line);border-radius:12px;" +
+          "box-shadow:0 4px 20px rgba(0,0,0,.12);min-width:200px;z-index:200;overflow:hidden;";
+        ctx.innerHTML =
+          '<div style="padding:10px 16px 8px;font-size:.72rem;color:var(--text-dim);font-weight:500;border-bottom:1px solid var(--line);">Додаткові дії</div>' +
+          '<button id="cc-edit"   style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;cursor:pointer;border-bottom:1px solid var(--line);">Редагувати</button>' +
+          '<button id="cc-black"  style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;cursor:pointer;border-bottom:1px solid var(--line);">' + (c.blacklisted ? 'Прибрати з чорного списку' : 'Додати до чорного списку') + '</button>' +
+          (ME.role === "owner" ? '<button id="cc-del" style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;color:#c04040;cursor:pointer;">Видалити</button>' : '');
+        document.body.appendChild(ctx);
+
+        function closeCtx() { var x=document.getElementById("client-ctx"); if(x) x.remove(); }
+
+        document.getElementById("cc-edit").addEventListener("click", function() {
+          closeCtx();
+          var html = '<h3>Редагувати клієнта</h3>' +
+            '<label>Ім\'я</label><input type="text" id="ceN" value="' + (c.name||"").replace(/"/g,"&quot;") + '" maxlength="100">' +
+            '<label style="margin-top:10px;display:block;">Телефон</label><input type="tel" id="cePh" value="' + (c.phone||"") + '" maxlength="30">' +
+            '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="ceNote" maxlength="1000">' + (c.note||"") + '</textarea>' +
+            '<div class="err" id="ceErr"></div>' +
+            '<div class="modal-foot"><button class="btn btn-primary" id="ceSave">Зберегти</button><button class="btn btn-ghost" id="ceClose">Скасувати</button></div>';
+          openModal(html);
+          $("ceSave").addEventListener("click", function() {
+            var name = $("ceN").value.trim(), phone = $("cePh").value.trim();
+            if (!name) { $("ceErr").textContent = "Вкажи ім\'я"; return; }
+            api("PATCH", "/api/crm/clients/" + id, { name: name, phone: phone, note: $("ceNote").value.trim() }).then(function(r) {
+              if (!r.j.ok) { $("ceErr").textContent = "Помилка"; return; }
+              closeModal(); renderClientCard(id);
+            });
+          });
+          $("ceClose").addEventListener("click", closeModal);
         });
-        foot.appendChild(rebook);
+
+        document.getElementById("cc-black").addEventListener("click", function() {
+          closeCtx();
+          api("PATCH", "/api/crm/clients/" + id, { blacklisted: c.blacklisted ? 0 : 1 }).then(function() { renderClientCard(id); });
+        });
+
+        if (ME.role === "owner") {
+          document.getElementById("cc-del").addEventListener("click", function() {
+            closeCtx();
+            var html = '<h3>Видалити клієнта?</h3>' +
+              '<p class="muted">Буде видалено клієнта <b>' + c.name + '</b> та всі його записи. Цю дію неможливо скасувати.</p>' +
+              '<div class="modal-foot"><button class="btn btn-primary" id="cdDel" style="background:#c04040;border-color:#c04040;">Видалити</button>' +
+              '<button class="btn btn-ghost" id="cdNo">Скасувати</button></div>';
+            openModal(html);
+            $("cdDel").addEventListener("click", function() {
+              api("DELETE", "/api/crm/clients/" + id).then(function(r) {
+                if (!r.j.ok) return;
+                closeModal(); renderClients();
+              });
+            });
+            $("cdNo").addEventListener("click", closeModal);
+          });
+        }
+
+        setTimeout(function() {
+          document.addEventListener("click", function onD() { closeCtx(); document.removeEventListener("click", onD); });
+        }, 50);
+      });
+      topBar.appendChild(menuBtn);
+      main.appendChild(topBar);
+
+      // ── Аватар + ім'я ───────────────────────────────────────────────
+      var heroDiv = document.createElement("div");
+      heroDiv.style.cssText = "display:flex;flex-direction:column;align-items:center;padding:20px 0 16px;";
+      var initials = (c.name || "").split(" ").map(function(w){return w[0]||"";}).join("").slice(0,2).toUpperCase();
+      var ava = document.createElement("div");
+      ava.style.cssText = "width:80px;height:80px;border-radius:50%;background:var(--olive-light);color:#fff;display:flex;" +
+        "align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;margin-bottom:12px;" +
+        (c.blacklisted ? "opacity:.5;" : "");
+      ava.textContent = initials || "?";
+      heroDiv.appendChild(ava);
+      var nameEl = document.createElement("div");
+      nameEl.style.cssText = "font-size:1.25rem;font-weight:700;color:var(--cream);text-align:center;" + (c.blacklisted ? "opacity:.6;" : "");
+      nameEl.textContent = c.name + (c.blacklisted ? " 🚫" : "");
+      heroDiv.appendChild(nameEl);
+      main.appendChild(heroDiv);
+
+      // ── Телефон ─────────────────────────────────────────────────────
+      if (c.phone) {
+        var phCard = document.createElement("div");
+        phCard.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px;" +
+          "display:flex;align-items:center;gap:10px;margin-bottom:12px;";
+        var phIcon = document.createElement("div");
+        phIcon.style.cssText = "color:var(--text-dim);font-size:1rem;flex-shrink:0;";
+        phIcon.textContent = "📞";
+        var phInfo = document.createElement("div");
+        phInfo.style.cssText = "flex:1;min-width:0;";
+        phInfo.innerHTML = '<div style="font-size:.68rem;color:var(--text-dim);">Номер телефону</div><div style="font-size:.9rem;font-weight:500;color:var(--cream);">' + c.phone + '</div>';
+        phCard.appendChild(phIcon);
+        phCard.appendChild(phInfo);
+        // Copy
+        var copyBtn = document.createElement("button");
+        copyBtn.className = "btn btn-ghost btn-sm";
+        copyBtn.style.cssText = "padding:6px;font-size:.9rem;";
+        copyBtn.title = "Скопіювати";
+        copyBtn.textContent = "⎘";
+        copyBtn.addEventListener("click", function() {
+          navigator.clipboard.writeText(c.phone);
+          copyBtn.textContent = "✓";
+          setTimeout(function() { copyBtn.textContent = "⎘"; }, 1500);
+        });
+        // Call
+        var callBtn = document.createElement("a");
+        callBtn.className = "btn btn-ghost btn-sm";
+        callBtn.style.cssText = "padding:6px;font-size:.9rem;text-decoration:none;";
+        callBtn.title = "Зателефонувати";
+        callBtn.textContent = "📲";
+        callBtn.href = "tel:" + c.phone.replace(/\s/g, "");
+        phCard.appendChild(copyBtn);
+        phCard.appendChild(callBtn);
+        main.appendChild(phCard);
       }
-      foot.appendChild(close); box.appendChild(foot);
+
+      // ── Кнопки дій ──────────────────────────────────────────────────
+      var actRow = document.createElement("div");
+      actRow.style.cssText = "display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px;";
+      var newAppt = el("button", "btn btn-primary", "📅 Новий запис");
+      newAppt.addEventListener("click", function() {
+        var lastCompleted = h.find(function(a) { return a.status === "completed"; });
+        apptModal({ prefill: {
+          clientName: c.name, clientPhone: c.phone,
+          serviceId: lastCompleted ? lastCompleted.service_id : undefined,
+          masterId:  lastCompleted ? lastCompleted.master_id  : undefined
+        }});
+      });
+      actRow.appendChild(newAppt);
+      main.appendChild(actRow);
+
+      // ── Статистика ──────────────────────────────────────────────────
+      var statsRow = document.createElement("div");
+      statsRow.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;";
+      function statCard(lbl, val) {
+        var d = document.createElement("div");
+        d.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;";
+        d.innerHTML = '<div style="font-size:.68rem;color:var(--text-dim);">' + lbl + '</div>' +
+          '<div style="font-size:1.1rem;font-weight:700;color:var(--cream);margin-top:2px;">' + val + '</div>';
+        return d;
+      }
+      var lastVisitStr = c.last_visit_at ? new Date(c.last_visit_at).toLocaleDateString("uk-UA") : "—";
+      statsRow.appendChild(statCard("Кількість візитів", c.visit_count || 0));
+      statsRow.appendChild(statCard("Останній візит", lastVisitStr));
+      main.appendChild(statsRow);
+
+      // ── Нотатка ─────────────────────────────────────────────────────
+      if (c.note) {
+        var noteDiv = document.createElement("div");
+        noteDiv.style.cssText = "background:#fffde7;border:1px solid #f0e060;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:.85rem;color:#6a5800;";
+        noteDiv.innerHTML = '📝 ' + c.note;
+        main.appendChild(noteDiv);
+      }
+
+      // ── Розділ «Візити та продажі» ──────────────────────────────────
+      var histSection = document.createElement("div");
+      histSection.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px;";
+      var histHead = document.createElement("div");
+      histHead.style.cssText = "padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;cursor:pointer;";
+      histHead.innerHTML = '<span style="font-size:1rem;">📋</span>' +
+        '<span style="font-weight:600;color:var(--cream);font-size:.9rem;">Візити та продажі</span>' +
+        '<span style="margin-left:auto;color:var(--text-dim);font-size:.8rem;">' + h.length + '</span>' +
+        '<span style="color:var(--text-dim);">›</span>';
+      var histBody = document.createElement("div");
+      var histOpen = false;
+      histHead.addEventListener("click", function() {
+        histOpen = !histOpen;
+        histBody.style.display = histOpen ? "block" : "none";
+        histHead.querySelector("span:last-child").textContent = histOpen ? "∨" : "›";
+      });
+      if (!h.length) {
+        histBody.appendChild(el("div", "empty", "Записів поки немає"));
+      } else {
+        h.forEach(function (a) {
+          var it = document.createElement("div");
+          it.style.cssText = "padding:10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;";
+          it.innerHTML =
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:.82rem;font-weight:600;color:var(--cream);">' + ddmm(a.date) + ' ' + a.time + '</div>' +
+              '<div style="font-size:.75rem;color:var(--text-dim);">' + a.service_name + ' · ' + a.master_name + '</div>' +
+            '</div>' +
+            '<span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status] || a.status) + '</span>';
+          histBody.appendChild(it);
+        });
+      }
+      histBody.style.display = "none";
+      histSection.appendChild(histHead);
+      histSection.appendChild(histBody);
+      main.appendChild(histSection);
     });
   }
 
