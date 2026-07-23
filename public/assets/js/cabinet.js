@@ -183,21 +183,21 @@
     if (me.role === "owner") {
       TABS.push({ id: "dashboard", name: "📊 Дашборд", render: renderDashboard });
     }
-    TABS.push({ id: "appts", name: "📅 Записи", render: renderAppts });
-    TABS.push({ id: "schedule", name: "🗓 Розклад", render: renderScheduleTab });
-    TABS.push({ id: "clients", name: "Клієнти", render: renderClients });
+    TABS.push({ id: "rozklad",  name: "📅 Розклад",       render: renderRozkladTab });
+    TABS.push({ id: "grafik",   name: "🗓 Графік роботи", render: renderScheduleTab });
+    TABS.push({ id: "clients",  name: "Клієнти",          render: renderClients });
     if (me.role === "owner") {
       TABS.push({ id: "analytics", name: "📈 Аналітика", render: renderAnalytics });
       TABS.push({ id: "traffic",   name: "🌐 Трафік",   render: renderTraffic });
       TABS.push({ id: "reviews",   name: "⭐ Відгуки",  render: renderReviews });
-      TABS.push({ id: "services", name: "Послуги", render: renderServices });
-      TABS.push({ id: "masters", name: "Майстри", render: renderMasters });
-      TABS.push({ id: "users", name: "Доступи", render: renderUsers });
-      TABS.push({ id: "notif", name: "Сповіщення", render: renderNotif });
+      TABS.push({ id: "services",  name: "Послуги",     render: renderServices });
+      TABS.push({ id: "masters",   name: "Майстри",     render: renderMasters });
+      TABS.push({ id: "users",     name: "Доступи",     render: renderUsers });
+      TABS.push({ id: "notif",     name: "Сповіщення",  render: renderNotif });
     }
     /* ── Іконки і короткі назви для мобільного nav ── */
-    var TAB_ICOS  = { dashboard:"📊", appts:"📅", schedule:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔" };
-    var TAB_SHORT = { dashboard:"Дашборд", appts:"Записи", schedule:"Розклад", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення" };
+    var TAB_ICOS  = { dashboard:"📊", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔" };
+    var TAB_SHORT = { dashboard:"Дашборд", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення" };
     var BOTTOM_COUNT = Math.min(3, TABS.length);
     var hasDrawer    = TABS.length > BOTTOM_COUNT;
 
@@ -471,8 +471,15 @@
   var MONTH_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
   var DOW_UA = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
 
+  // ── Вкладка "Розклад" з перемикачем Записи / Календар ─────────
+  function renderRozkladTab() {
+    apptViewMode = "month";
+    renderAppts({ keepMode: false, title: "Розклад", showToggle: true });
+  }
+
   function renderAppts(opts) {
-    var tabTitle = (opts && opts.title) || "Записи";
+    var tabTitle = (opts && opts.title) || "Розклад";
+    var showToggle = !!(opts && opts.showToggle);
     if (!opts || !opts.keepMode) apptViewMode = "month";
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar");
@@ -481,6 +488,39 @@
     newBtn.addEventListener("click", function () { apptModal(); });
     bar.appendChild(newBtn);
     main.appendChild(bar);
+
+    // Перемикач Записи / Розклад (день)
+    if (showToggle) {
+      var toggleBar = document.createElement("div");
+      toggleBar.style.cssText = "display:flex;gap:0;background:var(--panel-2);border-radius:10px;padding:3px;margin:0 0 8px;";
+      var btnList = document.createElement("button");
+      var btnCal  = document.createElement("button");
+      var btnStyle = "flex:1;padding:7px 0;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .15s,color .15s;";
+      btnList.style.cssText = btnStyle;
+      btnCal.style.cssText  = btnStyle;
+      btnList.textContent = "📋 Записи";
+      btnCal.textContent  = "📅 Календар";
+      function updateToggle() {
+        var isMonth = apptViewMode === "month" || apptViewMode === "list";
+        btnList.style.background = isMonth  ? "var(--olive-light)" : "transparent";
+        btnList.style.color      = isMonth  ? "#fff" : "var(--text-dim)";
+        btnCal.style.background  = !isMonth ? "var(--olive-light)" : "transparent";
+        btnCal.style.color       = !isMonth ? "#fff" : "var(--text-dim)";
+      }
+      updateToggle();
+      btnList.addEventListener("click", function() {
+        if (apptViewMode !== "month") { apptViewMode = "month"; updateToggle(); reloadView(); }
+      });
+      btnCal.addEventListener("click", function() {
+        if (apptViewMode !== "calendar") { apptViewMode = "calendar"; updateToggle(); reloadView(); }
+      });
+      toggleBar.appendChild(btnList);
+      toggleBar.appendChild(btnCal);
+      var toggleWrap = el("div");
+      toggleWrap.style.cssText = "padding:4px 0 0;";
+      toggleWrap.appendChild(toggleBar);
+      main.appendChild(toggleWrap);
+    }
 
     var masterFilterWrap = el("div", "bar");
     main.appendChild(masterFilterWrap);
