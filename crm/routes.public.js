@@ -35,6 +35,28 @@ router.get("/services", function (req, res) {
   res.json({ ok: true, services: rows });
 });
 
+/* Активні майстри, доступні на конкретну дату (враховує overrides + тижневий) */
+router.get("/available-masters", function (req, res) {
+  const date = clean(req.query.date, 10);
+  if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
+  const weekday = tz.weekdayOf(date);
+  const masters = db.prepare(
+    "SELECT id, name, photo, level FROM masters WHERE active=1 ORDER BY sort_order, id"
+  ).all();
+  const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id=?");
+  const ovStmt  = db.prepare("SELECT is_off FROM master_day_overrides WHERE master_id=? AND date=?");
+  const schStmt = db.prepare("SELECT 1 FROM master_schedule WHERE master_id=? AND weekday=?");
+  const available = masters.filter(function (m) {
+    const ov = ovStmt.get(m.id, date);
+    if (ov != null) return !ov.is_off;       // override beats weekly
+    return !!schStmt.get(m.id, weekday);     // no override → weekly schedule
+  });
+  available.forEach(function (m) {
+    m.service_ids = svcStmt.all(m.id).map(function (r) { return r.service_id; });
+  });
+  res.json({ ok: true, masters: available });
+});
+
 /* Майстри, що надають послугу (+ прапорець «будь-який» на фронті) */
 router.get("/masters", function (req, res) {
   const serviceId = parseInt(req.query.service, 10);

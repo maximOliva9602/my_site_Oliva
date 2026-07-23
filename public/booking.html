@@ -165,7 +165,9 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   <!-- 3. Майстер -->
   <div class="card hide" id="step3">
     <div class="card-title">3. Оберіть майстра</div>
-    <div class="master-grid" id="masterGrid"></div>
+    <label class="fld">Дата візиту</label>
+    <input type="date" id="masterDatePicker" />
+    <div class="master-grid" id="masterGrid"><div class="empty">Оберіть дату вище</div></div>
     <div class="row"><button class="btn btn-ghost" data-back="2">← Назад</button></div>
   </div>
 
@@ -428,27 +430,48 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     });
   }
 
-  // Крок 3: Майстри
+  // Крок 3: Майстри (з фільтром по даті)
   function renderMasters() {
-    var box = $("masterGrid"); box.innerHTML = "";
+    var today = new Date().toISOString().slice(0, 10);
+    var dp = $("masterDatePicker");
+    dp.min = today;
+    if (!state.date || state.date < today) state.date = today;
+    dp.value = state.date;
+    dp.onchange = function() {
+      state.date = dp.value;
+      state.master = null; state.service = null; state.start_min = null;
+      loadMastersForDate(state.date);
+    };
+    loadMastersForDate(state.date);
+  }
+
+  function loadMastersForDate(date) {
+    var box = $("masterGrid");
+    box.innerHTML = '<div class="empty">Завантаження…</div>';
     var catIds = allServices.filter(function(s) { return parseName(s.name).cat === state.category; }).map(function(s) { return s.id; });
-    var eligible = allMasters.filter(function(m) { return m.service_ids.some(function(id) { return catIds.indexOf(id) !== -1; }); });
-
-    eligible.forEach(function(m) {
-      var card = document.createElement("div"); card.className = "master-card";
-      var isTop = m.level === "Топ Майстер";
-      card.innerHTML =
-        (m.photo ? '<img class="master-photo" src="' + m.photo + '" alt="' + m.name + '" />' : '<div class="master-any-ico">👤</div>') +
-        '<div class="master-name">' + m.name + '</div>' +
-        '<span class="lv ' + (isTop ? "lv-top" : "lv-reg") + '">' + (m.level || "Майстер") + '</span>';
-      card.addEventListener("click", function() { state.master = m; renderDurations(); goStep(4); });
-      box.appendChild(card);
-    });
-
-    if (!eligible.length) {
-      var note = document.createElement("div"); note.className = "empty"; note.style.gridColumn = "1/-1";
-      note.textContent = "Майстрів для цієї категорії не знайдено."; box.appendChild(note);
-    }
+    fetch("/api/public/available-masters?date=" + encodeURIComponent(date))
+      .then(function(r) { return r.json(); })
+      .then(function(j) {
+        box.innerHTML = "";
+        var eligible = (j.masters || []).filter(function(m) {
+          return m.service_ids.some(function(id) { return catIds.indexOf(id) !== -1; });
+        });
+        eligible.forEach(function(m) {
+          var card = document.createElement("div"); card.className = "master-card";
+          var isTop = m.level === "Топ Майстер";
+          card.innerHTML =
+            (m.photo ? '<img class="master-photo" src="' + m.photo + '" alt="' + m.name + '" />' : '<div class="master-any-ico">👤</div>') +
+            '<div class="master-name">' + m.name + '</div>' +
+            '<span class="lv ' + (isTop ? "lv-top" : "lv-reg") + '">' + (m.level || "Майстер") + '</span>';
+          card.addEventListener("click", function() { state.master = m; renderDurations(); goStep(4); });
+          box.appendChild(card);
+        });
+        if (!eligible.length) {
+          var note = document.createElement("div"); note.className = "empty"; note.style.gridColumn = "1/-1";
+          note.textContent = "На цю дату майстри недоступні. Оберіть іншу дату."; box.appendChild(note);
+        }
+      })
+      .catch(function() { $("masterGrid").innerHTML = '<div class="empty">Помилка завантаження.</div>'; });
   }
 
   // Крок 4: Тривалість
@@ -476,11 +499,14 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   function goDate() {
     var d = $("dateInput");
     var min = new Date().toISOString().slice(0,10);
-    d.min = min; if (!d.value || d.value < min) d.value = min;
+    d.min = min;
+    // Підставляємо дату, обрану в кроці 3
+    if (state.date && state.date >= min) d.value = state.date;
+    else if (!d.value || d.value < min) d.value = min;
     $("slotsWrap").innerHTML = '<div class="empty">Завантаження…</div>';
     loadSlots();
   }
-  $("dateInput").addEventListener("change", function() { state.start_min = null; loadSlots(); });
+  $("dateInput").addEventListener("change", function() { state.date = this.value; state.start_min = null; loadSlots(); });
 
   function loadSlots() {
     state.date = $("dateInput").value;

@@ -894,13 +894,15 @@
         api("GET", "/api/crm/masters"),
         api("GET", apptUrl),
         api("GET", "/api/crm/day-schedules?weekday=" + wd),
-        api("GET", "/api/crm/day-blocks?date=" + apptDate)
+        api("GET", "/api/crm/day-blocks?date=" + apptDate),
+        api("GET", "/api/crm/masters-overrides?from=" + apptDate + "&to=" + apptDate)
       ]).then(function(rs) {
         var allMasters = rs[0].j.masters || [];
         var appts = (rs[1].j.appointments || []).filter(function(a) { return a.status !== "cancelled"; });
         var dayScheds = rs[2].j.schedules || [];
         var dayBreaks = rs[2].j.breaks || [];
         var dayBlocksArr = (rs[3].j && rs[3].j.blocks) || [];
+        var dayOvs = (rs[4].j && rs[4].j.overrides) || [];
 
         var masters = masterFilter
           ? allMasters.filter(function(m) { return String(m.id) === String(masterFilter); })
@@ -909,6 +911,22 @@
         var schedMap = {};
         dayScheds.forEach(function(s) { schedMap[s.master_id] = { ws: s.work_start, we: s.work_end, bks: [] }; });
         dayBreaks.forEach(function(b) { if (schedMap[b.master_id]) schedMap[b.master_id].bks.push({ s: b.break_start, e: b.break_end }); });
+
+        // Застосовуємо day overrides: is_off=1 → видаляємо з schedMap; is_off=0 → оновлюємо години
+        var offIds = {};
+        dayOvs.forEach(function(ov) {
+          if (ov.is_off) {
+            delete schedMap[ov.master_id];
+            offIds[ov.master_id] = true;
+          } else if (ov.work_start != null && ov.work_end != null) {
+            schedMap[ov.master_id] = { ws: ov.work_start, we: ov.work_end, bks: (schedMap[ov.master_id] || {}).bks || [] };
+          }
+        });
+        // Приховуємо майстрів з вихідним якщо у них немає записів на цей день
+        masters = masters.filter(function(m) {
+          if (!offIds[m.id]) return true;
+          return appts.some(function(a) { return a.master_id === m.id; });
+        });
 
         var dayBlocksMap = {};
         dayBlocksArr.forEach(function(blk) {
