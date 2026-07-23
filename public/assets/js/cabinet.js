@@ -840,7 +840,7 @@
 
         masters.forEach(function(m) {
           var hCell = document.createElement("div");
-          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;overflow:hidden;background:#fff;";
+          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;overflow:hidden;background:#fff;cursor:pointer;";
           var initials = (m.name||'?').charAt(0).toUpperCase() + (m.last_name ? m.last_name.charAt(0).toUpperCase() : '');
           var avHtml = m.photo
             ? '<img src="' + m.photo + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
@@ -850,6 +850,34 @@
             '<div style="font-size:.73rem;font-weight:600;color:#1a2016;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
             '<div style="font-size:.6rem;color:#5a7a48;margin-top:1px;">' + (m.level||'') + '</div>' +
             '</div>';
+          hCell.addEventListener("click", function(e) {
+            e.stopPropagation();
+            var old = document.getElementById("master-ctx"); if (old) { old.remove(); return; }
+            var rect = hCell.getBoundingClientRect();
+            var ctx = document.createElement("div");
+            ctx.id = "master-ctx";
+            ctx.style.cssText = "position:fixed;background:#fff;border:1px solid #d8ddd4;border-radius:12px;padding:6px;z-index:300;box-shadow:0 6px 24px rgba(0,0,0,.15);min-width:200px;";
+            var items = [
+              { icon:"🗓", label:"Графік роботи", fn: function() { scheduleModal(m); } },
+              { icon:"👤", label:"Профіль майстра", fn: function() { renderMasterProfile(m.id); } }
+            ];
+            items.forEach(function(it) {
+              var btn = document.createElement("button");
+              btn.style.cssText = "display:block;width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-size:.9rem;cursor:pointer;border-radius:8px;color:#1a2016;";
+              btn.innerHTML = '<span style="margin-right:8px;">' + it.icon + '</span>' + it.label;
+              btn.addEventListener("mouseenter", function() { btn.style.background = "#f0f2ee"; });
+              btn.addEventListener("mouseleave", function() { btn.style.background = "none"; });
+              btn.addEventListener("click", function() { ctx.remove(); it.fn(); });
+              ctx.appendChild(btn);
+            });
+            document.body.appendChild(ctx);
+            var cx = Math.min(rect.left, window.innerWidth - 220);
+            ctx.style.left = cx + "px";
+            ctx.style.top = (rect.bottom + 4) + "px";
+            setTimeout(function() {
+              document.addEventListener("click", function off() { ctx.remove(); document.removeEventListener("click", off); }, { once: true });
+            }, 50);
+          });
           header.appendChild(hCell);
         });
 
@@ -995,7 +1023,6 @@
             var heightPx = Math.max((a.duration_min / STEP) * SLOT_H - 2, SLOT_H * 2 - 2);
 
             var markerHex = a.color_marker || DEFAULT_MARKER;
-            var bgColor = markerHex + "22";
             var timeStr = fmtMin(a.start_min) + " – " + fmtMin(a.end_min || (a.start_min + a.duration_min));
             var svcName = (a.service_name||'').replace(/\s*\([^)]*\)\s*/g,'').trim();
             var hasNote = !!(a.comment && a.comment.trim());
@@ -1003,19 +1030,19 @@
             var block = document.createElement("div");
             block.id = "cal-block-" + a.id;
             block.style.cssText = "position:absolute;left:2px;right:2px;top:" + topPx + "px;height:" + heightPx + "px;" +
-              "background:" + bgColor + ";border-left:3px solid " + markerHex + ";border-radius:5px;" +
-              "padding:3px 5px 2px 4px;overflow:hidden;cursor:pointer;z-index:3;";
+              "background:" + markerHex + ";border-radius:5px;" +
+              "padding:3px 5px 2px 5px;overflow:hidden;cursor:pointer;z-index:3;";
 
             var html = "";
             if (heightPx >= 22) {
               html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:2px;margin-bottom:1px;">' +
-                '<span style="font-size:.58rem;font-weight:600;color:' + markerHex + ';white-space:nowrap;">' + timeStr + '</span>' +
-                (hasNote ? '<span style="font-size:.58rem;opacity:.6;flex-shrink:0;line-height:1;">💬</span>' : '') +
+                '<span style="font-size:.58rem;font-weight:700;color:rgba(255,255,255,.95);white-space:nowrap;">' + timeStr + '</span>' +
+                (hasNote ? '<span style="font-size:.58rem;opacity:.8;flex-shrink:0;line-height:1;">💬</span>' : '') +
                 '</div>';
             }
-            html += '<div style="font-size:.68rem;font-weight:600;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
-            if (heightPx >= 44) html += '<div style="font-size:.58rem;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
-            if (heightPx >= 60 && a.price) html += '<div style="font-size:.58rem;color:#666;margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
+            html += '<div style="font-size:.68rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
+            if (heightPx >= 44) html += '<div style="font-size:.58rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
+            if (heightPx >= 60 && a.price) html += '<div style="font-size:.58rem;color:rgba(255,255,255,.8);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
             block.innerHTML = html;
 
             block.addEventListener("click", function(e) {
@@ -1129,12 +1156,7 @@
       a.color_marker = c;
       // Оновити блок в календарі одразу
       var blk = document.getElementById("cal-block-" + a.id);
-      if (blk) {
-        blk.style.background = c + "22";
-        blk.style.borderLeftColor = c;
-        var timeSpan = blk.querySelector("span");
-        if (timeSpan) timeSpan.style.color = c;
-      }
+      if (blk) { blk.style.background = c; }
     }));
 
     // Зірки оцінки
@@ -1321,8 +1343,13 @@
 
       // 3. МАЙСТЕР + ДАТА + ЧАС
       '<label style="margin-top:14px;display:block;">Майстер</label><select id="mMaster"></select>' +
-      '<label>Дата</label><input type="date" id="mDate" />' +
-      '<label>Вільний час</label><div id="mSlots" class="muted">Оберіть послугу, майстра й дату</div>' +
+      '<label>Дата</label>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<input type="date" id="mDate" style="flex:1;" />' +
+        '<div id="mDateLabel" style="font-size:.85rem;color:var(--text-dim);white-space:nowrap;"></div>' +
+      '</div>' +
+      '<div id="mChosenTime" style="display:none;margin-top:4px;padding:6px 10px;background:var(--panel-2);border-radius:8px;font-size:.85rem;font-weight:600;color:var(--cream);"></div>' +
+      '<label style="margin-top:10px;display:block;">Вільний час</label><div id="mSlots" class="muted">Оберіть послугу, майстра й дату</div>' +
 
       '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
@@ -1337,7 +1364,17 @@
 
     $("mCancel").addEventListener("click", closeModal);
     $("mMarkerWrap").appendChild(markerPicker(null, function(c) { chosen.color_marker = c; }));
+
+    var M_UA = ["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"];
+    var DOW_UA_G = ["нд","пн","вт","ср","чт","пт","сб"];
+    function updateDateLabel(val) {
+      var lbl = $("mDateLabel"); if (!lbl || !val) return;
+      var d = new Date(val + "T00:00:00");
+      lbl.textContent = d.getDate() + " " + M_UA[d.getMonth()] + " · " + DOW_UA_G[d.getDay()];
+    }
     $("mDate").value = prefill.date || apptDate; $("mDate").min = todayStr();
+    updateDateLabel($("mDate").value);
+    $("mDate").addEventListener("change", function() { updateDateLabel(this.value); });
 
     // ── Абонемент — преsети ──────────────────────────────────────────
     function selectSubPreset(n) {
@@ -1573,10 +1610,12 @@
         var grid = el("div", "slots");
         slots.forEach(function (s) {
           var c = el("div", "slot", s.time);
-          c.addEventListener("click", function () {
+          c.addEventListener("click", (function(slot) { return function () {
             grid.querySelectorAll(".slot").forEach(function (x) { x.classList.remove("sel"); });
-            c.classList.add("sel"); chosen.start_min = s.start_min;
-          });
+            c.classList.add("sel"); chosen.start_min = slot.start_min;
+            var ct = $("mChosenTime");
+            if (ct) { ct.style.display = "block"; ct.textContent = "⏰ Час: " + slot.time; }
+          }; })(s));
           grid.appendChild(c);
           if (wantStartMin != null && s.start_min === wantStartMin) c.click();
         });
@@ -2677,6 +2716,20 @@
         closeModal(); window.__reloadMasters();
       });
     });
+  }
+
+  function renderMasterProfile(masterId) {
+    // Переходимо на вкладку Майстри (тільки owner)
+    var idx = TABS.findIndex ? TABS.findIndex(function(t){ return t.id === "masters"; }) : -1;
+    if (idx === -1) { for (var i=0;i<TABS.length;i++){ if(TABS[i].id==="masters"){idx=i;break;} } }
+    if (idx === -1) return;
+    var tabBtns = document.querySelectorAll(".tab");
+    if (tabBtns[idx]) tabBtns[idx].click();
+    // Після рендеру знаходимо картку майстра
+    setTimeout(function() {
+      var card = document.querySelector("[data-master-id='" + masterId + "']");
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
   }
 
   function scheduleModal(m) {
