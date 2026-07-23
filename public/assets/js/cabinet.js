@@ -2515,13 +2515,16 @@
     hdrTitle.textContent = isNew ? "Нова філія" : "Редагувати філію";
     hdrTitle.style.cssText = "flex:1;font-size:.95rem;font-weight:600;color:#1a2016;text-align:center;";
 
-    function goBack() {
+    backBtn.onclick = function() {
+      var _backFn = backFn;
+      main2.innerHTML = "";
+      main2.style.cssText = "";
       var os = document.getElementById("branchSaveBtn"); if (os) os.remove();
       var oh = document.getElementById("branchEditHdr"); if (oh) oh.remove();
-      main2.style.cssText = "";
-      if (typeof backFn === "function") backFn();
-    }
-    backBtn.addEventListener("click", goBack);
+      setTimeout(function() {
+        if (typeof _backFn === "function") _backFn();
+      }, 0);
+    };
     hdr.appendChild(backBtn); hdr.appendChild(hdrTitle);
     document.body.appendChild(hdr);
 
@@ -3691,12 +3694,15 @@
     backBtn.innerHTML = "&#8249;";
     backBtn.style.cssText = "background:none;border:none;font-size:1.8rem;line-height:1;color:#1a2016;padding:8px 12px 8px 4px;cursor:pointer;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;";
     backBtn.onclick = function() {
+      var _backFn = backFn;
       main2.innerHTML = "";
       main2.style.cssText = "";
       var os = document.getElementById("scheEditSave"); if (os) os.remove();
       var oh = document.getElementById("scheEditHdr"); if (oh) oh.remove();
-      if (typeof backFn === "function") backFn();
-      else { var gi = TABS.findIndex(function(t){return t.id==="masters";}); activateTab(gi >= 0 ? gi : 0); }
+      setTimeout(function() {
+        if (typeof _backFn === "function") _backFn();
+        else { var gi = TABS.findIndex(function(t){return t.id==="masters";}); activateTab(gi >= 0 ? gi : 0); }
+      }, 0);
     };
     var hdrTitle = document.createElement("div");
     hdrTitle.textContent = "Налаштування графіку роботи";
