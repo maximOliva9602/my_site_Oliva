@@ -302,6 +302,7 @@ try { db.exec("ALTER TABLE appointments ADD COLUMN color_marker TEXT"); } catch(
 try { db.exec("ALTER TABLE appointments ADD COLUMN extra_services TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN subscription_used INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE clients ADD COLUMN blacklisted INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE masters ADD COLUMN branch_id INTEGER REFERENCES branches(id)"); } catch(e) {}
 
 /* Разові блокування часу в календарі */
 db.exec(`
@@ -328,6 +329,25 @@ CREATE TABLE IF NOT EXISTS master_day_overrides (
   FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_day_overrides ON master_day_overrides(master_id, date);
+
+CREATE TABLE IF NOT EXISTS branches (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT    NOT NULL,
+  photo      TEXT,
+  active     INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS branch_schedule (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  branch_id  INTEGER NOT NULL,
+  weekday    INTEGER NOT NULL,
+  work_start INTEGER NOT NULL,
+  work_end   INTEGER NOT NULL,
+  UNIQUE(branch_id, weekday),
+  FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE
+);
 `);
 
 /* Абонементи */

@@ -329,6 +329,69 @@ router.delete("/masters/:id", owner, function (req, res) {
   res.json({ ok: true });
 });
 
+/* ========== ФІЛІЇ ========== */
+router.get("/branches", any, function (req, res) {
+  const rows = db.prepare("SELECT * FROM branches WHERE active=1 ORDER BY sort_order,id").all();
+  rows.forEach(function (b) {
+    b.schedule = db.prepare("SELECT weekday,work_start,work_end FROM branch_schedule WHERE branch_id=? ORDER BY weekday").all(b.id);
+    b.masters  = db.prepare("SELECT id,name,last_name,photo,level FROM masters WHERE branch_id=? AND active=1").all(b.id);
+  });
+  res.json({ ok: true, branches: rows });
+});
+
+router.post("/branches", owner, function (req, res) {
+  const d = req.body || {};
+  const name = (d.name || '').trim().slice(0, 100);
+  if (!name) return res.status(400).json({ ok: false, error: "name required" });
+  const info = db.prepare("INSERT INTO branches (name,photo,active,sort_order,created_at) VALUES (?,?,1,?,?)")
+    .run(name, d.photo ? d.photo.slice(0, 500) : null, parseInt(d.sort_order, 10) || 0, Date.now());
+  res.json({ ok: true, id: info.lastInsertRowid });
+});
+
+router.put("/branches/:id", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const b = db.prepare("SELECT * FROM branches WHERE id=?").get(id);
+  if (!b) return res.status(404).json({ ok: false });
+  const d = req.body || {};
+  db.prepare("UPDATE branches SET name=?,photo=?,sort_order=? WHERE id=?")
+    .run(d.name !== undefined ? d.name.slice(0, 100) : b.name,
+         d.photo !== undefined ? (d.photo ? d.photo.slice(0, 500) : null) : b.photo,
+         d.sort_order !== undefined ? parseInt(d.sort_order, 10) || 0 : b.sort_order, id);
+  // Оновити список майстрів філії
+  if (Array.isArray(d.master_ids)) {
+    db.prepare("UPDATE masters SET branch_id=NULL WHERE branch_id=?").run(id);
+    const stmt = db.prepare("UPDATE masters SET branch_id=? WHERE id=?");
+    d.master_ids.forEach(function (mid) { stmt.run(id, parseInt(mid, 10)); });
+  }
+  res.json({ ok: true });
+});
+
+router.delete("/branches/:id", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  db.prepare("UPDATE masters SET branch_id=NULL WHERE branch_id=?").run(id);
+  db.prepare("UPDATE branches SET active=0 WHERE id=?").run(id);
+  res.json({ ok: true });
+});
+
+router.get("/branches/:id/schedule", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  res.json({ ok: true, schedule: db.prepare("SELECT weekday,work_start,work_end FROM branch_schedule WHERE branch_id=? ORDER BY weekday").all(id) });
+});
+
+router.put("/branches/:id/schedule", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const sched = (req.body && req.body.schedule) || [];
+  db.transaction(function () {
+    db.prepare("DELETE FROM branch_schedule WHERE branch_id=?").run(id);
+    const ins = db.prepare("INSERT INTO branch_schedule (branch_id,weekday,work_start,work_end) VALUES (?,?,?,?)");
+    sched.forEach(function (s) {
+      if (s.weekday != null && s.work_start != null && s.work_end != null)
+        ins.run(id, parseInt(s.weekday,10), parseInt(s.work_start,10), parseInt(s.work_end,10));
+    });
+  })();
+  res.json({ ok: true });
+});
+
 function setMasterServices(masterId, ids) {
   const txn = db.transaction(function () {
     db.prepare("DELETE FROM master_services WHERE master_id=?").run(masterId);
