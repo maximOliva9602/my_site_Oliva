@@ -207,7 +207,10 @@
     var mobBackdrop  = document.getElementById("mob-backdrop");
     var mobSheet     = document.getElementById("mob-sheet");
 
-    function clearOverlay() { var ov = document.getElementById("cal-overlay"); if (ov) ov.remove(); }
+    function clearOverlay() {
+      var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
+      var ws = document.getElementById("cal-week-strip"); if (ws) ws.remove();
+    }
     function closeMobSheet() { mobBackdrop.classList.remove("open"); mobSheet.classList.remove("open"); }
     function openMobSheet()  { mobBackdrop.classList.add("open");    mobSheet.classList.add("open"); }
 
@@ -467,6 +470,7 @@
   var apptDate = todayStr();
   var apptViewMode = "month"; // "month" | "calendar" | "list"
   var apptMonth = todayStr().slice(0, 7); // "YYYY-MM"
+  var calSlotH = 22; // px per 10-min slot, adjustable by zoom
 
   var MONTH_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
   var DOW_UA = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
@@ -555,6 +559,7 @@
 
     function loadMonthView() {
       var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
+      var ws0 = document.getElementById("cal-week-strip"); if (ws0) ws0.remove();
       var ce = $("apptContent"); ce.innerHTML = "";
 
       // ── Шапка місяця ───────────────────────────────────────────
@@ -666,7 +671,7 @@
       contentEl.innerHTML = "";
       var HOUR_START = 8, HOUR_END = 22;
       var STEP = 10;           // хв на слот
-      var SLOT_H = 22;         // px на 10-хв слот (трохи більше для зручності пальцем)
+      var SLOT_H = calSlotH;   // px на 10-хв слот, змінюється зумом
       var TIME_COL_W = 44;     // px для колонки з часом
       var MASTER_COL_W = window.innerWidth < 600 ? 160 : 170;
       var HEADER_H = 70;       // px для рядка заголовка
@@ -675,14 +680,68 @@
 
       var old = document.getElementById("cal-overlay");
       if (old) old.remove();
+      var oldWkStrip = document.getElementById("cal-week-strip");
+      if (oldWkStrip) oldWkStrip.remove();
       var navEl = document.getElementById("mob-nav");
       var navH = navEl ? Math.ceil(navEl.getBoundingClientRect().height) : 0;
       var contentTop = Math.round(contentEl.getBoundingClientRect().top);
+      var WEEK_STRIP_H = 64; // px for week navigation strip
 
       var overlay = document.createElement("div");
       overlay.id = "cal-overlay";
-      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + navH + "px;z-index:10;background:#f0f2ee;-webkit-user-select:none;user-select:none;";
+      overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + (navH + WEEK_STRIP_H) + "px;z-index:10;background:#f0f2ee;-webkit-user-select:none;user-select:none;";
       document.body.appendChild(overlay);
+
+      // ── Тижнева стрічка навігації ──────────────────────────────
+      var wkStrip = document.createElement("div");
+      wkStrip.id = "cal-week-strip";
+      wkStrip.style.cssText = "position:fixed;left:0;right:0;bottom:" + navH + "px;height:" + WEEK_STRIP_H + "px;z-index:10;" +
+        "background:#fff;border-top:1px solid #d8ddd4;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;";
+      var curDay = new Date(apptDate + "T00:00:00");
+      // Знаходимо понеділок цього тижня
+      var dow0 = (curDay.getDay() + 6) % 7; // 0=Пн
+      var weekStart = new Date(curDay); weekStart.setDate(curDay.getDate() - dow0);
+      var wkMonthLbl = document.createElement("div");
+      var wsM = weekStart.getMonth(), wsY = weekStart.getFullYear();
+      var endOfWeek = new Date(weekStart); endOfWeek.setDate(weekStart.getDate() + 6);
+      var weM = endOfWeek.getMonth();
+      var MONTH_GEN = ["Січня","Лютого","Березня","Квітня","Травня","Червня","Липня","Серпня","Вересня","Жовтня","Листопада","Грудня"];
+      var MONTH_NOM = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
+      var lblTxt = wsM === weM ? MONTH_NOM[wsM] + " " + wsY : MONTH_GEN[wsM] + "–" + MONTH_GEN[weM] + " " + wsY;
+      wkMonthLbl.style.cssText = "font-size:.65rem;font-weight:700;color:#888;text-align:center;padding:4px 0 2px;letter-spacing:.04em;text-transform:uppercase;";
+      wkMonthLbl.textContent = lblTxt;
+      wkStrip.appendChild(wkMonthLbl);
+      var wkDays = document.createElement("div");
+      wkDays.style.cssText = "display:flex;flex:1;align-items:stretch;";
+      var today0 = todayStr();
+      var DOW_STRIP = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
+      for (var wi = 0; wi < 7; wi++) {
+        var wd2 = new Date(weekStart); wd2.setDate(weekStart.getDate() + wi);
+        var wds = wd2.getFullYear() + "-" + String(wd2.getMonth()+1).padStart(2,"0") + "-" + String(wd2.getDate()).padStart(2,"0");
+        var isToday2 = wds === today0;
+        var isSel = wds === apptDate;
+        var wBtn = document.createElement("button");
+        wBtn.style.cssText = "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;" +
+          "border:none;cursor:pointer;border-radius:0;padding:0;" +
+          "background:" + (isSel ? "#6e9145" : isToday2 ? "#e8f0e0" : "transparent") + ";" +
+          "color:" + (isSel ? "#fff" : isToday2 ? "#3d5430" : "#444") + ";";
+        var wDayLbl = document.createElement("span");
+        wDayLbl.style.cssText = "font-size:.6rem;font-weight:600;letter-spacing:.02em;" + (isSel||isToday2 ? "" : "color:#aaa;");
+        wDayLbl.textContent = DOW_STRIP[wi];
+        var wDateLbl = document.createElement("span");
+        wDateLbl.style.cssText = "font-size:.92rem;font-weight:" + (isSel||isToday2 ? "700" : "500") + ";line-height:1;";
+        wDateLbl.textContent = wd2.getDate();
+        wBtn.appendChild(wDayLbl); wBtn.appendChild(wDateLbl);
+        (function(ds) {
+          wBtn.addEventListener("click", function() {
+            apptDate = ds; apptMonth = ds.slice(0,7);
+            loadCalendar(activeMasterFilter);
+          });
+        })(wds);
+        wkDays.appendChild(wBtn);
+      }
+      wkStrip.appendChild(wkDays);
+      document.body.appendChild(wkStrip);
 
       var wd = new Date(apptDate + "T00:00:00").getDay();
       var apptUrl = ME.role === "owner"
@@ -728,20 +787,30 @@
         }
 
         // ── Навігація дати ────────────────────────────────────────
+        var DAY_UA = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
+        var MON_SHORT = ["січ","лют","бер","квіт","трав","черв","лип","серп","вер","жовт","лист","груд"];
+        var DOW_SHORT = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
         var dateNav = document.createElement("div");
-        dateNav.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#f0f2ee;flex-shrink:0;border-bottom:1px solid #d8ddd4;";
+        dateNav.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:4px 6px;background:#f0f2ee;flex-shrink:0;border-bottom:1px solid #d8ddd4;gap:4px;";
         var dnPrev = document.createElement("button");
         dnPrev.innerHTML = "&#8249;"; dnPrev.title = "Попередній день";
-        dnPrev.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 10px;line-height:1;";
+        dnPrev.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 8px;line-height:1;flex-shrink:0;";
         var dnNext = document.createElement("button");
         dnNext.innerHTML = "&#8250;"; dnNext.title = "Наступний день";
-        dnNext.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 10px;line-height:1;";
+        dnNext.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 8px;line-height:1;flex-shrink:0;";
         var dnLbl = document.createElement("div");
         dnLbl.style.cssText = "font-weight:600;font-size:.88rem;color:#1a2016;text-align:center;flex:1;";
-        var DAY_UA = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
         var dnD = new Date(apptDate + "T00:00:00");
-        dnLbl.textContent = dnD.getDate() + " " + ["січ","лют","бер","квіт","трав","черв","лип","серп","вер","жовт","лист","груд"][dnD.getMonth()] + " · " + DAY_UA[dnD.getDay()];
+        dnLbl.textContent = dnD.getDate() + " " + MON_SHORT[dnD.getMonth()] + " · " + DAY_UA[dnD.getDay()];
+        // Zoom buttons
+        var zoomOut = document.createElement("button");
+        zoomOut.textContent = "−"; zoomOut.title = "Зменшити";
+        zoomOut.style.cssText = "background:#e8ede4;border:none;border-radius:6px;font-size:1rem;color:#5a7a48;cursor:pointer;padding:2px 9px;line-height:1.4;flex-shrink:0;font-weight:700;";
+        var zoomIn = document.createElement("button");
+        zoomIn.textContent = "+"; zoomIn.title = "Збільшити";
+        zoomIn.style.cssText = "background:#e8ede4;border:none;border-radius:6px;font-size:1rem;color:#5a7a48;cursor:pointer;padding:2px 9px;line-height:1.4;flex-shrink:0;font-weight:700;";
         dateNav.appendChild(dnPrev); dateNav.appendChild(dnLbl); dateNav.appendChild(dnNext);
+        dateNav.appendChild(zoomOut); dateNav.appendChild(zoomIn);
         overlay.appendChild(dateNav);
         function shiftDate(delta) {
           var d = new Date(apptDate + "T00:00:00");
@@ -752,10 +821,50 @@
         }
         dnPrev.addEventListener("click", function() { shiftDate(-1); });
         dnNext.addEventListener("click", function() { shiftDate(1); });
+        zoomOut.addEventListener("click", function() {
+          calSlotH = Math.max(14, calSlotH - 4);
+          loadCalendar(activeMasterFilter);
+        });
+        zoomIn.addEventListener("click", function() {
+          calSlotH = Math.min(50, calSlotH + 4);
+          loadCalendar(activeMasterFilter);
+        });
+
+        // ── Pinch-to-zoom ──────────────────────────────────────────
+        var pinchStartDist = 0, pinchStartH = calSlotH;
+        overlay.addEventListener("touchstart", function(e) {
+          if (e.touches.length === 2) {
+            var dx = e.touches[0].clientX - e.touches[1].clientX;
+            var dy = e.touches[0].clientY - e.touches[1].clientY;
+            pinchStartDist = Math.sqrt(dx*dx + dy*dy);
+            pinchStartH = calSlotH;
+          }
+        }, { passive: true });
+        overlay.addEventListener("touchmove", function(e) {
+          if (e.touches.length === 2 && pinchStartDist > 0) {
+            e.preventDefault();
+            var dx = e.touches[0].clientX - e.touches[1].clientX;
+            var dy = e.touches[0].clientY - e.touches[1].clientY;
+            var dist = Math.sqrt(dx*dx + dy*dy);
+            var newH = Math.round(Math.min(50, Math.max(14, pinchStartH * dist / pinchStartDist)));
+            if (newH !== calSlotH) {
+              calSlotH = newH;
+              inner.style.transform = "scaleY(" + (newH / SLOT_H) + ")";
+              inner.style.transformOrigin = "top left";
+            }
+          }
+        }, { passive: false });
+        overlay.addEventListener("touchend", function(e) {
+          if (pinchStartDist > 0 && inner && inner.style.transform) {
+            inner.style.transform = "";
+            pinchStartDist = 0;
+            loadCalendar(activeMasterFilter);
+          }
+        });
 
         // Прокручуваний контейнер
         var scroller = document.createElement("div");
-        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;height:calc(100% - 42px);width:100%;touch-action:pan-x pan-y;";
+        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;height:calc(100% - 44px);width:100%;touch-action:pan-x pan-y;";
         overlay.appendChild(scroller);
 
         // Стан touch/long-press для всіх колонок
@@ -869,7 +978,7 @@
           backToMonth.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
           backToMonth.style.cssText = "background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:#5a7a48;display:flex;align-items:center;justify-content:center;";
           backToMonth.addEventListener("click", function() {
-            var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
+            clearOverlay();
             apptViewMode = "month";
             apptMonth = apptDate.slice(0,7);
             reloadView();
@@ -1141,8 +1250,8 @@
     }
 
     function restoreMain() {
-      var ov = document.getElementById("cal-overlay");
-      if (ov) ov.remove();
+      var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
+      var ws = document.getElementById("cal-week-strip"); if (ws) ws.remove();
     }
 
     window.__reloadAppts = function () {
@@ -1170,22 +1279,12 @@
         '<textarea id="dReviewComment" placeholder="Коментар (необов\'язково)" rows="2" style="width:100%;font-size:.85rem;"></textarea></div>';
     }
 
-    // Оплата
-    html += '<div style="margin-top:14px;"><label style="font-size:.78rem;color:var(--text-dim);">Оплата</label>' +
-      '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">' +
-      '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="dPaid"' + (a.paid ? ' checked' : '') + '> Оплачено</label>' +
-      '<select id="dPayMethod" style="flex:1;min-width:100px;">' +
-      '<option value="">Спосіб</option>' +
-      ['Готівка','Картка','Переказ'].map(function(m) { return '<option value="'+m+'"'+(a.pay_method===m?' selected':'')+'>'+m+'</option>'; }).join('') +
-      '</select></div></div>';
-
     html += '<div id="dSubInfo"></div>';
     html += '<div class="err" id="dErr"></div><div class="modal-foot">';
 
     if (a.status === "pending") html += '<button class="btn btn-primary btn-sm" id="dConfirm">Підтвердити</button>';
     if (a.status === "pending" || a.status === "confirmed") {
       html += '<button class="btn btn-ghost btn-sm" id="dComplete">Завершити</button>';
-      html += '<button class="btn btn-ghost btn-sm" id="dNoShow">Не прийшов</button>';
       html += '<button class="btn btn-ghost btn-sm" id="dCancel">Скасувати</button>';
     }
     html += '<button class="btn btn-ghost btn-sm" id="dEdit">✏️ Редагувати</button>';
