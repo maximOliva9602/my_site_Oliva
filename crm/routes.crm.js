@@ -90,9 +90,6 @@ function createAppointment(d, session) {
   let publicId, appointmentId;
   try {
     db.transaction(function () {
-      if (!slots.isSlotFree(masterId, date, startMin, totalDuration)) {
-        const e = new Error("SLOT_TAKEN"); e.code = "SLOT_TAKEN"; throw e;
-      }
       let client = db.prepare("SELECT id FROM clients WHERE phone=?").get(phone);
       if (!client) {
         const info = db.prepare("INSERT INTO clients (phone,name,visit_count,created_at) VALUES (?,?,0,?)").run(phone, name, now);
@@ -205,14 +202,7 @@ router.patch("/appointments/:id", any, function (req, res) {
   const comment = d.comment !== undefined ? clean(d.comment, 500) : a.comment;
   if (!tz.isDate(date) || !(startMin >= 0)) return res.status(400).json({ ok: false, error: "bad params" });
 
-  // перевірка накладок при перенесенні (виключаючи сам запис)
   if (date !== a.date || startMin !== a.start_min || masterId !== a.master_id) {
-    const others = db.prepare(
-      "SELECT start_min,end_min FROM appointments WHERE master_id=? AND date=? AND id<>? AND status IN ('pending','confirmed')"
-    ).all(masterId, date, id);
-    const endMin = startMin + a.duration_min;
-    const clash = others.some(function (o) { return startMin < o.end_min && endMin > o.start_min; });
-    if (clash) return res.status(409).json({ ok: false, error: "SLOT_TAKEN" });
     db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, comment=?, updated_at=? WHERE id=?")
       .run(date, startMin, startMin + a.duration_min, masterId, comment, Date.now(), id);
   } else {

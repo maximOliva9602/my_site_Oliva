@@ -1227,12 +1227,37 @@
             openCalCtx(master, clickAbsMin, e.clientX, e.clientY);
           });
 
-          // Блоки записів
-          appts.filter(function(a) { return a.master_id === master.id; }).forEach(function(a) {
+          // Блоки записів — lane-assignment для відображення записів що накладаються
+          var masterAppts = appts.filter(function(a) { return a.master_id === master.id; })
+            .sort(function(a, b) { return a.start_min - b.start_min; });
+          var laneEnd = [];
+          var laneMap = {};
+          masterAppts.forEach(function(a) {
+            var aEnd = a.end_min || (a.start_min + a.duration_min);
+            var lane = -1;
+            for (var li = 0; li < laneEnd.length; li++) { if (laneEnd[li] <= a.start_min) { lane = li; laneEnd[li] = aEnd; break; } }
+            if (lane === -1) { lane = laneEnd.length; laneEnd.push(aEnd); }
+            laneMap[a.id] = lane;
+          });
+          masterAppts.forEach(function(a) {
+            var aEnd = a.end_min || (a.start_min + a.duration_min);
+            var maxLane = laneMap[a.id];
+            masterAppts.forEach(function(b) {
+              var bEnd = b.end_min || (b.start_min + b.duration_min);
+              if (b.start_min < aEnd && bEnd > a.start_min) maxLane = Math.max(maxLane, laneMap[b.id]);
+            });
+            laneMap["_n" + a.id] = maxLane + 1;
+          });
+
+          masterAppts.forEach(function(a) {
             var startRel = a.start_min - HOUR_START * 60;
             if (startRel < 0 || startRel >= TOTAL_MIN) return;
             var topPx = (startRel / STEP) * SLOT_H + 1;
             var heightPx = Math.max((a.duration_min / STEP) * SLOT_H - 2, SLOT_H * 2 - 2);
+            var aLane = laneMap[a.id] || 0;
+            var nLanes = laneMap["_n" + a.id] || 1;
+            var pct = 100 / nLanes;
+            var leftPct = aLane * pct;
 
             var markerHex = a.color_marker || DEFAULT_MARKER;
             var timeStr = fmtMin(a.start_min) + " – " + fmtMin(a.end_min || (a.start_min + a.duration_min));
@@ -1241,7 +1266,7 @@
 
             var block = document.createElement("div");
             block.id = "cal-block-" + a.id;
-            block.style.cssText = "position:absolute;left:2px;right:2px;top:" + topPx + "px;height:" + heightPx + "px;" +
+            block.style.cssText = "position:absolute;left:calc(" + leftPct + "% + 2px);width:calc(" + pct + "% - 4px);top:" + topPx + "px;height:" + heightPx + "px;" +
               "background:" + markerHex + ";border-radius:5px;" +
               "padding:3px 5px 2px 5px;overflow:hidden;cursor:pointer;z-index:3;";
 
