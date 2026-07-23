@@ -65,17 +65,31 @@ function freeSlots(masterId, date, durationMin, nowMs) {
   const now = tz.nowKyiv(undefined, nowMs);
   if (date < now.date) return [];                 // минула дата
 
-  const weekday = tz.weekdayOf(date);
-  const sched = db.prepare(
-    "SELECT work_start, work_end FROM master_schedule WHERE master_id = ? AND weekday = ?"
-  ).get(masterId, weekday);
-  if (!sched) return [];                            // вихідний
+  // День-override має пріоритет над тижневим графіком
+  const override = db.prepare(
+    "SELECT is_off, work_start, work_end FROM master_day_overrides WHERE master_id=? AND date=?"
+  ).get(masterId, date);
 
-  let earliest = sched.work_start;
-  if (date === now.date) earliest = Math.max(sched.work_start, now.min + LEAD_MIN);
+  let workStart, workEnd;
+  if (override) {
+    if (override.is_off) return [];               // явний вихідний
+    workStart = override.work_start;
+    workEnd   = override.work_end;
+  } else {
+    const weekday = tz.weekdayOf(date);
+    const sched = db.prepare(
+      "SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=?"
+    ).get(masterId, weekday);
+    if (!sched) return [];                        // тижневий вихідний
+    workStart = sched.work_start;
+    workEnd   = sched.work_end;
+  }
+
+  let earliest = workStart;
+  if (date === now.date) earliest = Math.max(workStart, now.min + LEAD_MIN);
 
   const blocked = blockedIntervals(masterId, date);
-  return computeSlots(sched.work_start, sched.work_end, blocked, durationMin, earliest);
+  return computeSlots(workStart, workEnd, blocked, durationMin, earliest);
 }
 
 /* Майстри (активні), що надають послугу. */

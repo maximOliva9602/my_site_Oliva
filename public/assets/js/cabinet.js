@@ -2346,13 +2346,23 @@
           '<div style="color:#5a7a48;font-size:.7rem;">' + fmtMin(s.work_end) + '</div></div>';
       }
 
-      // Завантажуємо філії + майстрів
+      // Завантажуємо філії + майстрів + overrides
+      var fromDate = days[0].dateStr;
+      var toDate   = days[days.length - 1].dateStr;
       Promise.all([
         api("GET", "/api/crm/branches"),
-        api("GET", "/api/crm/masters")
+        api("GET", "/api/crm/masters"),
+        api("GET", "/api/crm/masters-overrides?from=" + fromDate + "&to=" + toDate)
       ]).then(function(results) {
-        var branches = results[0].j.branches || [];
-        var masters  = results[1].j.masters  || [];
+        var branches  = results[0].j.branches  || [];
+        var masters   = results[1].j.masters   || [];
+        var rawOvs    = results[2].j.overrides || [];
+        // overrideMap[masterId][date] = { is_off, work_start, work_end }
+        var overrideMap = {};
+        rawOvs.forEach(function(ov) {
+          if (!overrideMap[ov.master_id]) overrideMap[ov.master_id] = {};
+          overrideMap[ov.master_id][ov.date] = ov;
+        });
 
         return Promise.all(masters.map(function(m) {
           return api("GET", "/api/crm/masters/" + m.id + "/schedule").then(function(r) {
@@ -2424,11 +2434,17 @@
             }; })(m));
             tr.appendChild(tdAv);
             days.forEach(function(day) {
-              var s = schedMap[day.jsDay];
+              var ov = (overrideMap[m.id] || {})[day.dateStr];
+              var s;
+              if (ov) {
+                s = ov.is_off ? null : { work_start: ov.work_start, work_end: ov.work_end };
+              } else {
+                s = schedMap[day.jsDay] || null;
+              }
               var td = document.createElement("td");
-              td.style.cssText = "padding:3px;text-align:center;cursor:" + (s ? "pointer" : "default") + ";";
+              td.style.cssText = "padding:3px;text-align:center;cursor:pointer;";
               td.innerHTML = schedCellHtml(s);
-              if (s) td.addEventListener("click", (function(master2, ds2) { return function() {
+              td.addEventListener("click", (function(master2, ds2) { return function() {
                 scheduleEditPage(master2, ds2, "grafik", "day");
               }; })(m, day.dateStr));
               tr.appendChild(td);

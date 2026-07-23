@@ -477,6 +477,17 @@ router.delete("/masters/:id/day-override", owner, function (req, res) {
   res.json({ ok: true });
 });
 
+/* Всі overrides усіх майстрів у діапазоні дат (для таблиці графіку) */
+router.get("/masters-overrides", any, function (req, res) {
+  const from = (req.query.from || "").slice(0, 10);
+  const to   = (req.query.to   || "").slice(0, 10);
+  if (!tz.isDate(from) || !tz.isDate(to)) return res.status(400).json({ ok: false, error: "bad dates" });
+  const overrides = db.prepare(
+    "SELECT master_id, date, is_off, work_start, work_end FROM master_day_overrides WHERE date >= ? AND date <= ? ORDER BY master_id, date"
+  ).all(from, to);
+  res.json({ ok: true, overrides });
+});
+
 /* bulk: POST {date_from,date_to,mode,weekdays[],work_start,work_end} */
 router.post("/masters/:id/schedule-period", owner, function (req, res) {
   const id = parseInt(req.params.id, 10);
