@@ -480,7 +480,7 @@
   // ── Вкладка "Розклад" з перемикачем Записи / Календар ─────────
   function renderRozkladTab() {
     apptViewMode = "calendar";
-    renderAppts({ keepMode: false, title: "Розклад", showToggle: true });
+    renderAppts({ keepMode: true, title: "Розклад", showToggle: true });
   }
 
   function renderAppts(opts) {
