@@ -210,6 +210,7 @@
     function clearOverlay() {
       var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
       var ws = document.getElementById("cal-week-strip"); if (ws) ws.remove();
+      document.body.style.overflow = "";
     }
     function closeMobSheet() { mobBackdrop.classList.remove("open"); mobSheet.classList.remove("open"); }
     function openMobSheet()  { mobBackdrop.classList.add("open");    mobSheet.classList.add("open"); }
@@ -560,6 +561,7 @@
     }
 
     function loadMonthView() {
+      document.body.style.overflow = "";
       var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
       var ws0 = document.getElementById("cal-week-strip"); if (ws0) ws0.remove();
       var ce = $("apptContent"); ce.innerHTML = "";
@@ -654,6 +656,7 @@
     }
 
     function loadAppts(masterId) {
+      document.body.style.overflow = "";
       contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
       var url = ME.role === "owner"
         ? "/api/crm/appointments?date=" + apptDate + (masterId ? "&master=" + masterId : "")
@@ -685,6 +688,10 @@
 
       if (!zoomOnly) {
         // ── Повна перебудова фрейму ──────────────────────────────
+        // Фіксуємо скрол сторінки щоб header не з'їжджав
+        window.scrollTo(0, 0);
+        document.body.style.overflow = "hidden";
+
         contentEl.innerHTML = "";
         var old = document.getElementById("cal-overlay"); if (old) old.remove();
         var oldWkStrip = document.getElementById("cal-week-strip"); if (oldWkStrip) oldWkStrip.remove();
