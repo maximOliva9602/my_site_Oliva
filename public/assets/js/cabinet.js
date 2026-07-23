@@ -3960,10 +3960,10 @@
     tDay.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderDayTab(); });
     tPeriod.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderPeriodTab(); });
 
-    // Back button cleanup (capture phase — fires before navigation)
+    // Cleanup save button in capture phase (backBtn is inside scheEditHdr — removing it
+    // during capture prevents bubble-phase navigation from firing on iOS Safari)
     backBtn.addEventListener("click", function() {
       var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove();
-      var oldH = document.getElementById("scheEditHdr"); if (oldH) oldH.remove();
     }, true);
 
     renderDayTab();
