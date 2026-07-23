@@ -2292,81 +2292,91 @@
     bar.appendChild(el("h2", null, "Графік роботи"));
     main.appendChild(bar);
 
+    var DOW_SHORT = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+    var MON_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
+
+    var now = new Date();
+    var viewYear = now.getFullYear();
+    var viewMonth = now.getMonth(); // 0-based
+
     var wrap = el("div"); wrap.id = "schedWeekWrap"; main.appendChild(wrap);
 
-    var DOW_SHORT = ["","Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
-    var MON_SHORT = ["","січ","лют","бер","квіт","трав","черв","лип","серп","вер","жовт","лист","груд"];
-
-    // Початок поточного тижня (Пн)
-    var weekStart = (function() {
-      var d = new Date(); var dow = d.getDay(); var diff = (dow === 0 ? -6 : 1 - dow);
-      d.setDate(d.getDate() + diff); d.setHours(0,0,0,0); return d;
-    })();
-
-    function renderWeek() {
+    function renderMonth() {
       wrap.innerHTML = "";
 
-      // Навігація тижнем
+      // Навігація місяцем (компактна)
       var nav = document.createElement("div");
-      nav.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:6px 12px 10px;";
-      var prevW = el("button","btn btn-ghost btn-sm","‹"); prevW.style.cssText = "font-size:1.4rem;padding:2px 10px;";
-      var nextW = el("button","btn btn-ghost btn-sm","›"); nextW.style.cssText = "font-size:1.4rem;padding:2px 10px;";
-      var wEnd = new Date(weekStart); wEnd.setDate(wEnd.getDate() + 6);
-      var wLbl = document.createElement("div");
-      wLbl.style.cssText = "font-size:.85rem;font-weight:600;color:var(--cream);";
-      wLbl.textContent = weekStart.getDate() + " " + MON_SHORT[weekStart.getMonth()+1] + " – " + wEnd.getDate() + " " + MON_SHORT[wEnd.getMonth()+1];
-      prevW.addEventListener("click", function() { weekStart.setDate(weekStart.getDate()-7); renderWeek(); });
-      nextW.addEventListener("click", function() { weekStart.setDate(weekStart.getDate()+7); renderWeek(); });
-      nav.appendChild(prevW); nav.appendChild(wLbl); nav.appendChild(nextW);
+      nav.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:4px 12px 8px;";
+      var prevM = el("button","btn btn-ghost btn-sm","‹"); prevM.style.cssText = "font-size:1.4rem;padding:2px 10px;";
+      var nextM = el("button","btn btn-ghost btn-sm","›"); nextM.style.cssText = "font-size:1.4rem;padding:2px 10px;";
+      var mLbl = document.createElement("div");
+      mLbl.style.cssText = "font-size:.88rem;font-weight:600;color:var(--cream);";
+      mLbl.textContent = MON_UA[viewMonth] + " " + viewYear;
+      prevM.addEventListener("click", function() {
+        viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        renderMonth();
+      });
+      nextM.addEventListener("click", function() {
+        viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        renderMonth();
+      });
+      nav.appendChild(prevM); nav.appendChild(mLbl); nav.appendChild(nextM);
       wrap.appendChild(nav);
 
-      // Таблиця
-      var tableWrap = document.createElement("div");
-      tableWrap.style.cssText = "overflow-x:auto;-webkit-overflow-scrolling:touch;";
-      var table = document.createElement("table");
-      table.style.cssText = "border-collapse:collapse;width:100%;min-width:520px;font-size:.78rem;";
+      // Всі дні місяця
+      var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      var days = [];
+      for (var i = 1; i <= daysInMonth; i++) {
+        var d = new Date(viewYear, viewMonth, i);
+        days.push({
+          date: d,
+          dateStr: viewYear + "-" + String(viewMonth+1).padStart(2,"0") + "-" + String(i).padStart(2,"0"),
+          jsDay: d.getDay() // 0=Sun..6=Sat
+        });
+      }
 
-      // Заголовок — дні тижня
+      var tableWrap = document.createElement("div");
+      tableWrap.style.cssText = "overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;";
+      var table = document.createElement("table");
+      table.style.cssText = "border-collapse:collapse;font-size:.78rem;";
+
+      // Заголовок — всі дні місяця
       var thead = document.createElement("thead");
       var hrow = document.createElement("tr");
-      // перша клітинка — порожня (для аватарів)
       var thEmpty = document.createElement("th");
-      thEmpty.style.cssText = "width:60px;padding:6px 4px;background:#f8f8f6;position:sticky;left:0;z-index:2;border-bottom:2px solid #d8ddd4;";
+      thEmpty.style.cssText = "width:60px;min-width:60px;padding:6px 4px;background:#f8f8f6;position:sticky;left:0;z-index:2;border-bottom:2px solid #d8ddd4;";
       hrow.appendChild(thEmpty);
-      var today = todayStr();
-      for (var d2 = 0; d2 < 7; d2++) {
-        var dayDate = new Date(weekStart); dayDate.setDate(weekStart.getDate() + d2);
-        var ds = dayDate.getFullYear() + "-" + String(dayDate.getMonth()+1).padStart(2,"0") + "-" + String(dayDate.getDate()).padStart(2,"0");
-        var isToday = ds === today;
+      var today3 = todayStr();
+      days.forEach(function(day) {
+        var isToday = day.dateStr === today3;
+        var isWeekend = day.jsDay === 0 || day.jsDay === 6;
         var th = document.createElement("th");
-        th.style.cssText = "padding:6px 4px;text-align:center;border-bottom:2px solid #d8ddd4;min-width:54px;" + (isToday ? "background:#e8f5e0;" : "background:#f8f8f6;");
-        th.innerHTML = '<div style="font-weight:700;color:' + (isToday ? "#3d5430" : "#555") + ';">' + DOW_SHORT[d2+1] + '</div>' +
-          '<div style="font-size:.7rem;color:' + (isToday ? "#5a7a48" : "#999") + ';">' + dayDate.getDate() + '</div>';
+        th.style.cssText = "padding:6px 4px;text-align:center;border-bottom:2px solid #d8ddd4;min-width:50px;" +
+          (isToday ? "background:#e8f5e0;" : "background:#f8f8f6;");
+        th.innerHTML = '<div style="font-weight:700;font-size:.7rem;color:' + (isToday ? "#3d5430" : isWeekend ? "#b03020" : "#555") + ';">' + DOW_SHORT[day.jsDay] + '</div>' +
+          '<div style="font-size:.72rem;color:' + (isToday ? "#5a7a48" : "#999") + ';">' + day.date.getDate() + '</div>';
         hrow.appendChild(th);
-      }
+      });
       thead.appendChild(hrow); table.appendChild(thead);
 
-      // Тіло — майстри
       var tbody = document.createElement("tbody");
       api("GET", "/api/crm/masters").then(function(res) {
         var masters = res.j.masters || [];
-        var promises = masters.map(function(m) {
+        Promise.all(masters.map(function(m) {
           return api("GET", "/api/crm/masters/" + m.id + "/schedule").then(function(r) {
             return { master: m, sched: r.j.schedule || [] };
           });
-        });
-        Promise.all(promises).then(function(rows) {
+        })).then(function(rows) {
           rows.forEach(function(row) {
             var m = row.master;
-            var schedMap = {}; // weekday(0-6 Sun-Sat) → {ws,we}
+            var schedMap = {};
             row.sched.forEach(function(s) { schedMap[s.weekday] = s; });
 
             var tr = document.createElement("tr");
             tr.style.cssText = "border-bottom:1px solid #e8ece4;";
 
-            // Аватар
             var tdAv = document.createElement("td");
-            tdAv.style.cssText = "padding:6px 4px;text-align:center;position:sticky;left:0;background:#fff;z-index:1;";
+            tdAv.style.cssText = "padding:6px 4px;text-align:center;position:sticky;left:0;background:#fff;z-index:1;min-width:60px;";
             var initials = (m.name||'?')[0].toUpperCase() + (m.last_name ? m.last_name[0].toUpperCase() : '');
             tdAv.innerHTML = (m.photo
               ? '<img src="' + m.photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1.5px solid #8aA462;" alt="">'
@@ -2374,38 +2384,39 @@
               '<div style="font-size:.62rem;color:#1a2016;font-weight:600;margin-top:2px;white-space:nowrap;">' + (m.name||'') + '</div>';
             tr.appendChild(tdAv);
 
-            // Дні тижня
-            for (var d3 = 0; d3 < 7; d3++) {
-              // JS getDay: 0=Sun,1=Mon..6=Sat → наш weekday: 1=Mon..6=Sat,0=Sun
-              var jsDay = (d3 + 1) % 7; // d3=0→Mon(1),d3=6→Sun(0)
-              var dayDate2 = new Date(weekStart); dayDate2.setDate(weekStart.getDate() + d3);
-              var s = schedMap[jsDay === 0 ? 0 : d3 + 1]; // weekday 1=Mon..6=Sat,0=Sun
+            days.forEach(function(day) {
+              var s = schedMap[day.jsDay]; // 0=Sun,1=Mon..6=Sat matches DB weekday
               var td = document.createElement("td");
-              td.style.cssText = "padding:4px;text-align:center;cursor:pointer;";
+              td.style.cssText = "padding:3px;text-align:center;cursor:" + (s ? "pointer" : "default") + ";";
               if (s) {
                 td.innerHTML = '<div style="background:#e8f5e0;border-radius:8px;padding:4px 2px;">' +
-                  '<div style="font-weight:600;color:#3d5430;font-size:.72rem;">' + fmtMin(s.work_start) + '</div>' +
-                  '<div style="color:#5a7a48;font-size:.72rem;">' + fmtMin(s.work_end) + '</div>' +
-                  '</div>';
-                td.addEventListener("click", (function(date3) { return function() {
-                  apptDate = date3; apptViewMode = "calendar";
+                  '<div style="font-weight:600;color:#3d5430;font-size:.7rem;">' + fmtMin(s.work_start) + '</div>' +
+                  '<div style="color:#5a7a48;font-size:.7rem;">' + fmtMin(s.work_end) + '</div></div>';
+                td.addEventListener("click", (function(ds2) { return function() {
+                  apptDate = ds2; apptViewMode = "calendar";
                   renderAppts({ keepMode: true, title: "Розклад" });
-                }; })( dayDate2.getFullYear() + "-" + String(dayDate2.getMonth()+1).padStart(2,"0") + "-" + String(dayDate2.getDate()).padStart(2,"0") ));
+                }; })(day.dateStr));
               } else {
-                td.innerHTML = '<div style="color:#ccc;font-size:.7rem;">—</div>';
+                td.innerHTML = '<div style="background:#f4f5f2;border-radius:8px;min-height:38px;"></div>';
               }
               tr.appendChild(td);
-            }
+            });
             tbody.appendChild(tr);
           });
           table.appendChild(tbody);
           tableWrap.appendChild(table);
           wrap.appendChild(tableWrap);
+          // Авто-прокрутка до сьогодні
+          setTimeout(function() {
+            var todayIdx = -1;
+            for (var i2 = 0; i2 < days.length; i2++) { if (days[i2].dateStr === today3) { todayIdx = i2; break; } }
+            if (todayIdx > 0) tableWrap.scrollLeft = Math.max(0, todayIdx * 50 - 60);
+          }, 60);
         });
       });
     }
 
-    renderWeek();
+    renderMonth();
   }
 
   /* ============================================================
