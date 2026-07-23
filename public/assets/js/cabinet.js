@@ -1059,34 +1059,6 @@
             '<div style="font-size:.73rem;font-weight:600;color:#1a2016;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
             '<div style="font-size:.6rem;color:#5a7a48;margin-top:1px;">' + (m.level||'') + '</div>' +
             '</div>';
-          hCell.addEventListener("click", function(e) {
-            e.stopPropagation();
-            var old = document.getElementById("master-ctx"); if (old) { old.remove(); return; }
-            var rect = hCell.getBoundingClientRect();
-            var ctx = document.createElement("div");
-            ctx.id = "master-ctx";
-            ctx.style.cssText = "position:fixed;background:#fff;border:1px solid #d8ddd4;border-radius:12px;padding:6px;z-index:300;box-shadow:0 6px 24px rgba(0,0,0,.15);min-width:200px;";
-            var items = [
-              { icon:"🗓", label:"Графік роботи", fn: function() { scheduleModal(m); } },
-              { icon:"👤", label:"Профіль майстра", fn: function() { renderMasterProfile(m.id); } }
-            ];
-            items.forEach(function(it) {
-              var btn = document.createElement("button");
-              btn.style.cssText = "display:block;width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-size:.9rem;cursor:pointer;border-radius:8px;color:#1a2016;";
-              btn.innerHTML = '<span style="margin-right:8px;">' + it.icon + '</span>' + it.label;
-              btn.addEventListener("mouseenter", function() { btn.style.background = "#f0f2ee"; });
-              btn.addEventListener("mouseleave", function() { btn.style.background = "none"; });
-              btn.addEventListener("click", function() { ctx.remove(); it.fn(); });
-              ctx.appendChild(btn);
-            });
-            document.body.appendChild(ctx);
-            var cx = Math.min(rect.left, window.innerWidth - 220);
-            ctx.style.left = cx + "px";
-            ctx.style.top = (rect.bottom + 4) + "px";
-            setTimeout(function() {
-              document.addEventListener("click", function off() { ctx.remove(); document.removeEventListener("click", off); }, { once: true });
-            }, 50);
-          });
           header.appendChild(hCell);
         });
 
