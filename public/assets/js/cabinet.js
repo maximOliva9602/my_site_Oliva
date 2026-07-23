@@ -3690,12 +3690,14 @@
     var backBtn = document.createElement("button");
     backBtn.innerHTML = "&#8249;";
     backBtn.style.cssText = "background:none;border:none;font-size:1.8rem;line-height:1;color:#1a2016;padding:8px 12px 8px 4px;cursor:pointer;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;";
-    backBtn.addEventListener("click", function() {
-      var oh = document.getElementById("scheEditHdr"); if (oh) oh.remove();
+    backBtn.onclick = function() {
+      main2.innerHTML = "";
       main2.style.cssText = "";
+      var os = document.getElementById("scheEditSave"); if (os) os.remove();
+      var oh = document.getElementById("scheEditHdr"); if (oh) oh.remove();
       if (typeof backFn === "function") backFn();
       else { var gi = TABS.findIndex(function(t){return t.id==="masters";}); activateTab(gi >= 0 ? gi : 0); }
-    });
+    };
     var hdrTitle = document.createElement("div");
     hdrTitle.textContent = "Налаштування графіку роботи";
     hdrTitle.style.cssText = "flex:1;font-size:.95rem;font-weight:600;color:#1a2016;text-align:center;";
@@ -3959,12 +3961,6 @@
 
     tDay.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderDayTab(); });
     tPeriod.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderPeriodTab(); });
-
-    // Cleanup save button in capture phase (backBtn is inside scheEditHdr — removing it
-    // during capture prevents bubble-phase navigation from firing on iOS Safari)
-    backBtn.addEventListener("click", function() {
-      var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove();
-    }, true);
 
     renderDayTab();
   }
