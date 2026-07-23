@@ -871,7 +871,7 @@
         // Стан touch/long-press для всіх колонок
         var calTouchMoved = false, calTX = 0, calTY = 0, calLpHandled = false;
         var lpActive = false, lpTimer = null, lpInd = null, lpAbsMin = 0, lpMasterRef = null;
-        var dragState = { active: false, ghost: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null };
+        var dragState = { active: false, ghost: null, dropZone: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
 
         function removeLpInd() { if (lpInd) { lpInd.remove(); lpInd = null; } }
 
@@ -1211,6 +1211,7 @@
             function finishBlockDrag() {
               blkCancelLp();
               if (dragState.ghost) { dragState.ghost.remove(); dragState.ghost = null; }
+              if (dragState.dropZone) { dragState.dropZone.remove(); dragState.dropZone = null; }
               block.style.opacity = "";
               var prevHl = document.querySelector(".cal-drag-hl");
               if (prevHl) { prevHl.classList.remove("cal-drag-hl"); prevHl.style.background = ""; }
@@ -1287,24 +1288,38 @@
                   el2.classList.add("cal-drag-hl");
                   el2.style.background = "rgba(110,145,69,.12)";
                 }
+                // drop-zone shadow inside target column
+                var dzTopPx = ((snapped - HOUR_START * 60) / STEP) * SLOT_H + 1;
+                var dzH     = Math.max((a.duration_min / STEP) * SLOT_H - 2, SLOT_H * 2 - 2);
+                if (!dragState.dropZone || dragState.dropZone.parentElement !== el2) {
+                  if (dragState.dropZone) dragState.dropZone.remove();
+                  var dz = document.createElement("div");
+                  dz.style.cssText = "position:absolute;left:2px;right:2px;border-radius:5px;pointer-events:none;z-index:4;" +
+                    "background:" + markerHex + ";opacity:.35;border:2px dashed rgba(255,255,255,.7);box-sizing:border-box;";
+                  el2.appendChild(dz);
+                  dragState.dropZone = dz;
+                }
+                dragState.dropZone.style.top    = dzTopPx + "px";
+                dragState.dropZone.style.height = dzH + "px";
               } else {
                 dragState.targetMasterId = null;
                 dragState.targetMasterName = null;
                 dragState.targetStartMin = a.start_min;
+                if (dragState.dropZone) { dragState.dropZone.remove(); dragState.dropZone = null; }
               }
             }, { passive: false });
 
             block.addEventListener("touchend", function() {
               if (dragState.apptId !== a.id || !dragState.active) {
                 finishBlockDrag();
-                dragState = { active: false, ghost: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+                dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
                 return;
               }
               var targetId      = dragState.targetMasterId;
               var targetName    = dragState.targetMasterName;
               var newStartMin   = dragState.targetStartMin != null ? dragState.targetStartMin : a.start_min;
               finishBlockDrag();
-              dragState = { active: false, ghost: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
 
               var masterChanged = targetId && String(targetId) !== String(a.master_id);
               var timeChanged   = newStartMin !== a.start_min;
@@ -1329,7 +1344,7 @@
 
             block.addEventListener("touchcancel", function() {
               finishBlockDrag();
-              dragState = { active: false, ghost: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
             });
 
             block.addEventListener("click", function(e) {
