@@ -211,6 +211,8 @@
       var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
       var ws = document.getElementById("cal-week-strip"); if (ws) ws.remove();
       document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
+      var ae = $("app"); if (ae) ae.style.cssText = "";
     }
     function closeMobSheet() { mobBackdrop.classList.remove("open"); mobSheet.classList.remove("open"); }
     function openMobSheet()  { mobBackdrop.classList.add("open");    mobSheet.classList.add("open"); }
@@ -562,6 +564,8 @@
 
     function loadMonthView() {
       document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
+      var ae = $("app"); if (ae) ae.style.cssText = "";
       var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
       var ws0 = document.getElementById("cal-week-strip"); if (ws0) ws0.remove();
       var ce = $("apptContent"); ce.innerHTML = "";
@@ -657,6 +661,8 @@
 
     function loadAppts(masterId) {
       document.body.style.overflow = "";
+      document.body.style.overscrollBehavior = "";
+      var ae = $("app"); if (ae) ae.style.cssText = "";
       contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
       var url = ME.role === "owner"
         ? "/api/crm/appointments?date=" + apptDate + (masterId ? "&master=" + masterId : "")
@@ -680,7 +686,7 @@
       var MASTER_COL_W = window.innerWidth < 600 ? 160 : 170;
       var HEADER_H = 70;
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
-      var WEEK_STRIP_H = 64;
+      var WEEK_STRIP_H = 90;
       var DAY_UA = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
       var MON_SHORT = ["січ","лют","бер","квіт","трав","черв","лип","серп","вер","жовт","лист","груд"];
 
@@ -688,9 +694,10 @@
 
       if (!zoomOnly) {
         // ── Повна перебудова фрейму ──────────────────────────────
-        // Фіксуємо скрол сторінки щоб header не з'їжджав
-        window.scrollTo(0, 0);
-        document.body.style.overflow = "hidden";
+        // Фіксуємо #app щоб PWA-header не міг прокрутитися
+        var appEl = $("app");
+        appEl.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;";
+        document.body.style.overscrollBehavior = "none";
 
         contentEl.innerHTML = "";
         var old = document.getElementById("cal-overlay"); if (old) old.remove();
@@ -698,41 +705,104 @@
         var navEl = document.getElementById("mob-nav");
         var navH = navEl ? Math.ceil(navEl.getBoundingClientRect().height) : 0;
 
-        // ── Тижнева стрічка (без заголовку місяця — він у dateNav) ──
-        var wkStrip = document.createElement("div");
-        wkStrip.id = "cal-week-strip";
-        wkStrip.style.cssText = "position:fixed;left:0;right:0;bottom:" + navH + "px;height:" + WEEK_STRIP_H + "px;z-index:10;" +
-          "background:#fff;border-top:1px solid #d8ddd4;display:flex;align-items:stretch;-webkit-user-select:none;user-select:none;";
+        // ── Тижнева стрічка з заголовком місяця + свайп-навігація ──
         var curDay = new Date(apptDate + "T00:00:00");
         var dow0 = (curDay.getDay() + 6) % 7;
         var weekStart = new Date(curDay); weekStart.setDate(curDay.getDate() - dow0);
         var today0 = todayStr();
         var DOW_STRIP = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
+        var MON_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
+        var MON_SHORT2 = ["Січ","Лют","Бер","Квіт","Трав","Черв","Лип","Серп","Вер","Жовт","Лист","Груд"];
+
+        var wkStrip = document.createElement("div");
+        wkStrip.id = "cal-week-strip";
+        wkStrip.style.cssText = "position:fixed;left:0;right:0;bottom:" + navH + "px;height:" + WEEK_STRIP_H + "px;z-index:10;" +
+          "background:#fff;border-top:1px solid #d8ddd4;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;overflow:hidden;";
+
+        // Заголовок місяця
+        var midDay = new Date(weekStart); midDay.setDate(weekStart.getDate() + 3);
+        var stripMonthHdr = document.createElement("div");
+        stripMonthHdr.style.cssText = "text-align:center;font-size:.68rem;font-weight:600;color:#888;padding:5px 0 2px;flex-shrink:0;letter-spacing:.04em;";
+        stripMonthHdr.textContent = MON_UA[midDay.getMonth()] + " " + midDay.getFullYear();
+        wkStrip.appendChild(stripMonthHdr);
+
+        // Ряд днів
+        var daysRow = document.createElement("div");
+        daysRow.style.cssText = "display:flex;flex:1;align-items:stretch;";
         for (var wi = 0; wi < 7; wi++) {
           var wd2 = new Date(weekStart); wd2.setDate(weekStart.getDate() + wi);
           var wds = wd2.getFullYear() + "-" + String(wd2.getMonth()+1).padStart(2,"0") + "-" + String(wd2.getDate()).padStart(2,"0");
           var isToday2 = wds === today0;
           var isSel = wds === apptDate;
           var wBtn = document.createElement("button");
-          wBtn.style.cssText = "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;cursor:pointer;padding:6px 0 8px;background:transparent;";
+          wBtn.style.cssText = "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;cursor:pointer;padding:2px 0 6px;background:transparent;";
           var wDayLbl = document.createElement("span");
           wDayLbl.style.cssText = "font-size:.62rem;font-weight:600;color:" + (isSel ? "#6e9145" : isToday2 ? "#5a7a48" : "#aaa") + ";letter-spacing:.02em;line-height:1;";
           wDayLbl.textContent = DOW_STRIP[wi];
           var wPill = document.createElement("span");
-          wPill.style.cssText = "width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;" +
-            "font-size:1rem;font-weight:" + (isSel||isToday2 ? "700" : "500") + ";line-height:1;" +
+          wPill.style.cssText = "width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;" +
+            "font-size:.95rem;font-weight:" + (isSel||isToday2 ? "700" : "500") + ";line-height:1;" +
             "background:" + (isSel ? "#6e9145" : isToday2 ? "#e8f0e0" : "transparent") + ";" +
             "color:" + (isSel ? "#fff" : isToday2 ? "#3d5430" : "#222") + ";";
           wPill.textContent = wd2.getDate();
           wBtn.appendChild(wDayLbl); wBtn.appendChild(wPill);
           (function(ds) {
             wBtn.addEventListener("click", function() {
+              if (swMoved) return;
               apptDate = ds; apptMonth = ds.slice(0,7);
               loadCalendar(activeMasterFilter);
             });
           })(wds);
-          wkStrip.appendChild(wBtn);
+          daysRow.appendChild(wBtn);
         }
+        wkStrip.appendChild(daysRow);
+
+        // Панель-прев'ю наступного/попереднього тижня при свайпі
+        var swipePreview = document.createElement("div");
+        swipePreview.style.cssText = "position:absolute;top:0;bottom:0;width:0;overflow:hidden;background:rgba(18,22,14,.88);display:flex;align-items:center;justify-content:center;z-index:2;transition:width .05s;";
+        var swipeLabel = document.createElement("span");
+        swipeLabel.style.cssText = "white-space:nowrap;color:#fff;font-size:.78rem;font-weight:700;padding:0 14px;";
+        swipePreview.appendChild(swipeLabel);
+        wkStrip.appendChild(swipePreview);
+
+        var swTouchX = 0, swTouching = false, swMoved = false;
+        wkStrip.addEventListener("touchstart", function(e) {
+          if (e.touches.length !== 1) return;
+          swTouchX = e.touches[0].clientX; swTouching = true; swMoved = false;
+          swipePreview.style.transition = "none";
+        }, { passive: true });
+        wkStrip.addEventListener("touchmove", function(e) {
+          if (!swTouching) return;
+          var dx = e.touches[0].clientX - swTouchX;
+          if (Math.abs(dx) > 12) swMoved = true;
+          if (!swMoved) return;
+          var goLeft = dx < 0;
+          var delta  = goLeft ? 7 : -7;
+          var previewW = Math.min(Math.abs(dx) * 2.2, window.innerWidth * 0.52);
+          swipePreview.style.left  = goLeft ? "auto" : "0";
+          swipePreview.style.right = goLeft ? "0"    : "auto";
+          swipePreview.style.width = previewW + "px";
+          var ns = new Date(weekStart); ns.setDate(weekStart.getDate() + delta);
+          var ne = new Date(ns); ne.setDate(ns.getDate() + 6);
+          swipeLabel.textContent = ns.getDate() + " " + MON_SHORT2[ns.getMonth()] + " – " + ne.getDate() + " " + MON_SHORT2[ne.getMonth()];
+        }, { passive: true });
+        wkStrip.addEventListener("touchend", function(e) {
+          if (!swTouching) return;
+          swTouching = false;
+          swipePreview.style.transition = "width .15s";
+          swipePreview.style.width = "0";
+          if (!swMoved) return;
+          var dx = e.changedTouches[0].clientX - swTouchX;
+          if (Math.abs(dx) > 55) {
+            var delta2 = dx < 0 ? 7 : -7;
+            var d2 = new Date(apptDate + "T00:00:00"); d2.setDate(d2.getDate() + delta2);
+            apptDate = d2.getFullYear() + "-" + String(d2.getMonth()+1).padStart(2,"0") + "-" + String(d2.getDate()).padStart(2,"0");
+            apptMonth = apptDate.slice(0,7);
+            loadCalendar(activeMasterFilter);
+          }
+        });
+        wkStrip.addEventListener("touchcancel", function() { swTouching = false; swipePreview.style.width = "0"; });
+
         document.body.appendChild(wkStrip);
 
         // ── Навігація дати + zoom (в contentEl, над overlay) ─────
@@ -818,7 +888,7 @@
 
         // ── Прокручуваний контейнер ───────────────────────────────
         scroller = document.createElement("div");
-        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;width:100%;touch-action:pan-x pan-y;";
+        scroller.style.cssText = "overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;width:100%;touch-action:pan-x pan-y;overscroll-behavior:none;";
         overlay.appendChild(scroller);
         calScroller = scroller;
       } else {
