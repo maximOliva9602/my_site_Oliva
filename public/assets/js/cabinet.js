@@ -2392,8 +2392,13 @@
               tr.appendChild(tdAv);
               days.forEach(function(day) {
                 var td = document.createElement("td");
-                td.style.cssText = "padding:3px;text-align:center;";
+                td.style.cssText = "padding:3px;text-align:center;" + (ME.role === "owner" ? "cursor:pointer;" : "");
                 td.innerHTML = schedCellHtml(bSchedMap[day.jsDay]);
+                if (ME.role === "owner") {
+                  td.addEventListener("click", (function(b2) { return function() {
+                    branchEditPage(b2, null);
+                  }; })(branch));
+                }
                 tr.appendChild(td);
               });
               tbody.appendChild(tr);
@@ -2424,7 +2429,7 @@
               td.style.cssText = "padding:3px;text-align:center;cursor:" + (s ? "pointer" : "default") + ";";
               td.innerHTML = schedCellHtml(s);
               if (s) td.addEventListener("click", (function(master2, ds2) { return function() {
-                scheduleEditPage(master2, ds2, "grafik");
+                scheduleEditPage(master2, ds2, "grafik", "day");
               }; })(m, day.dateStr));
               tr.appendChild(td);
             });
@@ -3681,7 +3686,7 @@
 
   function scheduleModal(m) { scheduleEditPage(m, todayStr(), "masters"); }
 
-  function scheduleEditPage(m, startDate, backTabId) {
+  function scheduleEditPage(m, startDate, backTabId, defaultTab) {
     var main2 = $("main"); main2.innerHTML = "";
     var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
     main2.style.cssText = "padding:50px 0 0;";
@@ -3730,13 +3735,16 @@
     // Tab bar
     var tabBar = document.createElement("div");
     tabBar.style.cssText = "display:flex;border-bottom:1.5px solid #e8ece4;background:#fff;";
+    var tWeekly = document.createElement("button");
+    tWeekly.textContent = "ТИЖНЕВИЙ";
+    tWeekly.style.cssText = "flex:1;padding:12px;background:none;border:none;border-bottom:2.5px solid #1a2016;font-size:.75rem;font-weight:700;letter-spacing:.05em;cursor:pointer;color:#1a2016;";
     var tDay = document.createElement("button");
     tDay.textContent = "НА ДЕНЬ";
-    tDay.style.cssText = "flex:1;padding:12px;background:none;border:none;border-bottom:2.5px solid #1a2016;font-size:.75rem;font-weight:700;letter-spacing:.05em;cursor:pointer;color:#1a2016;";
+    tDay.style.cssText = "flex:1;padding:12px;background:none;border:none;border-bottom:2.5px solid transparent;font-size:.75rem;font-weight:700;letter-spacing:.05em;cursor:pointer;color:#9aaa90;";
     var tPeriod = document.createElement("button");
     tPeriod.textContent = "НА ПЕРІОД";
     tPeriod.style.cssText = "flex:1;padding:12px;background:none;border:none;border-bottom:2.5px solid transparent;font-size:.75rem;font-weight:700;letter-spacing:.05em;cursor:pointer;color:#9aaa90;";
-    tabBar.appendChild(tDay); tabBar.appendChild(tPeriod);
+    tabBar.appendChild(tWeekly); tabBar.appendChild(tDay); tabBar.appendChild(tPeriod);
     main2.appendChild(tabBar);
 
     var content = document.createElement("div");
@@ -3753,11 +3761,71 @@
       return btn;
     }
 
+    // ── ТИЖНЕВИЙ ──────────────────────────────────────
+    function renderWeeklyTab() {
+      tWeekly.style.borderBottomColor = "#1a2016"; tWeekly.style.color = "#1a2016";
+      tDay.style.borderBottomColor = "transparent"; tDay.style.color = "#9aaa90";
+      tPeriod.style.borderBottomColor = "transparent"; tPeriod.style.color = "#9aaa90";
+      var oldSave = document.getElementById("scheEditSave");
+      if (oldSave) oldSave.remove();
+      content.innerHTML = '<div style="color:#aaa;font-size:.85rem;padding:8px 0;">Завантаження…</div>';
+      api("GET", "/api/crm/masters/" + m.id + "/schedule").then(function(r) {
+        var existSched = r.j.schedule || [];
+        content.innerHTML = "";
+        var DOW_NAMES = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+        var schedRows = {};
+        existSched.forEach(function(s) { schedRows[s.weekday] = { ws: fmtMin(s.work_start), we: fmtMin(s.work_end) }; });
+        var infoLbl = document.createElement("div");
+        infoLbl.textContent = "Базовий тижневий графік. Якщо поля порожні — вихідний.";
+        infoLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:14px;line-height:1.4;";
+        content.appendChild(infoLbl);
+        var schedGrid = document.createElement("div");
+        schedGrid.style.cssText = "margin-bottom:24px;";
+        [1,2,3,4,5,6,0].forEach(function(wd) {
+          var row = document.createElement("div");
+          row.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:8px;";
+          var dowLbl = document.createElement("div");
+          dowLbl.textContent = DOW_NAMES[wd];
+          dowLbl.style.cssText = "width:28px;font-size:.8rem;color:#555;font-weight:600;flex-shrink:0;";
+          var wsI = document.createElement("input"); wsI.type = "time"; wsI.value = (schedRows[wd] || {}).ws || "";
+          wsI.style.cssText = "flex:1;padding:8px;border:1.5px solid #d8ddd4;border-radius:8px;font-size:.88rem;";
+          var sep = document.createElement("span"); sep.textContent = "–"; sep.style.cssText = "color:#aaa;";
+          var weI = document.createElement("input"); weI.type = "time"; weI.value = (schedRows[wd] || {}).we || "";
+          weI.style.cssText = "flex:1;padding:8px;border:1.5px solid #d8ddd4;border-radius:8px;font-size:.88rem;";
+          row.appendChild(dowLbl); row.appendChild(wsI); row.appendChild(sep); row.appendChild(weI);
+          row.dataset.wd = wd;
+          row._wsI = wsI; row._weI = weI;
+          schedGrid.appendChild(row);
+        });
+        content.appendChild(schedGrid);
+        var saveBtn = makeSaveBtn("Зберегти");
+        saveBtn.id = "scheEditSave";
+        document.body.appendChild(saveBtn);
+        saveBtn.addEventListener("click", function() {
+          var schedule = [];
+          schedGrid.querySelectorAll("div[data-wd]").forEach(function(row3) {
+            var wd2 = parseInt(row3.dataset.wd, 10);
+            var ws2 = toMin(row3._wsI.value), we2 = toMin(row3._weI.value);
+            if (ws2 != null && we2 != null && we2 > ws2) schedule.push({ weekday: wd2, work_start: ws2, work_end: we2 });
+          });
+          saveBtn.textContent = "Збереження…"; saveBtn.disabled = true;
+          api("PUT", "/api/crm/masters/" + m.id + "/schedule", { schedule: schedule }).then(function(r2) {
+            saveBtn.disabled = false;
+            if (r2.j && r2.j.ok) {
+              saveBtn.textContent = "Збережено ✓"; saveBtn.style.background = "#3d5430";
+              setTimeout(function() { saveBtn.textContent = "Зберегти"; saveBtn.style.background = "#1a2016"; }, 1500);
+            } else { saveBtn.textContent = "Помилка"; }
+          });
+        });
+      });
+    }
+
     // ── НА ДЕНЬ ──────────────────────────────────────
     var currentDate = startDate || todayStr();
     var dayStateArea;
 
     function renderDayTab() {
+      tWeekly.style.borderBottomColor = "transparent"; tWeekly.style.color = "#9aaa90";
       tDay.style.borderBottomColor = "#1a2016"; tDay.style.color = "#1a2016";
       tPeriod.style.borderBottomColor = "transparent"; tPeriod.style.color = "#9aaa90";
       content.innerHTML = "";
@@ -3869,6 +3937,7 @@
 
     // ── НА ПЕРІОД ──────────────────────────────────────
     function renderPeriodTab() {
+      tWeekly.style.borderBottomColor = "transparent"; tWeekly.style.color = "#9aaa90";
       tPeriod.style.borderBottomColor = "#1a2016"; tPeriod.style.color = "#1a2016";
       tDay.style.borderBottomColor = "transparent"; tDay.style.color = "#9aaa90";
       var oldSave2 = document.getElementById("scheEditSave");
@@ -3971,10 +4040,13 @@
       });
     }
 
+    tWeekly.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderWeeklyTab(); });
     tDay.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderDayTab(); });
     tPeriod.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderPeriodTab(); });
 
-    renderDayTab();
+    if (defaultTab === "day") { renderDayTab(); }
+    else if (defaultTab === "period") { renderPeriodTab(); }
+    else { renderWeeklyTab(); }
   }
 
   function timeoffModal(m) {
