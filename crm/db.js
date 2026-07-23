@@ -316,6 +316,18 @@ CREATE TABLE IF NOT EXISTS day_blocks (
   FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_day_blocks_date ON day_blocks(date, master_id);
+
+CREATE TABLE IF NOT EXISTS master_day_overrides (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  master_id  INTEGER NOT NULL,
+  date       TEXT    NOT NULL,
+  is_off     INTEGER NOT NULL DEFAULT 0,
+  work_start INTEGER,
+  work_end   INTEGER,
+  UNIQUE(master_id, date),
+  FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_day_overrides ON master_day_overrides(master_id, date);
 `);
 
 /* Абонементи */

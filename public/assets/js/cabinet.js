@@ -3372,7 +3372,10 @@
           info.appendChild(el("div", "sub", (m.level || "Майстер") + " · " + (m.phone || "—") + " · " + svcCount + " послуг"));
           row.appendChild(info); row.appendChild(el("span", "sp"));
           var prof = el("button", "btn btn-sm btn-ghost", "Профіль"); prof.addEventListener("click", function () { masterModal(m); });
-          var sch = el("button", "btn btn-sm btn-ghost", "Графік"); sch.addEventListener("click", function () { scheduleModal(m); });
+          var sch = el("button", "btn btn-sm btn-ghost", "Графік"); sch.addEventListener("click", function () {
+            var mastersTabIdx = TABS.findIndex(function(t){return t.id==="masters";});
+            scheduleEditPage(m, todayStr(), function() { activateTab(mastersTabIdx >= 0 ? mastersTabIdx : 0); });
+          });
           var off = el("button", "btn btn-sm btn-ghost", "Вихідні"); off.addEventListener("click", function () { timeoffModal(m); });
           var del = el("button", "btn btn-sm btn-ghost", "Видалити");
           del.addEventListener("click", function () { if (confirm("Видалити майстра?")) api("DELETE", "/api/crm/masters/" + m.id).then(load); });
@@ -3446,67 +3449,293 @@
     }, 300);
   }
 
-  function scheduleModal(m) {
-    openModal('<h3>Графік: ' + m.name + '</h3><div id="schBody" class="muted">Завантаження…</div>', true);
-    api("GET", "/api/crm/masters/" + m.id + "/schedule").then(function (res) {
-      var sched = {}, brk = {};
-      (res.j.schedule || []).forEach(function (r) { sched[r.weekday] = r; });
-      (res.j.breaks || []).forEach(function (r) { brk[r.weekday] = r; }); // одна перерва/день у UI
-      var box = $("schBody"); box.className = "sched-grid"; box.innerHTML = "";
-      box.appendChild(el("div", "muted", "Порожні поля = вихідний."));
-      var rows = [];
-      for (var wd = 1; wd <= 6; wd++) rows.push(wd); rows.push(0);
-      rows.forEach(function (wd) {
-        var hasDay = !!sched[wd];
-        var r = el("div", "sched-row" + (hasDay ? "" : " day-off"));
-        r.appendChild(el("span", "wd", DOW[wd]));
+  function scheduleModal(m) { scheduleEditPage(m, todayStr(), null); }
 
-        var ws = el("input"); ws.type = "time"; ws.dataset.wd = wd; ws.dataset.k = "ws";
-        var we = el("input"); we.type = "time"; we.dataset.wd = wd; we.dataset.k = "we";
-        if (sched[wd]) { ws.value = fmtMin(sched[wd].work_start); we.value = fmtMin(sched[wd].work_end); }
+  function scheduleEditPage(m, startDate, backFn) {
+    var main2 = $("main"); main2.innerHTML = "";
+    main2.style.cssText = "padding:0;overflow-y:auto;";
 
-        var workGroup = el("div", "sched-group");
-        workGroup.appendChild(ws);
-        workGroup.appendChild(el("span", "sched-sep", "–"));
-        workGroup.appendChild(we);
-        r.appendChild(workGroup);
+    function toMin(v) { if (!v) return null; var p = v.split(":"); return parseInt(p[0],10)*60+parseInt(p[1],10); }
 
-        var bs = el("input"); bs.type = "time"; bs.dataset.wd = wd; bs.dataset.k = "bs";
-        var be = el("input"); be.type = "time"; be.dataset.wd = wd; be.dataset.k = "be";
-        if (brk[wd]) { bs.value = fmtMin(brk[wd].break_start); be.value = fmtMin(brk[wd].break_end); }
-
-        var breakGroup = el("div", "sched-group");
-        breakGroup.appendChild(el("span", "sched-lbl", "перерва"));
-        breakGroup.appendChild(bs);
-        breakGroup.appendChild(el("span", "sched-sep", "–"));
-        breakGroup.appendChild(be);
-        r.appendChild(breakGroup);
-
-        function refreshDayOff() { r.className = "sched-row" + (ws.value || we.value ? "" : " day-off"); }
-        ws.addEventListener("change", refreshDayOff); we.addEventListener("change", refreshDayOff);
-
-        box.appendChild(r);
-      });
-      var foot = el("div", "modal-foot");
-      var cancel = el("button", "btn btn-ghost", "Скасувати"); cancel.addEventListener("click", closeModal);
-      var save = el("button", "btn btn-primary", "Зберегти");
-      save.addEventListener("click", function () {
-        function toMin(v) { if (!v) return null; var p = v.split(":"); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); }
-        var vals = {};
-        box.querySelectorAll("input").forEach(function (i) { vals[i.dataset.wd + i.dataset.k] = toMin(i.value); });
-        var schedule = [], breaks = [];
-        [1, 2, 3, 4, 5, 6, 0].forEach(function (wd) {
-          var ws = vals[wd + "ws"], we = vals[wd + "we"];
-          if (ws != null && we != null && we > ws) {
-            schedule.push({ weekday: wd, work_start: ws, work_end: we });
-            var bs = vals[wd + "bs"], be = vals[wd + "be"];
-            if (bs != null && be != null && be > bs) breaks.push({ weekday: wd, break_start: bs, break_end: be });
-          }
-        });
-        api("PUT", "/api/crm/masters/" + m.id + "/schedule", { schedule: schedule, breaks: breaks }).then(closeModal);
-      });
-      foot.appendChild(cancel); foot.appendChild(save); box.appendChild(foot);
+    // Header
+    var hdr = document.createElement("div");
+    hdr.style.cssText = "display:flex;align-items:center;padding:10px 12px;background:#f0f2ed;border-bottom:1px solid #d8ddd4;gap:8px;position:sticky;top:0;z-index:10;";
+    var backBtn = document.createElement("button");
+    backBtn.innerHTML = "&#8249;";
+    backBtn.style.cssText = "background:none;border:none;font-size:1.8rem;line-height:1;color:#1a2016;padding:0 6px 0 0;cursor:pointer;flex-shrink:0;";
+    backBtn.addEventListener("click", function() {
+      main2.style.cssText = "";
+      if (typeof backFn === "function") backFn();
+      else { var gi = TABS.findIndex(function(t){return t.id==="masters";}); activateTab(gi >= 0 ? gi : 0); }
     });
+    var hdrTitle = document.createElement("div");
+    hdrTitle.textContent = "Налаштування графіку роботи";
+    hdrTitle.style.cssText = "flex:1;font-size:.95rem;font-weight:600;color:#1a2016;text-align:center;";
+    hdr.appendChild(backBtn); hdr.appendChild(hdrTitle);
+    main2.appendChild(hdr);
+
+    // Master info
+    var mInfo = document.createElement("div");
+    mInfo.style.cssText = "display:flex;align-items:center;padding:14px 16px;gap:12px;border-bottom:1px solid #e8ece4;";
+    var initials = (m.name||'?')[0].toUpperCase() + (m.last_name ? m.last_name[0].toUpperCase() : '');
+    mInfo.innerHTML = (m.photo
+      ? '<img src="' + m.photo + '" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
+      : '<div style="width:48px;height:48px;border-radius:50%;background:#3d5430;color:#8aA462;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;flex-shrink:0;">' + initials + '</div>') +
+      '<div><div style="font-size:.95rem;font-weight:600;color:#1a2016;">' + (m.name||'') + (m.last_name ? ' '+m.last_name : '') + '</div>' +
+      '<div style="font-size:.8rem;color:#6a7a60;">' + (m.level||'') + '</div></div>';
+    main2.appendChild(mInfo);
+
+    // Tab bar
+    var tabBar = document.createElement("div");
+    tabBar.style.cssText = "display:flex;border-bottom:1.5px solid #e8ece4;background:#fff;";
+    var tDay = document.createElement("button");
+    tDay.textContent = "НА ДЕНЬ";
+    tDay.style.cssText = "flex:1;padding:12px;background:none;border:none;border-bottom:2.5px solid #1a2016;font-size:.75rem;font-weight:700;letter-spacing:.05em;cursor:pointer;color:#1a2016;";
+    var tPeriod = document.createElement("button");
+    tPeriod.textContent = "НА ПЕРІОД";
+    tPeriod.style.cssText = "flex:1;padding:12px;background:none;border:none;border-bottom:2.5px solid transparent;font-size:.75rem;font-weight:700;letter-spacing:.05em;cursor:pointer;color:#9aaa90;";
+    tabBar.appendChild(tDay); tabBar.appendChild(tPeriod);
+    main2.appendChild(tabBar);
+
+    var content = document.createElement("div");
+    content.style.cssText = "padding:18px 16px 120px;";
+    main2.appendChild(content);
+
+    var navEl2 = document.getElementById("mob-nav");
+    var navH2 = navEl2 ? navEl2.offsetHeight : 56;
+
+    function makeSaveBtn(label) {
+      var btn = document.createElement("button");
+      btn.textContent = label;
+      btn.style.cssText = "position:fixed;bottom:" + (navH2 + 8) + "px;left:16px;right:16px;padding:16px;background:#1a2016;color:#fff;border:none;border-radius:16px;font-size:1rem;font-weight:600;cursor:pointer;z-index:20;transition:background .2s;";
+      return btn;
+    }
+
+    // ── НА ДЕНЬ ──────────────────────────────────────
+    var currentDate = startDate || todayStr();
+    var dayStateArea;
+
+    function renderDayTab() {
+      tDay.style.borderBottomColor = "#1a2016"; tDay.style.color = "#1a2016";
+      tPeriod.style.borderBottomColor = "transparent"; tPeriod.style.color = "#9aaa90";
+      content.innerHTML = "";
+
+      var dateLbl = document.createElement("div");
+      dateLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:4px;";
+      dateLbl.textContent = "Дата";
+      content.appendChild(dateLbl);
+
+      var dateInput = document.createElement("input");
+      dateInput.type = "date"; dateInput.value = currentDate;
+      dateInput.style.cssText = "font-size:.92rem;padding:10px 12px;border:1.5px solid #d8ddd4;border-radius:10px;width:100%;box-sizing:border-box;margin-bottom:20px;";
+      content.appendChild(dateInput);
+
+      dayStateArea = document.createElement("div");
+      content.appendChild(dayStateArea);
+
+      function loadDay(date) {
+        dayStateArea.innerHTML = '<div style="color:#aaa;font-size:.85rem;padding:8px 0;">Завантаження…</div>';
+        api("GET", "/api/crm/masters/" + m.id + "/day-override?date=" + date).then(function(r) {
+          renderDayState(date, r.j.override, r.j.weekly);
+        });
+      }
+
+      function renderDayState(date, override, weekly) {
+        // Remove old save btn if any
+        var oldSave = document.getElementById("scheEditSave");
+        if (oldSave) oldSave.remove();
+        dayStateArea.innerHTML = "";
+
+        var isOff  = override ? !!override.is_off : !weekly;
+        var wStart = (override && !override.is_off) ? override.work_start : (weekly ? weekly.work_start : 540);
+        var wEnd   = (override && !override.is_off) ? override.work_end   : (weekly ? weekly.work_end   : 1290);
+
+        // Radio row
+        var radioRow = document.createElement("div");
+        radioRow.style.cssText = "display:flex;gap:20px;margin-bottom:20px;align-items:center;";
+
+        function radioLabel(val, txt, checked) {
+          var lbl = document.createElement("label");
+          lbl.style.cssText = "display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.9rem;color:#1a2016;";
+          var rb = document.createElement("input"); rb.type = "radio"; rb.name = "seDay"; rb.value = val;
+          rb.style.cssText = "width:20px;height:20px;accent-color:#3d5430;cursor:pointer;";
+          if (checked) rb.checked = true;
+          lbl.appendChild(rb); lbl.appendChild(document.createTextNode(txt));
+          return { label: lbl, rb: rb };
+        }
+        var rWork = radioLabel("work", "Робочий день", !isOff);
+        var rOff  = radioLabel("off",  "Вихідний день", isOff);
+        rOff.label.style.color = "#6a7a60";
+        radioRow.appendChild(rWork.label); radioRow.appendChild(rOff.label);
+        dayStateArea.appendChild(radioRow);
+
+        // Time block
+        var timeBlock = document.createElement("div");
+        timeBlock.style.cssText = "background:#f0f2ed;border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:10px;margin-bottom:16px;" + (isOff ? "opacity:.4;pointer-events:none;" : "");
+        var wsL = document.createElement("span"); wsL.textContent = "з"; wsL.style.cssText = "font-size:.78rem;color:#6a7a60;";
+        var wsI = document.createElement("input"); wsI.type = "time"; wsI.value = fmtMin(wStart);
+        wsI.style.cssText = "font-size:1.25rem;font-weight:700;color:#1a2016;background:none;border:none;outline:none;min-width:80px;";
+        var vSep = document.createElement("div"); vSep.style.cssText = "width:1px;height:28px;background:#d0d5cb;margin:0 6px;";
+        var weL = document.createElement("span"); weL.textContent = "до"; weL.style.cssText = "font-size:.78rem;color:#6a7a60;";
+        var weI = document.createElement("input"); weI.type = "time"; weI.value = fmtMin(wEnd);
+        weI.style.cssText = "font-size:1.25rem;font-weight:700;color:#1a2016;background:none;border:none;outline:none;min-width:80px;";
+        timeBlock.appendChild(wsL); timeBlock.appendChild(wsI);
+        timeBlock.appendChild(vSep);
+        timeBlock.appendChild(weL); timeBlock.appendChild(weI);
+        dayStateArea.appendChild(timeBlock);
+
+        function syncTimeBlock() {
+          timeBlock.style.opacity = rOff.rb.checked ? ".4" : "1";
+          timeBlock.style.pointerEvents = rOff.rb.checked ? "none" : "auto";
+        }
+        rWork.rb.addEventListener("change", syncTimeBlock);
+        rOff.rb.addEventListener("change", syncTimeBlock);
+
+        // Скинути до тижневого
+        if (override) {
+          var resetBtn = document.createElement("button");
+          resetBtn.textContent = "Скинути до тижневого графіку";
+          resetBtn.style.cssText = "background:none;border:1.5px solid #d8ddd4;color:#6a7a60;border-radius:10px;padding:8px 14px;font-size:.8rem;cursor:pointer;margin-bottom:10px;";
+          resetBtn.addEventListener("click", function() {
+            api("DELETE", "/api/crm/masters/" + m.id + "/day-override?date=" + date).then(function() { loadDay(date); });
+          });
+          dayStateArea.appendChild(resetBtn);
+        }
+
+        // Save btn
+        var saveBtn = makeSaveBtn("Зберегти");
+        saveBtn.id = "scheEditSave";
+        document.body.appendChild(saveBtn);
+        saveBtn.addEventListener("click", function() {
+          var isOffNow = rOff.rb.checked;
+          api("PUT", "/api/crm/masters/" + m.id + "/day-override", {
+            date: date, is_off: isOffNow ? 1 : 0,
+            work_start: isOffNow ? null : toMin(wsI.value),
+            work_end:   isOffNow ? null : toMin(weI.value)
+          }).then(function(r) {
+            if (r.j && r.j.ok) {
+              saveBtn.textContent = "Збережено ✓"; saveBtn.style.background = "#3d5430";
+              setTimeout(function() { saveBtn.textContent = "Зберегти"; saveBtn.style.background = "#1a2016"; }, 1500);
+            }
+          });
+        });
+      }
+
+      dateInput.addEventListener("change", function() { currentDate = dateInput.value; loadDay(currentDate); });
+      loadDay(currentDate);
+    }
+
+    // ── НА ПЕРІОД ──────────────────────────────────────
+    function renderPeriodTab() {
+      tPeriod.style.borderBottomColor = "#1a2016"; tPeriod.style.color = "#1a2016";
+      tDay.style.borderBottomColor = "transparent"; tDay.style.color = "#9aaa90";
+      var oldSave2 = document.getElementById("scheEditSave");
+      if (oldSave2) oldSave2.remove();
+      content.innerHTML = "";
+
+      var DOW2 = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+      var now2 = new Date();
+      var mS = now2.getFullYear() + "-" + String(now2.getMonth()+1).padStart(2,"0") + "-01";
+      var lastD = new Date(now2.getFullYear(), now2.getMonth()+1, 0);
+      var mE = lastD.getFullYear() + "-" + String(lastD.getMonth()+1).padStart(2,"0") + "-" + String(lastD.getDate()).padStart(2,"0");
+
+      // Date range
+      var rngWrap = document.createElement("div");
+      rngWrap.style.cssText = "background:#f0f2ed;border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:8px;margin-bottom:20px;";
+      var rfL = document.createElement("span"); rfL.textContent = "з"; rfL.style.cssText = "font-size:.78rem;color:#6a7a60;";
+      var rfI = document.createElement("input"); rfI.type = "date"; rfI.value = mS;
+      rfI.style.cssText = "font-size:.95rem;font-weight:700;color:#1a2016;background:none;border:none;outline:none;";
+      var reL = document.createElement("span"); reL.textContent = "до"; reL.style.cssText = "font-size:.78rem;color:#6a7a60;margin-left:8px;";
+      var reI = document.createElement("input"); reI.type = "date"; reI.value = mE;
+      reI.style.cssText = "font-size:.95rem;font-weight:700;color:#1a2016;background:none;border:none;outline:none;";
+      rngWrap.appendChild(rfL); rngWrap.appendChild(rfI); rngWrap.appendChild(reL); rngWrap.appendChild(reI);
+      content.appendChild(rngWrap);
+
+      // Method
+      var mthLbl = document.createElement("div"); mthLbl.textContent = "Виберіть спосіб";
+      mthLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:4px;";
+      content.appendChild(mthLbl);
+      var mSel = document.createElement("select");
+      mSel.style.cssText = "width:100%;padding:10px 0;border:none;border-bottom:1.5px solid #d8ddd4;background:transparent;font-size:.9rem;color:#1a2016;margin-bottom:20px;-webkit-appearance:auto;";
+      [
+        { v:"by_weekday", t:"По днях тижня" },
+        { v:"all_days",   t:"День за днем" },
+        { v:"day_off",    t:"Скидання (зробити вихідний)" },
+        { v:"reset",      t:"Скинути до тижневого графіку" }
+      ].forEach(function(o) { var opt = document.createElement("option"); opt.value = o.v; opt.textContent = o.t; mSel.appendChild(opt); });
+      content.appendChild(mSel);
+
+      // Weekday pills
+      var selDays = [1,2,3,4,5];
+      var daysRow = document.createElement("div");
+      daysRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;";
+      for (var dw = 0; dw < 7; dw++) {
+        (function(d) {
+          var btn2 = document.createElement("button");
+          btn2.textContent = DOW2[d];
+          var sel2 = selDays.indexOf(d) !== -1;
+          btn2.style.cssText = "width:40px;height:40px;border-radius:50%;border:1.5px solid " + (sel2 ? "#3d5430" : "#d8ddd4") + ";background:" + (sel2 ? "#3d5430" : "transparent") + ";color:" + (sel2 ? "#fff" : "#1a2016") + ";font-size:.82rem;font-weight:600;cursor:pointer;";
+          btn2.addEventListener("click", function() {
+            var ix = selDays.indexOf(d);
+            if (ix !== -1) selDays.splice(ix, 1); else selDays.push(d);
+            var s2 = selDays.indexOf(d) !== -1;
+            btn2.style.background = s2 ? "#3d5430" : "transparent";
+            btn2.style.color = s2 ? "#fff" : "#1a2016";
+            btn2.style.borderColor = s2 ? "#3d5430" : "#d8ddd4";
+          });
+          daysRow.appendChild(btn2);
+        })(dw);
+      }
+      content.appendChild(daysRow);
+
+      // Time range
+      var tBlk = document.createElement("div");
+      tBlk.style.cssText = "background:#f0f2ed;border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:10px;margin-bottom:16px;";
+      var wsL2 = document.createElement("span"); wsL2.textContent = "з"; wsL2.style.cssText = "font-size:.78rem;color:#6a7a60;";
+      var wsI2 = document.createElement("input"); wsI2.type = "time"; wsI2.value = "09:00";
+      wsI2.style.cssText = "font-size:1.25rem;font-weight:700;color:#1a2016;background:none;border:none;outline:none;min-width:80px;";
+      var vS2 = document.createElement("div"); vS2.style.cssText = "width:1px;height:28px;background:#d0d5cb;margin:0 6px;";
+      var weL2 = document.createElement("span"); weL2.textContent = "до"; weL2.style.cssText = "font-size:.78rem;color:#6a7a60;";
+      var weI2 = document.createElement("input"); weI2.type = "time"; weI2.value = "21:00";
+      weI2.style.cssText = "font-size:1.25rem;font-weight:700;color:#1a2016;background:none;border:none;outline:none;min-width:80px;";
+      tBlk.appendChild(wsL2); tBlk.appendChild(wsI2); tBlk.appendChild(vS2); tBlk.appendChild(weL2); tBlk.appendChild(weI2);
+      content.appendChild(tBlk);
+
+      function syncModeUI() {
+        var mode2 = mSel.value;
+        daysRow.style.display = (mode2 === "by_weekday") ? "flex" : "none";
+        tBlk.style.display = (mode2 === "day_off" || mode2 === "reset") ? "none" : "flex";
+      }
+      mSel.addEventListener("change", syncModeUI);
+      syncModeUI();
+
+      var saveBtn2 = makeSaveBtn("Зберегти");
+      saveBtn2.id = "scheEditSave";
+      document.body.appendChild(saveBtn2);
+      saveBtn2.addEventListener("click", function() {
+        var mode3 = mSel.value;
+        saveBtn2.textContent = "Збереження…"; saveBtn2.disabled = true;
+        api("POST", "/api/crm/masters/" + m.id + "/schedule-period", {
+          date_from: rfI.value, date_to: reI.value, mode: mode3,
+          weekdays: selDays,
+          work_start: toMin(wsI2.value), work_end: toMin(weI2.value)
+        }).then(function(r) {
+          saveBtn2.disabled = false;
+          if (r.j && r.j.ok) {
+            saveBtn2.textContent = "Збережено ✓"; saveBtn2.style.background = "#3d5430";
+            setTimeout(function() { saveBtn2.textContent = "Зберегти"; saveBtn2.style.background = "#1a2016"; }, 1800);
+          } else { saveBtn2.textContent = "Помилка"; }
+        });
+      });
+    }
+
+    tDay.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderDayTab(); });
+    tPeriod.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderPeriodTab(); });
+
+    // Back button cleanup
+    backBtn.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); }, true);
+
+    renderDayTab();
   }
 
   function timeoffModal(m) {

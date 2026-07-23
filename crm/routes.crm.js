@@ -381,6 +381,64 @@ router.get("/day-schedules", any, function (req, res) {
   res.json({ ok: true, schedules, breaks });
 });
 
+/* ---- Денні override-и графіку (per-date) ---- */
+router.get("/masters/:id/day-override", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const date = req.query.date;
+  if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
+  const override = db.prepare("SELECT * FROM master_day_overrides WHERE master_id=? AND date=?").get(id, date);
+  const d = new Date(date + "T00:00:00");
+  const weekday = d.getDay(); // 0=Sun..6=Sat
+  const weekly = db.prepare("SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=?").get(id, weekday);
+  res.json({ ok: true, override: override || null, weekly: weekly || null });
+});
+
+router.put("/masters/:id/day-override", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const b = req.body || {};
+  const date = b.date;
+  if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
+  const isOff = b.is_off ? 1 : 0;
+  const ws = (!isOff && b.work_start != null) ? parseInt(b.work_start, 10) : null;
+  const we = (!isOff && b.work_end   != null) ? parseInt(b.work_end,   10) : null;
+  db.prepare("INSERT OR REPLACE INTO master_day_overrides (master_id,date,is_off,work_start,work_end) VALUES (?,?,?,?,?)")
+    .run(id, date, isOff, ws, we);
+  res.json({ ok: true });
+});
+
+router.delete("/masters/:id/day-override", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const date = req.query.date;
+  if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
+  db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=?").run(id, date);
+  res.json({ ok: true });
+});
+
+/* bulk: POST {date_from,date_to,mode,weekdays[],work_start,work_end} */
+router.post("/masters/:id/schedule-period", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const b = req.body || {};
+  const { date_from, date_to, mode } = b;
+  const weekdays = Array.isArray(b.weekdays) ? b.weekdays.map(Number) : [];
+  const work_start = parseInt(b.work_start, 10);
+  const work_end   = parseInt(b.work_end,   10);
+  if (!tz.isDate(date_from) || !tz.isDate(date_to)) return res.status(400).json({ ok: false, error: "bad dates" });
+  const upsert = db.prepare("INSERT OR REPLACE INTO master_day_overrides (master_id,date,is_off,work_start,work_end) VALUES (?,?,?,?,?)");
+  const del    = db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=?");
+  db.transaction(function () {
+    const end = new Date(date_to + "T00:00:00");
+    for (let d = new Date(date_from + "T00:00:00"); d <= end; d.setDate(d.getDate() + 1)) {
+      const ds = d.toISOString().slice(0, 10);
+      const jsDay = d.getDay();
+      if (mode === "reset")       { del.run(id, ds); }
+      else if (mode === "day_off"){ upsert.run(id, ds, 1, null, null); }
+      else if (mode === "by_weekday" && weekdays.indexOf(jsDay) !== -1) { upsert.run(id, ds, 0, work_start, work_end); }
+      else if (mode === "all_days") { upsert.run(id, ds, 0, work_start, work_end); }
+    }
+  })();
+  res.json({ ok: true });
+});
+
 router.put("/masters/:id/schedule", owner, function (req, res) {
   const id = parseInt(req.params.id, 10);
   const sched = (req.body && req.body.schedule) || []; // [{weekday,work_start,work_end}]
