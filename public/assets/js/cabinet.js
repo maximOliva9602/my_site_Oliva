@@ -759,9 +759,9 @@
 
         // Панель-прев'ю наступного/попереднього тижня при свайпі
         var swipePreview = document.createElement("div");
-        swipePreview.style.cssText = "position:absolute;top:0;bottom:0;width:0;overflow:hidden;background:rgba(18,22,14,.88);display:flex;align-items:center;justify-content:center;z-index:2;transition:width .05s;";
+        swipePreview.style.cssText = "position:absolute;top:0;bottom:0;left:0;width:100%;background:rgba(18,22,14,.88);display:flex;align-items:center;justify-content:center;z-index:2;transform:translateX(100%);will-change:transform;";
         var swipeLabel = document.createElement("span");
-        swipeLabel.style.cssText = "white-space:nowrap;color:#fff;font-size:.78rem;font-weight:700;padding:0 14px;";
+        swipeLabel.style.cssText = "white-space:nowrap;color:#fff;font-size:.82rem;font-weight:700;padding:0 16px;";
         swipePreview.appendChild(swipeLabel);
         wkStrip.appendChild(swipePreview);
 
@@ -769,7 +769,13 @@
         wkStrip.addEventListener("touchstart", function(e) {
           if (e.touches.length !== 1) return;
           swTouchX = e.touches[0].clientX; swTouching = true; swMoved = false;
+          daysRow.style.transition = "none";
           swipePreview.style.transition = "none";
+          // позиціонуємо preview поза екраном (справа) на старті
+          var sw0 = wkStrip.offsetWidth || 375;
+          swipePreview.style.left = "0";
+          swipePreview.style.width = sw0 + "px";
+          swipePreview.style.transform = "translateX(" + sw0 + "px)";
         }, { passive: true });
         wkStrip.addEventListener("touchmove", function(e) {
           if (!swTouching) return;
@@ -777,11 +783,14 @@
           if (Math.abs(dx) > 12) swMoved = true;
           if (!swMoved) return;
           var goLeft = dx < 0;
+          var sw1 = wkStrip.offsetWidth || 375;
+          // daysRow ковзає разом з пальцем
+          daysRow.style.transform = "translateX(" + dx + "px)";
+          // preview slide in from the opposite side
+          var previewOffset = goLeft ? (sw1 + dx) : (-sw1 + dx);
+          swipePreview.style.transform = "translateX(" + previewOffset + "px)";
+          // оновлюємо лейбл тижня
           var delta  = goLeft ? 7 : -7;
-          var previewW = Math.min(Math.abs(dx) * 2.2, window.innerWidth * 0.52);
-          swipePreview.style.left  = goLeft ? "auto" : "0";
-          swipePreview.style.right = goLeft ? "0"    : "auto";
-          swipePreview.style.width = previewW + "px";
           var ns = new Date(weekStart); ns.setDate(weekStart.getDate() + delta);
           var ne = new Date(ns); ne.setDate(ns.getDate() + 6);
           swipeLabel.textContent = ns.getDate() + " " + MON_SHORT2[ns.getMonth()] + " – " + ne.getDate() + " " + MON_SHORT2[ne.getMonth()];
@@ -789,69 +798,39 @@
         wkStrip.addEventListener("touchend", function(e) {
           if (!swTouching) return;
           swTouching = false;
-          swipePreview.style.transition = "width .15s";
-          swipePreview.style.width = "0";
-          if (!swMoved) return;
           var dx = e.changedTouches[0].clientX - swTouchX;
-          if (Math.abs(dx) > 55) {
-            var delta2 = dx < 0 ? 7 : -7;
-            var d2 = new Date(apptDate + "T00:00:00"); d2.setDate(d2.getDate() + delta2);
-            apptDate = d2.getFullYear() + "-" + String(d2.getMonth()+1).padStart(2,"0") + "-" + String(d2.getDate()).padStart(2,"0");
-            apptMonth = apptDate.slice(0,7);
-            loadCalendar(activeMasterFilter);
+          if (!swMoved || Math.abs(dx) < 55) {
+            // Snap back
+            daysRow.style.transition = "transform .2s";
+            daysRow.style.transform = "translateX(0)";
+            swipePreview.style.transition = "transform .2s";
+            var sw2 = wkStrip.offsetWidth || 375;
+            swipePreview.style.transform = "translateX(" + (dx < 0 ? sw2 : -sw2) + "px)";
+            return;
           }
+          var delta2 = dx < 0 ? 7 : -7;
+          var d2 = new Date(apptDate + "T00:00:00"); d2.setDate(d2.getDate() + delta2);
+          apptDate = d2.getFullYear() + "-" + String(d2.getMonth()+1).padStart(2,"0") + "-" + String(d2.getDate()).padStart(2,"0");
+          apptMonth = apptDate.slice(0,7);
+          loadCalendar(activeMasterFilter);
         });
-        wkStrip.addEventListener("touchcancel", function() { swTouching = false; swipePreview.style.width = "0"; });
+        wkStrip.addEventListener("touchcancel", function() {
+          swTouching = false;
+          daysRow.style.transition = "transform .2s";
+          daysRow.style.transform = "translateX(0)";
+          var sw3 = wkStrip.offsetWidth || 375;
+          swipePreview.style.transition = "transform .2s";
+          swipePreview.style.transform = "translateX(" + sw3 + "px)";
+        });
 
         document.body.appendChild(wkStrip);
 
-        // ── Навігація дати + zoom (в contentEl, над overlay) ─────
-        var dateNav = document.createElement("div");
-        dateNav.style.cssText = "display:flex;align-items:center;padding:4px 6px;background:var(--panel-1,#f8f8f6);flex-shrink:0;border-top:1px solid #d8ddd4;border-bottom:1px solid #d8ddd4;gap:4px;";
-        var dnPrev = document.createElement("button");
-        dnPrev.innerHTML = "&#8249;";
-        dnPrev.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 8px;line-height:1;flex-shrink:0;";
-        var dnNext = document.createElement("button");
-        dnNext.innerHTML = "&#8250;";
-        dnNext.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 8px;line-height:1;flex-shrink:0;";
-        var dnLbl = document.createElement("div");
-        dnLbl.style.cssText = "font-weight:600;font-size:.88rem;color:#1a2016;text-align:center;flex:1;";
-        var dnD = new Date(apptDate + "T00:00:00");
-        dnLbl.textContent = dnD.getDate() + " " + MON_SHORT[dnD.getMonth()] + " · " + DAY_UA[dnD.getDay()];
-        var zoomOut = document.createElement("button");
-        zoomOut.textContent = "−";
-        zoomOut.style.cssText = "background:#e8ede4;border:none;border-radius:6px;font-size:1rem;color:#5a7a48;cursor:pointer;padding:2px 9px;line-height:1.4;flex-shrink:0;font-weight:700;";
-        var zoomIn2 = document.createElement("button");
-        zoomIn2.textContent = "+";
-        zoomIn2.style.cssText = "background:#e8ede4;border:none;border-radius:6px;font-size:1rem;color:#5a7a48;cursor:pointer;padding:2px 9px;line-height:1.4;flex-shrink:0;font-weight:700;";
-        dateNav.appendChild(dnPrev); dateNav.appendChild(dnLbl); dateNav.appendChild(dnNext);
-        dateNav.appendChild(zoomOut); dateNav.appendChild(zoomIn2);
-        contentEl.appendChild(dateNav);
-
-        // overlay стартує одразу під dateNav
-        var overlayTop = Math.ceil(contentEl.getBoundingClientRect().bottom);
+        // overlay стартує одразу під masterFilterWrap (contentEl порожній)
+        var overlayTop = Math.ceil(contentEl.getBoundingClientRect().top);
         overlay = document.createElement("div");
         overlay.id = "cal-overlay";
         overlay.style.cssText = "position:fixed;top:" + overlayTop + "px;left:0;right:0;bottom:" + (navH + WEEK_STRIP_H) + "px;z-index:10;background:#f0f2ee;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;";
         document.body.appendChild(overlay);
-
-        function shiftDate(delta) {
-          var d = new Date(apptDate + "T00:00:00");
-          d.setDate(d.getDate() + delta);
-          apptDate = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
-          apptMonth = apptDate.slice(0,7);
-          loadCalendar(activeMasterFilter);
-        }
-        dnPrev.addEventListener("click", function() { shiftDate(-1); });
-        dnNext.addEventListener("click", function() { shiftDate(1); });
-        zoomOut.addEventListener("click", function() {
-          calSlotH = Math.max(14, calSlotH - 4);
-          loadCalendar(activeMasterFilter, { zoomOnly: true });
-        });
-        zoomIn2.addEventListener("click", function() {
-          calSlotH = Math.min(50, calSlotH + 4);
-          loadCalendar(activeMasterFilter, { zoomOnly: true });
-        });
 
         // ── Pinch-to-zoom ─────────────────────────────────────────
         var pinchStartDist = 0, pinchStartH = calSlotH;
