@@ -2415,8 +2415,7 @@
               : '<div style="width:32px;height:32px;border-radius:50%;background:#3d5430;color:#8aA462;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;margin:0 auto;">' + initials + '</div>') +
               '<div style="font-size:.62rem;color:#1a2016;font-weight:600;margin-top:2px;white-space:nowrap;">' + (m.name||'') + '</div>';
             tdAv.addEventListener("click", (function(master) { return function() {
-              var gi = TABS.findIndex(function(t){return t.id==="grafik";});
-              scheduleEditPage(master, todayStr(), function() { activateTab(gi >= 0 ? gi : 0); });
+              scheduleEditPage(master, todayStr(), "grafik");
             }; })(m));
             tr.appendChild(tdAv);
             days.forEach(function(day) {
@@ -2425,8 +2424,7 @@
               td.style.cssText = "padding:3px;text-align:center;cursor:" + (s ? "pointer" : "default") + ";";
               td.innerHTML = schedCellHtml(s);
               if (s) td.addEventListener("click", (function(master2, ds2) { return function() {
-                var gi2 = TABS.findIndex(function(t){return t.id==="grafik";});
-                scheduleEditPage(master2, ds2, function() { activateTab(gi2 >= 0 ? gi2 : 0); });
+                scheduleEditPage(master2, ds2, "grafik");
               }; })(m, day.dateStr));
               tr.appendChild(td);
             });
@@ -2497,7 +2495,7 @@
     load();
   }
 
-  function branchEditPage(branch, backFn) {
+  function branchEditPage(branch, backFnIgnored) {
     var isNew = !branch;
     var main2 = $("main"); main2.innerHTML = "";
     var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
@@ -2516,14 +2514,18 @@
     hdrTitle.style.cssText = "flex:1;font-size:.95rem;font-weight:600;color:#1a2016;text-align:center;";
 
     backBtn.onclick = function() {
-      var _backFn = backFn;
-      main2.innerHTML = "";
-      main2.style.cssText = "";
       var os = document.getElementById("branchSaveBtn"); if (os) os.remove();
       var oh = document.getElementById("branchEditHdr"); if (oh) oh.remove();
-      setTimeout(function() {
-        if (typeof _backFn === "function") _backFn();
-      }, 0);
+      main2.style.cssText = "";
+      main2.innerHTML = "";
+      var gi = TABS.findIndex(function(t){ return t.id === "filiyi"; });
+      if (gi < 0) gi = 0;
+      var mBtns = document.getElementById("mob-nav").querySelectorAll(".mob-tab");
+      if (mBtns[gi]) {
+        mBtns[gi].click();
+      } else {
+        activateTab(gi);
+      }
     };
     hdr.appendChild(backBtn); hdr.appendChild(hdrTitle);
     document.body.appendChild(hdr);
@@ -3602,7 +3604,7 @@
           var prof = el("button", "btn btn-sm btn-ghost", "Профіль"); prof.addEventListener("click", function () { masterModal(m); });
           var sch = el("button", "btn btn-sm btn-ghost", "Графік"); sch.addEventListener("click", function () {
             var mastersTabIdx = TABS.findIndex(function(t){return t.id==="masters";});
-            scheduleEditPage(m, todayStr(), function() { activateTab(mastersTabIdx >= 0 ? mastersTabIdx : 0); });
+            scheduleEditPage(m, todayStr(), "masters");
           });
           var off = el("button", "btn btn-sm btn-ghost", "Вихідні"); off.addEventListener("click", function () { timeoffModal(m); });
           var del = el("button", "btn btn-sm btn-ghost", "Видалити");
@@ -3677,9 +3679,9 @@
     }, 300);
   }
 
-  function scheduleModal(m) { scheduleEditPage(m, todayStr(), null); }
+  function scheduleModal(m) { scheduleEditPage(m, todayStr(), "masters"); }
 
-  function scheduleEditPage(m, startDate, backFn) {
+  function scheduleEditPage(m, startDate, backTabId) {
     var main2 = $("main"); main2.innerHTML = "";
     var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
     main2.style.cssText = "padding:50px 0 0;";
@@ -3694,15 +3696,19 @@
     backBtn.innerHTML = "&#8249;";
     backBtn.style.cssText = "background:none;border:none;font-size:1.8rem;line-height:1;color:#1a2016;padding:8px 12px 8px 4px;cursor:pointer;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;";
     backBtn.onclick = function() {
-      var _backFn = backFn;
-      main2.innerHTML = "";
-      main2.style.cssText = "";
       var os = document.getElementById("scheEditSave"); if (os) os.remove();
       var oh = document.getElementById("scheEditHdr"); if (oh) oh.remove();
-      setTimeout(function() {
-        if (typeof _backFn === "function") _backFn();
-        else { var gi = TABS.findIndex(function(t){return t.id==="masters";}); activateTab(gi >= 0 ? gi : 0); }
-      }, 0);
+      main2.style.cssText = "";
+      main2.innerHTML = "";
+      var targetId = backTabId || "grafik";
+      var gi = TABS.findIndex(function(t){ return t.id === targetId; });
+      if (gi < 0) gi = 0;
+      var mBtns = document.getElementById("mob-nav").querySelectorAll(".mob-tab");
+      if (mBtns[gi]) {
+        mBtns[gi].click();
+      } else {
+        activateTab(gi);
+      }
     };
     var hdrTitle = document.createElement("div");
     hdrTitle.textContent = "Налаштування графіку роботи";
