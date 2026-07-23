@@ -690,12 +690,6 @@
         var oldWkStrip = document.getElementById("cal-week-strip"); if (oldWkStrip) oldWkStrip.remove();
         var navEl = document.getElementById("mob-nav");
         var navH = navEl ? Math.ceil(navEl.getBoundingClientRect().height) : 0;
-        var contentTop = Math.round(contentEl.getBoundingClientRect().top);
-
-        overlay = document.createElement("div");
-        overlay.id = "cal-overlay";
-        overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + (navH + WEEK_STRIP_H) + "px;z-index:10;background:#f0f2ee;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;";
-        document.body.appendChild(overlay);
 
         // ── Тижнева стрічка (без заголовку місяця — він у dateNav) ──
         var wkStrip = document.createElement("div");
@@ -734,9 +728,9 @@
         }
         document.body.appendChild(wkStrip);
 
-        // ── Навігація дати + zoom ─────────────────────────────────
+        // ── Навігація дати + zoom (в contentEl, над overlay) ─────
         var dateNav = document.createElement("div");
-        dateNav.style.cssText = "display:flex;align-items:center;padding:4px 6px;background:#f0f2ee;flex-shrink:0;border-bottom:1px solid #d8ddd4;gap:4px;";
+        dateNav.style.cssText = "display:flex;align-items:center;padding:4px 6px;background:var(--panel-1,#f8f8f6);flex-shrink:0;border-top:1px solid #d8ddd4;border-bottom:1px solid #d8ddd4;gap:4px;";
         var dnPrev = document.createElement("button");
         dnPrev.innerHTML = "&#8249;";
         dnPrev.style.cssText = "background:none;border:none;font-size:1.6rem;color:#5a7a48;cursor:pointer;padding:0 8px;line-height:1;flex-shrink:0;";
@@ -755,7 +749,14 @@
         zoomIn2.style.cssText = "background:#e8ede4;border:none;border-radius:6px;font-size:1rem;color:#5a7a48;cursor:pointer;padding:2px 9px;line-height:1.4;flex-shrink:0;font-weight:700;";
         dateNav.appendChild(dnPrev); dateNav.appendChild(dnLbl); dateNav.appendChild(dnNext);
         dateNav.appendChild(zoomOut); dateNav.appendChild(zoomIn2);
-        overlay.appendChild(dateNav);
+        contentEl.appendChild(dateNav);
+
+        // overlay стартує одразу під dateNav
+        var overlayTop = Math.ceil(contentEl.getBoundingClientRect().bottom);
+        overlay = document.createElement("div");
+        overlay.id = "cal-overlay";
+        overlay.style.cssText = "position:fixed;top:" + overlayTop + "px;left:0;right:0;bottom:" + (navH + WEEK_STRIP_H) + "px;z-index:10;background:#f0f2ee;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;";
+        document.body.appendChild(overlay);
 
         function shiftDate(delta) {
           var d = new Date(apptDate + "T00:00:00");
