@@ -1200,7 +1200,7 @@
             if (heightPx >= 60 && a.price) html += '<div style="font-size:.58rem;color:rgba(255,255,255,.8);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
             block.innerHTML = html;
 
-            // ── Drag block between master columns (long-press → drag) ──
+            // ── Drag block: long-press → drag to new master or new time ──
             var blkDragX = 0, blkDragY = 0, blkDragRect = null, blkLpTimer = null, blkReady = false;
 
             function blkCancelLp() {
@@ -1222,13 +1222,13 @@
               blkDragRect = block.getBoundingClientRect();
               blkReady = false;
               dragState.apptId = a.id;
-              // visual hint: slight scale after hold
+              dragState.targetStartMin = a.start_min;
               blkLpTimer = setTimeout(function() {
                 blkReady = true;
                 if (navigator.vibrate) navigator.vibrate(40);
                 block.style.transition = "transform .12s";
                 block.style.transform  = "scale(1.06)";
-                calTouchMoved = true; // prevent mCol click
+                calTouchMoved = true;
               }, 400);
             }, { passive: true });
 
@@ -1239,12 +1239,10 @@
               var dy = t.clientY - blkDragY;
 
               if (!blkReady) {
-                // moved too much before hold → cancel
                 if (Math.abs(dx) > 8 || Math.abs(dy) > 8) blkCancelLp();
                 return;
               }
 
-              // long-press confirmed — start/continue ghost drag
               if (!dragState.active) {
                 dragState.active = true;
                 clearTimeout(lpTimer); lpTimer = null; lpActive = false; removeLpInd();
@@ -1252,6 +1250,9 @@
                 var ghost = block.cloneNode(true);
                 ghost.style.cssText = block.style.cssText +
                   ";position:fixed;left:" + blkDragRect.left + "px;top:" + blkDragRect.top + "px;width:" + blkDragRect.width + "px;height:" + blkDragRect.height + "px;z-index:500;opacity:.88;pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.28);transform:scale(1.05);";
+                // mark first span so we can update time text
+                var firstSpan = ghost.querySelector("span");
+                if (firstSpan) firstSpan.dataset.dragTime = "1";
                 document.body.appendChild(ghost);
                 dragState.ghost = ghost;
                 block.style.opacity = "0.3";
@@ -1260,38 +1261,60 @@
               e.preventDefault();
               dragState.ghost.style.left = (blkDragRect.left + dx) + "px";
               dragState.ghost.style.top  = (blkDragRect.top  + dy) + "px";
+
               var prevHl = document.querySelector(".cal-drag-hl");
               if (prevHl) { prevHl.classList.remove("cal-drag-hl"); prevHl.style.background = ""; }
+
               dragState.ghost.style.visibility = "hidden";
               var elUnder = document.elementFromPoint(t.clientX, t.clientY);
               dragState.ghost.style.visibility = "";
               var el2 = elUnder;
               while (el2 && !el2.dataset.masterId && el2 !== document.body) el2 = el2.parentElement;
+
               if (el2 && el2.dataset.masterId) {
                 dragState.targetMasterId   = el2.dataset.masterId;
                 dragState.targetMasterName = el2.dataset.masterName;
+                // calc new start time from ghost vertical position within column
+                var mColR = el2.getBoundingClientRect();
+                var blockTopInCol = (blkDragRect.top + dy) - mColR.top;
+                var rawMin = Math.round(blockTopInCol / SLOT_H) * STEP + HOUR_START * 60;
+                var snapped = Math.max(HOUR_START * 60, Math.min(HOUR_END * 60 - a.duration_min, rawMin));
+                dragState.targetStartMin = snapped;
+                // update time label in ghost
+                var tLbl = dragState.ghost.querySelector("[data-drag-time]");
+                if (tLbl) tLbl.textContent = fmtMin(snapped) + " – " + fmtMin(snapped + a.duration_min);
                 if (String(el2.dataset.masterId) !== String(master.id)) {
                   el2.classList.add("cal-drag-hl");
                   el2.style.background = "rgba(110,145,69,.12)";
                 }
-              } else { dragState.targetMasterId = null; dragState.targetMasterName = null; }
+              } else {
+                dragState.targetMasterId = null;
+                dragState.targetMasterName = null;
+                dragState.targetStartMin = a.start_min;
+              }
             }, { passive: false });
 
             block.addEventListener("touchend", function() {
               if (dragState.apptId !== a.id || !dragState.active) {
                 finishBlockDrag();
-                dragState = { active: false, ghost: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null };
+                dragState = { active: false, ghost: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
                 return;
               }
-              var targetId = dragState.targetMasterId;
-              var targetName = dragState.targetMasterName;
+              var targetId      = dragState.targetMasterId;
+              var targetName    = dragState.targetMasterName;
+              var newStartMin   = dragState.targetStartMin != null ? dragState.targetStartMin : a.start_min;
               finishBlockDrag();
-              dragState = { active: false, ghost: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null };
-              if (!targetId || String(targetId) === String(a.master_id)) return;
+              dragState = { active: false, ghost: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+
+              var masterChanged = targetId && String(targetId) !== String(a.master_id);
+              var timeChanged   = newStartMin !== a.start_min;
+              if (!targetId || (!masterChanged && !timeChanged)) return;
+
               openModal(
-                '<h3 style="margin:0 0 8px;">Перенести запис?</h3>' +
-                '<div style="font-size:.9rem;color:#333;margin-bottom:4px;"><strong>' + a.client_name + '</strong> · ' + fmtMin(a.start_min) + '</div>' +
-                '<div style="font-size:.85rem;color:#555;margin-bottom:18px;">До майстра: <strong>' + targetName + '</strong></div>' +
+                '<h3 style="margin:0 0 10px;">Перенести запис?</h3>' +
+                '<div style="font-size:.92rem;color:#222;font-weight:600;margin-bottom:6px;">' + a.client_name + '</div>' +
+                (masterChanged ? '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Майстер: <strong>' + targetName + '</strong></div>' : '') +
+                '<div style="font-size:.85rem;color:#555;margin-bottom:18px;">Час: <strong>' + fmtMin(newStartMin) + ' – ' + fmtMin(newStartMin + a.duration_min) + '</strong></div>' +
                 '<div class="modal-foot">' +
                 '<button id="dragConfirmBtn" class="btn btn-primary">Перенести</button>' +
                 '<button id="dragCancelBtn" class="btn btn-ghost">Скасувати</button>' +
@@ -1299,14 +1322,14 @@
               );
               document.getElementById("dragCancelBtn").addEventListener("click", closeModal);
               document.getElementById("dragConfirmBtn").addEventListener("click", function() {
-                api("PATCH", "/api/crm/appointments/" + a.id, { master: parseInt(targetId, 10), date: apptDate, start_min: a.start_min })
+                api("PATCH", "/api/crm/appointments/" + a.id, { master: parseInt(targetId, 10), date: apptDate, start_min: newStartMin })
                   .then(function(r) { closeModal(); if (r.j && r.j.ok) loadCalendar(activeMasterFilter, { zoomOnly: true }); });
               });
             });
 
             block.addEventListener("touchcancel", function() {
               finishBlockDrag();
-              dragState = { active: false, ghost: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null };
+              dragState = { active: false, ghost: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
             });
 
             block.addEventListener("click", function(e) {
