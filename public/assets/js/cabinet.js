@@ -2424,10 +2424,10 @@
               var td = document.createElement("td");
               td.style.cssText = "padding:3px;text-align:center;cursor:" + (s ? "pointer" : "default") + ";";
               td.innerHTML = schedCellHtml(s);
-              if (s) td.addEventListener("click", (function(ds2) { return function() {
-                apptDate = ds2; apptViewMode = "calendar";
-                renderAppts({ keepMode: true, title: "Розклад" });
-              }; })(day.dateStr));
+              if (s) td.addEventListener("click", (function(master2, ds2) { return function() {
+                var gi2 = TABS.findIndex(function(t){return t.id==="grafik";});
+                scheduleEditPage(master2, ds2, function() { activateTab(gi2 >= 0 ? gi2 : 0); });
+              }; })(m, day.dateStr));
               tr.appendChild(td);
             });
             tbody.appendChild(tr);
@@ -2500,7 +2500,8 @@
   function branchEditPage(branch, backFn) {
     var isNew = !branch;
     var main2 = $("main"); main2.innerHTML = "";
-    main2.style.cssText = "padding:0;overflow-y:auto;";
+    var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
+    main2.style.cssText = "padding:0;overflow-y:auto;height:calc(100vh - " + _topbarH + "px);";
 
     function toMin(v) { if (!v) return null; var p = v.split(":"); return parseInt(p[0],10)*60+parseInt(p[1],10); }
 
@@ -3671,7 +3672,8 @@
 
   function scheduleEditPage(m, startDate, backFn) {
     var main2 = $("main"); main2.innerHTML = "";
-    main2.style.cssText = "padding:0;overflow-y:auto;";
+    var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
+    main2.style.cssText = "padding:0;overflow-y:auto;height:calc(100vh - " + _topbarH + "px);";
 
     function toMin(v) { if (!v) return null; var p = v.split(":"); return parseInt(p[0],10)*60+parseInt(p[1],10); }
 
