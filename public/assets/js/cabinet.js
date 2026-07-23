@@ -1200,13 +1200,36 @@
             if (heightPx >= 60 && a.price) html += '<div style="font-size:.58rem;color:rgba(255,255,255,.8);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
             block.innerHTML = html;
 
-            // ── Drag block between master columns ─────────────────────
-            var blkDragX = 0, blkDragY = 0, blkDragRect = null;
+            // ── Drag block between master columns (long-press → drag) ──
+            var blkDragX = 0, blkDragY = 0, blkDragRect = null, blkLpTimer = null, blkReady = false;
+
+            function blkCancelLp() {
+              clearTimeout(blkLpTimer); blkLpTimer = null; blkReady = false;
+              block.style.transform = ""; block.style.transition = "";
+            }
+
+            function finishBlockDrag() {
+              blkCancelLp();
+              if (dragState.ghost) { dragState.ghost.remove(); dragState.ghost = null; }
+              block.style.opacity = "";
+              var prevHl = document.querySelector(".cal-drag-hl");
+              if (prevHl) { prevHl.classList.remove("cal-drag-hl"); prevHl.style.background = ""; }
+            }
+
             block.addEventListener("touchstart", function(e) {
               var t = e.touches[0];
               blkDragX = t.clientX; blkDragY = t.clientY;
               blkDragRect = block.getBoundingClientRect();
+              blkReady = false;
               dragState.apptId = a.id;
+              // visual hint: slight scale after hold
+              blkLpTimer = setTimeout(function() {
+                blkReady = true;
+                if (navigator.vibrate) navigator.vibrate(40);
+                block.style.transition = "transform .12s";
+                block.style.transform  = "scale(1.06)";
+                calTouchMoved = true; // prevent mCol click
+              }, 400);
             }, { passive: true });
 
             block.addEventListener("touchmove", function(e) {
@@ -1214,48 +1237,49 @@
               var t = e.touches[0];
               var dx = t.clientX - blkDragX;
               var dy = t.clientY - blkDragY;
-              if (!dragState.active && Math.abs(dx) > 20) {
+
+              if (!blkReady) {
+                // moved too much before hold → cancel
+                if (Math.abs(dx) > 8 || Math.abs(dy) > 8) blkCancelLp();
+                return;
+              }
+
+              // long-press confirmed — start/continue ghost drag
+              if (!dragState.active) {
                 dragState.active = true;
                 clearTimeout(lpTimer); lpTimer = null; lpActive = false; removeLpInd();
-                calTouchMoved = true;
+                block.style.transform = ""; block.style.transition = "";
                 var ghost = block.cloneNode(true);
                 ghost.style.cssText = block.style.cssText +
-                  ";position:fixed;left:" + blkDragRect.left + "px;top:" + blkDragRect.top + "px;width:" + blkDragRect.width + "px;height:" + blkDragRect.height + "px;z-index:500;opacity:.85;pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.28);transform:scale(1.04);";
+                  ";position:fixed;left:" + blkDragRect.left + "px;top:" + blkDragRect.top + "px;width:" + blkDragRect.width + "px;height:" + blkDragRect.height + "px;z-index:500;opacity:.88;pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.28);transform:scale(1.05);";
                 document.body.appendChild(ghost);
                 dragState.ghost = ghost;
                 block.style.opacity = "0.3";
               }
-              if (dragState.active) {
-                e.preventDefault();
-                dragState.ghost.style.left = (blkDragRect.left + dx) + "px";
-                dragState.ghost.style.top  = (blkDragRect.top  + dy) + "px";
-                var prevHl = document.querySelector(".cal-drag-hl");
-                if (prevHl) { prevHl.classList.remove("cal-drag-hl"); prevHl.style.background = ""; }
-                dragState.ghost.style.visibility = "hidden";
-                var elUnder = document.elementFromPoint(t.clientX, t.clientY);
-                dragState.ghost.style.visibility = "";
-                var el2 = elUnder;
-                while (el2 && !el2.dataset.masterId && el2 !== document.body) el2 = el2.parentElement;
-                if (el2 && el2.dataset.masterId) {
-                  dragState.targetMasterId   = el2.dataset.masterId;
-                  dragState.targetMasterName = el2.dataset.masterName;
-                  if (String(el2.dataset.masterId) !== String(master.id)) {
-                    el2.classList.add("cal-drag-hl");
-                    el2.style.background = "rgba(110,145,69,.12)";
-                  }
-                } else { dragState.targetMasterId = null; dragState.targetMasterName = null; }
-              }
-            }, { passive: false });
 
-            function finishBlockDrag() {
-              if (dragState.ghost) { dragState.ghost.remove(); dragState.ghost = null; }
-              block.style.opacity = "";
+              e.preventDefault();
+              dragState.ghost.style.left = (blkDragRect.left + dx) + "px";
+              dragState.ghost.style.top  = (blkDragRect.top  + dy) + "px";
               var prevHl = document.querySelector(".cal-drag-hl");
               if (prevHl) { prevHl.classList.remove("cal-drag-hl"); prevHl.style.background = ""; }
-            }
+              dragState.ghost.style.visibility = "hidden";
+              var elUnder = document.elementFromPoint(t.clientX, t.clientY);
+              dragState.ghost.style.visibility = "";
+              var el2 = elUnder;
+              while (el2 && !el2.dataset.masterId && el2 !== document.body) el2 = el2.parentElement;
+              if (el2 && el2.dataset.masterId) {
+                dragState.targetMasterId   = el2.dataset.masterId;
+                dragState.targetMasterName = el2.dataset.masterName;
+                if (String(el2.dataset.masterId) !== String(master.id)) {
+                  el2.classList.add("cal-drag-hl");
+                  el2.style.background = "rgba(110,145,69,.12)";
+                }
+              } else { dragState.targetMasterId = null; dragState.targetMasterName = null; }
+            }, { passive: false });
 
             block.addEventListener("touchend", function() {
               if (dragState.apptId !== a.id || !dragState.active) {
+                finishBlockDrag();
                 dragState = { active: false, ghost: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null };
                 return;
               }
