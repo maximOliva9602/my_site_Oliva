@@ -871,7 +871,7 @@
         // Стан touch/long-press для всіх колонок
         var calTouchMoved = false, calTX = 0, calTY = 0, calLpHandled = false;
         var lpActive = false, lpTimer = null, lpInd = null, lpAbsMin = 0, lpMasterRef = null;
-        var dragState = { active: false, ghost: null, dropZone: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+        var dragState = { active: false, ghost: null, dropZone: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null, hasConflict: false };
 
         function removeLpInd() { if (lpInd) { lpInd.remove(); lpInd = null; } }
 
@@ -1288,19 +1288,34 @@
                   el2.classList.add("cal-drag-hl");
                   el2.style.background = "rgba(110,145,69,.12)";
                 }
+                // conflict check: does the snapped slot overlap any other appt in target master?
+                var newEnd3 = snapped + a.duration_min;
+                var conflict = appts.some(function(other) {
+                  if (other.id === a.id) return false;
+                  if (String(other.master_id) !== String(el2.dataset.masterId)) return false;
+                  if (other.status === "cancelled" || other.status === "no_show") return false;
+                  var otherEnd = other.end_min || (other.start_min + other.duration_min);
+                  return other.start_min < newEnd3 && otherEnd > snapped;
+                });
+                dragState.hasConflict = conflict;
                 // drop-zone shadow inside target column
                 var dzTopPx = ((snapped - HOUR_START * 60) / STEP) * SLOT_H + 1;
                 var dzH     = Math.max((a.duration_min / STEP) * SLOT_H - 2, SLOT_H * 2 - 2);
                 if (!dragState.dropZone || dragState.dropZone.parentElement !== el2) {
                   if (dragState.dropZone) dragState.dropZone.remove();
                   var dz = document.createElement("div");
-                  dz.style.cssText = "position:absolute;left:2px;right:2px;border-radius:5px;pointer-events:none;z-index:4;" +
-                    "background:" + markerHex + ";opacity:.35;border:2px dashed rgba(255,255,255,.7);box-sizing:border-box;";
+                  dz.style.cssText = "position:absolute;left:2px;right:2px;border-radius:5px;pointer-events:none;z-index:4;box-sizing:border-box;" +
+                    "display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;";
                   el2.appendChild(dz);
                   dragState.dropZone = dz;
                 }
-                dragState.dropZone.style.top    = dzTopPx + "px";
-                dragState.dropZone.style.height = dzH + "px";
+                dragState.dropZone.style.top        = dzTopPx + "px";
+                dragState.dropZone.style.height     = dzH + "px";
+                dragState.dropZone.style.background = conflict ? "rgba(210,40,40,.28)" : markerHex;
+                dragState.dropZone.style.opacity    = conflict ? "1" : ".35";
+                dragState.dropZone.style.border     = conflict ? "2px dashed #c0392b" : "2px dashed rgba(255,255,255,.7)";
+                dragState.dropZone.style.color      = "#c0392b";
+                dragState.dropZone.textContent      = conflict ? "⚠ зайнято" : "";
               } else {
                 dragState.targetMasterId = null;
                 dragState.targetMasterName = null;
@@ -1312,14 +1327,15 @@
             block.addEventListener("touchend", function() {
               if (dragState.apptId !== a.id || !dragState.active) {
                 finishBlockDrag();
-                dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+                dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null, hasConflict: false };
                 return;
               }
               var targetId      = dragState.targetMasterId;
               var targetName    = dragState.targetMasterName;
               var newStartMin   = dragState.targetStartMin != null ? dragState.targetStartMin : a.start_min;
+              var hadConflict   = dragState.hasConflict;
               finishBlockDrag();
-              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null, hasConflict: false };
 
               var masterChanged = targetId && String(targetId) !== String(a.master_id);
               var timeChanged   = newStartMin !== a.start_min;
@@ -1329,7 +1345,8 @@
                 '<h3 style="margin:0 0 10px;">Перенести запис?</h3>' +
                 '<div style="font-size:.92rem;color:#222;font-weight:600;margin-bottom:6px;">' + a.client_name + '</div>' +
                 (masterChanged ? '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Майстер: <strong>' + targetName + '</strong></div>' : '') +
-                '<div style="font-size:.85rem;color:#555;margin-bottom:18px;">Час: <strong>' + fmtMin(newStartMin) + ' – ' + fmtMin(newStartMin + a.duration_min) + '</strong></div>' +
+                '<div style="font-size:.85rem;color:#555;margin-bottom:' + (hadConflict ? '10' : '18') + 'px;">Час: <strong>' + fmtMin(newStartMin) + ' – ' + fmtMin(newStartMin + a.duration_min) + '</strong></div>' +
+                (hadConflict ? '<div style="font-size:.82rem;color:#c0392b;background:#fdf0ef;border-radius:7px;padding:8px 10px;margin-bottom:14px;">⚠ На цей час вже є інший запис</div>' : '') +
                 '<div class="modal-foot">' +
                 '<button id="dragConfirmBtn" class="btn btn-primary">Перенести</button>' +
                 '<button id="dragCancelBtn" class="btn btn-ghost">Скасувати</button>' +
@@ -1344,7 +1361,7 @@
 
             block.addEventListener("touchcancel", function() {
               finishBlockDrag();
-              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null, hasConflict: false };
             });
 
             block.addEventListener("click", function(e) {
