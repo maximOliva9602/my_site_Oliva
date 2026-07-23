@@ -2501,26 +2501,32 @@
     var isNew = !branch;
     var main2 = $("main"); main2.innerHTML = "";
     var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
-    main2.style.cssText = "padding:0;overflow-y:auto;height:calc(100vh - " + _topbarH + "px);";
+    main2.style.cssText = "padding:0;";
 
     function toMin(v) { if (!v) return null; var p = v.split(":"); return parseInt(p[0],10)*60+parseInt(p[1],10); }
 
     var hdr = document.createElement("div");
-    hdr.style.cssText = "display:flex;align-items:center;padding:10px 12px;background:#f0f2ed;border-bottom:1px solid #d8ddd4;gap:8px;position:sticky;top:0;z-index:10;";
+    hdr.id = "branchEditHdr";
+    hdr.style.cssText = "position:fixed;top:" + _topbarH + "px;left:0;right:0;display:flex;align-items:center;padding:10px 12px;background:#f0f2ed;border-bottom:1px solid #d8ddd4;gap:8px;z-index:25;";
     var backBtn = document.createElement("button");
     backBtn.innerHTML = "&#8249;";
-    backBtn.style.cssText = "background:none;border:none;font-size:1.8rem;line-height:1;color:#1a2016;padding:0 6px 0 0;cursor:pointer;flex-shrink:0;";
+    backBtn.style.cssText = "background:none;border:none;font-size:1.8rem;line-height:1;color:#1a2016;padding:8px 12px 8px 4px;cursor:pointer;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;";
     var hdrTitle = document.createElement("div");
     hdrTitle.textContent = isNew ? "Нова філія" : "Редагувати філію";
     hdrTitle.style.cssText = "flex:1;font-size:.95rem;font-weight:600;color:#1a2016;text-align:center;";
 
-    function goBack() { var os = document.getElementById("branchSaveBtn"); if (os) os.remove(); main2.style.cssText = ""; if (typeof backFn === "function") backFn(); }
+    function goBack() {
+      var os = document.getElementById("branchSaveBtn"); if (os) os.remove();
+      var oh = document.getElementById("branchEditHdr"); if (oh) oh.remove();
+      main2.style.cssText = "";
+      if (typeof backFn === "function") backFn();
+    }
     backBtn.addEventListener("click", goBack);
     hdr.appendChild(backBtn); hdr.appendChild(hdrTitle);
-    main2.appendChild(hdr);
+    document.body.appendChild(hdr);
 
     var content = document.createElement("div");
-    content.style.cssText = "padding:18px 16px 120px;";
+    content.style.cssText = "padding:64px 16px 120px;";
     main2.appendChild(content);
 
     var navEl2 = document.getElementById("mob-nav");
@@ -3673,17 +3679,19 @@
   function scheduleEditPage(m, startDate, backFn) {
     var main2 = $("main"); main2.innerHTML = "";
     var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
-    main2.style.cssText = "padding:0;overflow-y:auto;height:calc(100vh - " + _topbarH + "px);";
+    main2.style.cssText = "padding:50px 0 0;";
 
     function toMin(v) { if (!v) return null; var p = v.split(":"); return parseInt(p[0],10)*60+parseInt(p[1],10); }
 
-    // Header
+    // Header — position:fixed so iOS tap events always work
     var hdr = document.createElement("div");
-    hdr.style.cssText = "display:flex;align-items:center;padding:10px 12px;background:#f0f2ed;border-bottom:1px solid #d8ddd4;gap:8px;position:sticky;top:0;z-index:10;";
+    hdr.id = "scheEditHdr";
+    hdr.style.cssText = "position:fixed;top:" + _topbarH + "px;left:0;right:0;display:flex;align-items:center;padding:10px 12px;background:#f0f2ed;border-bottom:1px solid #d8ddd4;gap:8px;z-index:25;";
     var backBtn = document.createElement("button");
     backBtn.innerHTML = "&#8249;";
-    backBtn.style.cssText = "background:none;border:none;font-size:1.8rem;line-height:1;color:#1a2016;padding:0 6px 0 0;cursor:pointer;flex-shrink:0;";
+    backBtn.style.cssText = "background:none;border:none;font-size:1.8rem;line-height:1;color:#1a2016;padding:8px 12px 8px 4px;cursor:pointer;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;";
     backBtn.addEventListener("click", function() {
+      var oh = document.getElementById("scheEditHdr"); if (oh) oh.remove();
       main2.style.cssText = "";
       if (typeof backFn === "function") backFn();
       else { var gi = TABS.findIndex(function(t){return t.id==="masters";}); activateTab(gi >= 0 ? gi : 0); }
@@ -3692,7 +3700,7 @@
     hdrTitle.textContent = "Налаштування графіку роботи";
     hdrTitle.style.cssText = "flex:1;font-size:.95rem;font-weight:600;color:#1a2016;text-align:center;";
     hdr.appendChild(backBtn); hdr.appendChild(hdrTitle);
-    main2.appendChild(hdr);
+    document.body.appendChild(hdr);
 
     // Master info
     var mInfo = document.createElement("div");
@@ -3952,8 +3960,11 @@
     tDay.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderDayTab(); });
     tPeriod.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); renderPeriodTab(); });
 
-    // Back button cleanup
-    backBtn.addEventListener("click", function() { var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove(); }, true);
+    // Back button cleanup (capture phase — fires before navigation)
+    backBtn.addEventListener("click", function() {
+      var oldS = document.getElementById("scheEditSave"); if (oldS) oldS.remove();
+      var oldH = document.getElementById("scheEditHdr"); if (oldH) oldH.remove();
+    }, true);
 
     renderDayTab();
   }
