@@ -2388,12 +2388,16 @@
             tr.style.cssText = "border-bottom:1px solid #e8ece4;";
 
             var tdAv = document.createElement("td");
-            tdAv.style.cssText = "padding:6px 4px;text-align:center;position:sticky;left:0;background:#fff;z-index:1;min-width:60px;";
+            tdAv.style.cssText = "padding:6px 4px;text-align:center;position:sticky;left:0;background:#fff;z-index:1;min-width:60px;cursor:pointer;";
             var initials = (m.name||'?')[0].toUpperCase() + (m.last_name ? m.last_name[0].toUpperCase() : '');
             tdAv.innerHTML = (m.photo
               ? '<img src="' + m.photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1.5px solid #8aA462;" alt="">'
               : '<div style="width:32px;height:32px;border-radius:50%;background:#3d5430;color:#8aA462;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;margin:0 auto;">' + initials + '</div>') +
               '<div style="font-size:.62rem;color:#1a2016;font-weight:600;margin-top:2px;white-space:nowrap;">' + (m.name||'') + '</div>';
+            tdAv.addEventListener("click", (function(master) { return function() {
+              var grafikIdx = TABS.findIndex(function(t){return t.id==="grafik";});
+              scheduleEditPage(master, todayStr(), function() { activateTab(grafikIdx >= 0 ? grafikIdx : 0); });
+            }; })(m));
             tr.appendChild(tdAv);
 
             days.forEach(function(day) {
