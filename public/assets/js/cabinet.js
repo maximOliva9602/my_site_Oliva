@@ -2414,7 +2414,7 @@
               if (ME.role === "owner") {
                 tdAv.addEventListener("click", (function(b2) { return function() {
                   var gi = TABS.findIndex(function(t){return t.id==="grafik";});
-                  branchEditPage(b2, function() { activateTab(gi >= 0 ? gi : 0); });
+                  branchEditPage(b2, "grafik");
                 }; })(branch));
               }
               tr.appendChild(tdAv);
@@ -2424,7 +2424,7 @@
                 td.innerHTML = schedCellHtml(bSchedMap[day.jsDay]);
                 if (ME.role === "owner") {
                   td.addEventListener("click", (function(b2) { return function() {
-                    branchEditPage(b2, null);
+                    branchEditPage(b2, "grafik");
                   }; })(branch));
                 }
                 tr.appendChild(td);
@@ -2495,7 +2495,7 @@
     if (ME.role === "owner") {
       var addBtn = el("button", "btn btn-sm btn-primary", "+ Філія");
       addBtn.addEventListener("click", function() {
-        branchEditPage(null, function() { activateTab(TABS.findIndex(function(t){return t.id==="filiyi";})); });
+        branchEditPage(null, "filiyi");
       });
       bar.appendChild(addBtn);
     }
@@ -2523,7 +2523,7 @@
           if (ME.role === "owner") {
             var editBtn = el("button", "btn btn-sm btn-ghost", "Редагувати");
             editBtn.addEventListener("click", function() {
-              branchEditPage(b, function() { activateTab(TABS.findIndex(function(t){return t.id==="filiyi";})); });
+              branchEditPage(b, "filiyi");
             });
             row.appendChild(editBtn);
           }
@@ -2534,13 +2534,29 @@
     load();
   }
 
-  function branchEditPage(branch, backFnIgnored) {
+  function branchEditPage(branch, backTabId) {
     var isNew = !branch;
     var main2 = $("main"); main2.innerHTML = "";
     var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
     main2.style.cssText = "padding:0;";
 
     function toMin(v) { if (!v) return null; var p = v.split(":"); return parseInt(p[0],10)*60+parseInt(p[1],10); }
+
+    function goBack() {
+      var os = document.getElementById("branchSaveBtn"); if (os) os.remove();
+      var oh = document.getElementById("branchEditHdr"); if (oh) oh.remove();
+      main2.style.cssText = "";
+      main2.innerHTML = "";
+      var destId = backTabId || "filiyi";
+      var gi = TABS.findIndex(function(t){ return t.id === destId; });
+      if (gi < 0) gi = 0;
+      var mBtns = document.getElementById("mob-nav").querySelectorAll(".mob-tab");
+      if (mBtns[gi]) {
+        mBtns[gi].click();
+      } else {
+        activateTab(gi);
+      }
+    }
 
     var hdr = document.createElement("div");
     hdr.id = "branchEditHdr";
@@ -2552,20 +2568,7 @@
     hdrTitle.textContent = isNew ? "Нова філія" : "Редагувати філію";
     hdrTitle.style.cssText = "flex:1;font-size:.95rem;font-weight:600;color:#1a2016;text-align:center;";
 
-    backBtn.onclick = function() {
-      var os = document.getElementById("branchSaveBtn"); if (os) os.remove();
-      var oh = document.getElementById("branchEditHdr"); if (oh) oh.remove();
-      main2.style.cssText = "";
-      main2.innerHTML = "";
-      var gi = TABS.findIndex(function(t){ return t.id === "filiyi"; });
-      if (gi < 0) gi = 0;
-      var mBtns = document.getElementById("mob-nav").querySelectorAll(".mob-tab");
-      if (mBtns[gi]) {
-        mBtns[gi].click();
-      } else {
-        activateTab(gi);
-      }
-    };
+    backBtn.onclick = goBack;
     hdr.appendChild(backBtn); hdr.appendChild(hdrTitle);
     document.body.appendChild(hdr);
 
@@ -2590,6 +2593,9 @@
     var schedLbl = document.createElement("div"); schedLbl.textContent = "Розклад (тижневий)";
     schedLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:10px;font-weight:600;";
     content.appendChild(schedLbl);
+    var schedErr = document.createElement("div");
+    schedErr.style.cssText = "display:none;color:#e05050;font-size:.8rem;margin-bottom:8px;padding:8px 12px;background:#fff0f0;border-radius:8px;border:1px solid #f5c0c0;";
+    content.appendChild(schedErr);
 
     var DOW_NAMES = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
     var schedRows = {}; // weekday → {ws, we}
@@ -2677,11 +2683,28 @@
       if (!name) { nameInput.focus(); return; }
 
       var schedule = [];
+      var validErr = null;
+      var DOW_LABELS = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
       schedGrid.querySelectorAll("div[data-wd]").forEach(function(row3) {
+        if (validErr) return;
         var wd2 = parseInt(row3.dataset.wd, 10);
         var ws2 = toMin(row3._wsI.value), we2 = toMin(row3._weI.value);
-        if (ws2 != null && we2 != null && we2 > ws2) schedule.push({ weekday: wd2, work_start: ws2, work_end: we2 });
+        var hasStart = row3._wsI.value !== "";
+        var hasEnd   = row3._weI.value !== "";
+        if (hasStart && !hasEnd) { validErr = DOW_LABELS[wd2] + ": вкажіть час кінця роботи"; return; }
+        if (!hasStart && hasEnd) { validErr = DOW_LABELS[wd2] + ": вкажіть час початку роботи"; return; }
+        if (ws2 != null && we2 != null) {
+          if (we2 <= ws2) { validErr = DOW_LABELS[wd2] + ": час кінця має бути пізніше початку"; return; }
+          schedule.push({ weekday: wd2, work_start: ws2, work_end: we2 });
+        }
       });
+      if (validErr) {
+        schedErr.textContent = validErr;
+        schedErr.style.display = "block";
+        schedErr.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      schedErr.style.display = "none";
 
       saveBtn.textContent = "Збереження…"; saveBtn.disabled = true;
 
