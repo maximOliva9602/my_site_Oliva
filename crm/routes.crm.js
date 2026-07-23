@@ -71,11 +71,26 @@ function createAppointment(d, session) {
   const m = db.prepare("SELECT id FROM masters WHERE id=? AND active=1").get(masterId);
   if (!m) return { status: 404, body: { ok: false, error: "master not found" } };
 
+  // Додаткові послуги: [{id, name, duration_min, price}]
+  let extraServices = null;
+  let totalDuration = svc.duration_min;
+  let totalPrice = svc.price;
+  try {
+    const extras = d.extra_services ? JSON.parse(d.extra_services) : null;
+    if (Array.isArray(extras) && extras.length) {
+      extraServices = JSON.stringify(extras);
+      extras.forEach(function(ex) {
+        totalDuration += (parseInt(ex.duration_min, 10) || 0);
+        totalPrice    += (parseInt(ex.price, 10) || 0);
+      });
+    }
+  } catch(e) { /* ignore bad JSON */ }
+
   const now = Date.now();
   let publicId, appointmentId;
   try {
     db.transaction(function () {
-      if (!slots.isSlotFree(masterId, date, startMin, svc.duration_min)) {
+      if (!slots.isSlotFree(masterId, date, startMin, totalDuration)) {
         const e = new Error("SLOT_TAKEN"); e.code = "SLOT_TAKEN"; throw e;
       }
       let client = db.prepare("SELECT id FROM clients WHERE phone=?").get(phone);
@@ -87,9 +102,9 @@ function createAppointment(d, session) {
       }
       publicId = crypto.randomBytes(8).toString("hex");
       const info = db.prepare(
-        `INSERT INTO appointments (public_id,client_id,master_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?)`
-      ).run(publicId, client.id, masterId, serviceId, date, startMin, startMin + svc.duration_min, svc.duration_min, svc.price, comment, colorMarker, now, now);
+        `INSERT INTO appointments (public_id,client_id,master_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,extra_services,created_at,updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?,?)`
+      ).run(publicId, client.id, masterId, serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
       appointmentId = info.lastInsertRowid;
     })();
   } catch (e) {
@@ -115,12 +130,22 @@ function setStatus(id, status, session) {
   }
   db.prepare("UPDATE appointments SET status=?, updated_at=? WHERE id=?").run(status, Date.now(), id);
   recomputeClient(a.client_id);
-  // Після завершення — ставимо в чергу запит на відгук
   if (status === "completed") {
+    // Автоматично списуємо сеанс абонементу (якщо ще не списали)
+    const full = db.prepare("SELECT client_id, service_id, subscription_used FROM appointments WHERE id=?").get(id);
+    if (full && !full.subscription_used && full.client_id && full.service_id) {
+      const sub = db.prepare(
+        "SELECT id, used_sessions, total_sessions FROM subscriptions WHERE client_id=? AND service_id=? AND used_sessions < total_sessions ORDER BY id LIMIT 1"
+      ).get(full.client_id, full.service_id);
+      if (sub) {
+        db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
+        db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(id);
+      }
+    }
     try {
       const notify = require("./notify");
       notify.queueNotification(id, "review_request");
-    } catch(e) { /* notify може не підтримувати review_request — OK */ }
+    } catch(e) { /* review_request — необов'язково */ }
   }
   return { status: 200, body: { ok: true, appointment: viewAppt(apptRow(id)) } };
 }

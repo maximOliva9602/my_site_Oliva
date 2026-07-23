@@ -479,7 +479,7 @@
 
   // ── Вкладка "Розклад" з перемикачем Записи / Календар ─────────
   function renderRozkladTab() {
-    apptViewMode = "month";
+    apptViewMode = "calendar";
     renderAppts({ keepMode: false, title: "Розклад", showToggle: true });
   }
 
@@ -697,26 +697,14 @@
         overlay.style.cssText = "position:fixed;top:" + contentTop + "px;left:0;right:0;bottom:" + (navH + WEEK_STRIP_H) + "px;z-index:10;background:#f0f2ee;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;";
         document.body.appendChild(overlay);
 
-        // ── Тижнева стрічка ──────────────────────────────────────
+        // ── Тижнева стрічка (без заголовку місяця — він у dateNav) ──
         var wkStrip = document.createElement("div");
         wkStrip.id = "cal-week-strip";
         wkStrip.style.cssText = "position:fixed;left:0;right:0;bottom:" + navH + "px;height:" + WEEK_STRIP_H + "px;z-index:10;" +
-          "background:#fff;border-top:1px solid #d8ddd4;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;";
+          "background:#fff;border-top:1px solid #d8ddd4;display:flex;align-items:stretch;-webkit-user-select:none;user-select:none;";
         var curDay = new Date(apptDate + "T00:00:00");
         var dow0 = (curDay.getDay() + 6) % 7;
         var weekStart = new Date(curDay); weekStart.setDate(curDay.getDate() - dow0);
-        var wsM = weekStart.getMonth(), wsY = weekStart.getFullYear();
-        var endOfWeek = new Date(weekStart); endOfWeek.setDate(weekStart.getDate() + 6);
-        var weM = endOfWeek.getMonth();
-        var MONTH_NOM = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
-        var MONTH_GEN = ["Січня","Лютого","Березня","Квітня","Травня","Червня","Липня","Серпня","Вересня","Жовтня","Листопада","Грудня"];
-        var lblTxt = wsM === weM ? MONTH_NOM[wsM] + " " + wsY : MONTH_GEN[wsM] + "–" + MONTH_GEN[weM] + " " + wsY;
-        var wkMonthLbl = document.createElement("div");
-        wkMonthLbl.style.cssText = "font-size:.65rem;font-weight:700;color:#888;text-align:center;padding:4px 0 2px;letter-spacing:.04em;text-transform:uppercase;";
-        wkMonthLbl.textContent = lblTxt;
-        wkStrip.appendChild(wkMonthLbl);
-        var wkDays = document.createElement("div");
-        wkDays.style.cssText = "display:flex;flex:1;align-items:center;";
         var today0 = todayStr();
         var DOW_STRIP = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
         for (var wi = 0; wi < 7; wi++) {
@@ -725,15 +713,15 @@
           var isToday2 = wds === today0;
           var isSel = wds === apptDate;
           var wBtn = document.createElement("button");
-          wBtn.style.cssText = "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:none;cursor:pointer;padding:4px 0;background:transparent;";
+          wBtn.style.cssText = "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;cursor:pointer;padding:6px 0 8px;background:transparent;";
           var wDayLbl = document.createElement("span");
-          wDayLbl.style.cssText = "font-size:.6rem;font-weight:600;color:" + (isSel ? "#6e9145" : isToday2 ? "#5a7a48" : "#aaa") + ";letter-spacing:.02em;";
+          wDayLbl.style.cssText = "font-size:.62rem;font-weight:600;color:" + (isSel ? "#6e9145" : isToday2 ? "#5a7a48" : "#aaa") + ";letter-spacing:.02em;line-height:1;";
           wDayLbl.textContent = DOW_STRIP[wi];
           var wPill = document.createElement("span");
-          wPill.style.cssText = "width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;" +
-            "font-size:.95rem;font-weight:" + (isSel||isToday2 ? "700" : "500") + ";line-height:1;" +
+          wPill.style.cssText = "width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;" +
+            "font-size:1rem;font-weight:" + (isSel||isToday2 ? "700" : "500") + ";line-height:1;" +
             "background:" + (isSel ? "#6e9145" : isToday2 ? "#e8f0e0" : "transparent") + ";" +
-            "color:" + (isSel ? "#fff" : isToday2 ? "#3d5430" : "#333") + ";";
+            "color:" + (isSel ? "#fff" : isToday2 ? "#3d5430" : "#222") + ";";
           wPill.textContent = wd2.getDate();
           wBtn.appendChild(wDayLbl); wBtn.appendChild(wPill);
           (function(ds) {
@@ -742,9 +730,8 @@
               loadCalendar(activeMasterFilter);
             });
           })(wds);
-          wkDays.appendChild(wBtn);
+          wkStrip.appendChild(wBtn);
         }
-        wkStrip.appendChild(wkDays);
         document.body.appendChild(wkStrip);
 
         // ── Навігація дати + zoom ─────────────────────────────────
@@ -1597,14 +1584,24 @@
       '</div>' +
 
       // 2. ПОСЛУГА
-      '<label style="margin-top:14px;display:block;">Послуга</label>' +
-      '<div id="mSvcWrap" style="position:relative;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:4px;">' +
+        '<label style="margin:0;">Послуга</label>' +
+        '<span id="mTotalInfo" style="font-size:.78rem;color:var(--text-dim);"></span>' +
+      '</div>' +
+      // Список обраних послуг
+      '<div id="mSvcList"></div>' +
+      // Пошук послуги
+      '<div id="mSvcWrap" style="position:relative;margin-top:4px;">' +
         '<input type="text" id="mSvcQ" placeholder="Пошук послуги…" autocomplete="off">' +
         '<div id="mSvcDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:200px;overflow-y:auto;margin-top:3px;"></div>' +
       '</div>' +
-      '<div id="mSvcChip" style="display:none;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:4px;align-items:center;gap:8px;">' +
-        '<span id="mSvcChipName" style="flex:1;font-size:.88rem;font-weight:600;color:var(--cream);"></span>' +
-        '<button id="mSvcClear" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:.9rem;padding:2px 4px;">✕</button>' +
+      // Кнопка додати ще (з'являється після вибору 1-ї послуги)
+      '<div id="mAddSvcWrap" style="display:none;margin-top:4px;">' +
+        '<button type="button" id="mAddSvcBtn" style="width:100%;padding:8px;border-radius:8px;border:1.5px dashed var(--line);background:transparent;color:var(--text-dim);font-size:.85rem;cursor:pointer;">+ Додати послугу</button>' +
+        '<div id="mAddSvcSearch" style="display:none;position:relative;margin-top:4px;">' +
+          '<input type="text" id="mAddSvcQ" placeholder="Пошук…" autocomplete="off">' +
+          '<div id="mAddSvcDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:180px;overflow-y:auto;margin-top:3px;"></div>' +
+        '</div>' +
       '</div>' +
       '<select id="mService" style="display:none;"></select>' +
 
@@ -1647,6 +1644,44 @@
     var chosen = { start_min: null, color_marker: null, subSessions: 0 };
     var selectedClient = null;
     var allServices = [];
+    var selectedServices = []; // [{id, name, duration_min, price}, ...]
+
+    function renderSvcList() {
+      var listEl = $("mSvcList"); if (!listEl) return;
+      listEl.innerHTML = "";
+      var totalDur = 0, totalPrice = 0;
+      selectedServices.forEach(function(s, i) {
+        totalDur += s.duration_min; totalPrice += s.price;
+        var row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:4px;";
+        var nameSpan = document.createElement("span");
+        nameSpan.style.cssText = "flex:1;font-size:.88rem;font-weight:600;color:var(--cream);";
+        nameSpan.textContent = s.name + " · " + s.duration_min + " хв";
+        var priceSpan = document.createElement("span");
+        priceSpan.style.cssText = "font-size:.85rem;color:var(--text-dim);white-space:nowrap;";
+        priceSpan.textContent = money(s.price);
+        var delBtn = document.createElement("button");
+        delBtn.style.cssText = "background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:.9rem;padding:2px 4px;";
+        delBtn.textContent = "✕";
+        (function(idx) {
+          delBtn.addEventListener("click", function() {
+            selectedServices.splice(idx, 1);
+            if (idx === 0) { $("mService").value = ""; refreshSubSection(); }
+            renderSvcList();
+            loadSlots();
+          });
+        })(i);
+        row.appendChild(nameSpan); row.appendChild(priceSpan); row.appendChild(delBtn);
+        listEl.appendChild(row);
+      });
+      var infoEl = $("mTotalInfo"); if (infoEl) {
+        infoEl.textContent = selectedServices.length > 1
+          ? totalDur + " хв · " + money(totalPrice)
+          : "";
+      }
+      var addWrap = $("mAddSvcWrap");
+      if (addWrap) addWrap.style.display = selectedServices.length > 0 ? "block" : "none";
+    }
 
     $("mCancel").addEventListener("click", closeModal);
     $("mMarkerWrap").appendChild(markerPicker(null, function(c) { chosen.color_marker = c; }));
@@ -1722,30 +1757,35 @@
 
     // ── Пошук послуги ────────────────────────────────────────────────
     function selectService(s) {
-      $("mService").value = s.id;
+      // Перша послуга — стає primary
+      if (selectedServices.length === 0) {
+        $("mService").value = s.id;
+        $("mSvcWrap").style.display = "none";
+        refreshSubSection();
+      }
+      selectedServices.push({ id: s.id, name: s.name, duration_min: s.duration_min, price: s.price });
       $("mSvcQ").value = "";
-      $("mSvcChipName").textContent = s.name + " · " + s.duration_min + " хв";
-      $("mSvcChip").style.display = "flex";
-      $("mSvcWrap").style.display = "none";
+      renderSvcList();
       if ($("mMaster").options.length > 0) { loadSlots(); } else { loadMasters(); }
-      refreshSubSection();
     }
 
-    function renderSvcDrop(q) {
-      var drop = $("mSvcDrop");
-      var filtered = q ? allServices.filter(function(s) {
-        return s.name.toLowerCase().indexOf(q.toLowerCase()) > -1;
-      }) : allServices;
+    function buildSvcDropRows(drop, filtered, onPick) {
       drop.innerHTML = "";
       filtered.forEach(function(s) {
         var row = document.createElement("div");
         row.style.cssText = "padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line);font-size:.88rem;color:var(--cream);";
         row.innerHTML = '<span style="font-weight:600;">' + s.name + '</span>' +
           '<span style="color:var(--text-dim);font-size:.78rem;margin-left:8px;">' + s.duration_min + ' хв · ' + money(s.price) + '</span>';
-        row.addEventListener("mousedown", function(e) { e.preventDefault(); selectService(s); drop.style.display = "none"; });
+        row.addEventListener("mousedown", function(e) { e.preventDefault(); onPick(s); drop.style.display = "none"; });
         drop.appendChild(row);
       });
       drop.style.display = filtered.length ? "block" : "none";
+    }
+
+    function renderSvcDrop(q) {
+      var drop = $("mSvcDrop");
+      var filtered = allServices.filter(function(s) { return !q || s.name.toLowerCase().indexOf(q.toLowerCase()) > -1; });
+      buildSvcDropRows(drop, filtered, function(s) { selectService(s); });
     }
 
     $("mSvcQ").addEventListener("input", function() { renderSvcDrop(this.value.trim()); });
@@ -1753,13 +1793,35 @@
     $("mSvcQ").addEventListener("blur", function() {
       setTimeout(function() { var d = $("mSvcDrop"); if (d) d.style.display = "none"; }, 150);
     });
-    $("mSvcClear").addEventListener("click", function() {
-      $("mService").value = "";
-      $("mSvcChip").style.display = "none";
-      $("mSvcWrap").style.display = "block";
-      $("mSvcQ").value = "";
-      $("mSvcQ").focus();
-      refreshSubSection();
+
+    // ── Додати ще одну послугу ──────────────────────────────────────
+    $("mAddSvcBtn") && $("mAddSvcBtn").addEventListener("click", function() {
+      var srch = $("mAddSvcSearch");
+      if (!srch) return;
+      var open = srch.style.display !== "none";
+      srch.style.display = open ? "none" : "block";
+      if (!open) { $("mAddSvcQ").value = ""; $("mAddSvcQ").focus(); }
+    });
+    $("mAddSvcQ") && $("mAddSvcQ").addEventListener("input", function() {
+      var q = this.value.trim();
+      var drop = $("mAddSvcDrop");
+      var filtered = allServices.filter(function(s) { return !q || s.name.toLowerCase().indexOf(q.toLowerCase()) > -1; });
+      buildSvcDropRows(drop, filtered, function(s) {
+        selectedServices.push({ id: s.id, name: s.name, duration_min: s.duration_min, price: s.price });
+        $("mAddSvcQ").value = ""; $("mAddSvcSearch").style.display = "none";
+        renderSvcList(); loadSlots();
+      });
+    });
+    $("mAddSvcQ") && $("mAddSvcQ").addEventListener("focus", function() {
+      var drop = $("mAddSvcDrop");
+      buildSvcDropRows(drop, allServices, function(s) {
+        selectedServices.push({ id: s.id, name: s.name, duration_min: s.duration_min, price: s.price });
+        $("mAddSvcQ").value = ""; $("mAddSvcSearch").style.display = "none";
+        renderSvcList(); loadSlots();
+      });
+    });
+    $("mAddSvcQ") && $("mAddSvcQ").addEventListener("blur", function() {
+      setTimeout(function() { var d = $("mAddSvcDrop"); if (d) d.style.display = "none"; }, 150);
     });
 
     // ── Пошук клієнта ────────────────────────────────────────────────
@@ -1854,14 +1916,8 @@
         o.dataset.dur = s.duration_min; sel.appendChild(o);
       });
       if (prefill.serviceId) {
-        sel.value = prefill.serviceId;
         var found = allServices.find(function(s) { return String(s.id) === String(prefill.serviceId); });
-        if (found) {
-          $("mSvcChipName").textContent = found.name + " · " + found.duration_min + " хв";
-          $("mSvcChip").style.display = "flex";
-          $("mSvcWrap").style.display = "none";
-          refreshSubSection();
-        }
+        if (found) { selectService(found); }
       }
       loadMasters();
     });
@@ -1889,7 +1945,11 @@
       var wantStartMin = prefill.startMin;
       prefill.startMin = null;
       var box = $("mSlots"); box.className = ""; box.innerHTML = "Завантаження…";
-      api("GET", "/api/public/slots?service=" + sid + "&master=" + mid + "&date=" + date).then(function (res) {
+      // Підрахуємо загальну тривалість усіх послуг для коректних слотів
+      var totalDur = selectedServices.reduce(function(s, x) { return s + x.duration_min; }, 0);
+      var slotsUrl = "/api/public/slots?service=" + sid + "&master=" + mid + "&date=" + date;
+      if (totalDur > 0) slotsUrl += "&duration=" + totalDur;
+      api("GET", slotsUrl).then(function (res) {
         var slots = res.j.slots || [];
         box.innerHTML = "";
         if (!slots.length) { box.className = "muted"; box.textContent = "Вільних віконець немає"; return; }
@@ -1924,10 +1984,12 @@
       }
       if (!name) { err.textContent = "Оберіть або введіть клієнта"; return; }
       var url = ME.role === "owner" ? "/api/crm/appointments" : "/api/crm/me/appointments";
+      var extras = selectedServices.slice(1);
       api("POST", url, {
         service: $("mService").value, master: $("mMaster").value, date: $("mDate").value,
         start_min: chosen.start_min, name: name, phone: phone,
-        comment: $("mComment").value.trim(), color_marker: chosen.color_marker || null
+        comment: $("mComment").value.trim(), color_marker: chosen.color_marker || null,
+        extra_services: extras.length ? JSON.stringify(extras) : null
       }).then(function (res) {
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
         if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); return; }

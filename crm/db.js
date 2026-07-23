@@ -299,6 +299,8 @@ try { db.exec("ALTER TABLE services ADD COLUMN in_carousel INTEGER NOT NULL DEFA
 try { db.exec("ALTER TABLE appointments ADD COLUMN paid INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN pay_method TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN color_marker TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN extra_services TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN subscription_used INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE clients ADD COLUMN blacklisted INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 
 /* Разові блокування часу в календарі */
