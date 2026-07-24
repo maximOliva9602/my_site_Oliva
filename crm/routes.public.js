@@ -91,16 +91,19 @@ router.get("/slots", function (req, res) {
   if (!serviceId || !tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad params" });
   const svc = db.prepare("SELECT duration_min FROM services WHERE id = ? AND active = 1").get(serviceId);
   if (!svc) return res.status(404).json({ ok: false, error: "service not found" });
+  // Додатковий час обраних add-on'ів (щоб вільні слоти враховували повну тривалість)
+  const extraMin = Math.max(0, Math.min(600, parseInt(req.query.extra, 10) || 0));
+  const totalDur = svc.duration_min + extraMin;
 
   if (!master || master === "any") {
-    const list = slots.freeSlotsAny(serviceId, date, svc.duration_min);
+    const list = slots.freeSlotsAny(serviceId, date, totalDur);
     return res.json({
       ok: true, any: true,
       slots: list.map(function (s) { return { start_min: s.start_min, time: tz.fmtMin(s.start_min), masterIds: s.masterIds }; }),
     });
   }
   const masterId = parseInt(master, 10);
-  const list = slots.freeSlots(masterId, date, svc.duration_min);
+  const list = slots.freeSlots(masterId, date, totalDur);
   res.json({
     ok: true, any: false,
     slots: list.map(function (m) { return { start_min: m, time: tz.fmtMin(m) }; }),
@@ -127,10 +130,29 @@ router.post("/book", function (req, res) {
   const svc = db.prepare("SELECT id, duration_min, price FROM services WHERE id = ? AND active = 1").get(serviceId);
   if (!svc) return res.status(404).json({ ok: false, error: "service not found" });
 
+  // Додаткові послуги (add-on'и): [{name, duration_min, price(коп)}] — додають час і ціну
+  let extraServices = null, extraMin = 0, extraPrice = 0;
+  try {
+    const extras = d.extra_services ? JSON.parse(d.extra_services) : null;
+    if (Array.isArray(extras) && extras.length) {
+      const list = extras.slice(0, 20).map(function (ex) {
+        return {
+          name: clean(String(ex && ex.name != null ? ex.name : ""), 120),
+          duration_min: Math.max(0, Math.min(600, parseInt(ex && ex.duration_min, 10) || 0)),
+          price: Math.max(0, parseInt(ex && ex.price, 10) || 0),
+        };
+      });
+      extraServices = JSON.stringify(list);
+      list.forEach(function (ex) { extraMin += ex.duration_min; extraPrice += ex.price; });
+    }
+  } catch (e) { /* ignore bad JSON */ }
+  const totalDur = svc.duration_min + extraMin;
+  const totalPrice = svc.price + extraPrice;
+
   // Обрати майстра: конкретний або найперший вільний серед «будь-яких»
   let masterId;
   if (!master || master === "any") {
-    const cand = slots.freeSlotsAny(serviceId, date, svc.duration_min)
+    const cand = slots.freeSlotsAny(serviceId, date, totalDur)
       .find(function (s) { return s.start_min === startMin; });
     if (!cand) return res.status(409).json({ ok: false, error: "SLOT_TAKEN" });
     masterId = cand.masterIds[0];
@@ -145,7 +167,7 @@ router.post("/book", function (req, res) {
   try {
     const txn = db.transaction(function () {
       // повторна перевірка накладок усередині транзакції
-      if (!slots.isSlotFree(masterId, date, startMin, svc.duration_min)) {
+      if (!slots.isSlotFree(masterId, date, startMin, totalDur)) {
         const err = new Error("SLOT_TAKEN"); err.code = "SLOT_TAKEN"; throw err;
       }
       // upsert клієнта за телефоном
@@ -159,12 +181,12 @@ router.post("/book", function (req, res) {
         db.prepare("UPDATE clients SET name = COALESCE(NULLIF(?,''), name) WHERE id = ?").run(name, client.id);
       }
       publicId = crypto.randomBytes(8).toString("hex");
-      const endMin = startMin + svc.duration_min;
+      const endMin = startMin + totalDur;
       const ai = db.prepare(
         `INSERT INTO appointments
-           (public_id, client_id, master_id, service_id, date, start_min, end_min, duration_min, price, status, source, comment, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?, 'pending', 'public', ?, ?, ?)`
-      ).run(publicId, client.id, masterId, serviceId, date, startMin, endMin, svc.duration_min, svc.price, comment, now, now);
+           (public_id, client_id, master_id, service_id, date, start_min, end_min, duration_min, price, status, source, comment, extra_services, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?, 'pending', 'public', ?, ?, ?, ?)`
+      ).run(publicId, client.id, masterId, serviceId, date, startMin, endMin, totalDur, totalPrice, comment, extraServices, now, now);
       appointmentId = ai.lastInsertRowid;
       notify.queueNotification(appointmentId, "confirmation");
     });
