@@ -904,8 +904,10 @@
         var dayBlocksArr = (rs[3].j && rs[3].j.blocks) || [];
         var dayOvs = (rs[4].j && rs[4].j.overrides) || [];
 
-        var masters = masterFilter
-          ? allMasters.filter(function(m) { return String(m.id) === String(masterFilter); })
+        // Власник може фільтрувати або бачити всіх; майстер бачить лише свою колонку
+        var effectiveFilter = masterFilter || (ME.role !== "owner" ? String(ME.masterId) : "");
+        var masters = effectiveFilter
+          ? allMasters.filter(function(m) { return String(m.id) === String(effectiveFilter); })
           : allMasters;
 
         var schedMap = {};
@@ -1855,7 +1857,7 @@
       '</div>' +
 
       // 3. МАЙСТЕР + ДАТА + ЧАС
-      '<label style="margin-top:14px;display:block;">Майстер</label><select id="mMaster"></select>' +
+      '<div id="mMasterRow"><label style="margin-top:14px;display:block;">Майстер</label><select id="mMaster"></select></div>' +
       '<label>Дата</label>' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
         '<input type="date" id="mDate" style="flex:1;" />' +
@@ -2159,7 +2161,13 @@
           if (ME.role !== "owner" && m.id !== ME.masterId) return;
           sel.appendChild(new Option(m.name, m.id));
         });
-        if (prefill.masterId) sel.value = String(prefill.masterId);
+        if (ME.role !== "owner") {
+          // Worker: force own masterId, hide the selector
+          sel.value = String(ME.masterId);
+          var row = $("mMasterRow"); if (row) row.style.display = "none";
+        } else if (prefill.masterId) {
+          sel.value = String(prefill.masterId);
+        }
         loadSlots();
       });
     }
@@ -2919,7 +2927,7 @@
         apptModal({ prefill: {
           clientName: c.name, clientPhone: c.phone,
           serviceId: lastCompleted ? lastCompleted.service_id : undefined,
-          masterId:  lastCompleted ? lastCompleted.master_id  : undefined
+          masterId: ME.role !== "owner" ? ME.masterId : (lastCompleted ? lastCompleted.master_id : undefined)
         }});
       });
       actRow.appendChild(newAppt);
