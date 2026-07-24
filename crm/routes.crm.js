@@ -606,7 +606,7 @@ router.delete("/services/:id", owner, function (req, res) {
 });
 
 /* ---- Клієнти ---- */
-router.get("/clients", owner, function (req, res) {
+router.get("/clients", any, function (req, res) {
   const q = clean(req.query.q, 60);
   let rows;
   if (q) {
@@ -615,11 +615,13 @@ router.get("/clients", owner, function (req, res) {
   } else {
     rows = db.prepare("SELECT * FROM clients ORDER BY last_visit_at DESC NULLS LAST, id DESC LIMIT 200").all();
   }
+  const showPhone = canSeePhones(req.session);
+  if (!showPhone) rows = rows.map(function(c) { return Object.assign({}, c, { phone: null }); });
   res.json({ ok: true, clients: rows });
 });
 router.get("/clients/:id", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
-  const client = db.prepare("SELECT * FROM clients WHERE id=?").get(id);
+  let client = db.prepare("SELECT * FROM clients WHERE id=?").get(id);
   if (!client) return res.status(404).json({ ok: false });
   const history = db.prepare(
     `SELECT a.id, a.date, a.start_min, a.status, a.service_id, a.master_id,
@@ -627,6 +629,7 @@ router.get("/clients/:id", any, function (req, res) {
        FROM appointments a JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id
       WHERE a.client_id=? ORDER BY a.date DESC, a.start_min DESC`
   ).all(id).map(viewAppt);
+  if (!canSeePhones(req.session)) client = Object.assign({}, client, { phone: null });
   res.json({ ok: true, client: client, history: history });
 });
 router.patch("/clients/:id", any, function (req, res) {

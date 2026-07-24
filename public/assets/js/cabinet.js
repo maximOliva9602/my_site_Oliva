@@ -904,10 +904,8 @@
         var dayBlocksArr = (rs[3].j && rs[3].j.blocks) || [];
         var dayOvs = (rs[4].j && rs[4].j.overrides) || [];
 
-        // Власник може фільтрувати або бачити всіх; майстер бачить лише свою колонку
-        var effectiveFilter = masterFilter || (ME.role !== "owner" ? String(ME.masterId) : "");
-        var masters = effectiveFilter
-          ? allMasters.filter(function(m) { return String(m.id) === String(effectiveFilter); })
+        var masters = masterFilter
+          ? allMasters.filter(function(m) { return String(m.id) === String(masterFilter); })
           : allMasters;
 
         var schedMap = {};
@@ -979,6 +977,8 @@
         function openCalCtx(master, absMin, screenX, screenY) {
           var oldCtx = document.getElementById("cal-ctx");
           if (oldCtx) { oldCtx.remove(); return; }
+          // Майстер може взаємодіяти тільки з власною колонкою
+          if (ME.role !== "owner" && master.id !== ME.masterId) return;
           var unavail = isUnavail(master.id, absMin);
           var ctx = document.createElement("div");
           ctx.id = "cal-ctx";
@@ -2748,10 +2748,9 @@
 
     function load(q) {
       listEl.innerHTML = '<div class="empty">Завантаження…</div>';
-      var url = ME.role === "owner" ? "/api/crm/clients" + (q ? "?q=" + encodeURIComponent(q) : "") : "/api/crm/me/clients";
+      var url = "/api/crm/clients" + (q ? "?q=" + encodeURIComponent(q) : "");
       api("GET", url).then(function (res) {
         var list = res.j.clients || [];
-        if (q && ME.role !== "owner") list = list.filter(function (c) { return (c.name + c.phone).toLowerCase().indexOf(q.toLowerCase()) > -1; });
         listEl.innerHTML = "";
         if (!list.length) { listEl.appendChild(el("div", "empty", "Клієнтів не знайдено")); return; }
         list.forEach(function (c) {
