@@ -227,7 +227,6 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     <div class="ps" data-s="5"></div>
     <div class="ps" data-s="6"></div>
   </div>
-  <div class="breadcrumb" id="breadcrumb"></div>
 
   <!-- 1. Категорія послуг -->
   <div id="step1">
@@ -460,18 +459,6 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     var num = n === "done" ? 6 : n;
     document.querySelectorAll(".ps").forEach(function(el) {
       el.classList.toggle("on", parseInt(el.dataset.s) <= num);
-    });
-    // breadcrumb
-    var bc = $("breadcrumb"); bc.innerHTML = "";
-    var items = [];
-    if (state.group)    items.push({ label: (GROUPS.filter(function(g){return g.key===state.group;})[0]||{}).name || "", step: 1 });
-    if (state.category) items.push({ label: (ICONS[state.category] || "") + " " + state.category, step: 2 });
-    if (state.master)   items.push({ label: state.master.name, step: 3 });
-    if (state.service)  items.push({ label: state.service.duration_min + " хв · " + money(state.service.price), step: 4 });
-    items.forEach(function(it, i) {
-      var sp = document.createElement("span"); sp.className = "bc-item"; sp.textContent = it.label;
-      sp.addEventListener("click", function() { goStep(it.step); }); bc.appendChild(sp);
-      if (i < items.length - 1) { var s = document.createElement("span"); s.className = "bc-sep"; s.textContent = "›"; bc.appendChild(s); }
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
