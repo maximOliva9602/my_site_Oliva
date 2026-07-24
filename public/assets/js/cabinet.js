@@ -1631,7 +1631,7 @@
         '<div style="font-size:.75rem;color:var(--text-dim);">' + (a.client_phone || '<span style="color:#aaa;">🔒 приховано</span>') + '</div></div>' +
       '</div>' +
       // Майстер
-      '<label>Майстер</label><select id="eMaster"></select>' +
+      '<div id="eMasterRow"><label>Майстер</label><select id="eMaster"></select></div>' +
       // Дата
       '<label>Дата</label>' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
@@ -1702,10 +1702,12 @@
     api("GET", "/api/crm/masters").then(function(res) {
       var sel = $("eMaster");
       (res.j.masters||[]).forEach(function(m) {
+        if (ME.role !== "owner" && m.id !== ME.masterId) return;
         var o = new Option(m.name + (m.last_name?" "+m.last_name:""), m.id);
         sel.appendChild(o);
       });
       sel.value = String(a.master_id);
+      if (ME.role !== "owner") $("eMasterRow").style.display = "none";
       sel.addEventListener("change", loadESlots);
       loadESlots();
     });
