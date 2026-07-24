@@ -311,18 +311,31 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .addextra-t { color: #F2EDE4; font-size: .92rem; font-weight: 500; }
 .addextra-d { color: rgba(212,207,198,0.55); font-size: .8rem; }
 /* Крок 4b — додаткові послуги (add-on'и) */
-.addon-list { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
-.addon-card { background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 14px; padding: 13px 15px; transition: border-color .2s, background .2s; }
-.addon-card.on { border-color: rgba(217,185,120,0.5); background: rgba(122,145,86,0.10); }
-.addon-head { display: flex; align-items: baseline; gap: 8px; }
-.addon-name { flex: 1; color: #F2EDE4; font-size: .98rem; font-weight: 500; font-family: 'Playfair Display', serif; line-height: 1.25; }
-.addon-note { color: var(--gold); font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; opacity: .85; white-space: nowrap; }
-.addon-vars { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
-.addon-var { flex: 1; min-width: 130px; padding: 9px 10px; border-radius: 10px; border: 1.5px solid var(--line); background: transparent; color: var(--text); font-size: .82rem; font-family: inherit; cursor: pointer; text-align: center; transition: all .15s; }
+.addon-reco { display: flex; align-items: center; gap: 8px; padding: 6px 16px 2px; color: var(--gold); font-size: .95rem; font-weight: 600; }
+.addon-reco svg { width: 18px; height: 18px; }
+.addon-list { padding: 8px 16px 96px; display: flex; flex-direction: column; gap: 12px; }
+.addon-card { display: flex; align-items: stretch; background: rgba(20,15,10,0.55); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; transition: border-color .2s, background .2s; }
+.addon-card.on { border-color: rgba(217,185,120,0.55); background: rgba(122,145,86,0.10); }
+@media (hover:hover){ .addon-card:hover { border-color: rgba(217,185,120,0.4); } }
+.addon-photo { width: 104px; flex-shrink: 0; background-size: cover; background-position: center; background-color: #1a140e; }
+.addon-body { flex: 1; min-width: 0; padding: 12px 8px 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.addon-titlerow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.addon-name { color: #F2EDE4; font-family: 'Playfair Display', serif; font-size: 1.04rem; font-weight: 600; line-height: 1.15; }
+.addon-badge { font-size: .58rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 8px; border-radius: 7px; white-space: nowrap; }
+.addon-badge.hit { background: rgba(217,185,120,0.9); color: #2b2113; }
+.addon-badge.pop { background: rgba(122,145,86,0.22); color: #b8d4a8; border: 1px solid rgba(122,145,86,0.4); }
+.addon-desc { color: rgba(212,207,198,0.6); font-size: .8rem; line-height: 1.4; }
+.addon-vars { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.addon-var { padding: 5px 11px; border-radius: 8px; border: 1.5px solid var(--line); background: transparent; color: var(--text); font-size: .76rem; font-family: inherit; cursor: pointer; transition: all .15s; }
 .addon-var.sel { border-color: var(--gold); background: rgba(217,185,120,0.14); color: #F2EDE4; }
-.addon-var b { color: var(--gold); font-weight: 600; }
-.addon-add { margin-top: 10px; width: 100%; padding: 11px; border-radius: 10px; border: 1.5px solid var(--gold); background: transparent; color: var(--gold); font-size: .88rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all .15s; }
-.addon-add.on { background: var(--gold); color: #2b2113; }
+.addon-meta { display: flex; align-items: center; gap: 8px; color: var(--cream); font-size: .85rem; margin-top: auto; }
+.addon-meta .ic { display: inline-flex; color: var(--gold); }
+.addon-meta .ic svg { width: 15px; height: 15px; }
+.addon-meta .sep { color: rgba(217,185,120,0.35); }
+.addon-meta .price { color: var(--gold); font-weight: 600; }
+.addon-toggle { align-self: center; flex-shrink: 0; width: 46px; height: 46px; margin: 0 14px 0 4px; border-radius: 50%; border: 1.6px solid var(--gold); background: transparent; color: var(--gold); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+.addon-toggle svg { width: 22px; height: 22px; }
+.addon-card.on .addon-toggle { background: linear-gradient(160deg, #E8C877, #C9A24E); color: #2b2113; border-color: transparent; }
 .addon-bar { position: sticky; bottom: 0; margin-top: 4px; background: rgba(12,9,6,0.96); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px; }
 .addon-bar-info { display: flex; flex-direction: column; line-height: 1.2; }
 .addon-bar-label { color: var(--text-dim); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
@@ -411,6 +424,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <div class="ssub">Доповніть сеанс за бажанням</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
+    <div class="addon-reco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z"/></svg><span>Рекомендуємо</span></div>
     <div class="addon-list" id="addonList"></div>
     <div class="addon-bar">
       <div class="addon-bar-info">
@@ -917,18 +931,26 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   /* ---------- Крок 4b: Додаткові послуги (add-on'и) ---------- */
   // Ціни в копійках (як s.price), щоб узгоджуватися з money() і сумами.
   var ADDONS = [
-    { key: "stones",  name: "Гаряче каміння", note: "локально", variants: [{ min: 15, price: 35000 }] },
-    { key: "hands",   name: "Масаж долонь",   variants: [{ min: 15, price: 35000 }] },
-    { key: "feet",    name: "Масаж стоп",     variants: [{ min: 15, price: 35000 }] },
-    { key: "head",    name: "Масаж голови",   variants: [{ min: 15, price: 35000 }, { min: 30, price: 70000 }] },
-    { key: "neck",    name: "Шийно-комірцева зона", variants: [{ min: 15, price: 35000 }, { min: 30, price: 70000 }] },
-    { key: "cream",   name: "Масаж зі зволожувальним кремом", variants: [{ min: 0, price: 10000 }] },
-    { key: "candles", name: "Композиція зі свічок", variants: [{ min: 0, price: 15000 }] },
-    { key: "barrel",  name: "Паріння у фітобочці", variants: [{ min: 30, price: 80000 }, { min: 45, price: 90000 }] },
-    { key: "sauna",   name: "Глибоке прогрівання у ІЧ Сауні", variants: [{ min: 30, price: 65000 }] },
+    { key: "sauna",   name: "Глибоке прогрівання у ІЧ Сауні", badge: "Хіт",       img: "spa-sauna-kyiv.jpg",
+      desc: "Глибоке прогрівання організму, виведення токсинів і релакс.", variants: [{ min: 30, price: 65000 }] },
+    { key: "stones",  name: "Гаряче каміння", badge: "Популярно", img: "stoun-terapiia-kyiv.jpg",
+      desc: "Локальне прогрівання м'язів, глибоке розслаблення.", variants: [{ min: 15, price: 35000 }] },
+    { key: "barrel",  name: "Паріння у фітобочці", badge: "Популярно", img: "parinnia-u-fitobochtsi-kyiv.jpg",
+      desc: "Прогрівання тіла на цілющих травах перед масажем.", variants: [{ min: 30, price: 80000 }, { min: 45, price: 90000 }] },
+    { key: "head",    name: "Масаж голови", img: "head_massage.jpg",
+      desc: "Зняття напруги, покращення сну та концентрації.", variants: [{ min: 15, price: 35000 }, { min: 30, price: 70000 }] },
+    { key: "neck",    name: "Шийно-комірцева зона", img: "masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg",
+      desc: "Розслаблення шиї та плечей, знята напруга.", variants: [{ min: 15, price: 35000 }, { min: 30, price: 70000 }] },
+    { key: "hands",   name: "Масаж долонь", img: "relaks-masazh-shuliavska-kyiv.jpg",
+      desc: "Зняття напруги в кистях і передпліччях.", variants: [{ min: 15, price: 35000 }] },
+    { key: "feet",    name: "Масаж стоп", img: "masazh-shuliavska-kyiv.jpg",
+      desc: "Розслаблення втомлених ніг і стоп.", variants: [{ min: 15, price: 35000 }] },
+    { key: "cream",   name: "Масаж зі зволожувальним кремом", img: "antystresovyi-masazh-kyiv.jpg",
+      desc: "Живлення шкіри та ніжний догляд під час сеансу.", variants: [{ min: 0, price: 10000 }] },
+    { key: "candles", name: "Композиція зі свічок", img: "relaks-spa-programa-kyiv.jpg",
+      desc: "Атмосфера спокою з ароматом теплих свічок.", variants: [{ min: 0, price: 15000 }] },
   ];
   var addonVarIdx = {}; // обраний варіант для кожного add-on
-  function varLabel(v) { return (v.min > 0 ? v.min + " хв" : "без часу") + " · <b>+" + money(v.price) + "</b>"; }
   function isAddonOn(key) { return state.extras.some(function(e){ return e.key === key; }); }
 
   function setAddon(a, on) {
@@ -948,36 +970,46 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     el.textContent = (baseMin + extrasTotalMin()) + " хв · " + money(basePrice + extrasTotalPrice());
   }
 
+  var ADDON_PLUS  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  var ADDON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
   function renderExtras() {
     var box = $("addonList"); if (!box) return;
     box.innerHTML = "";
     ADDONS.forEach(function(a) {
       if (addonVarIdx[a.key] == null) addonVarIdx[a.key] = 0;
       var on = isAddonOn(a.key);
+      var v = a.variants[addonVarIdx[a.key]] || a.variants[0];
       var card = document.createElement("div");
       card.className = "addon-card" + (on ? " on" : "");
+      var badgeCls = a.badge === "Хіт" ? "hit" : "pop";
       var varsHtml = a.variants.length > 1
-        ? '<div class="addon-vars">' + a.variants.map(function(v, i) {
-            return '<button type="button" class="addon-var' + (addonVarIdx[a.key] === i ? " sel" : "") + '" data-i="' + i + '">' + varLabel(v) + '</button>';
+        ? '<div class="addon-vars">' + a.variants.map(function(vv, i) {
+            return '<button type="button" class="addon-var' + (addonVarIdx[a.key] === i ? " sel" : "") + '" data-i="' + i + '">' + (vv.min > 0 ? vv.min + " хв" : "без часу") + '</button>';
           }).join("") + '</div>'
-        : '<div class="addon-vars"><span class="addon-var sel" style="cursor:default;">' + varLabel(a.variants[0]) + '</span></div>';
+        : '';
       card.innerHTML =
-        '<div class="addon-head"><span class="addon-name">' + a.name + '</span>' +
-          (a.note ? '<span class="addon-note">' + a.note + '</span>' : '') + '</div>' +
-        varsHtml +
-        '<button type="button" class="addon-add' + (on ? " on" : "") + '">' + (on ? "Додано ✓" : "Додати") + '</button>';
+        '<div class="addon-photo" style="background-image:url(\'assets/img/' + a.img + '\')"></div>' +
+        '<div class="addon-body">' +
+          '<div class="addon-titlerow"><span class="addon-name">' + a.name + '</span>' +
+            (a.badge ? '<span class="addon-badge ' + badgeCls + '">' + a.badge + '</span>' : '') +
+          '</div>' +
+          '<div class="addon-desc">' + a.desc + '</div>' +
+          varsHtml +
+          '<div class="addon-meta"><span class="ic">' + CLOCK + '</span>' +
+            '<span>' + (v.min > 0 ? v.min + " хв" : "без часу") + '</span>' +
+            '<span class="sep">|</span><span class="price">+' + money(v.price) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="addon-toggle" aria-label="' + (on ? "Прибрати" : "Додати") + '">' + (on ? ADDON_CHECK : ADDON_PLUS) + '</button>';
       card.querySelectorAll(".addon-var[data-i]").forEach(function(btn) {
-        btn.addEventListener("click", function() {
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
           addonVarIdx[a.key] = parseInt(btn.dataset.i, 10);
-          card.querySelectorAll(".addon-var").forEach(function(x){ x.classList.remove("sel"); });
-          btn.classList.add("sel");
           if (isAddonOn(a.key)) setAddon(a, true); // оновити обраний варіант
+          renderExtras();
         });
       });
-      card.querySelector(".addon-add").addEventListener("click", function() {
-        setAddon(a, !isAddonOn(a.key));
-        renderExtras();
-      });
+      card.addEventListener("click", function() { setAddon(a, !isAddonOn(a.key)); renderExtras(); });
       box.appendChild(card);
     });
     updateAddonSummary();
