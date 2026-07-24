@@ -558,7 +558,7 @@
       api("GET", "/api/crm/masters").then(function (res) {
         var sel = el("select");
         sel.appendChild(new Option("Усі майстри", ""));
-        (res.j.masters || []).forEach(function (m) { sel.appendChild(new Option(m.name, m.id)); });
+        (res.j.masters || []).forEach(function (m) { sel.appendChild(new Option(m.name + (m.level ? " · " + m.level : ""), m.id)); });
         sel.addEventListener("change", function () { activeMasterFilter = sel.value; reloadView(sel.value); });
         masterFilterWrap.appendChild(el("span", "muted", "Майстер:"));
         masterFilterWrap.appendChild(sel);
