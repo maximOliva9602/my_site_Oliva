@@ -2195,7 +2195,8 @@
         var sel = $("mMaster");
         (res.j.masters || []).forEach(function (m) {
           if (ME.role !== "owner" && m.id !== ME.masterId) return;
-          sel.appendChild(new Option(m.name, m.id));
+          var label = m.name + (m.level ? " · " + m.level : ""); // дописати кваліфікацію майстра
+          sel.appendChild(new Option(label, m.id));
         });
         if (ME.role !== "owner") {
           // Worker: force own masterId, hide the selector
