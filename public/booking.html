@@ -14,132 +14,219 @@
 <meta property="og:image" content="https://massage-solomyanskyi.com.ua/assets/img/og-image.jpg" />
 <link rel="canonical" href="https://massage-solomyanskyi.com.ua/booking.html" />
 <link rel="icon" href="assets/img/logo.png" />
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --black: #080A07; --panel: #12160e;
+  --black: #0a0806; --panel: rgba(22,16,10,0.82);
   --olive: #2E3D22; --olive-light: #7A9156;
   --cream: #F2EDE4; --text: #D4CFC6; --text-dim: #8A8880;
-  --line: rgba(122,145,86,0.18); --err: #e0816b;
+  --line: rgba(217,185,120,0.18); --err: #e0816b; --gold: #D9B978;
 }
-body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--text); min-height: 100vh; padding: 20px 16px 70px; }
-.wrap { max-width: 580px; margin: 0 auto; }
 
-header { text-align: center; margin-bottom: 22px; }
-header img { width: 52px; height: 52px; object-fit: contain; margin-bottom: 8px; }
-header h1 { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.4rem; font-weight: 600; }
-header p { color: var(--text-dim); font-size: 0.82rem; margin-top: 3px; }
+body {
+  font-family: 'Inter', sans-serif; color: var(--text); min-height: 100vh;
+  background: #0a0806 url('assets/img/SPA.jpeg') center/cover fixed;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background: linear-gradient(160deg, rgba(7,5,3,0.80) 0%, rgba(7,5,3,0.70) 45%, rgba(7,5,3,0.90) 100%);
+  pointer-events: none;
+}
 
-.progress { display: flex; gap: 5px; margin-bottom: 16px; }
+.wrap { max-width: 480px; margin: 0 auto; position: relative; z-index: 1; padding: 0 0 90px; }
+.hide { display: none !important; }
+
+/* ── HERO (step 1) ──────────────────────────────────── */
+#step1Hero { text-align: center; padding: 52px 20px 20px; }
+
+.hero-logo {
+  width: 68px; height: 68px; object-fit: contain;
+  filter: drop-shadow(0 0 20px rgba(217,185,120,0.30));
+  margin-bottom: 10px;
+}
+.hero-brand-name {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 1.65rem; font-weight: 600;
+  letter-spacing: .20em;
+  line-height: 1;
+}
+.hero-brand-sub {
+  font-size: .60rem; color: rgba(217,185,120,0.72);
+  letter-spacing: .24em; text-transform: uppercase;
+  margin-top: 4px; margin-bottom: 22px;
+}
+.hero-h1 {
+  font-family: 'Playfair Display', serif;
+  color: #fff; font-size: 2.5rem; font-weight: 600;
+  line-height: 1.12; margin-bottom: 10px;
+}
+.hero-tagline {
+  color: rgba(212,207,198,0.68); font-size: .88rem;
+  line-height: 1.6; margin-bottom: 20px;
+}
+.hero-ornament { margin: 0 auto 16px; width: 200px; display: block; }
+.hero-hint {
+  font-size: .76rem; color: rgba(212,207,198,0.52);
+  letter-spacing: .04em; margin-bottom: 18px;
+}
+
+/* ── GROUP LIST ─────────────────────────────────────── */
+.grp-list { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; }
+
+.grp-card {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; text-align: left;
+  background: rgba(18,12,7,0.72);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(217,185,120,0.20);
+  border-radius: 16px; padding: 15px 16px;
+  cursor: pointer; color: inherit; font-family: inherit;
+  transition: transform .15s, border-color .2s, background .2s;
+}
+.grp-card:active { transform: scale(.99); }
+@media (hover: hover) {
+  .grp-card:hover { border-color: rgba(217,185,120,0.42); background: rgba(34,22,12,0.82); transform: translateY(-1px); }
+}
+
+.grp-ico {
+  flex-shrink: 0; width: 56px; height: 56px;
+  border-radius: 50%; border: 1.5px solid;
+  display: flex; align-items: center; justify-content: center;
+}
+.grp-ico svg { width: 26px; height: 26px; }
+
+/* Per-category icon color */
+.grp-1 .grp-ico { border-color: #D9B978; color: #D9B978; }
+.grp-2 .grp-ico { border-color: #E8A0B4; color: #E8A0B4; }
+.grp-3 .grp-ico { border-color: #7ECFBD; color: #7ECFBD; }
+.grp-4 .grp-ico { border-color: #E0B84A; color: #E0B84A; }
+.grp-5 .grp-ico { border-color: #B0A0D8; color: #B0A0D8; }
+
+.grp-body { flex: 1; min-width: 0; }
+.grp-title { font-family: 'Playfair Display', serif; color: #fff; font-size: 1.02rem; font-weight: 600; margin-bottom: 3px; }
+.grp-sub { font-size: .75rem; color: var(--text-dim); line-height: 1.42; }
+.grp-arrow { flex-shrink: 0; color: var(--gold); font-size: 1.4rem; opacity: .75; line-height: 1; }
+
+/* ── TRUST BAR ──────────────────────────────────────── */
+#trustBar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: rgba(10,7,4,0.92);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(217,185,120,0.12);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.trust-item { display: flex; align-items: center; gap: 7px; flex: 1; justify-content: center; }
+.trust-ico { flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: rgba(217,185,120,0.72); }
+.trust-ico svg { width: 16px; height: 16px; }
+.trust-label { font-size: .60rem; color: rgba(180,175,165,0.75); line-height: 1.35; }
+.trust-sep { width: 1px; height: 26px; background: rgba(217,185,120,0.13); flex-shrink: 0; }
+
+/* ── PROGRESS + BREADCRUMB ──────────────────────────── */
+.progress { display: flex; gap: 5px; margin: 14px 16px 8px; }
 .ps { flex: 1; height: 3px; border-radius: 2px; background: rgba(122,145,86,0.15); transition: background .3s; }
 .ps.on { background: var(--olive-light); }
-
-.breadcrumb { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; min-height: 20px; font-size: 0.76rem; color: var(--text-dim); }
+.breadcrumb { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin: 0 16px 12px; min-height: 20px; font-size: .76rem; color: var(--text-dim); }
 .bc-item { color: var(--olive-light); cursor: pointer; }
 .bc-item:hover { text-decoration: underline; }
 .bc-sep { opacity: .4; }
 
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
-.card-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1rem; font-weight: 500; margin-bottom: 16px; }
+/* ── CARDS (steps 2-6) ──────────────────────────────── */
+.card {
+  background: rgba(16,20,12,0.84);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--line); border-radius: 16px;
+  padding: 18px 16px; margin: 0 16px 14px;
+}
+.card-title { font-family: 'Playfair Display', serif; color: var(--cream); font-size: .95rem; font-weight: 500; margin-bottom: 14px; }
 
-/* category grid (крок 2 — конкретні послуги всередині групи) */
+/* ── CATEGORY GRID ──────────────────────────────────── */
 .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .cat-card { background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 12px; padding: 13px 12px; cursor: pointer; transition: all .2s; text-align: left; width: 100%; overflow: hidden; position: relative; }
 .cat-card:hover { border-color: var(--olive-light); background: rgba(46,61,34,0.30); }
 .cat-card-photo { width: 100%; height: 78px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; display: block; }
 .cat-icon { font-size: 1.4rem; margin-bottom: 6px; }
-.cat-name { font-size: 0.85rem; color: var(--cream); font-weight: 500; line-height: 1.3; }
-.cat-from { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+.cat-name { font-size: .85rem; color: var(--cream); font-weight: 500; line-height: 1.3; }
+.cat-from { font-size: .72rem; color: var(--text-dim); margin-top: 4px; }
 
-/* group grid (крок 1 — верхньорівневі категорії) */
-.grp-list { display: flex; flex-direction: column; gap: 11px; }
-.grp-card {
-  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
-  border: 1px solid rgba(217,185,120,0.22); border-radius: 16px; padding: 16px 14px;
-  cursor: pointer; transition: transform .15s, border-color .2s; color: inherit; font-family: inherit;
-}
-.grp-card:hover { border-color: rgba(217,185,120,0.5); transform: translateY(-1px); }
-.grp-1 { background: linear-gradient(135deg, #2b2420, #17130f); }
-.grp-2 { background: linear-gradient(135deg, #3c2440, #22132a); }
-.grp-3 { background: linear-gradient(135deg, #1f2c42, #121a29); }
-.grp-4 { background: linear-gradient(135deg, #4a2f18, #2a1a0d); }
-.grp-5 { background: linear-gradient(135deg, #16362f, #0d211c); }
-.grp-ico {
-  flex-shrink: 0; width: 54px; height: 54px; border-radius: 50%; border: 1px solid rgba(217,185,120,0.45);
-  display: flex; align-items: center; justify-content: center; color: #D9B978;
-}
-.grp-ico svg { width: 26px; height: 26px; }
-.grp-body { flex: 1; min-width: 0; }
-.grp-title { font-family: 'Playfair Display', serif; color: #D9B978; font-size: 1.05rem; font-weight: 600; margin-bottom: 3px; }
-.grp-sub { font-size: 0.78rem; color: #B9AFA0; line-height: 1.35; }
-.grp-arrow { flex-shrink: 0; color: #D9B978; font-size: 1.3rem; opacity: .8; }
-
-/* master grid */
+/* ── MASTERS ────────────────────────────────────────── */
 .master-grid { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; }
-.master-card { width: 120px; flex-shrink: 0; }
-.master-card { background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 12px; padding: 13px 10px; cursor: pointer; transition: all .2s; text-align: center; }
+.master-card { width: 120px; flex-shrink: 0; background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 12px; padding: 13px 10px; cursor: pointer; transition: all .2s; text-align: center; }
 .master-card:hover { border-color: var(--olive-light); background: rgba(46,61,34,0.30); }
 .master-card.sel { border-color: var(--olive-light); background: rgba(122,145,86,0.14); }
-.master-photo { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin: 0 auto 8px; display: block; border: 2px solid var(--line); }
+.master-photo { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; }
 .master-any-ico { width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; background: rgba(46,61,34,0.3); border: 2px solid var(--line); }
-.master-name { font-size: 0.88rem; color: var(--cream); font-weight: 500; }
-.lv { display: inline-block; margin-top: 5px; font-size: 0.66rem; padding: 3px 8px; border-radius: 20px; }
+.master-name { font-size: .83rem; color: var(--cream); font-weight: 500; margin-bottom: 4px; }
+.lv { display: inline-block; font-size: .68rem; padding: 2px 7px; border-radius: 8px; }
 .lv-top { background: rgba(202,164,90,0.16); color: #caa45a; }
 .lv-reg { background: rgba(122,145,86,0.16); color: var(--olive-light); }
 .lv-any { background: rgba(138,136,128,0.18); color: var(--text-dim); }
 
-/* duration */
+/* ── DURATIONS ──────────────────────────────────────── */
 .dur-list { display: flex; flex-direction: column; gap: 8px; }
 .dur-opt { display: flex; justify-content: space-between; align-items: center; background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 11px; padding: 13px 15px; cursor: pointer; transition: all .2s; }
 .dur-opt:hover { border-color: var(--olive-light); background: rgba(46,61,34,0.30); }
-.dur-time { color: var(--cream); font-size: 0.93rem; font-weight: 500; }
-.dur-price { color: var(--olive-light); font-size: 0.9rem; font-weight: 600; }
+.dur-time { color: var(--cream); font-size: .92rem; font-weight: 500; }
+.dur-price { color: var(--olive-light); font-size: .88rem; font-weight: 600; }
 
-/* slots */
-.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; margin-top: 8px; }
-.slot { background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 0; color: var(--cream); font-size: 0.87rem; cursor: pointer; text-align: center; transition: all .15s; }
+/* ── SLOTS ──────────────────────────────────────────── */
+.slots { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; }
+.slot { background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 0; color: var(--cream); font-size: .87rem; cursor: pointer; text-align: center; transition: all .15s; }
 .slot:hover { border-color: var(--olive-light); }
 .slot.sel { background: var(--olive-light); color: var(--black); font-weight: 600; border-color: transparent; }
 
-input[type=date], input[type=text], input[type=tel], textarea {
+/* ── FORM ───────────────────────────────────────────── */
+.fld { display: block; font-size: .75rem; color: var(--text-dim); margin-bottom: 4px; margin-top: 12px; }
+input, textarea, select {
   width: 100%; background: rgba(46,61,34,0.22); border: 1px solid var(--line); border-radius: 10px;
-  padding: 11px 13px; color: var(--cream); font-size: 0.92rem; font-family: inherit; margin-bottom: 11px;
+  padding: 11px 13px; color: var(--cream); font-size: .92rem; font-family: inherit; margin-bottom: 11px;
 }
-textarea { resize: vertical; min-height: 66px; }
-label.fld { display: block; font-size: 0.77rem; color: var(--text-dim); margin-bottom: 5px; }
+input:focus, textarea:focus { outline: none; border-color: var(--olive-light); }
+textarea { resize: none; height: 78px; }
+#masterDatePicker { margin-bottom: 14px; }
 
-.summary { background: rgba(122,145,86,0.07); border: 1px solid var(--line); border-radius: 11px; padding: 13px 15px; font-size: 0.87rem; line-height: 1.95; margin-bottom: 15px; }
-.summary b { color: var(--cream); font-weight: 500; }
-
-.row { display: flex; gap: 10px; margin-top: 6px; }
-.btn { flex: 1; border: none; border-radius: 10px; padding: 12px; font-size: 0.92rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .2s; }
+/* ── MISC ───────────────────────────────────────────── */
+.summary { background: rgba(122,145,86,0.07); border: 1px solid var(--line); border-radius: 11px; padding: 13px 15px; font-size: .87rem; line-height: 1.95; margin-bottom: 15px; }
+.row { display: flex; gap: 8px; margin-top: 14px; }
+.btn { flex: 1; border: none; border-radius: 10px; padding: 12px; font-size: .92rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .2s; }
 .btn-primary { background: var(--olive-light); color: var(--black); }
 .btn-primary:hover { background: #8FA864; }
-.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary:disabled { opacity: .6; }
 .btn-ghost { background: none; border: 1px solid var(--line); color: var(--text-dim); }
-.btn-ghost:hover { color: var(--cream); border-color: var(--olive-light); }
-
-.err { color: var(--err); font-size: 0.81rem; margin-top: 6px; min-height: 18px; text-align: center; }
-.empty { color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 20px 0; }
-.hide { display: none !important; }
-
-.done { text-align: center; padding: 16px 0 8px; }
-.done .ico { font-size: 2.6rem; margin-bottom: 10px; }
+.err { color: var(--err); font-size: .82rem; min-height: 18px; margin-bottom: 4px; }
+.empty { color: var(--text-dim); font-size: .88rem; padding: 16px 0; text-align: center; }
+.done { text-align: center; padding: 20px 0; }
+.done .ico { font-size: 2.8rem; margin-bottom: 10px; }
 .done h2 { color: var(--olive-light); font-family: 'Playfair Display', serif; font-size: 1.3rem; }
-.done p { color: var(--text); margin-top: 12px; line-height: 1.8; font-size: 0.9rem; }
-a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light); text-decoration: none; font-size: 0.85rem; }
+.done p { color: var(--text); margin-top: 12px; line-height: 1.8; font-size: .9rem; }
+a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light); text-decoration: none; font-size: .85rem; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <img src="assets/img/logo.png" alt="Oliva" />
-    <h1>Онлайн-запис</h1>
-    <p>Студія масажу Oliva</p>
-  </header>
 
-  <div class="progress" id="progress">
+  <!-- ── Hero (кроку 1) ── -->
+  <div id="step1Hero">
+    <img class="hero-logo" src="assets/img/logo.png" alt="Oliva" />
+    <div class="hero-brand-name">OLIVA</div>
+    <div class="hero-brand-sub">СТУДІЯ МАСАЖУ</div>
+    <h1 class="hero-h1">Онлайн-запис</h1>
+    <p class="hero-tagline">Ваш шлях до відновлення<br>починається тут</p>
+    <svg class="hero-ornament" viewBox="0 0 200 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line x1="0" y1="9" x2="66" y2="9" stroke="#D9B978" stroke-width="0.7" opacity="0.50"/>
+      <path d="M75 9 Q81 3.5 87 9 Q81 14.5 75 9Z" fill="none" stroke="#D9B978" stroke-width="1" opacity="0.65"/>
+      <circle cx="100" cy="9" r="2" fill="#D9B978" opacity="0.80"/>
+      <path d="M113 9 Q119 3.5 125 9 Q119 14.5 113 9Z" fill="none" stroke="#D9B978" stroke-width="1" opacity="0.65"/>
+      <line x1="134" y1="9" x2="200" y2="9" stroke="#D9B978" stroke-width="0.7" opacity="0.50"/>
+    </svg>
+    <p class="hero-hint">Оберіть категорію послуг</p>
+  </div>
+
+  <!-- progress (прихований на кроці 1) -->
+  <div class="progress" id="progress" style="display:none">
     <div class="ps on" data-s="1"></div>
     <div class="ps" data-s="2"></div>
     <div class="ps" data-s="3"></div>
@@ -150,8 +237,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   <div class="breadcrumb" id="breadcrumb"></div>
 
   <!-- 1. Категорія послуг -->
-  <div class="card" id="step1">
-    <div class="card-title">1. Оберіть категорію послуг</div>
+  <div id="step1">
     <div class="grp-list" id="groupGrid"></div>
   </div>
 
@@ -213,6 +299,25 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
       <a class="back-site" href="/">← На головну</a>
     </div>
   </div>
+
+</div><!-- /wrap -->
+
+<!-- Нижня панель довіри -->
+<div id="trustBar">
+  <div class="trust-item">
+    <span class="trust-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l7 3v5.5c0 4.4-3 7.6-7 8.5-4-.9-7-4.1-7-8.5V5.5l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+    <span class="trust-label">Ваші дані<br>в безпеці</span>
+  </div>
+  <div class="trust-sep"></div>
+  <div class="trust-item">
+    <span class="trust-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17"/><path d="M8 3v4M16 3v4"/></svg></span>
+    <span class="trust-label">Онлайн-запис<br>24/7</span>
+  </div>
+  <div class="trust-sep"></div>
+  <div class="trust-item">
+    <span class="trust-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></svg></span>
+    <span class="trust-label">Захищене<br>з'єднання</span>
+  </div>
 </div>
 
 <script>
@@ -234,18 +339,18 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
 
   /* ---------- Групи (крок 1) ---------- */
   var GRP_ICONS = {
-    general: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 13c2-3 4-4 8-4s6 1 8 4"/><path d="M6 13v3a2 2 0 002 2h8a2 2 0 002-2v-3"/><circle cx="12" cy="6" r="2"/></svg>',
+    general: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c3-2.5 6-3.5 9-3.5s6 1 9 3.5"/><path d="M8.5 11.2l1-2.4c.3-.7 1-1 1.6-.8.6.2.9.9.7 1.6l-.5 1.4"/><path d="M11.4 10.6l1.3-2.9c.3-.6 1-.9 1.6-.6.6.2.8.9.6 1.5l-1 2.5"/><path d="M14 10.9l1-1.8c.3-.6 1-.8 1.5-.5.5.3.7.9.4 1.5l-1.1 2.2"/></svg>',
     spa2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="6" r="2.2"/><circle cx="16" cy="6" r="2.2"/><path d="M4 20v-3c0-2.2 1.8-4 4-4s4 1.8 4 4v3"/><path d="M12 20v-3c0-2.2 1.8-4 4-4s4 1.8 4 4v3"/></svg>',
-    spa1: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="5" r="2.3"/><path d="M7 20v-4c0-2.8 2.2-5 5-5s5 2.2 5 5v4"/><path d="M9 10c0 2 1 4 3 4"/></svg>',
-    body: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 4c0 2-1.5 3-1.5 5s1.5 2 1.5 4-1.5 2-1.5 4 1.5 3 1.5 3"/><path d="M15 4c0 2 1.5 3 1.5 5s-1.5 2-1.5 4 1.5 2 1.5 4-1.5 3-1.5 3"/></svg>',
-    extra: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 3c0 3-2 3-2 6a2 2 0 004 0c0-3-2-3-2-6z"/><path d="M6 21v-5a6 6 0 0112 0v5"/><path d="M4 21h16"/></svg>',
+    spa1: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 3c0 4-4 5-4 9a4 4 0 008 0c0-4-4-5-4-9z"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
+    body: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2a2 2 0 100 4 2 2 0 000-4z"/><path d="M7 8h10l-1 6H8L7 8z"/><path d="M9 14l-1 6m7-6l1 6"/><path d="M9 8l-2-2m8 2l2-2"/></svg>',
+    extra: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/><path d="M5 17l.75 2.25L8 20l-2.25.75L5 23l-.75-2.25L2 20l2.25-.75L5 17z"/><path d="M19 3l.5 1.5L21 5l-1.5.5L19 7l-.5-1.5L17 5l1.5-.5L19 3z"/></svg>',
   };
   var GROUPS = [
-    { key: "general", name: "Загальні масажі",        sub: "Оздоровлення та відновлення для тіла і душі" },
-    { key: "spa2",    name: "SPA-масажі для двох",     sub: "Парні масажі та SPA для вас і ваших близьких" },
-    { key: "spa1",    name: "SPA-масажі для одного",   sub: "Індивідуальний релакс та глибоке розслаблення" },
-    { key: "body",    name: "Корекція фігури",         sub: "Моделювання та покращення контурів тіла" },
-    { key: "extra",   name: "Додаткові послуги",       sub: "Додатковий догляд для краси та гармонії" },
+    { key: "general", name: "Масажі",           sub: "Оздоровлення та відновлення для тіла і душі" },
+    { key: "spa2",    name: "SPA для двох",      sub: "Парні масажі та SPA для вас і ваших близьких" },
+    { key: "spa1",    name: "SPA для одного",    sub: "Індивідуальний релакс та глибоке розслаблення" },
+    { key: "body",    name: "Корекція фігури",   sub: "Моделювання та покращення контурів тіла" },
+    { key: "extra",   name: "Додаткові послуги", sub: "Додатковий догляд для краси та гармонії" },
   ];
   /* Категорія послуги (parseName().cat) → група. Керується тут; якщо власник
      додасть нову послугу з новою назвою, її категорія без пари в цьому
@@ -351,6 +456,11 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   }
 
   function goStep(n) {
+    // Показати/сховати hero і прогрес залежно від кроку
+    var hero = $("step1Hero"), prog = $("progress");
+    if (hero) hero.style.display = (n === 1) ? "" : "none";
+    if (prog) prog.style.display = (n === 1) ? "none" : "";
+
     ["step1","step2","step3","step4","step5","step6","stepDone"].forEach(function(id) { $(id).classList.add("hide"); });
     $(n === "done" ? "stepDone" : "step" + n).classList.remove("hide");
     // progress
@@ -568,6 +678,5 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   });
 })();
 </script>
-<script src="assets/js/track.js"></script>
 </body>
 </html>
