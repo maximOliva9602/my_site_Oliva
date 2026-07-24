@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  var ME = { role: null, masterId: null };
+  var ME = { role: null, masterId: null, can_see_phones: false };
   var DOW = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
   var STATUS_LABEL = { pending: "Очікує", confirmed: "Підтверджено", completed: "Завершено", cancelled: "Скасовано", no_show: "Не прийшов" };
   var MARKER_COLORS = ["#4f86f7","#8b5cf6","#ec4899","#10b981","#f59e0b","#f97316","#ef4444","#06b6d4"];
@@ -174,7 +174,7 @@
      ============================================================ */
   var TABS = [];
   function boot(me) {
-    ME.role = me.role; ME.masterId = me.masterId;
+    ME.role = me.role; ME.masterId = me.masterId; ME.can_see_phones = !!me.can_see_phones;
     $("login").style.display = "none";
     $("app").classList.add("on");
     $("roleTag").textContent = me.role === "owner" ? "Власник" : "Майстер";
@@ -1497,7 +1497,7 @@
   window.apptDetailModal = function apptDetailModal(a) {
     var html = '<h3>' + a.client_name + '</h3>' +
       '<div class="sub" style="margin-bottom:12px;">' + a.service_name + ' · ' + fmtMin(a.start_min) + '–' + fmtMin(a.end_min || (a.start_min + a.duration_min)) + ' · ' + a.master_name + '</div>' +
-      '<div class="sub">' + a.client_phone + '</div>' +
+      '<div class="sub">' + (a.client_phone || '<span style="color:#aaa;">🔒 телефон приховано</span>') + '</div>' +
       (a.comment ? '<div class="sub" style="margin-top:8px;">💬 ' + a.comment + '</div>' : '') +
       '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
       '<label style="margin-top:14px;display:block;">Колір маркеру</label><div id="dMarkerWrap"></div>';
@@ -1628,7 +1628,7 @@
           (a.client_name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase() +
         '</div>' +
         '<div><div style="font-weight:600;font-size:.9rem;color:var(--cream);">' + (a.client_name||'') + '</div>' +
-        '<div style="font-size:.75rem;color:var(--text-dim);">' + (a.client_phone||'') + '</div></div>' +
+        '<div style="font-size:.75rem;color:var(--text-dim);">' + (a.client_phone || '<span style="color:#aaa;">🔒 приховано</span>') + '</div></div>' +
       '</div>' +
       // Майстер
       '<label>Майстер</label><select id="eMaster"></select>' +
@@ -2060,7 +2060,7 @@
       var chip = $("mClientChip");
       chip.style.display = "flex";
       $("mChipName").textContent = c.name;
-      $("mChipPhone").textContent = c.phone || "";
+      $("mChipPhone").textContent = c.phone || (ME.can_see_phones ? "" : "🔒 приховано");
       refreshSubSection();
     }
 
@@ -2108,7 +2108,7 @@
               '<div style="width:32px;height:32px;border-radius:50%;background:var(--olive-light);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;">' + (initials||"?") + '</div>' +
               '<div style="flex:1;min-width:0;">' +
                 '<div style="font-size:.88rem;font-weight:600;color:var(--cream);">' + c.name + '</div>' +
-                '<div style="font-size:.75rem;color:var(--text-dim);">' + (c.phone||"") + ' · візитів: ' + (c.visit_count||0) + '</div>' +
+                '<div style="font-size:.75rem;color:var(--text-dim);">' + (c.phone ? c.phone : (ME.can_see_phones ? "" : '<span style="color:#aaa;">🔒 приховано</span>')) + ' · візитів: ' + (c.visit_count||0) + '</div>' +
               '</div>';
             row.addEventListener("mousedown", function(e) { e.preventDefault(); showChip(c); drop.style.display = "none"; });
             drop.appendChild(row);
@@ -3692,6 +3692,15 @@
       '<label>Ім\'я для додатку</label><input type="text" id="mmDisplayName" maxlength="100" placeholder="Як бачитимуть клієнти" />' +
       '<label>Посада</label><select id="mmLevel"><option value="Майстер">Майстер</option><option value="Майстриня">Майстриня</option><option value="Топ Майстер">Топ Майстер</option></select>' +
       '<label>Телефон</label><input type="text" id="mmPhone" maxlength="30" />' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #f0f2ee;margin-top:8px;">' +
+        '<div><div style="font-size:.88rem;font-weight:600;color:#1a2016;">Бачити номери телефонів клієнтів</div>' +
+        '<div style="font-size:.75rem;color:#6a7a60;">Майстер зможе бачити телефони у своїх записах</div></div>' +
+        '<label style="position:relative;display:inline-flex;width:44px;height:24px;flex-shrink:0;">' +
+          '<input type="checkbox" id="mmCanSeePhones" style="opacity:0;width:0;height:0;position:absolute;" />' +
+          '<span id="mmCspTrack" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"></span>' +
+          '<span id="mmCspThumb" style="position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none;"></span>' +
+        '</label>' +
+      '</div>' +
       '<div class="err" id="mmErr"></div>' +
       '<div class="modal-foot"><button class="btn btn-ghost" id="mmCancel">Скасувати</button><button class="btn btn-primary" id="mmSave">Зберегти</button></div>'
     );
@@ -3701,7 +3710,13 @@
       $("mmDisplayName").value = m.name || "";
       $("mmLevel").value = m.level || "Майстер";
       $("mmPhone").value = m.phone || "";
+      $("mmCanSeePhones").checked = !!m.can_see_phones;
+      if (m.can_see_phones) { $("mmCspTrack").style.background = "#3d5430"; $("mmCspThumb").style.left = "23px"; }
     }
+    $("mmCanSeePhones").addEventListener("change", function() {
+      $("mmCspTrack").style.background = this.checked ? "#3d5430" : "#ccc";
+      $("mmCspThumb").style.left = this.checked ? "23px" : "3px";
+    });
     // Ім'я для додатку саме підтягується за ім'ям, поки його не зміняли вручну.
     var displayTouched = false;
     $("mmDisplayName").addEventListener("input", function () { displayTouched = true; });
@@ -3717,7 +3732,8 @@
         name: displayName,
         last_name: $("mmLastName").value.trim(),
         level: $("mmLevel").value,
-        phone: $("mmPhone").value.trim()
+        phone: $("mmPhone").value.trim(),
+        can_see_phones: $("mmCanSeePhones").checked ? 1 : 0
       };
       var p = m ? api("PUT", "/api/crm/masters/" + m.id, body) : api("POST", "/api/crm/masters", body);
       p.then(function (res) {

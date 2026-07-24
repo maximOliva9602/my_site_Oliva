@@ -126,7 +126,13 @@ app.get("/api/admin/me", function (req, res) {
   var token = parseCookies(req.headers.cookie).oliva_admin;
   var s = auth.getSession(token);
   if (!s) return res.json({ ok: false });
-  res.json({ ok: true, role: s.role, masterId: s.masterId });
+  var canSeePhones = s.role === "owner";
+  if (!canSeePhones && s.masterId) {
+    var db = require("./crm/db");
+    var m = db.prepare("SELECT can_see_phones FROM masters WHERE id=?").get(s.masterId);
+    canSeePhones = !!(m && m.can_see_phones);
+  }
+  res.json({ ok: true, role: s.role, masterId: s.masterId, can_see_phones: canSeePhones });
 });
 
 /* ---------------- CRM-роути ----------------

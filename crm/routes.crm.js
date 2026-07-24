@@ -16,6 +16,15 @@ const owner = auth.requireAuth("owner");
 const any = auth.requireAuth();
 
 const clean = function (s, max) { return String(s == null ? "" : s).slice(0, max || 200).trim(); };
+
+/* Перевірити, чи сесія має право бачити телефони клієнтів */
+function canSeePhones(session) {
+  if (!session) return false;
+  if (session.role === "owner") return true;
+  if (!session.masterId) return false;
+  const m = db.prepare("SELECT can_see_phones FROM masters WHERE id=?").get(session.masterId);
+  return !!(m && m.can_see_phones);
+}
 const STATUSES = ["pending", "confirmed", "cancelled", "completed", "no_show"];
 
 /* ---------- спільне: повна картка запису ---------- */
@@ -160,7 +169,11 @@ router.get("/me/appointments", any, function (req, res) {
   if (tz.isDate(to)) { sql += " AND a.date<=?"; args.push(to); }
   sql += " ORDER BY a.date, a.start_min";
   const stmt = db.prepare(sql);
-  res.json({ ok: true, appointments: stmt.all.apply(stmt, args).map(viewAppt) });
+  const showPhone = canSeePhones(s);
+  res.json({ ok: true, appointments: stmt.all.apply(stmt, args).map(function(a) {
+    if (!showPhone) a = Object.assign({}, a, { client_phone: null });
+    return viewAppt(a);
+  }) });
 });
 
 router.post("/me/appointments", any, function (req, res) {
@@ -179,6 +192,8 @@ router.get("/me/clients", any, function (req, res) {
         WHERE a.master_id=? ORDER BY c.last_visit_at DESC`
     ).all(s.masterId);
   }
+  const showPhone = canSeePhones(s);
+  if (!showPhone) rows = rows.map(function(c) { return Object.assign({}, c, { phone: null }); });
   res.json({ ok: true, clients: rows });
 });
 
@@ -280,7 +295,11 @@ router.get("/schedule", any, function (req, res) {
               "FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id " +
               "LEFT JOIN reviews r ON r.appointment_id=a.id " +
               "WHERE a.date=? AND a.status NOT IN ('cancelled','no_show') ORDER BY a.start_min";
-  res.json({ ok: true, appointments: db.prepare(sql).all(date).map(viewAppt) });
+  const showPhone = canSeePhones(req.session);
+  res.json({ ok: true, appointments: db.prepare(sql).all(date).map(function(a) {
+    if (!showPhone) a = Object.assign({}, a, { client_phone: null });
+    return viewAppt(a);
+  }) });
 });
 
 /* ---- Майстри ---- */
@@ -308,15 +327,16 @@ router.put("/masters/:id", owner, function (req, res) {
   const m = db.prepare("SELECT * FROM masters WHERE id=?").get(id);
   if (!m) return res.status(404).json({ ok: false });
   const d = req.body || {};
-  db.prepare("UPDATE masters SET name=?, last_name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=? WHERE id=?").run(
-    d.name       !== undefined ? clean(d.name, 100)      : m.name,
-    d.last_name  !== undefined ? clean(d.last_name, 100) : m.last_name,
-    d.phone      !== undefined ? clean(d.phone, 30)      : m.phone,
-    d.color      !== undefined ? clean(d.color, 20)      : m.color,
-    d.sort_order !== undefined ? parseInt(d.sort_order, 10) || 0 : m.sort_order,
-    d.photo      !== undefined ? clean(d.photo, 500)     : m.photo,
-    d.level      !== undefined ? clean(d.level, 50)      : m.level,
-    d.mono_link  !== undefined ? clean(d.mono_link, 500) : m.mono_link,
+  db.prepare("UPDATE masters SET name=?, last_name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=?, can_see_phones=? WHERE id=?").run(
+    d.name           !== undefined ? clean(d.name, 100)      : m.name,
+    d.last_name      !== undefined ? clean(d.last_name, 100) : m.last_name,
+    d.phone          !== undefined ? clean(d.phone, 30)      : m.phone,
+    d.color          !== undefined ? clean(d.color, 20)      : m.color,
+    d.sort_order     !== undefined ? parseInt(d.sort_order, 10) || 0 : m.sort_order,
+    d.photo          !== undefined ? clean(d.photo, 500)     : m.photo,
+    d.level          !== undefined ? clean(d.level, 50)      : m.level,
+    d.mono_link      !== undefined ? clean(d.mono_link, 500) : m.mono_link,
+    d.can_see_phones !== undefined ? (d.can_see_phones ? 1 : 0) : (m.can_see_phones || 0),
     id
   );
   // Посада визначає прайс — міняється рівень, перерахувати список послуг.
