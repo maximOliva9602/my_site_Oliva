@@ -236,6 +236,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .svc-info { padding: 12px 12px 14px; }
 .svc-name { font-family: 'Playfair Display', serif; color: #F2EDE4; font-size: 1rem; line-height: 1.25; margin-bottom: 8px; }
 .svc-meta { color: rgba(212,207,198,0.58); font-size: .8rem; }
+.svc-more { display: inline-block; color: var(--gold); font-size: .78rem; text-decoration: none; opacity: .92; }
+.svc-more:hover { text-decoration: underline; }
 .showmore { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px 16px 0; width: calc(100% - 32px); padding: 15px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 14px; color: var(--text); font-size: .92rem; cursor: pointer; font-family: inherit; }
 
 /* Крок 3 — майстри */
@@ -768,6 +770,11 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   }
   var HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.35-9.3-8.5C1.2 9 2.3 5.8 5.3 5.3 7.3 5 9 6 12 8.5 15 6 16.7 5 18.7 5.3c3 .5 4.1 3.7 2.6 6.2C19 15.65 12 20 12 20z"/></svg>';
 
+  // Посилання «Детальніше» на опис послуги. ПОКИ всі ведуть на розділ послуг
+  // головного сайту; згодом сюди можна додати конкретні якорі/сторінки per-категорія.
+  var SERVICE_INFO_LINKS = {};
+  function serviceInfoUrl(cat) { return SERVICE_INFO_LINKS[cat] || "/#services"; }
+
   // Крок 2: Конкретні послуги (категорії) в межах обраної групи
   function renderCats() {
     var g = GROUPS.filter(function(x){ return x.key === state.group; })[0];
@@ -795,10 +802,14 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         (c.img ? '<img class="svc-photo" src="' + c.img + '" alt="" />' : '<div class="svc-photo-ph">' + (ICONS[cat] || "🌿") + '</div>') +
         (c.hit ? '<span class="svc-hit">Хіт</span>' : '') +
         '<button class="svc-fav' + (favs.indexOf(cat) > -1 ? ' on' : '') + '" aria-label="В обране">' + HEART + '</button>' +
-        '<div class="svc-info"><div class="svc-name">' + cat + '</div></div>';
+        '<div class="svc-info"><div class="svc-name">' + cat + '</div>' +
+          '<a class="svc-more" href="' + serviceInfoUrl(cat) + '" target="_blank" rel="noopener noreferrer">Детальніше →</a>' +
+        '</div>';
       card.querySelector(".svc-fav").addEventListener("click", function(e) {
         e.stopPropagation(); this.classList.toggle("on", favToggle(cat));
       });
+      var moreLink = card.querySelector(".svc-more");
+      if (moreLink) moreLink.addEventListener("click", function(e) { e.stopPropagation(); }); // відкрити опис, не обираючи послугу
       card.addEventListener("click", function() {
         state.category = cat; state.master = null; state.service = null; state.start_min = null;
         renderMasters(); goStep(3);
