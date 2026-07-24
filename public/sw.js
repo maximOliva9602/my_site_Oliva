@@ -1,4 +1,4 @@
-var CACHE = 'oliva-v8';
+var CACHE = 'oliva-v9';
 var STATIC = ['/cabinet', '/manifest.json', '/assets/img/logo.png'];
 
 self.addEventListener('install', function(e) {
