@@ -46,6 +46,22 @@
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function money(kop) { return kop ? (kop / 100).toFixed(0) + " грн" : "—"; }
+  // Знижка на абонемент залежно від к-ті сеансів: 5 → 5%, 10 → 10%, 15 → 13%.
+  // Для проміжних значень береться найближчий нижній поріг.
+  function subDiscountPct(n) {
+    n = parseInt(n, 10) || 0;
+    if (n >= 15) return 13;
+    if (n >= 10) return 10;
+    if (n >= 5)  return 5;
+    return 0;
+  }
+  // Розрахунок суми абонемента в гривнях: ціна(грн) × сеанси × (1 − знижка).
+  function subTotalUAH(priceUAH, sessions) {
+    var d = subDiscountPct(sessions);
+    return Math.round((priceUAH || 0) * (sessions || 0) * (1 - d / 100));
+  }
+  // Формат числа з пробілами між тисячами: 10800 → "10 800".
+  function uahGroup(n) { return String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
   function fmtMin(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
   function ddmm(d) { var p = d.split("-"); return p[2] + "." + p[1]; }
   function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -1851,6 +1867,7 @@
             '</div>' +
             '<label>Сума оплати (грн)</label>' +
             '<input type="number" id="mSubPrice" value="0" min="0" style="margin-bottom:6px;">' +
+            '<div id="mSubCalc" style="font-size:.73rem;color:#5a7a48;margin-bottom:6px;"></div>' +
             '<div style="font-size:.73rem;color:#5a7a48;">✓ Перше відвідування зараховується одразу</div>' +
           '</div>' +
         '</div>' +
@@ -1930,6 +1947,22 @@
     $("mDate").addEventListener("change", function() { updateDateLabel(this.value); });
 
     // ── Абонемент — преsети ──────────────────────────────────────────
+    // Автоматичний розрахунок суми оплати абонемента з ціни послуги,
+    // кількості сеансів і знижки (5 → 5%, 10 → 10%, 15 → 13%).
+    function recalcSubPrice() {
+      var priceInput = $("mSubPrice"); if (!priceInput) return;
+      var priceUAH = selectedServices.length ? selectedServices[0].price / 100 : 0;
+      var sessions = chosen.subSessions || 0;
+      var pct   = subDiscountPct(sessions);
+      var total = subTotalUAH(priceUAH, sessions);
+      priceInput.value = total;
+      var calc = $("mSubCalc");
+      if (calc) {
+        calc.textContent = (priceUAH > 0 && sessions > 0)
+          ? uahGroup(priceUAH) + " грн × " + sessions + (pct > 0 ? " − " + pct + "%" : "") + " = " + uahGroup(total) + " грн"
+          : "";
+      }
+    }
     function selectSubPreset(n) {
       chosen.subSessions = n;
       document.querySelectorAll(".sub-preset").forEach(function(b) {
@@ -1937,6 +1970,7 @@
         b.style.background = active ? "#6e9145" : "#fff";
         b.style.color      = active ? "#fff"    : "#3d5430";
       });
+      recalcSubPrice();
     }
     document.querySelectorAll(".sub-preset").forEach(function(b) {
       b.addEventListener("click", function() { selectSubPreset(parseInt(b.dataset.n, 10)); });
@@ -1950,6 +1984,7 @@
       form.style.display = open ? "none" : "block";
       this.style.background = open ? "transparent" : "#e8f5e0";
       this.style.borderStyle = open ? "dashed" : "solid";
+      if (!open) recalcSubPrice(); // щойно відкрили — підставити суму
     });
 
     // ── Оновлення секції абонементу ──────────────────────────────────
@@ -1962,6 +1997,7 @@
       var svcId = $("mService").value;
       if (!svcId) { section.style.display = "none"; return; }
       section.style.display = "block";
+      recalcSubPrice(); // перерахувати суму під нову послугу
       // Для нового клієнта — одразу показуємо кнопку абонементу
       if (!selectedClient || !selectedClient.id) {
         createW.style.display = "block"; return;
@@ -3014,7 +3050,7 @@
             addBtn.addEventListener("click", function() {
               api("GET", "/api/crm/services").then(function(sr) {
                 var opts = (sr.j.services||[]).map(function(s) {
-                  return '<option value="' + s.id + '">' + s.name + '</option>';
+                  return '<option value="' + s.id + '" data-price="' + (s.price || 0) + '">' + s.name + '</option>';
                 }).join("");
                 var html = '<h3>🎟 Новий абонемент</h3>' +
                   '<div class="muted" style="margin-bottom:10px;">' + c.name + '</div>' +
@@ -3023,12 +3059,30 @@
                   '<input type="number" id="sbSess" value="10" min="1" max="100">' +
                   '<label style="margin-top:10px;display:block;">Сума оплати (грн)</label>' +
                   '<input type="number" id="sbPrice" value="0" min="0">' +
+                  '<div id="sbCalc" class="muted" style="margin-top:4px;font-size:.75rem;"></div>' +
                   '<label style="margin-top:10px;display:block;">Нотатка</label>' +
                   '<input type="text" id="sbNote" placeholder="Необов\'язково" maxlength="300">' +
                   '<div class="err" id="sbErr"></div>' +
                   '<div class="modal-foot"><button class="btn btn-primary" id="sbSave">Зберегти</button>' +
                   '<button class="btn btn-ghost" id="sbClose">Скасувати</button></div>';
                 openModal(html);
+                // Авто-розрахунок суми: ціна послуги × сеанси × (1 − знижка)
+                function recalcSb() {
+                  var sel = $("sbSvc"), priceEl = $("sbPrice"); if (!sel || !priceEl) return;
+                  var opt = sel.options[sel.selectedIndex];
+                  var priceUAH = opt ? (parseInt(opt.getAttribute("data-price"), 10) || 0) / 100 : 0;
+                  var sessions = parseInt($("sbSess").value, 10) || 0;
+                  var pct   = subDiscountPct(sessions);
+                  var total = subTotalUAH(priceUAH, sessions);
+                  priceEl.value = total;
+                  var calc = $("sbCalc");
+                  if (calc) calc.textContent = (priceUAH > 0 && sessions > 0)
+                    ? uahGroup(priceUAH) + " грн × " + sessions + (pct > 0 ? " − " + pct + "%" : "") + " = " + uahGroup(total) + " грн"
+                    : "";
+                }
+                $("sbSvc").addEventListener("change", recalcSb);
+                $("sbSess").addEventListener("input", recalcSb);
+                recalcSb();
                 $("sbSave").addEventListener("click", function() {
                   var sess = parseInt($("sbSess").value, 10);
                   if (!sess || sess < 1) { $("sbErr").textContent = "Вкажи к-ть сеансів"; return; }
