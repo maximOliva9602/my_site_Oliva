@@ -215,6 +215,14 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .sseg.on { background: linear-gradient(90deg, #E8C877, #C9A24E); }
 
 /* Крок 2 — послуги */
+.svc-search { padding: 12px 16px 0; }
+.svc-search-box { position: relative; }
+.svc-search-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--gold); opacity: .7; pointer-events: none; }
+.svc-search input { width: 100%; box-sizing: border-box; background: rgba(46,61,34,0.22); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 12px 40px; color: var(--cream); font-size: .92rem; font-family: inherit; outline: none; transition: border-color .2s; -webkit-appearance: none; appearance: none; }
+.svc-search input::placeholder { color: var(--text-dim); }
+.svc-search input:focus { border-color: rgba(217,185,120,0.5); }
+.svc-search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.cat-noresult { grid-column: 1 / -1; }
 .svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px 16px 0; }
 .svc-card { position: relative; background: rgba(20,15,10,0.55); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; text-align: left; transition: border-color .2s, transform .15s; }
 .svc-card:active { transform: scale(.99); }
@@ -337,6 +345,12 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <h1 class="stitle" id="step2title">Послуги</h1>
       <div class="ssub">Оберіть послугу</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i></div>
+    </div>
+    <div class="svc-search">
+      <div class="svc-search-box">
+        <svg class="svc-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="search" id="catSearch" placeholder="Пошук масажу за назвою…" autocomplete="off" aria-label="Пошук послуги за назвою" />
+      </div>
     </div>
     <div class="svc-grid" id="catGrid"><div class="empty">Завантаження…</div></div>
     <button class="showmore hide" id="showMoreBtn">Показати ще <span>&#9662;</span></button>
@@ -644,6 +658,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   function renderCats() {
     var g = GROUPS.filter(function(x){ return x.key === state.group; })[0];
     $("step2title").textContent = g ? g.name : "Послуги";
+    var sb = $("catSearch"); if (sb) sb.value = ""; // скинути пошук при вході в категорію
     var box = $("catGrid"); box.innerHTML = "";
     var cats = {};
     allServices.forEach(function(s) {
@@ -685,6 +700,38 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       };
     } else { smBtn.classList.add("hide"); }
   }
+
+  // Пошук послуги за назвою в межах поточної категорії (крок 2)
+  function applyCatFilter(q) {
+    var box = $("catGrid"); if (!box) return;
+    q = (q || "").trim().toLowerCase();
+    var cards = box.querySelectorAll(".svc-card");
+    var shown = 0;
+    Array.prototype.forEach.call(cards, function(card, idx) {
+      var nameEl = card.querySelector(".svc-name");
+      var name = nameEl ? nameEl.textContent.toLowerCase() : "";
+      var match = q ? name.indexOf(q) > -1 : true;
+      if (q) card.classList.toggle("hide", !match);
+      else   card.classList.toggle("hide", idx >= 6); // відновити стандартний вигляд (перші 6)
+      if (match) shown++;
+    });
+    // «Показати ще» — лише коли пошук порожній і є прихований надлишок
+    var smBtn = $("showMoreBtn");
+    if (smBtn) {
+      var extras = box.querySelectorAll(".svc-extra").length;
+      smBtn.classList.toggle("hide", !(q === "" && extras > 0));
+    }
+    // Порожній результат
+    var nr = box.querySelector(".cat-noresult");
+    if (q && shown === 0) {
+      if (!nr) { nr = document.createElement("div"); nr.className = "empty cat-noresult"; box.appendChild(nr); }
+      nr.textContent = "Нічого не знайдено за запитом «" + q + "»";
+      nr.classList.remove("hide");
+    } else if (nr) {
+      nr.classList.add("hide");
+    }
+  }
+  $("catSearch") && $("catSearch").addEventListener("input", function() { applyCatFilter(this.value); });
 
   // Крок 3: Майстри, що надають обрану послугу
   var STAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.8 6.1 20.8l1.2-6.6L2.5 9l6.6-.9L12 2z"/></svg>';
