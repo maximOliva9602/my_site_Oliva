@@ -15,14 +15,26 @@ const notify = require("./notify");
 const router = express.Router();
 const clean = function (s, max) { return String(s == null ? "" : s).slice(0, max || 200).trim(); };
 
+/* Рейтинг (середній) і к-ть відгуків майстра за таблицею reviews */
+const ratingStmt = db.prepare(
+  "SELECT ROUND(AVG(rating),1) AS avg, COUNT(*) AS cnt FROM reviews WHERE master_id = ?"
+);
+function attachStats(m) {
+  const r = ratingStmt.get(m.id);
+  m.reviews_count = (r && r.cnt) || 0;
+  m.rating = m.reviews_count ? r.avg : null;
+  return m;
+}
+
 /* Всі активні майстри з фото та рівнем */
 router.get("/all-masters", function (req, res) {
   const masters = db.prepare(
-    "SELECT id, name, photo, level FROM masters WHERE active = 1 ORDER BY sort_order, id"
+    "SELECT id, name, photo, level, experience_years FROM masters WHERE active = 1 ORDER BY sort_order, id"
   ).all();
   const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id = ?");
   masters.forEach(function (m) {
     m.service_ids = svcStmt.all(m.id).map(function (r) { return r.service_id; });
+    attachStats(m);
   });
   res.json({ ok: true, masters: masters });
 });
@@ -30,7 +42,7 @@ router.get("/all-masters", function (req, res) {
 /* Активні послуги */
 router.get("/services", function (req, res) {
   const rows = db.prepare(
-    "SELECT id, name, duration_min, price, image_url, category FROM services WHERE active = 1 ORDER BY sort_order, id"
+    "SELECT id, name, duration_min, price, image_url, category, featured FROM services WHERE active = 1 ORDER BY sort_order, id"
   ).all();
   res.json({ ok: true, services: rows });
 });
@@ -41,7 +53,7 @@ router.get("/available-masters", function (req, res) {
   if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
   const weekday = tz.weekdayOf(date);
   const masters = db.prepare(
-    "SELECT id, name, photo, level FROM masters WHERE active=1 ORDER BY sort_order, id"
+    "SELECT id, name, photo, level, experience_years FROM masters WHERE active=1 ORDER BY sort_order, id"
   ).all();
   const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id=?");
   const ovStmt  = db.prepare("SELECT is_off FROM master_day_overrides WHERE master_id=? AND date=?");
@@ -53,6 +65,7 @@ router.get("/available-masters", function (req, res) {
   });
   available.forEach(function (m) {
     m.service_ids = svcStmt.all(m.id).map(function (r) { return r.service_id; });
+    attachStats(m);
   });
   res.json({ ok: true, masters: available });
 });

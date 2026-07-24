@@ -194,11 +194,117 @@ textarea { resize: none; height: 78px; }
 .btn-ghost { background: none; border: 1px solid var(--line); color: var(--text-dim); }
 .err { color: var(--err); font-size: .82rem; min-height: 18px; margin-bottom: 4px; }
 .empty { color: var(--text-dim); font-size: .88rem; padding: 16px 0; text-align: center; }
-.done { text-align: center; padding: 20px 0; }
-.done .ico { font-size: 2.8rem; margin-bottom: 10px; }
-.done h2 { color: var(--olive-light); font-family: 'Playfair Display', serif; font-size: 1.3rem; }
-.done p { color: var(--text); margin-top: 12px; line-height: 1.8; font-size: .9rem; }
-a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light); text-decoration: none; font-size: .85rem; }
+.done { text-align: center; padding: 60px 24px 20px; }
+.done-ico { color: var(--gold); margin-bottom: 16px; }
+.done-ico svg { width: 66px; height: 66px; filter: drop-shadow(0 0 16px rgba(217,185,120,0.35)); }
+.done h2 { color: var(--gold); font-family: 'Playfair Display', serif; font-size: 1.5rem; }
+.done p { color: var(--text); margin-top: 14px; line-height: 1.9; font-size: .92rem; }
+a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-decoration: none; font-size: .88rem; }
+
+/* ═══════════ НОВІ КРОКИ 2–6 (золота тема) ═══════════ */
+.step { padding-bottom: 24px; }
+.step-foot { padding: 18px 16px 0; }
+.step-foot .btn { width: 100%; padding: 15px; border-radius: 14px; }
+
+.shead { padding: 8px 18px 0; }
+.sback { background: none; border: none; color: var(--gold); font-size: 2rem; line-height: 1; padding: 4px 0 8px; cursor: pointer; }
+.stitle { font-family: 'Playfair Display', serif; color: #F2EDE4; font-size: 2.1rem; font-weight: 600; line-height: 1.08; }
+.ssub { color: rgba(212,207,198,0.58); font-size: .95rem; margin-top: 5px; }
+.sprog { display: flex; gap: 6px; margin: 16px 0 2px; }
+.sseg { flex: 1; height: 4px; border-radius: 2px; background: rgba(217,185,120,0.15); transition: background .3s; }
+.sseg.on { background: linear-gradient(90deg, #E8C877, #C9A24E); }
+
+/* Крок 2 — послуги */
+.svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px 16px 0; }
+.svc-card { position: relative; background: rgba(20,15,10,0.55); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; text-align: left; transition: border-color .2s, transform .15s; }
+.svc-card:active { transform: scale(.99); }
+@media (hover:hover){ .svc-card:hover { border-color: rgba(217,185,120,0.42); } }
+.svc-photo { width: 100%; aspect-ratio: 1 / 0.8; object-fit: cover; display: block; }
+.svc-photo-ph { width: 100%; aspect-ratio: 1 / 0.8; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: rgba(46,61,34,0.25); }
+.svc-hit { position: absolute; top: 10px; left: 10px; background: rgba(217,185,120,0.92); color: #2b2113; font-size: .66rem; font-weight: 700; padding: 3px 10px; border-radius: 9px; }
+.svc-fav { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; background: rgba(10,7,4,0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; }
+.svc-fav svg { width: 18px; height: 18px; }
+.svc-fav.on svg { fill: var(--gold); stroke: var(--gold); }
+.svc-info { padding: 12px 12px 14px; }
+.svc-name { font-family: 'Playfair Display', serif; color: #F2EDE4; font-size: 1rem; line-height: 1.25; margin-bottom: 8px; }
+.svc-meta { color: rgba(212,207,198,0.58); font-size: .8rem; }
+.showmore { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px 16px 0; width: calc(100% - 32px); padding: 15px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 14px; color: var(--text); font-size: .92rem; cursor: pointer; font-family: inherit; }
+
+/* Крок 3 — майстри */
+.mst-list { display: flex; flex-direction: column; gap: 12px; padding: 8px 16px 0; }
+.mst-card { display: flex; align-items: center; gap: 14px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: border-color .2s, transform .15s; }
+.mst-card:active { transform: scale(.995); }
+@media (hover:hover){ .mst-card:hover { border-color: rgba(217,185,120,0.42); } }
+.mst-photo { width: 66px; height: 66px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(217,185,120,0.5); }
+.mst-photo-ph { width: 66px; height: 66px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(217,185,120,0.5); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; background: rgba(46,61,34,0.25); }
+.mst-body { flex: 1; min-width: 0; }
+.mst-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.mst-name { font-family: 'Playfair Display', serif; color: #F2EDE4; font-size: 1.28rem; line-height: 1.1; }
+.mst-rate { color: var(--gold); font-size: .92rem; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
+.mst-rate svg { width: 15px; height: 15px; fill: var(--gold); }
+.mst-badge { display: inline-block; margin-top: 6px; background: rgba(217,185,120,0.15); color: var(--gold); font-size: .62rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 7px; }
+.mst-meta { color: rgba(212,207,198,0.52); font-size: .8rem; line-height: 1.5; margin-top: 6px; }
+.mst-arrow { color: var(--gold); font-size: 1.5rem; opacity: .7; flex-shrink: 0; line-height: 1; }
+
+/* Крок 4 — тривалість */
+.dur-list2 { display: flex; flex-direction: column; gap: 10px; padding: 8px 16px 0; }
+.dur-row { display: flex; align-items: center; gap: 12px; background: rgba(20,15,10,0.45); border: 1px solid var(--line); border-radius: 14px; padding: 16px; cursor: pointer; transition: all .2s; }
+.dur-row.sel { border-color: var(--gold); background: rgba(217,185,120,0.08); }
+.dur-ico { color: var(--gold); flex-shrink: 0; display: flex; }
+.dur-ico svg { width: 22px; height: 22px; }
+.dur-min { color: #F2EDE4; font-size: 1.05rem; font-weight: 500; }
+.dur-pop { background: rgba(217,185,120,0.18); color: var(--gold); font-size: .6rem; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 7px; }
+.dur-sp { flex: 1; }
+.dur-cost { color: var(--gold); font-size: 1rem; font-weight: 600; white-space: nowrap; }
+.dur-check { width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #2b2113; display: none; align-items: center; justify-content: center; flex-shrink: 0; font-size: .8rem; font-weight: 700; }
+.dur-row.sel .dur-check { display: flex; }
+.help-card { display: flex; gap: 14px; align-items: center; margin: 18px 16px 0; background: rgba(20,15,10,0.45); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.help-ico { color: var(--gold); flex-shrink: 0; display: flex; }
+.help-ico svg { width: 30px; height: 30px; }
+.help-t { color: var(--gold); font-size: .92rem; font-weight: 600; margin-bottom: 3px; }
+.help-d { color: rgba(212,207,198,0.6); font-size: .82rem; line-height: 1.5; }
+
+/* Крок 5 — дата та час */
+.day-strip { display: flex; gap: 8px; padding: 10px 16px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.day-strip::-webkit-scrollbar { display: none; }
+.day-cell { flex: 0 0 auto; min-width: 46px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 14px; padding: 11px 6px; cursor: pointer; }
+.day-cell.sel { background: linear-gradient(160deg, #E8C877, #C9A24E); border-color: transparent; }
+.day-dow { font-size: .72rem; color: rgba(212,207,198,0.62); }
+.day-num { font-size: .82rem; color: #F2EDE4; font-weight: 600; }
+.day-cell.sel .day-dow, .day-cell.sel .day-num { color: #2b2113; }
+.slot-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 20px 16px 0; }
+.slot2 { background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 12px; padding: 14px 0; text-align: center; color: #F2EDE4; font-size: .92rem; cursor: pointer; transition: all .15s; }
+@media (hover:hover){ .slot2:hover { border-color: rgba(217,185,120,0.5); } }
+.slot2.sel { background: linear-gradient(160deg, #E8C877, #C9A24E); color: #2b2113; font-weight: 700; border-color: transparent; }
+.info-card { display: flex; gap: 12px; align-items: center; margin: 20px 16px 0; background: rgba(20,15,10,0.45); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.info-ico { color: var(--gold); flex-shrink: 0; display: flex; }
+.info-ico svg { width: 22px; height: 22px; }
+.info-t { color: rgba(212,207,198,0.68); font-size: .82rem; line-height: 1.5; }
+
+/* Крок 6 — ваш запис */
+.rev-card { margin: 8px 16px 0; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.rev-photo { width: 100%; height: 150px; object-fit: cover; display: block; }
+.rev-rows { padding: 4px 16px 14px; }
+.rev-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid rgba(217,185,120,0.08); }
+.rev-row:last-child { border-bottom: none; }
+.rev-ico { color: var(--gold); flex-shrink: 0; display: flex; }
+.rev-ico svg { width: 20px; height: 20px; }
+.rev-label { color: rgba(212,207,198,0.6); font-size: .92rem; }
+.rev-sp { flex: 1; }
+.rev-val { color: #F2EDE4; font-size: .95rem; font-weight: 600; text-align: right; display: flex; align-items: center; gap: 8px; }
+.rev-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+.contact-sec { padding: 14px 16px 0; }
+.contact-sec .fld { margin-top: 10px; }
+.contact-sec input, .contact-sec textarea { margin-bottom: 4px; }
+.addextra { display: flex; align-items: center; gap: 12px; margin: 14px 16px 0; background: rgba(20,15,10,0.45); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; cursor: pointer; }
+.addextra-ico { color: var(--gold); display: flex; flex-shrink: 0; }
+.addextra-ico svg { width: 26px; height: 26px; }
+.addextra-t { color: #F2EDE4; font-size: .92rem; font-weight: 500; }
+.addextra-d { color: rgba(212,207,198,0.55); font-size: .8rem; }
+.confirm-btn { display: block; margin: 16px 16px 10px; width: calc(100% - 32px); padding: 17px; border: none; border-radius: 16px; background: linear-gradient(160deg, #E8C877, #C9A24E); color: #2b2113; font-size: 1.05rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+.confirm-btn:disabled { opacity: .6; }
+.secure-note { display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; color: rgba(212,207,198,0.5); font-size: .8rem; padding: 4px 0 8px; }
+.secure-note svg { width: 15px; height: 15px; color: var(--gold); }
 </style>
 </head>
 <body>
@@ -218,15 +324,6 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     </svg>
   </div>
 
-  <!-- progress (прихований на кроці 1) -->
-  <div class="progress" id="progress" style="display:none">
-    <div class="ps on" data-s="1"></div>
-    <div class="ps" data-s="2"></div>
-    <div class="ps" data-s="3"></div>
-    <div class="ps" data-s="4"></div>
-    <div class="ps" data-s="5"></div>
-    <div class="ps" data-s="6"></div>
-  </div>
 
   <!-- 1. Категорія послуг -->
   <div id="step1">
@@ -234,58 +331,98 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   </div>
 
   <!-- 2. Конкретна послуга -->
-  <div class="card hide" id="step2">
-    <div class="card-title">2. Оберіть послугу</div>
-    <div class="cat-grid" id="catGrid"><div class="empty">Завантаження…</div></div>
-    <div class="row"><button class="btn btn-ghost" data-back="1">← Назад</button></div>
+  <div class="step hide" id="step2">
+    <div class="shead">
+      <button class="sback" data-back="1" aria-label="Назад">&#8249;</button>
+      <h1 class="stitle" id="step2title">Послуги</h1>
+      <div class="ssub">Оберіть послугу</div>
+      <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i></div>
+    </div>
+    <div class="svc-grid" id="catGrid"><div class="empty">Завантаження…</div></div>
+    <button class="showmore hide" id="showMoreBtn">Показати ще <span>&#9662;</span></button>
   </div>
 
   <!-- 3. Майстер -->
-  <div class="card hide" id="step3">
-    <div class="card-title">3. Оберіть майстра</div>
-    <label class="fld">Дата візиту</label>
-    <input type="date" id="masterDatePicker" />
-    <div class="master-grid" id="masterGrid"><div class="empty">Оберіть дату вище</div></div>
-    <div class="row"><button class="btn btn-ghost" data-back="2">← Назад</button></div>
+  <div class="step hide" id="step3">
+    <div class="shead">
+      <button class="sback" data-back="2" aria-label="Назад">&#8249;</button>
+      <h1 class="stitle">Оберіть майстра</h1>
+      <div class="ssub">Для вашої послуги</div>
+      <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i></div>
+    </div>
+    <div class="mst-list" id="masterGrid"><div class="empty">Завантаження…</div></div>
+    <div class="step-foot"><button class="btn btn-ghost" data-back="2">&#8592; Назад</button></div>
   </div>
 
   <!-- 4. Тривалість -->
-  <div class="card hide" id="step4">
-    <div class="card-title">4. Тривалість сеансу</div>
-    <div class="dur-list" id="durList"></div>
-    <div class="row"><button class="btn btn-ghost" data-back="3">← Назад</button></div>
+  <div class="step hide" id="step4">
+    <div class="shead">
+      <button class="sback" data-back="3" aria-label="Назад">&#8249;</button>
+      <h1 class="stitle">Тривалість сеансу</h1>
+      <div class="ssub">Оберіть зручний час</div>
+      <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i></div>
+    </div>
+    <div class="dur-list2" id="durList"></div>
+    <div class="help-card">
+      <span class="help-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 3-3 6 0 9 3-3 3-6 0-9z"/><path d="M12 12c-2.5-1.5-5-1.5-7.5 0 2.5 2 5 2 7.5 0z"/><path d="M12 12c2.5-1.5 5-1.5 7.5 0-2.5 2-5 2-7.5 0z"/><path d="M12 12v9"/></svg></span>
+      <div><div class="help-t">Не знаєте, що обрати?</div><div class="help-d">Наші адміністратори допоможуть підібрати ідеальний сеанс для вас</div></div>
+    </div>
+    <div class="step-foot"><button class="btn btn-ghost" data-back="3">&#8592; Назад</button></div>
   </div>
 
   <!-- 5. Дата + час -->
-  <div class="card hide" id="step5">
-    <div class="card-title">5. Дата та час</div>
-    <label class="fld">Дата</label>
-    <input type="date" id="dateInput" />
-    <div id="slotsWrap"><div class="empty">Оберіть дату</div></div>
-    <div class="row" style="margin-top:14px"><button class="btn btn-ghost" data-back="4">← Назад</button></div>
+  <div class="step hide" id="step5">
+    <div class="shead">
+      <button class="sback" data-back="4" aria-label="Назад">&#8249;</button>
+      <h1 class="stitle">Дата та час</h1>
+      <div class="ssub">Оберіть зручний час</div>
+      <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i></div>
+    </div>
+    <div class="day-strip" id="dayStrip"></div>
+    <div id="slotsWrap"><div class="empty">Завантаження…</div></div>
+    <div class="info-card">
+      <span class="info-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8z"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span>
+      <div class="info-t">Вільний час може змінюватись. Будь ласка, оберіть актуальний слот</div>
+    </div>
+    <div class="step-foot"><button class="btn btn-ghost" data-back="4">&#8592; Назад</button></div>
   </div>
 
-  <!-- 6. Дані клієнта -->
-  <div class="card hide" id="step6">
-    <div class="card-title">6. Ваші дані</div>
-    <div class="summary" id="summary"></div>
-    <label class="fld">Ім'я</label>
-    <input type="text" id="nameInput" placeholder="Ваше ім'я" maxlength="100" />
-    <label class="fld">Телефон</label>
-    <input type="tel" id="phoneInput" placeholder="+380667894576" maxlength="13" inputmode="numeric" />
-    <label class="fld">Коментар (необов'язково)</label>
-    <textarea id="commentInput" maxlength="500" placeholder="Побажання…"></textarea>
-    <div class="err" id="bookErr"></div>
-    <div class="row">
-      <button class="btn btn-ghost" data-back="5">← Назад</button>
-      <button class="btn btn-primary" id="bookBtn">Підтвердити запис</button>
+  <!-- 6. Ваш запис -->
+  <div class="step hide" id="step6">
+    <div class="shead">
+      <button class="sback" data-back="5" aria-label="Назад">&#8249;</button>
+      <h1 class="stitle">Ваш запис</h1>
+      <div class="ssub">Перевірте деталі запису</div>
+      <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i></div>
     </div>
+    <div class="rev-card" id="summary"></div>
+
+    <div class="contact-sec">
+      <label class="fld">Ваше ім'я</label>
+      <input type="text" id="nameInput" placeholder="Ваше ім'я" maxlength="100" />
+      <label class="fld">Телефон</label>
+      <input type="tel" id="phoneInput" placeholder="+380667894576" maxlength="13" inputmode="numeric" />
+    </div>
+
+    <div class="addextra" id="addExtraRow">
+      <span class="addextra-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>
+      <div style="flex:1;"><div class="addextra-t">Додати побажання</div><div class="addextra-d">Покращіть свій сеанс релаксу</div></div>
+      <span class="mst-arrow">&#8250;</span>
+    </div>
+    <div class="contact-sec hide" id="commentWrap">
+      <label class="fld">Коментар</label>
+      <textarea id="commentInput" maxlength="500" placeholder="Побажання…"></textarea>
+    </div>
+
+    <div class="err" id="bookErr" style="margin:8px 16px 0;"></div>
+    <button class="confirm-btn" id="bookBtn">Підтвердити запис</button>
+    <div class="secure-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></svg> Ваші дані надійно захищені</div>
   </div>
 
   <!-- Готово -->
-  <div class="card hide" id="stepDone">
+  <div class="step hide" id="stepDone">
     <div class="done">
-      <div class="ico">✅</div>
+      <div class="done-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
       <h2>Запис прийнято!</h2>
       <p id="doneText"></p>
       <a class="back-site" href="/">← На головну</a>
@@ -448,16 +585,16 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
   }
 
   function goStep(n) {
-    // Показати/сховати hero і прогрес залежно від кроку
-    var hero = $("step1Hero"), prog = $("progress");
+    // Hero і панель довіри — лише на кроці 1
+    var hero = $("step1Hero"), tb = $("trustBar");
     if (hero) hero.style.display = (n === 1) ? "" : "none";
-    if (prog) prog.style.display = (n === 1) ? "none" : "";
+    if (tb) tb.style.display = (n === 1) ? "" : "none";
 
     ["step1","step2","step3","step4","step5","step6","stepDone"].forEach(function(id) { $(id).classList.add("hide"); });
     $(n === "done" ? "stepDone" : "step" + n).classList.remove("hide");
-    // progress
-    var num = n === "done" ? 6 : n;
-    document.querySelectorAll(".ps").forEach(function(el) {
+    // прогрес: послуга=1, майстер=2, тривалість=3, дата=4, запис=5, готово=6
+    var num = n === "done" ? 6 : (n - 1);
+    document.querySelectorAll(".sseg").forEach(function(el) {
       el.classList.toggle("on", parseInt(el.dataset.s) <= num);
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -493,78 +630,102 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     });
   }
 
-  // Крок 2: Конкретні послуги в межах обраної групи
+  /* Улюблені послуги — локально (без акаунта), лише візуально */
+  function favSet() { try { return JSON.parse(localStorage.getItem("oliva_fav") || "[]"); } catch(e) { return []; } }
+  function favToggle(cat) {
+    var f = favSet(), i = f.indexOf(cat);
+    if (i > -1) f.splice(i, 1); else f.push(cat);
+    try { localStorage.setItem("oliva_fav", JSON.stringify(f)); } catch(e) {}
+    return i < 0;
+  }
+  var HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.35-9.3-8.5C1.2 9 2.3 5.8 5.3 5.3 7.3 5 9 6 12 8.5 15 6 16.7 5 18.7 5.3c3 .5 4.1 3.7 2.6 6.2C19 15.65 12 20 12 20z"/></svg>';
+
+  // Крок 2: Конкретні послуги (категорії) в межах обраної групи
   function renderCats() {
+    var g = GROUPS.filter(function(x){ return x.key === state.group; })[0];
+    $("step2title").textContent = g ? g.name : "Послуги";
     var box = $("catGrid"); box.innerHTML = "";
     var cats = {};
     allServices.forEach(function(s) {
       var p = parseName(s.name);
       if (resolveGroup(s, p.cat) !== state.group) return;
-      if (!cats[p.cat]) cats[p.cat] = { min: Infinity, img: null };
-      if (s.price < cats[p.cat].min) cats[p.cat].min = s.price;
+      if (!cats[p.cat]) cats[p.cat] = { min: Infinity, dur: null, img: null, hit: false };
+      if (s.price < cats[p.cat].min) { cats[p.cat].min = s.price; cats[p.cat].dur = p.dur || s.duration_min; }
       if (!cats[p.cat].img && s.image_url) cats[p.cat].img = s.image_url;
+      if (s.featured) cats[p.cat].hit = true;
     });
     var names = Object.keys(cats);
     if (!names.length) { box.innerHTML = '<div class="empty">У цій категорії поки немає послуг.</div>'; return; }
-    names.forEach(function(cat) {
-      var btn = document.createElement("button"); btn.className = "cat-card";
-      btn.innerHTML =
-        (cats[cat].img ? '<img class="cat-card-photo" src="' + cats[cat].img + '" alt="" />' : '<div class="cat-icon">' + (ICONS[cat] || "🌿") + '</div>') +
-        '<div class="cat-name">' + cat + '</div>' +
-        '<div class="cat-from">від ' + money(cats[cat].min) + '</div>';
-      btn.addEventListener("click", function() {
+    var favs = favSet();
+    names.forEach(function(cat, idx) {
+      var c = cats[cat];
+      var durTxt = c.dur ? (c.dur + " хв · ") : "";
+      var card = document.createElement("div"); card.className = "svc-card";
+      if (idx >= 6) card.classList.add("hide", "svc-extra");
+      card.innerHTML =
+        (c.img ? '<img class="svc-photo" src="' + c.img + '" alt="" />' : '<div class="svc-photo-ph">' + (ICONS[cat] || "🌿") + '</div>') +
+        (c.hit ? '<span class="svc-hit">Хіт</span>' : '') +
+        '<button class="svc-fav' + (favs.indexOf(cat) > -1 ? ' on' : '') + '" aria-label="В обране">' + HEART + '</button>' +
+        '<div class="svc-info"><div class="svc-name">' + cat + '</div><div class="svc-meta">' + durTxt + 'від ' + money(c.min) + '</div></div>';
+      card.querySelector(".svc-fav").addEventListener("click", function(e) {
+        e.stopPropagation(); this.classList.toggle("on", favToggle(cat));
+      });
+      card.addEventListener("click", function() {
         state.category = cat; state.master = null; state.service = null; state.start_min = null;
         renderMasters(); goStep(3);
       });
-      box.appendChild(btn);
+      box.appendChild(card);
+    });
+    var smBtn = $("showMoreBtn");
+    if (names.length > 6) {
+      smBtn.classList.remove("hide");
+      smBtn.onclick = function() {
+        box.querySelectorAll(".svc-extra").forEach(function(el){ el.classList.remove("hide"); });
+        smBtn.classList.add("hide");
+      };
+    } else { smBtn.classList.add("hide"); }
+  }
+
+  // Крок 3: Майстри, що надають обрану послугу
+  var STAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.8 6.1 20.8l1.2-6.6L2.5 9l6.6-.9L12 2z"/></svg>';
+  function renderMasters() {
+    var box = $("masterGrid"); box.innerHTML = "";
+    var catIds = allServices.filter(function(s) { return parseName(s.name).cat === state.category; }).map(function(s) { return s.id; });
+    var eligible = allMasters.filter(function(m) {
+      return (m.service_ids || []).some(function(id) { return catIds.indexOf(id) !== -1; });
+    });
+    if (!eligible.length) {
+      box.innerHTML = '<div class="empty">Для цієї послуги майстрів поки немає.</div>'; return;
+    }
+    eligible.forEach(function(m) {
+      var isTop = m.level === "Топ Майстер";
+      var meta = [];
+      if (m.experience_years > 0) meta.push(m.experience_years + " " + yearsWord(m.experience_years) + " досвіду");
+      meta.push(m.reviews_count > 0 ? (m.reviews_count + "+ відгуків") : "Новий майстер");
+      var card = document.createElement("div"); card.className = "mst-card";
+      card.innerHTML =
+        (m.photo ? '<img class="mst-photo" src="' + m.photo + '" alt="' + m.name + '" />' : '<div class="mst-photo-ph">👤</div>') +
+        '<div class="mst-body">' +
+          '<div class="mst-top"><div class="mst-name">' + m.name + '</div>' +
+            (m.rating ? '<span class="mst-rate">' + STAR + m.rating.toFixed(1) + '</span>' : '') +
+          '</div>' +
+          '<span class="mst-badge">' + (isTop ? "Топ Майстер" : (m.level || "Майстер")) + '</span>' +
+          '<div class="mst-meta">' + meta.join('<br>') + '</div>' +
+        '</div>' +
+        '<span class="mst-arrow">›</span>';
+      card.addEventListener("click", function() { state.master = m; renderDurations(); goStep(4); });
+      box.appendChild(card);
     });
   }
-
-  // Крок 3: Майстри (з фільтром по даті)
-  function renderMasters() {
-    var today = new Date().toISOString().slice(0, 10);
-    var dp = $("masterDatePicker");
-    dp.min = today;
-    if (!state.date || state.date < today) state.date = today;
-    dp.value = state.date;
-    dp.onchange = function() {
-      state.date = dp.value;
-      state.master = null; state.service = null; state.start_min = null;
-      loadMastersForDate(state.date);
-    };
-    loadMastersForDate(state.date);
-  }
-
-  function loadMastersForDate(date) {
-    var box = $("masterGrid");
-    box.innerHTML = '<div class="empty">Завантаження…</div>';
-    var catIds = allServices.filter(function(s) { return parseName(s.name).cat === state.category; }).map(function(s) { return s.id; });
-    fetch("/api/public/available-masters?date=" + encodeURIComponent(date))
-      .then(function(r) { return r.json(); })
-      .then(function(j) {
-        box.innerHTML = "";
-        var eligible = (j.masters || []).filter(function(m) {
-          return m.service_ids.some(function(id) { return catIds.indexOf(id) !== -1; });
-        });
-        eligible.forEach(function(m) {
-          var card = document.createElement("div"); card.className = "master-card";
-          var isTop = m.level === "Топ Майстер";
-          card.innerHTML =
-            (m.photo ? '<img class="master-photo" src="' + m.photo + '" alt="' + m.name + '" />' : '<div class="master-any-ico">👤</div>') +
-            '<div class="master-name">' + m.name + '</div>' +
-            '<span class="lv ' + (isTop ? "lv-top" : "lv-reg") + '">' + (m.level || "Майстер") + '</span>';
-          card.addEventListener("click", function() { state.master = m; renderDurations(); goStep(4); });
-          box.appendChild(card);
-        });
-        if (!eligible.length) {
-          var note = document.createElement("div"); note.className = "empty"; note.style.gridColumn = "1/-1";
-          note.textContent = "На цю дату майстри недоступні. Оберіть іншу дату."; box.appendChild(note);
-        }
-      })
-      .catch(function() { $("masterGrid").innerHTML = '<div class="empty">Помилка завантаження.</div>'; });
+  function yearsWord(n) {
+    var d = n % 10, dd = n % 100;
+    if (d === 1 && dd !== 11) return "рік";
+    if (d >= 2 && d <= 4 && (dd < 10 || dd >= 20)) return "роки";
+    return "років";
   }
 
   // Крок 4: Тривалість
+  var CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>';
   function renderDurations() {
     var box = $("durList"); box.innerHTML = "";
     var opts;
@@ -575,44 +736,72 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     }
     opts.sort(function(a, b) { return a.duration_min - b.duration_min; });
     if (!opts.length) { box.innerHTML = '<div class="empty">Немає доступних варіантів.</div>'; return; }
+    // «Популярний» — варіант 60 хв, або середній за тривалістю
+    var popId = null;
+    var sixty = opts.filter(function(s){ return s.duration_min === 60; })[0];
+    popId = sixty ? sixty.id : opts[Math.floor(opts.length / 2)].id;
     opts.forEach(function(s) {
       var d = s.duration_min;
-      var label = d >= 60 ? Math.floor(d/60) + " год" + (d%60 ? " " + d%60 + " хв" : "") : d + " хв";
-      var row = document.createElement("div"); row.className = "dur-opt";
-      row.innerHTML = '<span class="dur-time">' + label + '</span><span class="dur-price">' + money(s.price) + '</span>';
-      row.addEventListener("click", function() { state.service = s; goDate(); goStep(5); });
+      var label = d >= 60 ? (Math.floor(d/60) + " год" + (d%60 ? " " + (d%60) + " хв" : "")) : (d + " хв");
+      var row = document.createElement("div"); row.className = "dur-row";
+      if (state.service && state.service.id === s.id) row.classList.add("sel");
+      row.innerHTML =
+        '<span class="dur-ico">' + CLOCK + '</span>' +
+        '<span class="dur-min">' + label + '</span>' +
+        (s.id === popId ? '<span class="dur-pop">популярний</span>' : '') +
+        '<span class="dur-sp"></span>' +
+        '<span class="dur-cost">' + money(s.price) + '</span>' +
+        '<span class="dur-check">✓</span>';
+      row.addEventListener("click", function() {
+        box.querySelectorAll(".dur-row").forEach(function(x){ x.classList.remove("sel"); });
+        row.classList.add("sel");
+        state.service = s;
+        setTimeout(function() { renderDateStep(); goStep(5); }, 160);
+      });
       box.appendChild(row);
     });
   }
 
-  // Крок 5: Дата + слоти
-  function goDate() {
-    var d = $("dateInput");
-    var min = new Date().toISOString().slice(0,10);
-    d.min = min;
-    // Підставляємо дату, обрану в кроці 3
-    if (state.date && state.date >= min) d.value = state.date;
-    else if (!d.value || d.value < min) d.value = min;
-    $("slotsWrap").innerHTML = '<div class="empty">Завантаження…</div>';
+  // Крок 5: Дата (стрічка днів) + слоти
+  var DOW_STRIP = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+  function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+  function renderDateStep() {
+    var min = new Date(); min.setHours(0,0,0,0);
+    var minStr = ymd(min);
+    if (!state.date || state.date < minStr) state.date = minStr;
+    var strip = $("dayStrip"); strip.innerHTML = "";
+    for (var i = 0; i < 14; i++) {
+      var d = new Date(min); d.setDate(min.getDate() + i);
+      var ds = ymd(d);
+      var cell = document.createElement("div"); cell.className = "day-cell" + (ds === state.date ? " sel" : "");
+      cell.innerHTML = '<span class="day-dow">' + DOW_STRIP[d.getDay()] + '</span>' +
+                       '<span class="day-num">' + String(d.getDate()).padStart(2,"0") + "." + String(d.getMonth()+1).padStart(2,"0") + '</span>';
+      cell.dataset.date = ds;
+      cell.addEventListener("click", function() {
+        strip.querySelectorAll(".day-cell").forEach(function(x){ x.classList.remove("sel"); });
+        this.classList.add("sel");
+        state.date = this.dataset.date; state.start_min = null;
+        loadSlots();
+      });
+      strip.appendChild(cell);
+    }
     loadSlots();
   }
-  $("dateInput").addEventListener("change", function() { state.date = this.value; state.start_min = null; loadSlots(); });
 
   function loadSlots() {
-    state.date = $("dateInput").value;
     if (!state.date || !state.service) return;
     var wrap = $("slotsWrap"); wrap.innerHTML = '<div class="empty">Завантаження…</div>';
     fetch("/api/public/slots?service=" + state.service.id + "&master=" + (state.master ? state.master.id : "any") + "&date=" + state.date)
       .then(function(r) { return r.json(); }).then(function(j) {
         wrap.innerHTML = "";
-        if (!j.ok || !j.slots.length) { wrap.innerHTML = '<div class="empty">На цю дату вільних віконець немає. Спробуйте іншу дату.</div>'; return; }
-        var grid = document.createElement("div"); grid.className = "slots";
+        if (!j.ok || !j.slots.length) { wrap.innerHTML = '<div class="empty" style="padding:28px 16px;">На цю дату вільних віконець немає. Спробуйте іншу дату.</div>'; return; }
+        var grid = document.createElement("div"); grid.className = "slot-grid";
         j.slots.forEach(function(s) {
-          var b = document.createElement("div"); b.className = "slot"; b.textContent = s.time;
+          var b = document.createElement("div"); b.className = "slot2"; b.textContent = s.time;
           b.addEventListener("click", function() {
-            grid.querySelectorAll(".slot").forEach(function(x) { x.classList.remove("sel"); });
+            grid.querySelectorAll(".slot2").forEach(function(x) { x.classList.remove("sel"); });
             b.classList.add("sel"); state.start_min = s.start_min;
-            setTimeout(function() { renderSummary(); goStep(6); }, 150);
+            setTimeout(function() { renderSummary(); goStep(6); }, 160);
           });
           grid.appendChild(b);
         });
@@ -620,20 +809,45 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
       }).catch(function() { wrap.innerHTML = '<div class="empty">Помилка завантаження.</div>'; });
   }
 
-  // Крок 6: Резюме
+  // Крок 6: Резюме (картка «Ваш запис»)
+  var MON_UA_F = ["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"];
+  var RICO = {
+    svc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 3-3 6 0 9 3-3 3-6 0-9z"/><path d="M12 12c-2.5-1.5-5-1.5-7.5 0 2.5 2 5 2 7.5 0z"/><path d="M12 12c2.5-1.5 5-1.5 7.5 0-2.5 2-5 2-7.5 0z"/><path d="M12 12v9"/></svg>',
+    master: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>',
+    dur: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/></svg>',
+    date: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
+    time: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>',
+    cost: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h.01M3 10h18"/></svg>'
+  };
   function renderSummary() {
     var dt = new Date(state.date + "T00:00:00");
     var h = Math.floor(state.start_min/60), m = state.start_min%60;
     var time = String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
     var p = parseName(state.service.name);
+    var dateTxt = dt.getDate() + " " + MON_UA_F[dt.getMonth()] + " " + dt.getFullYear() + " р.";
+    var avatar = state.master.photo ? '<img class="rev-avatar" src="' + state.master.photo + '" alt="" />' : '';
+    var img = (state.service.image_url) || "";
+    function row(ico, label, val) {
+      return '<div class="rev-row"><span class="rev-ico">' + ico + '</span><span class="rev-label">' + label + '</span><span class="rev-sp"></span><span class="rev-val">' + val + '</span></div>';
+    }
     $("summary").innerHTML =
-      "Послуга: <b>" + p.cat + "</b><br>" +
-      "Майстер: <b>" + state.master.name + "</b><br>" +
-      "Тривалість: <b>" + state.service.duration_min + " хв</b><br>" +
-      "Ціна: <b>" + money(state.service.price) + "</b><br>" +
-      "Дата: <b>" + DOW[dt.getDay()] + ", " + state.date.split("-").reverse().slice(0,2).join(".") + "</b><br>" +
-      "Час: <b>" + time + "</b>";
+      (img ? '<img class="rev-photo" src="' + img + '" alt="" />' : '') +
+      '<div class="rev-rows">' +
+        row(RICO.svc, "Послуга", p.cat) +
+        row(RICO.master, "Майстер", state.master.name + avatar) +
+        row(RICO.dur, "Тривалість", state.service.duration_min + " хв") +
+        row(RICO.date, "Дата", dateTxt) +
+        row(RICO.time, "Час", time) +
+        row(RICO.cost, "Вартість", money(state.service.price)) +
+      '</div>';
   }
+
+  // «Додати побажання» — розкриває коментар
+  $("addExtraRow").addEventListener("click", function() {
+    var w = $("commentWrap");
+    w.classList.toggle("hide");
+    if (!w.classList.contains("hide")) $("commentInput").focus();
+  });
 
   // Бронювання
   $("bookBtn").addEventListener("click", function() {
@@ -648,7 +862,7 @@ a.back-site { display: inline-block; margin-top: 18px; color: var(--olive-light)
     }).then(function(r) { return r.json().then(function(j) { return { code: r.status, j: j }; }); })
       .then(function(res) {
         btn.disabled = false; btn.textContent = "Підтвердити запис";
-        if (res.code === 409) { err.textContent = "Це віконце щойно зайняли. Оберіть інший час."; setTimeout(function() { goStep(5); goDate(); }, 1000); return; }
+        if (res.code === 409) { err.textContent = "Це віконце щойно зайняли. Оберіть інший час."; setTimeout(function() { renderDateStep(); goStep(5); }, 1000); return; }
         if (!res.j.ok) { err.textContent = "Помилка. Спробуйте ще раз."; return; }
         var p = parseName(state.service.name);
         var h = Math.floor(state.start_min/60), m = state.start_min%60;

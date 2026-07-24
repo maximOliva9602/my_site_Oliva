@@ -304,6 +304,7 @@ try { db.exec("ALTER TABLE appointments ADD COLUMN subscription_used INTEGER NOT
 try { db.exec("ALTER TABLE clients ADD COLUMN blacklisted INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN branch_id INTEGER REFERENCES branches(id)"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN can_see_phones INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE masters ADD COLUMN experience_years INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 
 /* Разові блокування часу в календарі */
 db.exec(`
