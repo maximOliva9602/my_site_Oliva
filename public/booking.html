@@ -252,6 +252,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .mst-rate svg { width: 15px; height: 15px; fill: var(--gold); }
 .mst-badge { display: inline-block; margin-top: 6px; background: rgba(217,185,120,0.15); color: var(--gold); font-size: .62rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 7px; }
 .mst-meta { color: rgba(212,207,198,0.52); font-size: .8rem; line-height: 1.5; margin-top: 6px; }
+.mst-price { color: var(--gold); font-size: .95rem; font-weight: 600; margin-top: 6px; }
 .mst-arrow { color: var(--gold); font-size: 1.5rem; opacity: .7; flex-shrink: 0; line-height: 1; }
 
 /* Крок 4 — тривалість */
@@ -681,7 +682,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         (c.img ? '<img class="svc-photo" src="' + c.img + '" alt="" />' : '<div class="svc-photo-ph">' + (ICONS[cat] || "🌿") + '</div>') +
         (c.hit ? '<span class="svc-hit">Хіт</span>' : '') +
         '<button class="svc-fav' + (favs.indexOf(cat) > -1 ? ' on' : '') + '" aria-label="В обране">' + HEART + '</button>' +
-        '<div class="svc-info"><div class="svc-name">' + cat + '</div><div class="svc-meta">' + durTxt + 'від ' + money(c.min) + '</div></div>';
+        '<div class="svc-info"><div class="svc-name">' + cat + '</div></div>';
       card.querySelector(".svc-fav").addEventListener("click", function(e) {
         e.stopPropagation(); this.classList.toggle("on", favToggle(cat));
       });
@@ -737,7 +738,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   var STAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.8 6.1 20.8l1.2-6.6L2.5 9l6.6-.9L12 2z"/></svg>';
   function renderMasters() {
     var box = $("masterGrid"); box.innerHTML = "";
-    var catIds = allServices.filter(function(s) { return parseName(s.name).cat === state.category; }).map(function(s) { return s.id; });
+    var catServices = allServices.filter(function(s) { return parseName(s.name).cat === state.category; });
+    var catIds = catServices.map(function(s) { return s.id; });
     var eligible = allMasters.filter(function(m) {
       return (m.service_ids || []).some(function(id) { return catIds.indexOf(id) !== -1; });
     });
@@ -746,6 +748,9 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     }
     eligible.forEach(function(m) {
       var isTop = m.level === "Топ Майстер";
+      // Ціна «від» саме цього майстра для обраної послуги (мінімум серед його варіантів)
+      var mPrices = catServices.filter(function(s){ return (m.service_ids||[]).indexOf(s.id) !== -1; }).map(function(s){ return s.price; });
+      var fromPrice = mPrices.length ? Math.min.apply(null, mPrices) : null;
       var meta = [];
       if (m.experience_years > 0) meta.push(m.experience_years + " " + yearsWord(m.experience_years) + " досвіду");
       meta.push(m.reviews_count > 0 ? (m.reviews_count + "+ відгуків") : "Новий майстер");
@@ -758,6 +763,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
           '</div>' +
           '<span class="mst-badge">' + (isTop ? "Топ Майстер" : (m.level || "Майстер")) + '</span>' +
           '<div class="mst-meta">' + meta.join('<br>') + '</div>' +
+          (fromPrice != null ? '<div class="mst-price">від ' + money(fromPrice) + '</div>' : '') +
         '</div>' +
         '<span class="mst-arrow">›</span>';
       card.addEventListener("click", function() { state.master = m; renderDurations(); goStep(4); });
