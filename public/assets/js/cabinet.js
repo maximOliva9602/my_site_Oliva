@@ -1280,16 +1280,18 @@
               "background:" + markerHex + ";border-radius:5px;" +
               "padding:3px 5px 2px 5px;overflow:hidden;cursor:pointer;z-index:3;";
 
+            var cEsc = (a.comment||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             var html = "";
             if (heightPx >= 22) {
               html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:2px;margin-bottom:1px;">' +
-                '<span style="font-size:.58rem;font-weight:700;color:rgba(255,255,255,.95);white-space:nowrap;">' + timeStr + '</span>' +
-                (hasNote ? '<span style="font-size:.58rem;opacity:.8;flex-shrink:0;line-height:1;">💬</span>' : '') +
+                '<span style="font-size:.64rem;font-weight:700;color:rgba(255,255,255,.95);white-space:nowrap;">' + timeStr + '</span>' +
+                (hasNote ? '<span style="font-size:.64rem;opacity:.85;flex-shrink:0;line-height:1;">💬</span>' : '') +
                 '</div>';
             }
-            html += '<div style="font-size:.68rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
-            if (heightPx >= 44) html += '<div style="font-size:.58rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
-            if (heightPx >= 60 && a.price) html += '<div style="font-size:.58rem;color:rgba(255,255,255,.8);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
+            html += '<div style="font-size:.76rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
+            if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
+            if (heightPx >= 60 && a.price) html += '<div style="font-size:.64rem;color:rgba(255,255,255,.82);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
+            if (heightPx >= 84 && hasNote) html += '<div style="font-size:.64rem;color:rgba(255,255,255,.92);margin-top:3px;line-height:1.25;overflow:hidden;">💬 ' + cEsc + '</div>';
             block.innerHTML = html;
 
             // ── Drag block: long-press → drag to new master or new time ──
