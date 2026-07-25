@@ -380,6 +380,11 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .addon-vars { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .addon-var { padding: 5px 11px; border-radius: 8px; border: 1.5px solid var(--line); background: transparent; color: var(--text); font-size: .76rem; font-family: inherit; cursor: pointer; transition: all .15s; }
 .addon-var.sel { border-color: var(--gold); background: rgba(217,185,120,0.14); color: #F2EDE4; }
+.addon-var.off { opacity: .4; text-decoration: line-through; cursor: not-allowed; }
+.addon-avail { margin: 2px 16px 0; color: var(--gold); font-size: .8rem; }
+.addon-card.off { opacity: .5; cursor: not-allowed; }
+.addon-card.off .addon-toggle { border-color: var(--line); color: var(--text-dim); }
+.addon-nofit { color: var(--err); font-size: .82rem; }
 .addon-meta { display: flex; align-items: center; gap: 8px; color: var(--cream); font-size: .85rem; margin-top: auto; }
 .addon-meta .ic { display: inline-flex; color: var(--gold); }
 .addon-meta .ic svg { width: 15px; height: 15px; }
@@ -471,12 +476,13 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   <!-- 4b. Додаткові послуги -->
   <div class="step hide" id="stepExtras">
     <div class="shead">
-      <button class="sback" data-back="4" aria-label="Назад">&#8249;</button>
+      <button class="sback" data-back="5" aria-label="Назад">&#8249;</button>
       <h1 class="stitle">Додаткові послуги</h1>
       <div class="ssub">Доповніть сеанс за бажанням</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
     <div class="addon-reco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z"/></svg><span>Рекомендуємо</span></div>
+    <div class="addon-avail" id="addonAvail" style="display:none;"></div>
     <div class="addon-list" id="addonList"></div>
     <div class="addon-bar">
       <div class="addon-bar-info">
@@ -490,7 +496,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   <!-- 5. Дата + час -->
   <div class="step hide" id="step5">
     <div class="shead">
-      <button class="sback" data-back="extras" aria-label="Назад">&#8249;</button>
+      <button class="sback" data-back="4" aria-label="Назад">&#8249;</button>
       <h1 class="stitle">Дата та час</h1>
       <div class="ssub">Оберіть зручний час</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
@@ -505,13 +511,13 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <span class="info-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8z"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span>
       <div class="info-t">Вільний час може змінюватись. Будь ласка, оберіть актуальний слот</div>
     </div>
-    <div class="step-foot"><button class="btn btn-ghost" data-back="extras">&#8592; Назад</button></div>
+    <div class="step-foot"><button class="btn btn-ghost" data-back="4">&#8592; Назад</button></div>
   </div>
 
   <!-- 6. Ваш запис -->
   <div class="step hide" id="step6">
     <div class="shead">
-      <button class="sback" data-back="5" aria-label="Назад">&#8249;</button>
+      <button class="sback" data-back="extras" aria-label="Назад">&#8249;</button>
       <h1 class="stitle">Ваш запис</h1>
       <div class="ssub">Перевірте деталі запису</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
@@ -892,7 +898,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     ["step1","step2","step3","step4","stepExtras","step5","step6","stepDone"].forEach(function(x) { $(x).classList.add("hide"); });
     $(id).classList.remove("hide");
     // прогрес (7 сегментів): послуга=1, майстер=2, тривалість=3, додаткові=4, дата=5, запис=6, готово=7
-    var ORDER = ["step2","step3","step4","stepExtras","step5","step6","stepDone"];
+    var ORDER = ["step2","step3","step4","step5","stepExtras","step6","stepDone"];
     var num = ORDER.indexOf(id) + 1; // step1 → 0
     document.querySelectorAll(".sseg").forEach(function(el) {
       el.classList.toggle("on", parseInt(el.dataset.s) <= num);
@@ -1133,7 +1139,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         box.querySelectorAll(".dur-row").forEach(function(x){ x.classList.remove("sel"); });
         row.classList.add("sel");
         state.service = s;
-        setTimeout(function() { renderExtras(); goStep("extras"); }, 160);
+        setTimeout(function() { renderDateStep(); goStep(5); }, 160); // тепер спершу дата/час
       });
       box.appendChild(row);
     });
@@ -1183,21 +1189,54 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 
   var ADDON_PLUS  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   var ADDON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+  /* Максимальна тривалість, що вписується у вільний час майстра від обраного слота.
+     null = невідомо (гейт вимкнено, сервер усе одно перевірить при броні). */
+  function fetchMaxDur(cb) {
+    state.maxDur = null;
+    if (!state.master || !state.date || state.start_min == null) { if (cb) cb(); return; }
+    fetch("/api/public/max-duration?master=" + state.master.id + "&date=" + state.date + "&start=" + state.start_min)
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if (j && j.ok && typeof j.max === "number") state.maxDur = j.max; })
+      .catch(function(){ /* лишаємо null */ })
+      .then(function(){ if (cb) cb(); });
+  }
+  function extrasMinExcept(key) { return state.extras.filter(function(e){ return e.key !== key; }).reduce(function(s,e){ return s + (e.duration_min||0); }, 0); }
+  function addonFits(a, variantMin) {
+    if (typeof state.maxDur !== "number") return true; // гейт вимкнено
+    var base = state.service ? state.service.duration_min : 0;
+    return base + extrasMinExcept(a.key) + variantMin <= state.maxDur;
+  }
+
   function renderExtras() {
     var box = $("addonList"); if (!box) return;
     box.innerHTML = "";
+    var hint = $("addonAvail");
+    if (hint) {
+      if (typeof state.maxDur === "number") {
+        var avail = Math.max(0, state.maxDur - (state.service ? state.service.duration_min : 0) - extrasTotalMin());
+        hint.textContent = "Вільно у майстра після сеансу: " + avail + " хв";
+        hint.style.display = "";
+      } else { hint.style.display = "none"; }
+    }
     ADDONS.forEach(function(a) {
       if (addonVarIdx[a.key] == null) addonVarIdx[a.key] = 0;
       var on = isAddonOn(a.key);
       var v = a.variants[addonVarIdx[a.key]] || a.variants[0];
+      var anyFits = a.variants.some(function(vv){ return addonFits(a, vv.min); });
+      var disabled = !on && !anyFits;
       var card = document.createElement("div");
-      card.className = "addon-card" + (on ? " on" : "");
+      card.className = "addon-card" + (on ? " on" : "") + (disabled ? " off" : "");
       var badgeCls = a.badge === "Хіт" ? "hit" : "pop";
       var varsHtml = a.variants.length > 1
         ? '<div class="addon-vars">' + a.variants.map(function(vv, i) {
-            return '<button type="button" class="addon-var' + (addonVarIdx[a.key] === i ? " sel" : "") + '" data-i="' + i + '">' + (vv.min > 0 ? vv.min + " хв" : "без часу") + '</button>';
+            var vFits = on || addonFits(a, vv.min);
+            return '<button type="button" class="addon-var' + (addonVarIdx[a.key] === i ? " sel" : "") + (vFits ? "" : " off") + '" data-i="' + i + '">' + (vv.min > 0 ? vv.min + " хв" : "без часу") + '</button>';
           }).join("") + '</div>'
         : '';
+      var metaInner = disabled
+        ? '<span class="addon-nofit">Недостатньо вільного часу</span>'
+        : '<span class="ic">' + CLOCK + '</span><span>' + (v.min > 0 ? v.min + " хв" : "без часу") + '</span><span class="sep">|</span><span class="price">+' + money(v.price) + '</span>';
       card.innerHTML =
         '<div class="addon-photo" style="background-image:url(\'assets/img/' + a.img + '\')"></div>' +
         '<div class="addon-body">' +
@@ -1206,28 +1245,37 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
           '</div>' +
           '<div class="addon-desc">' + a.desc + '</div>' +
           varsHtml +
-          '<div class="addon-meta"><span class="ic">' + CLOCK + '</span>' +
-            '<span>' + (v.min > 0 ? v.min + " хв" : "без часу") + '</span>' +
-            '<span class="sep">|</span><span class="price">+' + money(v.price) + '</span>' +
-          '</div>' +
+          '<div class="addon-meta">' + metaInner + '</div>' +
         '</div>' +
         '<button type="button" class="addon-toggle" aria-label="' + (on ? "Прибрати" : "Додати") + '">' + (on ? ADDON_CHECK : ADDON_PLUS) + '</button>';
       card.querySelectorAll(".addon-var[data-i]").forEach(function(btn) {
         btn.addEventListener("click", function(e) {
           e.stopPropagation();
+          if (btn.classList.contains("off")) return;
           addonVarIdx[a.key] = parseInt(btn.dataset.i, 10);
-          if (isAddonOn(a.key)) setAddon(a, true); // оновити обраний варіант
+          if (isAddonOn(a.key)) setAddon(a, true);
           renderExtras();
         });
       });
-      card.addEventListener("click", function() { setAddon(a, !isAddonOn(a.key)); renderExtras(); });
+      card.addEventListener("click", function() {
+        if (isAddonOn(a.key)) { setAddon(a, false); renderExtras(); return; }
+        if (disabled) return; // нічого не влазить у вільний час
+        var idx = addonVarIdx[a.key] || 0;
+        if (!addonFits(a, a.variants[idx].min)) {
+          var fit = -1;
+          for (var i = 0; i < a.variants.length; i++) { if (addonFits(a, a.variants[i].min)) { fit = i; break; } }
+          if (fit === -1) return;
+          addonVarIdx[a.key] = fit;
+        }
+        setAddon(a, true); renderExtras();
+      });
       box.appendChild(card);
     });
     updateAddonSummary();
   }
 
   var addonContinueBtn = $("addonContinue");
-  if (addonContinueBtn) addonContinueBtn.addEventListener("click", function() { renderDateStep(); goStep(5); });
+  if (addonContinueBtn) addonContinueBtn.addEventListener("click", function() { renderSummary(); goStep(6); }); // додаткові → підтвердження
 
   // Крок 5: Дата (стрічка днів) + слоти
   var DOW_STRIP = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
@@ -1301,7 +1349,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
           b.addEventListener("click", function() {
             grid.querySelectorAll(".slot2").forEach(function(x) { x.classList.remove("sel"); });
             b.classList.add("sel"); state.start_min = s.start_min;
-            setTimeout(function() { renderSummary(); goStep(6); }, 160);
+            fetchMaxDur(function() { renderExtras(); goStep("extras"); }); // час обрано → додаткові
           });
           grid.appendChild(b);
         });
