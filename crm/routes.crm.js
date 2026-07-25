@@ -731,20 +731,6 @@ router.get("/dashboard", owner, function (req, res) {
   const apptWeek  = apptStats(wStart, today);
   const apptMonth = apptStats(mStart, today);
 
-  const upcomingToday = db.prepare(
-    `SELECT a.id, a.start_min, a.status, a.duration_min,
-            c.name client_name, c.phone client_phone,
-            s.name service_name, m.name master_name
-       FROM appointments a
-       JOIN clients c ON c.id=a.client_id
-       JOIN services s ON s.id=a.service_id
-       JOIN masters  m ON m.id=a.master_id
-      WHERE a.date=? AND a.status IN ('pending','confirmed')
-      ORDER BY a.start_min`
-  ).all(today).map(function (a) {
-    return Object.assign({}, a, { time: tz.fmtMin(a.start_min) });
-  });
-
   // --- 2. Майстри ---
   /* Записи — за той самий період, що й картка «1. Записи»: з початку
      місяця по сьогодні включно, без скасованих. Інакше числа майстрів
@@ -802,20 +788,7 @@ router.get("/dashboard", owner, function (req, res) {
     }
   });
 
-  // --- 3. Послуги ---
-  const services = db.prepare(
-    `SELECT s.name, COUNT(a.id) bookings,
-            SUM(CASE WHEN a.status='completed' THEN a.price ELSE 0 END) revenue,
-            AVG(CASE WHEN a.status='completed' THEN a.price ELSE NULL END) avg_price
-       FROM services s
-       LEFT JOIN appointments a ON a.service_id=s.id
-                               AND a.date>=? AND a.date<=?
-                               AND a.status<>'cancelled'
-      WHERE s.active=1
-      GROUP BY s.id ORDER BY bookings DESC`
-  ).all(mStart, today);
-
-  // --- 4. Клієнти ---
+  // --- 3. Клієнти ---
   const clientStats = db.prepare(
     `SELECT
        COUNT(*) total,
@@ -849,11 +822,36 @@ router.get("/dashboard", owner, function (req, res) {
     `SELECT AVG(price) v FROM appointments WHERE status='completed' AND date>=?`
   ).get(mStart).v || 0;
 
+  // --- Детальна аналітика (клієнти + якість) ---
+  const _now = Date.now();
+  const _d30 = _now - 30 * 24 * 3600 * 1000;
+  const _d60 = _now - 60 * 24 * 3600 * 1000;
+  const _date30 = new Date(_d30).toISOString().slice(0, 10);
+  // База для відсотків повернень — клієнти, що відвідали хоча б раз
+  const baseClients = db.prepare(`SELECT COUNT(*) c FROM clients WHERE visit_count >= 1`).get().c;
+  const daNew     = db.prepare(`SELECT COUNT(*) c FROM clients WHERE created_at >= ?`).get(_d30).c;
+  const daRetEver = db.prepare(`SELECT COUNT(*) c FROM clients WHERE visit_count > 1`).get().c;
+  const daRet30   = db.prepare(`SELECT COUNT(*) c FROM clients WHERE visit_count > 1 AND last_visit_at >= ?`).get(_d30).c;
+  const daLost    = db.prepare(`SELECT COUNT(*) c FROM clients WHERE visit_count >= 2 AND last_visit_at IS NOT NULL AND last_visit_at < ?`).get(_d60).c;
+  const daRev     = db.prepare(`SELECT AVG(rating) avg, COUNT(*) cnt FROM reviews`).get();
+  const daCancels = db.prepare(`SELECT COUNT(*) c FROM appointments WHERE status='cancelled' AND date >= ?`).get(_date30).c;
+  const _pct = function (n, base) { return base > 0 ? Math.round((n / base) * 100) : 0; };
+  const detailed = {
+    new_clients: daNew,
+    returned_30d: daRet30, returned_30d_pct: _pct(daRet30, baseClients),
+    returned_ever: daRetEver, returned_ever_pct: _pct(daRetEver, baseClients),
+    lost: daLost,
+    avg_rating: daRev.avg != null ? Math.round(daRev.avg * 100) / 100 : null,
+    reviews_count: daRev.cnt || 0,
+    cancellations_30d: daCancels,
+    base_clients: baseClients,
+  };
+
   res.json({
     ok: true,
-    appointments: { today: apptToday, week: apptWeek, month: apptMonth, upcoming_today: upcomingToday },
+    appointments: { today: apptToday, week: apptWeek, month: apptMonth },
     masters: masters,
-    services: services,
+    detailed: detailed,
     clients: Object.assign({}, clientStats, { top: topClients, inactive: inactiveClients }),
     finance: {
       today:  { actual: revenue(today, today),  forecast: forecast(today, today) },
