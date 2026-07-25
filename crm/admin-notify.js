@@ -52,10 +52,10 @@ async function notifyNewAppt(appointmentId, source) {
     try {
       const ex = a.extra_services ? JSON.parse(a.extra_services) : null;
       if (Array.isArray(ex) && ex.length) {
-        extrasLine = `\n➕ <b>Додатково:</b> ` + ex.map(function (e) {
+        extrasLine = `\n➕ <b>Додатково:</b>\n` + ex.map(function (e) {
           const uah = Math.round((parseInt(e.price, 10) || 0) / 100);
-          return e.name + (uah ? ` (+${uah} грн)` : "");
-        }).join(", ");
+          return `• ${e.name}` + (uah ? ` (+${uah} грн)` : "");
+        }).join("\n");
       }
     } catch (_) {}
 
