@@ -268,7 +268,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 
 /* Крок 3 — майстри */
 .mst-list { display: flex; flex-direction: column; gap: 12px; padding: 8px 16px 0; }
-.mst-card { display: flex; align-items: center; gap: 14px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: border-color .2s, transform .15s; }
+.mst-card { display: flex; align-items: flex-start; gap: 14px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: border-color .2s, transform .15s; }
 .mst-card:active { transform: scale(.995); }
 @media (hover:hover){ .mst-card:hover { border-color: rgba(217,185,120,0.42); } }
 .mst-photo { width: 66px; height: 66px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(217,185,120,0.5); }
@@ -278,10 +278,15 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .mst-name { font-family: 'Playfair Display', serif; color: #F2EDE4; font-size: 1.28rem; line-height: 1.1; }
 .mst-rate { color: var(--gold); font-size: .92rem; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
 .mst-rate svg { width: 15px; height: 15px; fill: var(--gold); }
-.mst-badge { display: inline-block; margin-top: 6px; background: rgba(217,185,120,0.15); color: var(--gold); font-size: .62rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 7px; }
-.mst-meta { color: rgba(212,207,198,0.52); font-size: .8rem; line-height: 1.5; margin-top: 6px; }
-.mst-price { color: var(--gold); font-size: .95rem; font-weight: 600; margin-top: 6px; }
-.mst-arrow { color: var(--gold); font-size: 1.5rem; opacity: .7; flex-shrink: 0; line-height: 1; }
+.mst-badge { display: inline-block; margin: 0 0 6px; background: rgba(217,185,120,0.15); color: var(--gold); font-size: .62rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 7px; }
+.mst-meta { color: rgba(212,207,198,0.52); font-size: .8rem; line-height: 1.5; margin-top: 4px; }
+.mst-price { color: var(--gold); font-size: .95rem; font-weight: 600; margin-top: 4px; }
+.mst-arrow { color: var(--gold); font-size: 1.5rem; opacity: .7; flex-shrink: 0; line-height: 1; align-self: center; }
+/* Найближчі вільні віконця майстра */
+.mst-slots { margin-top: 9px; }
+.mst-slots-day { color: var(--gold); font-weight: 600; font-size: .8rem; }
+.mst-slot-chip { display: inline-block; margin: 3px 5px 0 0; padding: 3px 9px; border: 1px solid rgba(217,185,120,0.35); border-radius: 7px; color: var(--cream); font-size: .78rem; background: rgba(46,61,34,0.18); }
+.mst-slots-load, .mst-slots-none { color: var(--text-dim); font-size: .78rem; }
 
 /* Крок 4 — тривалість */
 .dur-list2 { display: flex; flex-direction: column; gap: 10px; padding: 8px 16px 0; }
@@ -1015,22 +1020,52 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       var fromPrice = mPrices.length ? Math.min.apply(null, mPrices) : null;
       var meta = [];
       if (m.experience_years > 0) meta.push(m.experience_years + " " + yearsWord(m.experience_years) + " досвіду");
-      meta.push(m.reviews_count > 0 ? (m.reviews_count + "+ відгуків") : "Новий майстер");
+      if (m.reviews_count > 0) meta.push(m.reviews_count + "+ відгуків"); // без «Новий майстер»
       var card = document.createElement("div"); card.className = "mst-card";
       card.innerHTML =
         (m.photo ? '<img class="mst-photo" src="' + m.photo + '" alt="' + m.name + '" />' : '<div class="mst-photo-ph">👤</div>') +
         '<div class="mst-body">' +
+          '<span class="mst-badge">' + (isTop ? "Топ Майстер" : (m.level || "Майстер")) + '</span>' +
           '<div class="mst-top"><div class="mst-name">' + m.name + '</div>' +
             (m.rating ? '<span class="mst-rate">' + STAR + m.rating.toFixed(1) + '</span>' : '') +
           '</div>' +
-          '<span class="mst-badge">' + (isTop ? "Топ Майстер" : (m.level || "Майстер")) + '</span>' +
-          '<div class="mst-meta">' + meta.join('<br>') + '</div>' +
           (fromPrice != null ? '<div class="mst-price">від ' + money(fromPrice) + '</div>' : '') +
+          (meta.length ? '<div class="mst-meta">' + meta.join(' · ') + '</div>' : '') +
+          '<div class="mst-slots" data-mid="' + m.id + '"><span class="mst-slots-load">Пошук вільних годин…</span></div>' +
         '</div>' +
         '<span class="mst-arrow">›</span>';
       card.addEventListener("click", function() { state.master = m; renderDurations(); goStep(4); });
       box.appendChild(card);
     });
+    loadMasterNextSlots(catIds);
+  }
+
+  /* Найближчі вільні віконця майстрів (прев'ю під кожним майстром) */
+  var DOW_SHORT = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+  function weekdayIdx(dateStr) { var p = dateStr.split("-").map(Number); return new Date(Date.UTC(p[0], p[1]-1, p[2], 12)).getUTCDay(); }
+  function loadMasterNextSlots(catIds) {
+    if (!catIds || !catIds.length) return;
+    fetch("/api/public/next-slots?services=" + catIds.join(","))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j || !j.ok) return;
+        var map = j.masters || {};
+        document.querySelectorAll(".mst-slots").forEach(function(el){
+          var mid = el.getAttribute("data-mid");
+          var info = map[mid];
+          if (!info || !info.times || !info.times.length) {
+            el.innerHTML = '<span class="mst-slots-none">Найближчим часом вільних годин немає</span>';
+            return;
+          }
+          var d = info.date.split("-");
+          var label = info.today ? "Сьогодні" : (DOW_SHORT[weekdayIdx(info.date)] + ", " + d[2] + "." + d[1]);
+          el.innerHTML = '<span class="mst-slots-day">' + label + ':</span> ' +
+            info.times.map(function(t){ return '<span class="mst-slot-chip">' + t + '</span>'; }).join("");
+        });
+      })
+      .catch(function(){
+        document.querySelectorAll(".mst-slots-load").forEach(function(el){ el.parentNode.innerHTML = ""; });
+      });
   }
   function yearsWord(n) {
     var d = n % 10, dd = n % 100;
