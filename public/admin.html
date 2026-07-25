@@ -445,9 +445,11 @@
       <div class="blog-editor" id="blogEditor">
         <div id="edServiceRow" style="display:none;">
           <label>Послуга * <span style="color:var(--text-dim);font-weight:400;">(лінк «Читати повний опис» з'явиться на головній під «Детальніше»)</span></label>
-          <select id="edServiceKey" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--cream);font-size:.9rem;font-family:inherit;">
-            <option value="">— оберіть послугу —</option>
-          </select>
+          <div style="position:relative;">
+            <input type="text" id="edServiceKey" placeholder="🔍 Почніть вводити назву послуги…" autocomplete="off"
+                   style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--cream);font-size:.9rem;font-family:inherit;" />
+            <div id="edServiceDrop" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#12160f;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:60;max-height:220px;overflow-y:auto;"></div>
+          </div>
         </div>
         <div>
           <label>Заголовок *</label>
@@ -1073,9 +1075,12 @@
 
   /* Режим: 'blog' — звичайні статті; 'service' — статті-описи послуг */
   var blogMode = 'blog';
-  var edServiceRow = document.getElementById("edServiceRow");
-  var edServiceKey = document.getElementById("edServiceKey");
+  var edServiceRow  = document.getElementById("edServiceRow");
+  var edServiceKey  = document.getElementById("edServiceKey");
+  var edServiceDrop = document.getElementById("edServiceDrop");
+  var svcKeys = [];            // усі назви послуг (для пошуку)
   var svcKeysLoaded = false;
+  var originalServiceKey = ''; // значення поста при редагуванні (на випадок перейменованої послуги)
 
   /* Назва послуги без рівня і тривалості: "Масаж спини (Топ Майстер) 60 хв" → "Масаж спини" */
   function svcCleanKey(name) {
@@ -1087,13 +1092,41 @@
       if (!data.ok) return;
       var seen = {};
       (data.services || []).forEach(function (s) { var k = svcCleanKey(s.name); if (k) seen[k] = 1; });
-      Object.keys(seen).sort(function (a, b) { return a.localeCompare(b, 'uk'); }).forEach(function (k) {
-        var o = document.createElement('option'); o.value = k; o.textContent = k;
-        edServiceKey.appendChild(o);
-      });
+      svcKeys = Object.keys(seen).sort(function (a, b) { return a.localeCompare(b, 'uk'); });
       svcKeysLoaded = true;
     }).catch(function () {});
   }
+
+  /* Пошуковий дропдаун послуг */
+  function renderServiceDrop(q) {
+    q = (q || '').toLowerCase();
+    var list = svcKeys.filter(function (k) { return !q || k.toLowerCase().indexOf(q) !== -1; });
+    edServiceDrop.innerHTML = '';
+    if (!list.length) {
+      var empty = document.createElement('div');
+      empty.textContent = 'Нічого не знайдено';
+      empty.style.cssText = 'padding:10px 12px;color:var(--text-dim);font-size:.85rem;';
+      edServiceDrop.appendChild(empty);
+    }
+    list.forEach(function (k) {
+      var row = document.createElement('div');
+      row.textContent = k;
+      row.style.cssText = 'padding:10px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);color:var(--cream);font-size:.88rem;';
+      row.addEventListener('mouseenter', function () { row.style.background = 'rgba(122,145,86,0.15)'; });
+      row.addEventListener('mouseleave', function () { row.style.background = ''; });
+      row.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        edServiceKey.value = k;
+        edServiceKey.style.borderColor = '';
+        edServiceDrop.style.display = 'none';
+      });
+      edServiceDrop.appendChild(row);
+    });
+    edServiceDrop.style.display = 'block';
+  }
+  edServiceKey.addEventListener('input', function () { renderServiceDrop(this.value.trim()); });
+  edServiceKey.addEventListener('focus', function () { renderServiceDrop(this.value.trim()); });
+  edServiceKey.addEventListener('blur', function () { setTimeout(function () { edServiceDrop.style.display = 'none'; }, 150); });
 
   function openBlogOverlay(mode) {
     blogMode = mode;
@@ -1266,7 +1299,9 @@
     edPublished.checked = post ? !!post.published : false;
     edServiceRow.style.display = blogMode === 'service' ? '' : 'none';
     edServiceKey.value = post ? (post.service_key || '') : '';
+    originalServiceKey = post ? (post.service_key || '') : '';
     edServiceKey.style.borderColor = '';
+    edServiceDrop.style.display = 'none';
     if (post && post.cover) {
       edCoverPreview.src = post.cover;
       edCoverPreview.classList.add("show");
@@ -1291,8 +1326,11 @@
     var title = edTitle.value.trim();
     if (!title) { edTitle.focus(); edTitle.style.borderColor='#e07070'; return; }
     edTitle.style.borderColor = '';
-    if (blogMode === 'service' && !edServiceKey.value) {
-      edServiceKey.focus(); edServiceKey.style.borderColor = '#e07070'; return;
+    if (blogMode === 'service') {
+      var sv = edServiceKey.value.trim();
+      // Значення має бути обране зі списку (або лишитись як у поста — на випадок перейменованої послуги)
+      var validSv = sv && (svcKeys.indexOf(sv) !== -1 || sv === originalServiceKey);
+      if (!validSv) { edServiceKey.focus(); edServiceKey.style.borderColor = '#e07070'; renderServiceDrop(sv); return; }
     }
     edServiceKey.style.borderColor = '';
     var data = {
@@ -1303,7 +1341,7 @@
       published: edPublished.checked
     };
     // Статті послуг: прив'язка до послуги; блог — без прив'язки
-    if (blogMode === 'service') data.service_key = edServiceKey.value;
+    if (blogMode === 'service') data.service_key = edServiceKey.value.trim();
     var url    = editingId ? '/api/admin/posts/' + editingId : '/api/admin/posts';
     var method = editingId ? 'PUT' : 'POST';
     var btn = this;
