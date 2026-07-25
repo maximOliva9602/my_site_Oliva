@@ -1292,6 +1292,18 @@
             if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
             if (heightPx >= 44 && a.sub_total) html += '<div style="font-size:.62rem;color:#ffe08a;font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🎟 Абонемент ' + a.sub_used + '/' + a.sub_total + '</div>';
             if (heightPx >= 60 && a.price) html += '<div style="font-size:.64rem;color:rgba(255,255,255,.82);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
+            if (heightPx >= 72 && a.extra_services) {
+              try {
+                var _exs = JSON.parse(a.extra_services);
+                if (Array.isArray(_exs) && _exs.length) {
+                  html += '<div style="font-size:.62rem;color:rgba(255,255,255,.9);margin-top:2px;line-height:1.3;">' +
+                    _exs.map(function(e){
+                      var nm = String((e && e.name) || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                      return '＋ ' + nm + (e && e.duration_min ? ' (' + e.duration_min + ' хв)' : '');
+                    }).join('<br>') + '</div>';
+                }
+              } catch (e) {}
+            }
             if (heightPx >= 84 && hasNote) html += '<div style="font-size:.64rem;color:rgba(255,255,255,.92);margin-top:3px;line-height:1.25;overflow:hidden;">💬 ' + cEsc + '</div>';
             block.innerHTML = html;
 
@@ -1517,9 +1529,20 @@
 
   /* ---- Детальна картка запису (для календаря) ---- */
   window.apptDetailModal = function apptDetailModal(a) {
+    var extrasHtml = "";
+    try {
+      var _dex = a.extra_services ? JSON.parse(a.extra_services) : null;
+      if (Array.isArray(_dex) && _dex.length) {
+        extrasHtml = '<div class="sub" style="margin-top:6px;">➕ Додатково: ' + _dex.map(function(e){
+          var nm = String((e && e.name) || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          return nm + (e && e.duration_min ? ' (' + e.duration_min + ' хв)' : '');
+        }).join(', ') + '</div>';
+      }
+    } catch (e) {}
     var html = '<h3>' + a.client_name + '</h3>' +
       '<div class="sub" style="margin-bottom:12px;">' + a.service_name + ' · ' + fmtMin(a.start_min) + '–' + fmtMin(a.end_min || (a.start_min + a.duration_min)) + ' · ' + a.master_name + '</div>' +
       '<div class="sub">' + (a.client_phone || '<span style="color:#aaa;">🔒 телефон приховано</span>') + '</div>' +
+      extrasHtml +
       (a.comment ? '<div class="sub" style="margin-top:8px;">💬 ' + a.comment + '</div>' : '') +
       '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
       '<label style="margin-top:14px;display:block;">Колір маркеру</label><div id="dMarkerWrap"></div>';
