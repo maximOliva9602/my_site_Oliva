@@ -514,12 +514,11 @@
     var showToggle = !!(opts && opts.showToggle);
     if (!opts || !opts.keepMode) apptViewMode = "month";
     var main = $("main"); main.innerHTML = "";
-    var bar = el("div", "bar");
-    bar.appendChild(el("h2", null, tabTitle));
-    var newBtn = el("button", "btn btn-primary", "+ Новий запис");
+    // Кнопку «Новий запис» додаємо праворуч у рядок фільтра майстра (нижче),
+    // а окремий верхній рядок із заголовком прибрано — так розкладу видно більше.
+    var newBtn = el("button", "btn btn-primary btn-sm", "+ Новий запис");
+    newBtn.style.flexShrink = "0";
     newBtn.addEventListener("click", function () { apptModal(); });
-    bar.appendChild(newBtn);
-    main.appendChild(bar);
 
     // Перемикач Записи / Розклад (день)
     if (showToggle) {
@@ -555,6 +554,7 @@
     }
 
     var masterFilterWrap = el("div", "bar");
+    masterFilterWrap.style.flexWrap = "nowrap";
     main.appendChild(masterFilterWrap);
     var contentEl = el("div"); contentEl.id = "apptContent"; main.appendChild(contentEl);
 
@@ -563,14 +563,20 @@
     if (ME.role === "owner") {
       api("GET", "/api/crm/masters").then(function (res) {
         var sel = el("select");
+        sel.style.cssText = "flex:1 1 auto;min-width:0;";
         sel.appendChild(new Option("Усі майстри", ""));
         (res.j.masters || []).forEach(function (m) { sel.appendChild(new Option(m.name + (m.level ? " · " + m.level : ""), m.id)); });
         sel.addEventListener("change", function () { activeMasterFilter = sel.value; reloadView(sel.value); });
-        masterFilterWrap.appendChild(el("span", "muted", "Майстер:"));
+        var mLbl = el("span", "muted", "Майстер:");
+        mLbl.style.flexShrink = "0";
+        masterFilterWrap.appendChild(mLbl);
         masterFilterWrap.appendChild(sel);
+        masterFilterWrap.appendChild(newBtn);
         reloadView();
       });
     } else {
+      newBtn.style.marginLeft = "auto";
+      masterFilterWrap.appendChild(newBtn);
       reloadView();
     }
 
