@@ -218,10 +218,10 @@ router.post("/book", function (req, res) {
       try {
         const mex = extraServices ? JSON.parse(extraServices) : null;
         if (Array.isArray(mex) && mex.length) {
-          masterExtras = "Додатково: " + mex.map(function (e) {
+          masterExtras = "Додатково:\n" + mex.map(function (e) {
             const u = Math.round((parseInt(e.price, 10) || 0) / 100);
-            return e.name + (u ? " (+" + u + " грн)" : "");
-          }).join(", ") + "\n";
+            return "• " + e.name + (u ? " (+" + u + " грн)" : "");
+          }).join("\n") + "\n";
         }
       } catch (_) {}
       const masterText = "Oliva: новий запис!\n" +
