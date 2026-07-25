@@ -199,6 +199,7 @@
     if (me.role === "owner") {
       TABS.push({ id: "dashboard", name: "📊 Дашборд", render: renderDashboard });
     }
+    TABS.push({ id: "zapysy",   name: "📋 Записи",        render: renderZapysyTab });
     TABS.push({ id: "rozklad",  name: "📅 Розклад",       render: renderRozkladTab });
     TABS.push({ id: "grafik",   name: "🗓 Графік роботи", render: renderScheduleTab });
     TABS.push({ id: "clients",  name: "Клієнти",          render: renderClients });
@@ -213,9 +214,9 @@
       TABS.push({ id: "filiyi",    name: "🏢 Філії",    render: renderBranchesTab });
     }
     /* ── Іконки і короткі назви для мобільного nav ── */
-    var TAB_ICOS  = { dashboard:"📊", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", filiyi:"🏢" };
-    var TAB_SHORT = { dashboard:"Дашборд", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", filiyi:"Філії" };
-    var BOTTOM_COUNT = Math.min(3, TABS.length);
+    var TAB_ICOS  = { dashboard:"📊", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", filiyi:"🏢" };
+    var TAB_SHORT = { dashboard:"Дашборд", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", filiyi:"Філії" };
+    var BOTTOM_COUNT = Math.min(4, TABS.length);
     var hasDrawer    = TABS.length > BOTTOM_COUNT;
 
     var tabsEl       = $("tabs");        tabsEl.innerHTML = "";
@@ -498,9 +499,14 @@
   var DOW_UA = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
 
   // ── Вкладка "Розклад" з перемикачем Записи / Календар ─────────
+  function renderZapysyTab() {
+    apptViewMode = "month";
+    renderAppts({ keepMode: true, title: "Записи", showToggle: false });
+  }
+
   function renderRozkladTab() {
     apptViewMode = "calendar";
-    renderAppts({ keepMode: true, title: "Розклад", showToggle: true });
+    renderAppts({ keepMode: true, title: "Розклад", showToggle: false });
   }
 
   function renderAppts(opts) {
