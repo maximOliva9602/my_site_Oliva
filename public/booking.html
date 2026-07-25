@@ -216,6 +216,25 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .done-help-card .dh-ico svg { width: 26px; height: 26px; }
 .done-help-card .dh-t { color: var(--cream); font-size: .85rem; font-weight: 600; margin-top: 4px; }
 .done-help-card .dh-d { color: var(--text-dim); font-size: .76rem; }
+.done-phone { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 10px; border: 1px solid var(--line); background: rgba(46,61,34,0.14); color: var(--cream); font-size: .88rem; font-weight: 600; text-decoration: none; }
+.done-phone svg { width: 16px; height: 16px; color: var(--gold); }
+.done-socials { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.done-soc-label { color: var(--text-dim); font-size: .82rem; margin-right: 2px; }
+.done-soc { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--line); display: inline-flex; align-items: center; justify-content: center; background: rgba(20,15,10,0.4); transition: all .15s; }
+.done-soc svg { width: 21px; height: 21px; }
+.done-soc.soc-ig { color: #e1306c; border-color: rgba(225,48,108,.35); }
+.done-soc.soc-ig:hover { background: rgba(225,48,108,.14); border-color: #e1306c; }
+.done-soc.soc-tg { color: #229ed9; border-color: rgba(34,158,217,.35); }
+.done-soc.soc-tg:hover { background: rgba(34,158,217,.14); border-color: #229ed9; }
+.done-soc.soc-vb { color: #7360f2; border-color: rgba(115,96,242,.35); }
+.done-soc.soc-vb:hover { background: rgba(115,96,242,.14); border-color: #7360f2; }
+/* Крок 5 — «показати час інших майстрів» */
+.other-m-wrap { margin: 16px 16px 0; }
+.other-m-toggle { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; border: 1px dashed rgba(217,185,120,0.4); background: transparent; color: var(--gold); font-size: .88rem; font-weight: 600; font-family: inherit; cursor: pointer; }
+.other-m-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.other-m-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 9px 13px; border-radius: 11px; border: 1.5px solid var(--line); background: rgba(46,61,34,0.16); color: var(--cream); font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.other-m-chip small { color: var(--text-dim); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .03em; }
+.other-m-chip.sel { border-color: var(--gold); background: rgba(217,185,120,0.16); }
 .dr-accordion { display: flex; flex-direction: column; gap: 8px; }
 .dr-item { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .dr-trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 14px; background: rgba(46,61,34,0.14); border: none; color: var(--cream); font-size: .9rem; font-weight: 500; font-family: inherit; text-align: left; cursor: pointer; }
@@ -478,6 +497,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     </div>
     <div class="day-strip" id="dayStrip"></div>
     <div id="slotsWrap"><div class="empty">Завантаження…</div></div>
+    <div class="other-m-wrap">
+      <button type="button" class="other-m-toggle" id="otherMToggle">Показати час інших майстрів</button>
+      <div class="other-m-list hide" id="otherMList"></div>
+    </div>
     <div class="info-card">
       <span class="info-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8z"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span>
       <div class="info-t">Вільний час може змінюватись. Будь ласка, оберіть актуальний слот</div>
@@ -543,16 +566,20 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     <!-- Потрібна допомога -->
     <div class="done-card">
       <div class="done-card-h">Потрібна допомога?</div>
-      <div class="done-help-cards">
-        <a href="tel:+380974340112" class="done-help-card">
-          <span class="dh-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.3.2 2.5.57 3.6a1 1 0 0 1-.25 1z"/></svg></span>
-          <span class="dh-t">Зателефонувати</span>
-          <span class="dh-d">+38 097 434 01 12</span>
+      <a href="tel:+380974340112" class="done-phone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.3.2 2.5.57 3.6a1 1 0 0 1-.25 1z"/></svg>
+        +38 097 434 01 12
+      </a>
+      <div class="done-socials">
+        <span class="done-soc-label">Написати:</span>
+        <a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener noreferrer" class="done-soc soc-ig" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
         </a>
-        <a href="https://wa.me/380974340112" target="_blank" rel="noopener noreferrer" class="done-help-card">
-          <span class="dh-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H8l-4 4V6c0-1.1.9-2 2-2z"/></svg></span>
-          <span class="dh-t">Написати у WhatsApp</span>
-          <span class="dh-d">Швидка відповідь</span>
+        <a href="https://t.me/massage_oliva_kyiv" target="_blank" rel="noopener noreferrer" class="done-soc soc-tg" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.96 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        </a>
+        <a href="https://viber.me/+380974340112" class="done-soc soc-vb" title="Viber" aria-label="Viber">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.398.002C8.865-.03 3.73.734 1.37 5.885c-1.177 2.535-1.33 5.84-1.13 8.68.198 2.84.772 5.63 2.698 7.226 0 0 2.56 2.657 8.548 2.905v2.527s-.038.992.617.992c.803 0 1.288-.824 2.063-1.703.43-.485.98-1.154 1.4-1.648 3.87.327 6.842-.422 7.177-.533.78-.254 5.197-1.7 5.197-7.74 0-5.955-2.855-9.61-6.285-10.964-1.12-.44-2.98-.82-5.587-.863-.237-.003-.474-.004-.71-.003zM11.47 2.4c.23-.002.46 0 .687.004 2.306.038 3.982.375 4.946.762 2.817 1.104 5.127 4.146 5.127 9.265 0 5.093-3.55 6.15-4.177 6.354-.27.088-2.966.732-6.328.526 0 0-2.51 3.025-3.296 3.815-.124.125-.265.174-.36.15-.134-.034-.17-.19-.168-.42l.02-3.7s-.004 0 0 0c-4.995-.617-5.29-5.45-5.427-7.32-.136-1.872.006-4.834.994-7.006 1.933-4.163 6.197-4.434 7.98-4.43zm.194 3.217c-.327 0-.327.504 0 .508 3.09.02 4.855 1.816 4.873 4.982.003.33.51.327.507 0-.02-3.445-1.993-5.47-5.38-5.49zm-2.44 1.37c-.31-.018-.614.063-.9.24-.273.168-.443.366-.588.63l-.04.076c-.474.86-.456 1.712.007 2.706l.028.063c.393.87 1.24 2.107 2.367 3.093 1.133.99 2.552 1.882 4.01 2.155l.064.01c1.254.198 2.073-.05 2.648-.585l.012-.012c.22-.224.393-.434.545-.67.194-.3.217-.61.063-.87l-.013-.02c-.454-.706-1.264-1.358-1.714-1.533-.27-.104-.54-.06-.756.173l-.457.528c-.214.244-.534.224-.534.224-2.47-.638-3.138-3.163-3.138-3.163s-.023-.322.218-.535l.524-.46c.232-.218.274-.488.168-.757-.18-.452-.835-1.265-1.543-1.72-.19-.122-.39-.19-.592-.19z"/></svg>
         </a>
       </div>
     </div>
@@ -1225,8 +1252,41 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       });
       strip.appendChild(cell);
     }
+    renderOtherMasters();
+    // скинути перемикач інших майстрів у згорнутий стан
+    var oml = $("otherMList"), omt = $("otherMToggle");
+    if (oml) oml.classList.add("hide");
+    if (omt) omt.textContent = "Показати час інших майстрів";
     loadSlots();
   }
+
+  /* Крок 5: перемикання між майстрами прямо на екрані дати/часу */
+  function renderOtherMasters() {
+    var wrap = $("otherMList"); if (!wrap) return;
+    var catServices = allServices.filter(function(s){ return parseName(s.name).cat === state.category; });
+    var catIds = catServices.map(function(s){ return s.id; });
+    var eligible = allMasters.filter(function(m){ return (m.service_ids||[]).some(function(id){ return catIds.indexOf(id) !== -1; }); });
+    wrap.innerHTML = "";
+    eligible.forEach(function(m){
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "other-m-chip" + (state.master && state.master.id === m.id ? " sel" : "");
+      chip.innerHTML = m.name + (m.level ? "<small>" + m.level + "</small>" : "");
+      chip.addEventListener("click", function(){
+        state.master = m; state.start_min = null;
+        wrap.querySelectorAll(".other-m-chip").forEach(function(c){ c.classList.remove("sel"); });
+        chip.classList.add("sel");
+        loadSlots(); // показати віконця цього майстра на обраний день
+      });
+      wrap.appendChild(chip);
+    });
+  }
+  var otherMToggleBtn = $("otherMToggle");
+  if (otherMToggleBtn) otherMToggleBtn.addEventListener("click", function(){
+    var list = $("otherMList");
+    var nowHidden = list.classList.toggle("hide");
+    this.textContent = nowHidden ? "Показати час інших майстрів" : "Приховати інших майстрів";
+  });
 
   function loadSlots() {
     if (!state.date || !state.service) return;
@@ -1337,13 +1397,17 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     ].join("\r\n");
     var icsEl = $("calIcs");
     if (icsEl) {
-      try {
-        var blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-        icsEl.href = URL.createObjectURL(blob);
-      } catch (e) {
-        icsEl.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
-      }
+      // data-URI надійно працює на iOS (Blob там часто ігнорується);
+      // download-атрибут вмикає завантаження на десктопі/Android.
+      var dataUri = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
       icsEl.setAttribute("download", "oliva-massage.ics");
+      icsEl.onclick = function (e) {
+        var iOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        if (iOS) { e.preventDefault(); window.location.href = dataUri; } // iOS відкриє «Додати в Календар»
+        else { icsEl.href = dataUri; } // десктоп/Android — завантаження файлу
+      };
+      icsEl.href = dataUri;
     }
   }
 
