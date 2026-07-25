@@ -110,6 +110,55 @@ router.get("/slots", function (req, res) {
   });
 });
 
+/* Найближчі вільні віконця кожного майстра (прев'ю на кроці вибору майстра).
+   services=CSV id послуг категорії; для кожного майстра беремо найкоротшу
+   тривалість серед його послуг категорії й скануємо до 14 днів наперед. */
+router.get("/next-slots", function (req, res) {
+  const ids = String(req.query.services || "")
+    .split(",").map(function (x) { return parseInt(x, 10); })
+    .filter(function (x) { return x > 0; }).slice(0, 60);
+  const extra = Math.max(0, Math.min(600, parseInt(req.query.extra, 10) || 0));
+  if (!ids.length) return res.json({ ok: true, masters: {} });
+
+  const ph = ids.map(function () { return "?"; }).join(",");
+  const svcRows = db.prepare("SELECT id, duration_min FROM services WHERE active=1 AND id IN (" + ph + ")").all.apply(
+    db.prepare("SELECT id, duration_min FROM services WHERE active=1 AND id IN (" + ph + ")"), ids);
+  if (!svcRows.length) return res.json({ ok: true, masters: {} });
+  const durById = {}; svcRows.forEach(function (s) { durById[s.id] = s.duration_min; });
+  const vids = svcRows.map(function (s) { return s.id; });
+  const vph = vids.map(function () { return "?"; }).join(",");
+
+  const provStmt = db.prepare("SELECT ms.master_id, ms.service_id FROM master_services ms JOIN masters m ON m.id=ms.master_id WHERE m.active=1 AND ms.service_id IN (" + vph + ")");
+  const provRows = provStmt.all.apply(provStmt, vids);
+  const masterDur = {};
+  provRows.forEach(function (r) {
+    const d = durById[r.service_id]; if (!d) return;
+    if (masterDur[r.master_id] == null || d < masterDur[r.master_id]) masterDur[r.master_id] = d;
+  });
+
+  function addDays(dateStr, n) {
+    const p = dateStr.split("-").map(Number);
+    const dt = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+    dt.setUTCDate(dt.getUTCDate() + n);
+    return dt.toISOString().slice(0, 10);
+  }
+  const today = tz.nowKyiv().date;
+  const out = {};
+  Object.keys(masterDur).forEach(function (midStr) {
+    const mid = parseInt(midStr, 10);
+    const dur = masterDur[mid] + extra;
+    for (let i = 0; i < 14; i++) {
+      const date = addDays(today, i);
+      const free = slots.freeSlots(mid, date, dur);
+      if (free.length) {
+        out[mid] = { date: date, today: i === 0, times: free.slice(0, 6).map(function (m) { return tz.fmtMin(m); }) };
+        break;
+      }
+    }
+  });
+  res.json({ ok: true, masters: out });
+});
+
 /* Створити запис (status=pending). */
 router.post("/book", function (req, res) {
   const d = req.body || {};
