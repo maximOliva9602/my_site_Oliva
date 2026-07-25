@@ -370,13 +370,6 @@
         { label: "Скасовано",   val: a.month.cancelled || 0 },
         { label: "Не прийшли",  val: a.month.no_show   || 0 },
       ]);
-      var upcomingHtml = "";
-      if (a.upcoming_today.length) {
-        upcomingHtml = tbl(["Час","Клієнт","Послуга","Майстер"],
-          a.upcoming_today.map(function(u) { return [u.time, u.client_name, u.service_name.split("(")[0].trim(), u.master_name]; }));
-      } else {
-        upcomingHtml = '<div style="color:var(--text-dim);font-size:.84rem;padding:8px 0;">Записів на сьогодні немає</div>';
-      }
       var apptCard = card("1. Записи", "");
       apptCard.querySelector("div:last-child").appendChild(s1);
       /* Підпис обов'язковий: цей ряд рахується за місяць, а стоїть одразу
@@ -385,10 +378,29 @@
       stHead.textContent = "Статуси за місяць";
       apptCard.querySelector("div:last-child").appendChild(stHead);
       apptCard.querySelector("div:last-child").appendChild(s2);
-      var upHead = el("div",""); upHead.style.cssText = "font-size:.78rem;color:var(--text-dim);margin:10px 0 6px;";
-      upHead.textContent = "Найближчі записи сьогодні"; apptCard.querySelector("div:last-child").appendChild(upHead);
-      apptCard.querySelector("div:last-child").insertAdjacentHTML("beforeend", upcomingHtml);
       main.appendChild(apptCard);
+
+      /* ---- 2. Детальна аналітика ---- */
+      var da = d.detailed || {};
+      function daTile(emoji, label, value, sub, accent) {
+        return '<div style="background:rgba(46,61,34,.14);border:1px solid var(--line);border-radius:12px;padding:12px;">' +
+          '<div style="font-size:.72rem;color:var(--text-dim);margin-bottom:6px;line-height:1.25;min-height:2.5em;">' + emoji + ' ' + label + '</div>' +
+          '<div style="color:' + (accent || 'var(--cream)') + ';font-weight:700;font-size:1.3rem;line-height:1;">' + value + '</div>' +
+          (sub ? '<div style="font-size:.66rem;color:var(--text-dim);margin-top:5px;">' + sub + '</div>' : '') +
+        '</div>';
+      }
+      function daValPct(n, p) {
+        return n + (p != null ? ' <span style="font-size:.8rem;color:var(--olive-light);font-weight:600;">(' + p + '%)</span>' : '');
+      }
+      var daGrid = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+        daTile('👤', 'Нові клієнти', (da.new_clients || 0), 'за 30 днів') +
+        daTile('🔁', 'Повернулися за 30 днів', daValPct(da.returned_30d || 0, da.returned_30d_pct), '% від усіх клієнтів') +
+        daTile('✅', 'Повернулися взагалі', daValPct(da.returned_ever || 0, da.returned_ever_pct), '% від усіх клієнтів') +
+        daTile('❌', 'Втрачені', (da.lost || 0), 'не були 60+ днів', 'var(--err)') +
+        daTile('⭐', 'Середня оцінка', (da.avg_rating != null ? Number(da.avg_rating).toFixed(2) : '—'), ((da.reviews_count || 0) + ' відгуків')) +
+        daTile('❌', 'Скасування', (da.cancellations_30d || 0), 'за 30 днів', 'var(--err)') +
+        '</div>';
+      main.appendChild(card("2. Детальна аналітика", daGrid));
 
       /* ---- 2. Майстри ----
          Картками, а не таблицею: шість колонок не влазять у 375px і
@@ -421,16 +433,7 @@
           '</div>' +
         '</div>';
       }).join("");
-      main.appendChild(card("2. Майстри (місяць)", mHtml));
-
-      /* ---- 3. Послуги ---- */
-      var svcRows = d.services.slice(0,10).map(function(s) {
-        var shortName = s.name.length > 35 ? s.name.slice(0,35) + "…" : s.name;
-        return [shortName, s.bookings||0, grn(s.revenue), grn(Math.round(s.avg_price||0))];
-      });
-      main.appendChild(card("3. Послуги (місяць)",
-        tbl(["Послуга","Записів","Дохід","Сер. чек"], svcRows)
-      ));
+      main.appendChild(card("3. Майстри (місяць)", mHtml));
 
       /* ---- 4. Клієнти ---- */
       var cl = d.clients;
