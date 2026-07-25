@@ -159,6 +159,19 @@ router.get("/next-slots", function (req, res) {
   res.json({ ok: true, masters: out });
 });
 
+/* Максимальна тривалість, яку можна вписати від обраного старту (для гейту
+   додаткових послуг: показуємо/дозволяємо лише ті, що влазять у вільний час). */
+router.get("/max-duration", function (req, res) {
+  const masterId = parseInt(req.query.master, 10);
+  const date = clean(req.query.date, 10);
+  const start = parseInt(req.query.start, 10);
+  if (!masterId || !tz.isDate(date) || !(start >= 0)) {
+    return res.status(400).json({ ok: false, error: "bad params" });
+  }
+  const max = slots.maxDurationFrom(masterId, date, start);
+  res.json({ ok: true, max: max });
+});
+
 /* Створити запис (status=pending). */
 router.post("/book", function (req, res) {
   const d = req.body || {};
