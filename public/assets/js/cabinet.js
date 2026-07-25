@@ -1290,6 +1290,7 @@
             }
             html += '<div style="font-size:.76rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
             if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
+            if (heightPx >= 44 && a.sub_total) html += '<div style="font-size:.62rem;color:#ffe08a;font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🎟 Абонемент ' + a.sub_used + '/' + a.sub_total + '</div>';
             if (heightPx >= 60 && a.price) html += '<div style="font-size:.64rem;color:rgba(255,255,255,.82);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
             if (heightPx >= 84 && hasNote) html += '<div style="font-size:.64rem;color:rgba(255,255,255,.92);margin-top:3px;line-height:1.25;overflow:hidden;">💬 ' + cEsc + '</div>';
             block.innerHTML = html;
