@@ -35,7 +35,7 @@ function ddmm(d) { const p = d.split("-"); return p[2] + "." + p[1]; }
 async function notifyNewAppt(appointmentId, source) {
   try {
     const a = db.prepare(`
-      SELECT a.date, a.start_min, a.duration_min, a.comment,
+      SELECT a.date, a.start_min, a.duration_min, a.comment, a.extra_services,
              c.name client_name, c.phone client_phone,
              s.name service_name,
              m.name master_name
@@ -47,6 +47,18 @@ async function notifyNewAppt(appointmentId, source) {
     `).get(appointmentId);
     if (!a) return;
 
+    // Додаткові послуги (add-on'и) — показати переліком, якщо є
+    let extrasLine = "";
+    try {
+      const ex = a.extra_services ? JSON.parse(a.extra_services) : null;
+      if (Array.isArray(ex) && ex.length) {
+        extrasLine = `\n➕ <b>Додатково:</b> ` + ex.map(function (e) {
+          const uah = Math.round((parseInt(e.price, 10) || 0) / 100);
+          return e.name + (uah ? ` (+${uah} грн)` : "");
+        }).join(", ");
+      }
+    } catch (_) {}
+
     const who   = source === "site" ? "🌐 Сайт" : "📋 CRM";
     const text  =
       `📅 <b>Новий запис!</b> ${who}\n\n` +
@@ -55,6 +67,7 @@ async function notifyNewAppt(appointmentId, source) {
       `💆 <b>Послуга:</b> ${a.service_name}\n` +
       `👩‍🔧 <b>Майстер:</b> ${a.master_name}\n` +
       `📆 <b>Дата:</b> ${ddmm(a.date)}, ${fmtMin(a.start_min)}–${fmtMin(a.start_min + a.duration_min)}` +
+      extrasLine +
       (a.comment ? `\n💬 <b>Коментар:</b> ${a.comment}` : "");
 
     await sendTg(text);
