@@ -214,9 +214,20 @@ router.post("/book", function (req, res) {
       const h = Math.floor(startMin/60), m = startMin%60;
       const t = String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
       const svcRow = db.prepare("SELECT name FROM services WHERE id=?").get(serviceId);
+      let masterExtras = "";
+      try {
+        const mex = extraServices ? JSON.parse(extraServices) : null;
+        if (Array.isArray(mex) && mex.length) {
+          masterExtras = "Додатково: " + mex.map(function (e) {
+            const u = Math.round((parseInt(e.price, 10) || 0) / 100);
+            return e.name + (u ? " (+" + u + " грн)" : "");
+          }).join(", ") + "\n";
+        }
+      } catch (_) {}
       const masterText = "Oliva: новий запис!\n" +
         "Клієнт: " + name + " " + phone + "\n" +
         "Послуга: " + (svcRow ? svcRow.name : "") + "\n" +
+        masterExtras +
         "Дата: " + d + " о " + t;
       notify.sendDirect(masterRow.phone, masterText).catch(function(e) {
         console.warn("[book] master notify failed:", e.message);
