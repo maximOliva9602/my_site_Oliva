@@ -204,6 +204,18 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 /* Фінальний екран — картки календаря / допомоги / правил */
 .done-card { max-width: min(560px, calc(100% - 32px)); margin: 14px auto 0; padding: 16px 16px; background: rgba(10,7,5,0.82); border: 1px solid var(--line); border-radius: 16px; }
 .done-card-h { color: var(--gold); font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+/* Розкривні секції на фінальному екрані (Правила / Протипокази) */
+.done-card.done-collapse { padding: 0; }
+.done-collapse-h { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px; background: none; border: none; color: var(--gold); font-size: .82rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-family: inherit; text-align: left; cursor: pointer; }
+.dc-arr { color: var(--gold); font-size: 1.35rem; line-height: 1; flex-shrink: 0; transition: transform .2s; }
+.done-collapse.open .dc-arr { transform: rotate(45deg); }
+.done-collapse-body { display: none; padding: 0 16px 16px; }
+.done-collapse.open .done-collapse-body { display: block; }
+.contra-list { list-style: none; padding: 0; margin: 0; }
+.contra-list li { color: rgba(212,207,198,0.82); font-size: .85rem; line-height: 1.5; padding: 8px 0 8px 20px; position: relative; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.contra-list li:last-child { border-bottom: none; }
+.contra-list li::before { content: '•'; color: var(--err); position: absolute; left: 4px; top: 8px; }
+.contra-note { color: var(--text-dim); font-size: .78rem; line-height: 1.5; margin-top: 12px; }
 .done-cal-btns { display: flex; gap: 10px; }
 .done-cal-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 10px; border-radius: 12px; border: 1.5px solid var(--line); background: rgba(46,61,34,0.18); color: var(--cream); font-size: .86rem; font-weight: 500; text-decoration: none; transition: all .15s; }
 .done-cal-btn:hover { border-color: var(--gold); }
@@ -590,9 +602,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       </div>
     </div>
 
-    <!-- Правила відвідування (акордеон) -->
-    <div class="done-card">
-      <div class="done-card-h">Правила відвідування</div>
+    <!-- Правила відвідування (розкривний блок з акордеоном) -->
+    <div class="done-card done-collapse">
+      <button type="button" class="done-collapse-h">Правила відвідування<span class="dc-arr">+</span></button>
+      <div class="done-collapse-body">
       <div class="dr-accordion">
         <div class="dr-item">
           <button type="button" class="dr-trigger">Бронювання послуг студії<span class="dr-arr">+</span></button>
@@ -666,6 +679,27 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
             <p>Адміністрація має право відмовити у наданні послуг у разі порушення правил студії.</p>
           </div>
         </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Абсолютні протипокази (розкривний блок) -->
+    <div class="done-card done-collapse">
+      <button type="button" class="done-collapse-h">Абсолютні протипокази<span class="dc-arr">+</span></button>
+      <div class="done-collapse-body">
+        <ul class="contra-list">
+          <li>Гострі інфекційні захворювання</li>
+          <li>Підвищена температура тіла</li>
+          <li>Онкологічні захворювання (без дозволу лікаря)</li>
+          <li>Тромбоз та тромбофлебіт</li>
+          <li>Активні кровотечі або схильність до них</li>
+          <li>Гострий інфаркт або інсульт (реабілітація можлива лише після дозволу лікаря)</li>
+          <li>Гнійні процеси</li>
+          <li>Активні шкірні інфекції у зоні масажу</li>
+          <li>Відкриті рани, опіки</li>
+          <li>Алкогольне або наркотичне сп'яніння</li>
+        </ul>
+        <p class="contra-note">За наявності протипоказань зверніться до лікаря або повідомте майстра перед сеансом.</p>
       </div>
     </div>
 
@@ -1406,6 +1440,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   /* Акордеон «Правила відвідування» на фінальному екрані */
   document.querySelectorAll(".dr-trigger").forEach(function(t) {
     t.addEventListener("click", function() { t.parentNode.classList.toggle("open"); });
+  });
+  /* Розкривні секції (Правила відвідування / Абсолютні протипокази) */
+  document.querySelectorAll(".done-collapse-h").forEach(function(h) {
+    h.addEventListener("click", function() { h.parentNode.classList.toggle("open"); });
   });
 
   /* Додати запис у календар (Google-лінк + .ics для iOS/Apple) */
