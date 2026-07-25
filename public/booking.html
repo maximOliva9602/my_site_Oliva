@@ -1319,7 +1319,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var minStr = ymd(min);
     if (!state.date || state.date < minStr) state.date = minStr;
     var strip = $("dayStrip"); strip.innerHTML = "";
-    for (var i = 0; i < 14; i++) {
+    for (var i = 0; i < 30; i++) { // місяць наперед
       var d = new Date(min); d.setDate(min.getDate() + i);
       var ds = ymd(d);
       var cell = document.createElement("div"); cell.className = "day-cell" + (ds === state.date ? " sel" : "");
