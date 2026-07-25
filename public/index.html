@@ -1332,6 +1332,21 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
     function baseName(name) {
       return name.replace(/\s+\d+\s+хв\s*$/i, '').trim();
     }
+    /* Статті-описи послуг: мапа «назва послуги → slug статті» (заповнюється з /api/service-articles) */
+    var svcArticles = {};
+    function svcCleanKey(name) {
+      return String(name).replace(/\s*\((?:Топ\s+)?Майстер\)\s*/gi, ' ').replace(/\s+\d+\s*хв\s*$/i, '').replace(/\s{2,}/g, ' ').trim();
+    }
+    function appendArticleLink(container, groupName, standalone) {
+      var slug = svcArticles[svcCleanKey(groupName)];
+      if (!slug || container.querySelector('.srv-full-link')) return;
+      var a = document.createElement('a');
+      a.className = 'srv-full-link';
+      a.href = '/blog/' + slug;
+      a.textContent = 'Читати повний опис послуги →';
+      a.style.cssText = 'display:inline-block;margin-top:' + (standalone ? '12px' : '10px') + ';color:#caa45a;font-weight:600;font-size:0.85rem;text-decoration:none;border-bottom:1px solid rgba(202,164,90,.45);padding-bottom:2px;';
+      container.appendChild(a);
+    }
     function fmtDur(min) {
       var h = Math.floor(min / 60);
       var m = min % 60;
@@ -1391,17 +1406,23 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
           return dbDesc || getDesc(groupName, 'uk');
         }
         renderDesc(body, resolveDesc());
+        appendArticleLink(body, groupName); // лінк на повну статтю (якщо є)
         card.appendChild(body);
 
         btn.addEventListener('click', function() {
           renderDesc(body, resolveDesc());
+          appendArticleLink(body, groupName); // renderDesc перезаписує вміст — повертаємо лінк
           var open = body.style.display === 'block';
           body.style.display = open ? 'none' : 'block';
           btn.classList.toggle('open', !open);
         });
         document.addEventListener('langchange', function() {
           renderDesc(body, resolveDesc());
+          appendArticleLink(body, groupName);
         });
+      } else {
+        // Короткого опису немає, але стаття є — показуємо лінк одразу на картці
+        appendArticleLink(card, groupName, true);
       }
       return card;
     }
@@ -1443,9 +1464,13 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       'tab-topmaster': 'Прайс Топ Майстер'
     };
 
-    fetch('/api/services')
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
+    Promise.all([
+      fetch('/api/services').then(function(r) { return r.json(); }),
+      fetch('/api/service-articles').then(function(r) { return r.json(); }).catch(function() { return { ok: false }; })
+    ])
+      .then(function(rs) {
+        var data = rs[0];
+        if (rs[1] && rs[1].ok && rs[1].map) svcArticles = rs[1].map; // мапа статей — ДО рендеру карток
         if (!data.ok) return;
         var all = data.services;
         renderTab('tab-top', all.filter(function(s) { return s.featured; }));
