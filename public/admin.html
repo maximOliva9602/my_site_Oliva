@@ -297,6 +297,7 @@
       <button class="blog-btn" id="svcMgrBtn">💆 Послуги</button>
       <button class="blog-btn" id="masterMgrBtn">👥 Майстри</button>
       <button class="blog-btn" id="blogMgrBtn">✍️ Блог</button>
+      <button class="blog-btn" id="svcArtMgrBtn">📄 Статті послуг</button>
       <button id="logoutBtn">Вийти</button>
     </div>
   </aside>
@@ -435,13 +436,19 @@
   <!-- BLOG MANAGER OVERLAY -->
   <div class="blog-overlay" id="blogOverlay">
     <div class="blog-top">
-      <h2>✍️ Блог</h2>
+      <h2 id="blogTitle">✍️ Блог</h2>
       <button id="blogNewBtn" class="btn-new">+ Нова стаття</button>
       <button id="blogCloseBtn">✕ Закрити</button>
     </div>
     <div class="blog-body" id="blogBody">
       <!-- Editor -->
       <div class="blog-editor" id="blogEditor">
+        <div id="edServiceRow" style="display:none;">
+          <label>Послуга * <span style="color:var(--text-dim);font-weight:400;">(лінк «Читати повний опис» з'явиться на головній під «Детальніше»)</span></label>
+          <select id="edServiceKey" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--cream);font-size:.9rem;font-family:inherit;">
+            <option value="">— оберіть послугу —</option>
+          </select>
+        </div>
         <div>
           <label>Заголовок *</label>
           <input type="text" id="edTitle" placeholder="Наприклад: 5 переваг масажу після спорту" />
@@ -1064,10 +1071,40 @@
   var coverName      = document.getElementById("coverName");
   var editingId      = null;
 
-  document.getElementById("blogMgrBtn").addEventListener("click", function () {
+  /* Режим: 'blog' — звичайні статті; 'service' — статті-описи послуг */
+  var blogMode = 'blog';
+  var edServiceRow = document.getElementById("edServiceRow");
+  var edServiceKey = document.getElementById("edServiceKey");
+  var svcKeysLoaded = false;
+
+  /* Назва послуги без рівня і тривалості: "Масаж спини (Топ Майстер) 60 хв" → "Масаж спини" */
+  function svcCleanKey(name) {
+    return String(name).replace(/\s*\((?:Топ\s+)?Майстер\)\s*/gi, ' ').replace(/\s+\d+\s*хв\s*$/i, '').replace(/\s{2,}/g, ' ').trim();
+  }
+  function loadServiceKeys() {
+    if (svcKeysLoaded) return;
+    fetch('/api/services').then(function (r) { return r.json(); }).then(function (data) {
+      if (!data.ok) return;
+      var seen = {};
+      (data.services || []).forEach(function (s) { var k = svcCleanKey(s.name); if (k) seen[k] = 1; });
+      Object.keys(seen).sort(function (a, b) { return a.localeCompare(b, 'uk'); }).forEach(function (k) {
+        var o = document.createElement('option'); o.value = k; o.textContent = k;
+        edServiceKey.appendChild(o);
+      });
+      svcKeysLoaded = true;
+    }).catch(function () {});
+  }
+
+  function openBlogOverlay(mode) {
+    blogMode = mode;
+    document.getElementById("blogTitle").textContent = mode === 'service' ? '📄 Статті послуг' : '✍️ Блог';
+    if (mode === 'service') loadServiceKeys();
     blogOverlay.classList.add("open");
+    closeEditor();
     loadPosts();
-  });
+  }
+  document.getElementById("blogMgrBtn").addEventListener("click", function () { openBlogOverlay('blog'); });
+  document.getElementById("svcArtMgrBtn").addEventListener("click", function () { openBlogOverlay('service'); });
   document.getElementById("blogCloseBtn").addEventListener("click", function () {
     blogOverlay.classList.remove("open");
     closeEditor();
@@ -1181,10 +1218,15 @@
 
   /* -- Список статей -- */
   function loadPosts() {
-    fetch("/api/admin/posts").then(function(r){ return r.json(); }).then(function(posts){
+    fetch("/api/admin/posts").then(function(r){ return r.json(); }).then(function(allPosts){
+      // Розділяємо: статті послуг (service_key) — окремо від блогу
+      var posts = (allPosts || []).filter(function(p){
+        return blogMode === 'service' ? !!p.service_key : !p.service_key;
+      });
       blogList.innerHTML = "";
       if (!posts.length) {
-        blogList.innerHTML = '<div style="color:var(--text-dim);padding:32px;text-align:center;grid-column:1/-1">Поки немає статей. Натисніть "+ Нова стаття"</div>';
+        blogList.innerHTML = '<div style="color:var(--text-dim);padding:32px;text-align:center;grid-column:1/-1">' +
+          (blogMode === 'service' ? 'Поки немає статей про послуги. Натисніть "+ Нова стаття" і оберіть послугу.' : 'Поки немає статей. Натисніть "+ Нова стаття"') + '</div>';
         return;
       }
       posts.forEach(function(p){
@@ -1194,6 +1236,7 @@
         card.innerHTML = cover +
           '<div class="blog-card-body">' +
             '<div class="blog-card-status ' + (p.published ? 'pub' : 'draft') + '">' + (p.published ? '● Опублікована' : '○ Чернетка') + '</div>' +
+            (p.service_key ? '<div style="font-size:11px;color:var(--olive-light);margin-bottom:4px;">💆 ' + p.service_key + '</div>' : '') +
             '<div class="blog-card-title">' + p.title + '</div>' +
             '<div class="blog-card-date">' + (p.date || '') + '</div>' +
             '<div class="blog-card-actions">' +
@@ -1221,6 +1264,9 @@
     edBody.innerHTML    = post ? (post.body || '') : '';
     edCover.value       = post ? (post.cover || '') : '';
     edPublished.checked = post ? !!post.published : false;
+    edServiceRow.style.display = blogMode === 'service' ? '' : 'none';
+    edServiceKey.value = post ? (post.service_key || '') : '';
+    edServiceKey.style.borderColor = '';
     if (post && post.cover) {
       edCoverPreview.src = post.cover;
       edCoverPreview.classList.add("show");
@@ -1245,6 +1291,10 @@
     var title = edTitle.value.trim();
     if (!title) { edTitle.focus(); edTitle.style.borderColor='#e07070'; return; }
     edTitle.style.borderColor = '';
+    if (blogMode === 'service' && !edServiceKey.value) {
+      edServiceKey.focus(); edServiceKey.style.borderColor = '#e07070'; return;
+    }
+    edServiceKey.style.borderColor = '';
     var data = {
       title: title,
       excerpt: edExcerpt.value.trim(),
@@ -1252,6 +1302,8 @@
       cover: edCover.value.trim(),
       published: edPublished.checked
     };
+    // Статті послуг: прив'язка до послуги; блог — без прив'язки
+    if (blogMode === 'service') data.service_key = edServiceKey.value;
     var url    = editingId ? '/api/admin/posts/' + editingId : '/api/admin/posts';
     var method = editingId ? 'PUT' : 'POST';
     var btn = this;
