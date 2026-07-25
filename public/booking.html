@@ -243,8 +243,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 /* Крок 5 — «показати час інших майстрів» */
 .other-m-wrap { margin: 16px 16px 0; }
 .other-m-toggle { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; border: 1px dashed rgba(217,185,120,0.4); background: transparent; color: var(--gold); font-size: .88rem; font-weight: 600; font-family: inherit; cursor: pointer; }
-.other-m-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.other-m-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 9px 13px; border-radius: 11px; border: 1.5px solid var(--line); background: rgba(46,61,34,0.16); color: var(--cream); font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.other-m-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.other-m-chip { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 10px 13px; min-height: 52px; border-radius: 11px; border: 1.5px solid var(--line); background: rgba(46,61,34,0.16); color: var(--cream); font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left; }
 .other-m-chip small { color: var(--text-dim); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .03em; }
 .other-m-chip.sel { border-color: var(--gold); background: rgba(217,185,120,0.16); }
 .dr-accordion { display: flex; flex-direction: column; gap: 8px; }
@@ -1420,7 +1420,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     $("summary").innerHTML =
       (img ? '<img class="rev-photo" src="' + img + '" alt="" />' : '') +
       '<div class="rev-rows">' +
-        row(RICO.svc, "Послуга", p.cat) +
+        row(RICO.svc, "Послуга", p.cat + (state.service && state.service.duration_min ? " · " + state.service.duration_min + " хв" : "")) +
         row(RICO.master, "Майстер", state.master.name + avatar) +
         extrasRows +
         row(RICO.dur, "Тривалість", totMin + " хв") +
