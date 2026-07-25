@@ -419,11 +419,13 @@ function slugify(text) {
 
 /* Підготовлені запити для блогу */
 var stmtAllPosts      = db.prepare("SELECT * FROM blog_posts ORDER BY date DESC, rowid DESC");
-var stmtPublicPosts   = db.prepare("SELECT id,slug,title,excerpt,cover,date FROM blog_posts WHERE published=1 ORDER BY date DESC, rowid DESC");
+/* Статті-описи послуг (service_key != NULL) ховаємо із загального списку блогу */
+var stmtPublicPosts   = db.prepare("SELECT id,slug,title,excerpt,cover,date FROM blog_posts WHERE published=1 AND (service_key IS NULL OR service_key='') ORDER BY date DESC, rowid DESC");
 var stmtPostBySlug    = db.prepare("SELECT * FROM blog_posts WHERE slug=? AND published=1");
 var stmtPostById      = db.prepare("SELECT * FROM blog_posts WHERE id=?");
-var stmtInsertPost    = db.prepare("INSERT INTO blog_posts (id,slug,title,excerpt,body,cover,date,published) VALUES (?,?,?,?,?,?,?,?)");
-var stmtUpdatePost    = db.prepare("UPDATE blog_posts SET title=?,excerpt=?,body=?,cover=?,published=? WHERE id=?");
+var stmtInsertPost    = db.prepare("INSERT INTO blog_posts (id,slug,title,excerpt,body,cover,date,published,service_key) VALUES (?,?,?,?,?,?,?,?,?)");
+var stmtUpdatePost    = db.prepare("UPDATE blog_posts SET title=?,excerpt=?,body=?,cover=?,published=?,service_key=? WHERE id=?");
+var stmtServiceArticles = db.prepare("SELECT service_key, slug FROM blog_posts WHERE published=1 AND service_key IS NOT NULL AND service_key != ''");
 var stmtDeletePost    = db.prepare("DELETE FROM blog_posts WHERE id=?");
 var stmtSlugExists    = db.prepare("SELECT 1 FROM blog_posts WHERE slug=?");
 
@@ -436,6 +438,13 @@ app.get("/api/posts/:slug", function (req, res) {
   var post = stmtPostBySlug.get(req.params.slug);
   if (!post) return res.status(404).json({ ok: false });
   res.json(post);
+});
+
+/* Мапа «послуга → slug статті» для лінків «Читати повний опис» на головній */
+app.get("/api/service-articles", function (req, res) {
+  var map = {};
+  stmtServiceArticles.all().forEach(function (r) { map[r.service_key] = r.slug; });
+  res.json({ ok: true, map: map });
 });
 
 /* Адмін ендпоінти (захищені токеном) */
@@ -460,9 +469,10 @@ app.post("/api/admin/posts", requireAdmin, function (req, res) {
     body: String(d.body || "").slice(0, 200000).trim(),
     cover: String(d.cover || "").slice(0, 500).trim(),
     date: new Date().toISOString().slice(0, 10),
-    published: d.published ? 1 : 0
+    published: d.published ? 1 : 0,
+    service_key: String(d.service_key == null ? "" : d.service_key).slice(0, 120).trim() || null
   };
-  stmtInsertPost.run(post.id, post.slug, post.title, post.excerpt, post.body, post.cover, post.date, post.published);
+  stmtInsertPost.run(post.id, post.slug, post.title, post.excerpt, post.body, post.cover, post.date, post.published, post.service_key);
   res.json({ ok: true, post: post });
 });
 
@@ -475,8 +485,11 @@ app.put("/api/admin/posts/:id", requireAdmin, function (req, res) {
   var body     = d.body      !== undefined ? String(d.body).slice(0, 200000).trim() : existing.body;
   var cover    = d.cover     !== undefined ? String(d.cover).slice(0, 500).trim()   : existing.cover;
   var published = d.published !== undefined ? (d.published ? 1 : 0)                 : existing.published;
-  stmtUpdatePost.run(title, excerpt, body, cover, published, req.params.id);
-  res.json({ ok: true, post: { id: req.params.id, slug: existing.slug, title, excerpt, body, cover, date: existing.date, published } });
+  var serviceKey = d.service_key !== undefined
+    ? (String(d.service_key == null ? "" : d.service_key).slice(0, 120).trim() || null)
+    : existing.service_key;
+  stmtUpdatePost.run(title, excerpt, body, cover, published, serviceKey, req.params.id);
+  res.json({ ok: true, post: { id: req.params.id, slug: existing.slug, title, excerpt, body, cover, date: existing.date, published, service_key: serviceKey } });
 });
 
 app.delete("/api/admin/posts/:id", requireAdmin, function (req, res) {
