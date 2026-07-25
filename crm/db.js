@@ -301,6 +301,7 @@ try { db.exec("ALTER TABLE appointments ADD COLUMN pay_method TEXT"); } catch(e)
 try { db.exec("ALTER TABLE appointments ADD COLUMN color_marker TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN extra_services TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN subscription_used INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE blog_posts ADD COLUMN service_key TEXT"); } catch(e) {} // стаття-опис послуги (для «Детальніше» на головній)
 try { db.exec("ALTER TABLE clients ADD COLUMN blacklisted INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN branch_id INTEGER REFERENCES branches(id)"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN can_see_phones INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
