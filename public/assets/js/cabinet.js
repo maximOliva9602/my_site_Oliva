@@ -938,10 +938,11 @@
             schedMap[ov.master_id] = { ws: ov.work_start, we: ov.work_end, bks: (schedMap[ov.master_id] || {}).bks || [] };
           }
         });
-        // Приховуємо майстрів з вихідним якщо у них немає записів на цей день
+        // Показуємо лише майстрів, що працюють цього дня за графіком
+        // (schedMap заповнюється з денного графіка з урахуванням override'ів),
+        // а також тих, у кого вже є записи цього дня — щоб не ховати наявні брони.
         masters = masters.filter(function(m) {
-          if (!offIds[m.id]) return true;
-          return appts.some(function(a) { return a.master_id === m.id; });
+          return !!schedMap[m.id] || appts.some(function(a) { return a.master_id === m.id; });
         });
 
         var dayBlocksMap = {};
