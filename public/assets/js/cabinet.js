@@ -701,9 +701,9 @@
       var STEP = 10;
       var TIME_COL_W = 44;
       var MASTER_COL_W = window.innerWidth < 600 ? 160 : 170;
-      var HEADER_H = 70;
+      var HEADER_H = 48;
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
-      var WEEK_STRIP_H = 90;
+      var WEEK_STRIP_H = 66;
       var DAY_UA = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
       var MON_SHORT = ["січ","лют","бер","квіт","трав","черв","лип","серп","вер","жовт","лист","груд"];
 
@@ -739,7 +739,7 @@
         // Заголовок місяця
         var midDay = new Date(weekStart); midDay.setDate(weekStart.getDate() + 3);
         var stripMonthHdr = document.createElement("div");
-        stripMonthHdr.style.cssText = "text-align:center;font-size:.68rem;font-weight:600;color:#888;padding:5px 0 2px;flex-shrink:0;letter-spacing:.04em;";
+        stripMonthHdr.style.cssText = "text-align:center;font-size:.63rem;font-weight:600;color:#888;padding:3px 0 1px;flex-shrink:0;letter-spacing:.04em;";
         stripMonthHdr.textContent = MON_UA[midDay.getMonth()] + " " + midDay.getFullYear();
         wkStrip.appendChild(stripMonthHdr);
 
@@ -752,13 +752,13 @@
           var isToday2 = wds === today0;
           var isSel = wds === apptDate;
           var wBtn = document.createElement("button");
-          wBtn.style.cssText = "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;cursor:pointer;padding:2px 0 6px;background:transparent;";
+          wBtn.style.cssText = "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;cursor:pointer;padding:1px 0 3px;background:transparent;";
           var wDayLbl = document.createElement("span");
-          wDayLbl.style.cssText = "font-size:.62rem;font-weight:600;color:" + (isSel ? "#6e9145" : isToday2 ? "#5a7a48" : "#aaa") + ";letter-spacing:.02em;line-height:1;";
+          wDayLbl.style.cssText = "font-size:.58rem;font-weight:600;color:" + (isSel ? "#6e9145" : isToday2 ? "#5a7a48" : "#aaa") + ";letter-spacing:.02em;line-height:1;";
           wDayLbl.textContent = DOW_STRIP[wi];
           var wPill = document.createElement("span");
-          wPill.style.cssText = "width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;" +
-            "font-size:.95rem;font-weight:" + (isSel||isToday2 ? "700" : "500") + ";line-height:1;" +
+          wPill.style.cssText = "width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;" +
+            "font-size:.85rem;font-weight:" + (isSel||isToday2 ? "700" : "500") + ";line-height:1;" +
             "background:" + (isSel ? "#6e9145" : isToday2 ? "#e8f0e0" : "transparent") + ";" +
             "color:" + (isSel ? "#fff" : isToday2 ? "#3d5430" : "#222") + ";";
           wPill.textContent = wd2.getDate();
@@ -1087,15 +1087,15 @@
 
         masters.forEach(function(m) {
           var hCell = document.createElement("div");
-          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;overflow:hidden;background:#fff;cursor:pointer;";
+          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;padding:4px 6px;overflow:hidden;background:#fff;cursor:pointer;";
           var initials = (m.name||'?').charAt(0).toUpperCase() + (m.last_name ? m.last_name.charAt(0).toUpperCase() : '');
           var avHtml = m.photo
-            ? '<img src="' + m.photo + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
-            : '<div style="width:34px;height:34px;border-radius:50%;background:#3d5430;display:flex;align-items:center;justify-content:center;color:#8aA462;font-weight:700;font-size:.78rem;flex-shrink:0;">' + initials + '</div>';
+            ? '<img src="' + m.photo + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
+            : '<div style="width:30px;height:30px;border-radius:50%;background:#3d5430;display:flex;align-items:center;justify-content:center;color:#8aA462;font-weight:700;font-size:.72rem;flex-shrink:0;">' + initials + '</div>';
           hCell.innerHTML = avHtml +
-            '<div style="text-align:center;line-height:1.2;">' +
-            '<div style="font-size:.73rem;font-weight:600;color:#1a2016;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
-            '<div style="font-size:.6rem;color:#5a7a48;margin-top:1px;">' + (m.level||'') + '</div>' +
+            '<div style="text-align:left;line-height:1.15;min-width:0;">' +
+            '<div style="font-size:.72rem;font-weight:600;color:#1a2016;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
+            '<div style="font-size:.58rem;color:#5a7a48;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + (m.level||'') + '</div>' +
             '</div>';
           header.appendChild(hCell);
         });
