@@ -122,8 +122,39 @@ function isSlotFree(masterId, date, startMin, durationMin, nowMs) {
   return freeSlots(masterId, date, durationMin, nowMs).indexOf(startMin) !== -1;
 }
 
+/* Максимальна тривалість (хв), яку можна вписати від startMin у майстра на дату:
+   від startMin до найближчого заблокованого інтервалу або кінця зміни.
+   Використовується, щоб дозволяти додаткові послуги лише якщо вони влазять. */
+function maxDurationFrom(masterId, date, startMin) {
+  if (!tz.isDate(date)) return 0;
+  const override = db.prepare(
+    "SELECT is_off, work_start, work_end FROM master_day_overrides WHERE master_id=? AND date=?"
+  ).get(masterId, date);
+  let workStart, workEnd;
+  if (override) {
+    if (override.is_off) return 0;
+    workStart = override.work_start; workEnd = override.work_end;
+  } else {
+    const weekday = tz.weekdayOf(date);
+    const sched = db.prepare(
+      "SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=?"
+    ).get(masterId, weekday);
+    if (!sched) return 0;
+    workStart = sched.work_start; workEnd = sched.work_end;
+  }
+  if (startMin < workStart || startMin >= workEnd) return 0;
+  let limit = workEnd;
+  const blocked = blockedIntervals(masterId, date);
+  for (const b of blocked) {
+    const bs = b[0], be = b[1];
+    if (bs <= startMin && be > startMin) return 0;   // старт усередині зайнятого інтервалу
+    if (bs > startMin && bs < limit) limit = bs;     // найближчий блок після старту
+  }
+  return Math.max(0, limit - startMin);
+}
+
 module.exports = {
   STEP, LEAD_MIN, BUFFER_MIN,
   computeSlots, blockedIntervals,
-  freeSlots, freeSlotsAny, mastersForService, isSlotFree,
+  freeSlots, freeSlotsAny, mastersForService, isSlotFree, maxDurationFrom,
 };
