@@ -392,15 +392,21 @@
       function daValPct(n, p) {
         return n + (p != null ? ' <span style="font-size:.8rem;color:var(--olive-light);font-weight:600;">(' + p + '%)</span>' : '');
       }
-      var daGrid = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-        daTile('👤', 'Нові клієнти', (da.new_clients || 0), 'за 30 днів') +
-        daTile('🔁', 'Повернулися за 30 днів', daValPct(da.returned_30d || 0, da.returned_30d_pct), '% від усіх клієнтів') +
-        daTile('✅', 'Повернулися взагалі', daValPct(da.returned_ever || 0, da.returned_ever_pct), '% від усіх клієнтів') +
-        daTile('❌', 'Втрачені', (da.lost || 0), 'не були 60+ днів', 'var(--err)') +
-        daTile('⭐', 'Середня оцінка', (da.avg_rating != null ? Number(da.avg_rating).toFixed(2) : '—'), ((da.reviews_count || 0) + ' відгуків')) +
-        daTile('❌', 'Скасування', (da.cancellations_30d || 0), 'за 30 днів', 'var(--err)') +
-        '</div>';
-      main.appendChild(card("2. Детальна аналітика", daGrid));
+      /* Та сама сітка використовується і в картці кожного майстра (розділ 3),
+         тому база для відсотків підписується параметром: у салону це всі
+         клієнти, у майстра — тільки його власні. */
+      function daGridHtml(x, pctBase) {
+        x = x || {};
+        return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+          daTile('👤', 'Нові клієнти', (x.new_clients || 0), 'за 30 днів') +
+          daTile('🔁', 'Повернулися за 30 днів', daValPct(x.returned_30d || 0, x.returned_30d_pct), pctBase) +
+          daTile('✅', 'Повернулися взагалі', daValPct(x.returned_ever || 0, x.returned_ever_pct), pctBase) +
+          daTile('❌', 'Втрачені', (x.lost || 0), 'не були 60+ днів', 'var(--err)') +
+          daTile('⭐', 'Середня оцінка', (x.avg_rating != null ? Number(x.avg_rating).toFixed(2) : '—'), ((x.reviews_count || 0) + ' відгуків')) +
+          daTile('❌', 'Скасування', (x.cancellations_30d || 0), 'за 30 днів', 'var(--err)') +
+          '</div>';
+      }
+      main.appendChild(card("2. Детальна аналітика", daGridHtml(da, '% від усіх клієнтів')));
 
       /* ---- 2. Майстри ----
          Картками, а не таблицею: шість колонок не влазять у 375px і
@@ -431,6 +437,15 @@
             '</div>' +
             '<span style="font-size:.75rem;color:var(--cream);flex-shrink:0;">' + pct + '%</span>' +
           '</div>' +
+          /* Розкривний блок, а не одразу видима сітка: шість плиток × кожен
+             майстер перетворили б дашборд на нескінченну прокрутку. */
+          '<details class="da-more" style="margin-top:10px;">' +
+            '<summary style="cursor:pointer;font-size:.75rem;color:var(--olive-light);">📈 Детальна аналітика <span class="da-caret">▾</span></summary>' +
+            '<div style="margin-top:9px;">' +
+              daGridHtml(m.detailed, '% від клієнтів майстра') +
+              '<div style="font-size:.66rem;color:var(--text-dim);margin-top:7px;">Клієнтів у майстра: ' + ((m.detailed || {}).base_clients || 0) + '</div>' +
+            '</div>' +
+          '</details>' +
         '</div>';
       }).join("");
       main.appendChild(card("3. Майстри (місяць)", mHtml));

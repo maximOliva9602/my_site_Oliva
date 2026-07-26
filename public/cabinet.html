@@ -208,6 +208,14 @@
   @keyframes pushToastIn { from{transform:translateY(80px);opacity:0} to{transform:translateY(0);opacity:1} }
   #push-toast .pt-msg { font-size:.9rem; color:var(--cream); line-height:1.4; }
   #push-toast .pt-btns { display:flex; gap:8px; }
+
+  /* Розкривна детальна аналітика в картці майстра.
+     list-style:none прибирає маркер у Chrome, але в Safari (iOS) трикутник
+     лишається — потрібне саме -webkit-details-marker. */
+  details.da-more > summary { list-style:none; }
+  details.da-more > summary::-webkit-details-marker { display:none; }
+  details.da-more > summary .da-caret { display:inline-block; transition:transform .15s; }
+  details.da-more[open] > summary .da-caret { transform:rotate(180deg); }
 </style>
 </head>
 <body>
@@ -240,7 +248,7 @@
 <!-- MODAL -->
 <div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
-<script src="assets/js/cabinet.js?v=77"></script>
+<script src="assets/js/cabinet.js?v=78"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(){});

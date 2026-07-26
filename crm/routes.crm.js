@@ -827,6 +827,7 @@ router.get("/dashboard", owner, function (req, res) {
   const _d30 = _now - 30 * 24 * 3600 * 1000;
   const _d60 = _now - 60 * 24 * 3600 * 1000;
   const _date30 = new Date(_d30).toISOString().slice(0, 10);
+  const _date60 = new Date(_d60).toISOString().slice(0, 10);
   // База для відсотків повернень — клієнти, що відвідали хоча б раз
   const baseClients = db.prepare(`SELECT COUNT(*) c FROM clients WHERE visit_count >= 1`).get().c;
   const daNew     = db.prepare(`SELECT COUNT(*) c FROM clients WHERE created_at >= ?`).get(_d30).c;
@@ -846,6 +847,55 @@ router.get("/dashboard", owner, function (req, res) {
     cancellations_30d: daCancels,
     base_clients: baseClients,
   };
+
+  /* --- Детальна аналітика в розрізі майстра ---
+     Глобальні числа беруться з clients.visit_count / last_visit_at, але це
+     «клієнт салону». Для майстра ті самі поняття рахуються тільки за його
+     завершеними записами: клієнт може бути повторним у салоні й водночас
+     первинним у конкретного майстра. */
+  const mcRows = db.prepare(
+    `SELECT master_id, client_id, COUNT(*) n, MIN(date) first_date, MAX(date) last_date
+       FROM appointments WHERE status='completed' GROUP BY master_id, client_id`
+  ).all();
+  const mcByMaster = {};
+  mcRows.forEach(function (r) {
+    const acc = mcByMaster[r.master_id] || (mcByMaster[r.master_id] = {
+      base: 0, new_clients: 0, returned_ever: 0, returned_30d: 0, lost: 0,
+    });
+    acc.base++;
+    if (r.first_date >= _date30) acc.new_clients++;
+    if (r.n > 1) {
+      acc.returned_ever++;
+      if (r.last_date >= _date30) acc.returned_30d++;
+      if (r.last_date < _date60) acc.lost++;
+    }
+  });
+  const mRevRows = db.prepare(
+    `SELECT master_id, AVG(rating) avg, COUNT(*) cnt FROM reviews GROUP BY master_id`
+  ).all();
+  const mRevByMaster = {};
+  mRevRows.forEach(function (r) { mRevByMaster[r.master_id] = r; });
+  const mCancelRows = db.prepare(
+    `SELECT master_id, COUNT(*) c FROM appointments
+      WHERE status='cancelled' AND date >= ? GROUP BY master_id`
+  ).all(_date30);
+  const mCancelByMaster = {};
+  mCancelRows.forEach(function (r) { mCancelByMaster[r.master_id] = r.c; });
+
+  masters.forEach(function (m) {
+    const acc = mcByMaster[m.id] || { base: 0, new_clients: 0, returned_ever: 0, returned_30d: 0, lost: 0 };
+    const rev = mRevByMaster[m.id];
+    m.detailed = {
+      new_clients: acc.new_clients,
+      returned_30d: acc.returned_30d, returned_30d_pct: _pct(acc.returned_30d, acc.base),
+      returned_ever: acc.returned_ever, returned_ever_pct: _pct(acc.returned_ever, acc.base),
+      lost: acc.lost,
+      avg_rating: rev && rev.avg != null ? Math.round(rev.avg * 100) / 100 : null,
+      reviews_count: rev ? rev.cnt : 0,
+      cancellations_30d: mCancelByMaster[m.id] || 0,
+      base_clients: acc.base,
+    };
+  });
 
   res.json({
     ok: true,
