@@ -1318,9 +1318,20 @@ router.post("/broadcasts", owner, function (req, res) {
     db.prepare("UPDATE broadcasts SET total=? WHERE id=?").run(queued, id);
   })();
   res.json({ ok: true, id: id, queued: queued, skipped: rows.length - queued });
+  /* Перша порція — одразу, не чекаючи хвилинного тіка планувальника.
+     Далі добиває планувальник. Fire-and-forget після відповіді. */
+  setImmediate(function () {
+    try {
+      require("./notify").flushBroadcasts().catch(function (e) {
+        console.error("[broadcasts] flush:", e.message);
+      });
+    } catch (e) { console.error("[broadcasts] flush:", e.message); }
+  });
 });
 
-/* Історія розсилок зі зведенням по статусах. */
+/* Історія розсилок зі зведенням по статусах.
+   driver — щоб інтерфейс бачив, куди реально йдуть повідомлення:
+   console/telegram означає «на телефони клієнтів не піде нічого». */
 router.get("/broadcasts", owner, function (req, res) {
   const rows = db.prepare("SELECT * FROM broadcasts ORDER BY id DESC LIMIT 30").all();
   const stat = db.prepare(
@@ -1330,7 +1341,7 @@ router.get("/broadcasts", owner, function (req, res) {
     b.stats = {};
     stat.all(b.id).forEach(function (s) { b.stats[s.status] = s.c; });
   });
-  res.json({ ok: true, broadcasts: rows });
+  res.json({ ok: true, broadcasts: rows, driver: require("./notify").DRIVER_NAME });
 });
 
 /* Перемикач «не надсилати розсилки» для клієнта. */

@@ -4648,14 +4648,31 @@
     /* --- Історія --- */
     var histBar = el("div", "bar"); histBar.appendChild(el("h2", null, "Історія розсилок"));
     main.appendChild(histBar);
+    /* Попередження про драйвер: із console/telegram статус стане
+       «надіслано», хоча на телефони клієнтів не піде нічого. Без цього
+       рядка така конфігурація виглядає як «розсилка не працює». */
+    var drvLine = el("div", ""); drvLine.style.cssText = "display:none;margin-bottom:10px;padding:9px 12px;border-radius:10px;background:rgba(224,129,107,.12);border:1px solid rgba(224,129,107,.4);font-size:.78rem;color:var(--err);line-height:1.45;";
+    main.appendChild(drvLine);
     var hist = el("div", ""); main.appendChild(hist);
 
     function loadHistory() {
-      hist.innerHTML = '<div class="empty">Завантаження…</div>';
       api("GET", "/api/crm/broadcasts").then(function (r) {
         var rows = (r.j && r.j.broadcasts) || [];
+        var drv = r.j && r.j.driver;
+        if (drv && drv !== "turbosms") {
+          drvLine.style.display = "block";
+          drvLine.innerHTML = "⚠️ Канал відправки зараз: <b>" + drv + "</b> — повідомлення НЕ йдуть на телефони клієнтів" +
+            (drv === "console" ? " (лише лог сервера)" : drv === "telegram" ? " (лише службовий Telegram-чат студії)" : "") +
+            ". Для реальної відправки задай на сервері NOTIFY_DRIVER=turbosms і TURBOSMS_TOKEN.";
+        } else {
+          drvLine.style.display = "none";
+        }
         hist.innerHTML = "";
         if (!rows.length) { hist.appendChild(el("div", "empty", "Розсилок ще не було")); return; }
+        var hasPending = false;
+        rows.forEach(function (b) {
+          if (b.stats && b.stats.queued) hasPending = true;
+        });
         rows.forEach(function (b) {
           var s = b.stats || {};
           var it = el("div", "item");
@@ -4673,8 +4690,16 @@
             '</div>';
           hist.appendChild(it);
         });
+        /* Поки щось у черзі — оновлюємось самі, щоб «у черзі» на очах
+           перетікало в «надіслано». Зупиняємось, щойно вкладку покинули
+           (main перезаписано) або черга спорожніла. */
+        if (hasPending && document.body.contains(hist)) {
+          clearTimeout(histTimer);
+          histTimer = setTimeout(loadHistory, 5000);
+        }
       });
     }
+    var histTimer = null;
 
     setMode("all");
     loadHistory();
