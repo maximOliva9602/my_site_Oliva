@@ -1952,6 +1952,13 @@
       '<details id="mSlotsBox" class="da-more" open style="margin-top:10px;">' +
         '<summary id="mSlotsSummary" style="cursor:pointer;font-size:.78rem;color:var(--text-dim);margin:10px 0 5px;">Вільний час <span class="da-caret">▾</span></summary>' +
         '<div id="mSlots" class="muted">Оберіть послугу, майстра й дату</div>' +
+        /* Ручний час: у перерву чи поза графіком вільних віконець немає, а
+           персоналу інколи треба поставити клієнта саме туди. */
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:10px;">' +
+          '<input type="time" id="mCustomTime" step="300" style="flex:1;margin:0;" />' +
+          '<button type="button" id="mCustomTimeBtn" class="btn btn-ghost" style="white-space:nowrap;padding:8px 12px;font-size:.82rem;">Свій час</button>' +
+        '</div>' +
+        '<div style="font-size:.68rem;color:var(--text-dim);margin-top:4px;">Для запису в перерву або поза графіком майстра</div>' +
       '</details>' +
 
       '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
@@ -2304,11 +2311,35 @@
         (manual ? ' <span style="font-weight:500;color:var(--warn);">· поза вільними віконцями</span>' : "");
     }
 
+    /* Старти, які сервер віддав як вільні, — щоб зрозуміти, чи введений
+       вручну час є звичайним віконцем, чи перерва/поза графіком. */
+    var freeStarts = [];
+
+    /* Ручний час: працює незалежно від того, як відкрили модалку, тому
+       запис у перерву можна зробити і через «+ Новий запис», а не лише
+       кліком по клітинці календаря. */
+    $("mCustomTimeBtn").addEventListener("click", function () {
+      var err = $("mErr");
+      var m = /^(\d{1,2}):(\d{2})$/.exec(($("mCustomTime").value || "").trim());
+      if (!m) { err.textContent = "Вкажіть час у форматі ГГ:ХВ"; return; }
+      var min = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      if (!(min >= 0 && min < 24 * 60)) { err.textContent = "Некоректний час"; return; }
+      err.textContent = "";
+      chosen.start_min = min;
+      var free = freeStarts.indexOf(min) !== -1;
+      $("mSlots").querySelectorAll(".slot").forEach(function (x) {
+        x.classList.toggle("sel", free && x.textContent === fmtMin(min));
+      });
+      showChosenTime(min, !free);
+      syncSlotsBox();
+    });
+
     function loadSlots() {
       /* Скидаємо і підпис теж: без цього після зміни дати/майстра лишався
          старий «⏰ Час: …», хоча вибір уже злетів, і збереження вимагало
          обрати час, який нібито вже стоїть. */
       chosen.start_min = null;
+      freeStarts = [];
       showChosenTime(null);
       var sid = $("mService").value, mid = $("mMaster").value, date = $("mDate").value;
       if (!sid || !mid || !date) return;
@@ -2322,6 +2353,7 @@
       if (totalDur > 0) slotsUrl += "&duration=" + totalDur;
       api("GET", slotsUrl).then(function (res) {
         var slots = res.j.slots || [];
+        freeStarts = slots.map(function (s) { return s.start_min; });
         box.innerHTML = "";
         if (!slots.length) {
           box.className = "muted"; box.textContent = "Вільних віконець немає";
