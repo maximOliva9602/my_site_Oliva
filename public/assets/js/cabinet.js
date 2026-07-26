@@ -4659,11 +4659,13 @@
       api("GET", "/api/crm/broadcasts").then(function (r) {
         var rows = (r.j && r.j.broadcasts) || [];
         var drv = r.j && r.j.driver;
-        if (drv && drv !== "turbosms") {
+        /* Попереджаємо лише про console/telegram — вони «ковтають»
+           повідомлення. turbosms і alphasms — реальні SMS-канали. */
+        if (drv === "console" || drv === "telegram") {
           drvLine.style.display = "block";
           drvLine.innerHTML = "⚠️ Канал відправки зараз: <b>" + drv + "</b> — повідомлення НЕ йдуть на телефони клієнтів" +
-            (drv === "console" ? " (лише лог сервера)" : drv === "telegram" ? " (лише службовий Telegram-чат студії)" : "") +
-            ". Для реальної відправки задай на сервері NOTIFY_DRIVER=turbosms і TURBOSMS_TOKEN.";
+            (drv === "console" ? " (лише лог сервера)" : " (лише службовий Telegram-чат студії)") +
+            ". Для реальної відправки задай на сервері NOTIFY_DRIVER=alphasms і ALPHASMS_KEY (або turbosms + TURBOSMS_TOKEN).";
         } else {
           drvLine.style.display = "none";
         }
