@@ -855,8 +855,11 @@
             swipePreview.style.transform = "translateX(" + (dx < 0 ? sw2 : -sw2) + "px)";
             return;
           }
+          /* Стаємо на понеділок тижня, на який перекинулись, а не зсуваємо
+             дату на ±7 днів: інакше після свайпу з неділі відкривалась знову
+             неділя, тобто кінець нового тижня замість його початку. */
           var delta2 = dx < 0 ? 7 : -7;
-          var d2 = new Date(apptDate + "T00:00:00"); d2.setDate(d2.getDate() + delta2);
+          var d2 = new Date(weekStart); d2.setDate(weekStart.getDate() + delta2);
           apptDate = d2.getFullYear() + "-" + String(d2.getMonth()+1).padStart(2,"0") + "-" + String(d2.getDate()).padStart(2,"0");
           apptMonth = apptDate.slice(0,7);
           loadCalendar(activeMasterFilter);
