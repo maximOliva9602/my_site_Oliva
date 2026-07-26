@@ -4687,7 +4687,22 @@
               (s.delivered ? ' · <span style="color:var(--ok);">доставлено ' + s.delivered + '</span>' : "") +
               (s.undelivered ? ' · <span style="color:var(--warn);">не доставлено ' + s.undelivered + '</span>' : "") +
               (s.failed ? ' · <span style="color:var(--err);">помилка ' + s.failed + '</span>' : "") +
-            '</div>';
+            '</div>' +
+            /* Текст відмови провайдера: саме він каже, ЩО лагодити
+               (токен, непогоджений відправник, баланс). */
+            ((b.errors && b.errors.length)
+              ? '<div style="margin-top:6px;font-size:.72rem;color:var(--err);word-break:break-all;line-height:1.4;">' +
+                  b.errors.map(function (e) { return "↳ " + e; }).join("<br>") + '</div>'
+              : "");
+          if (s.failed) {
+            var retryBtn = el("button", "btn btn-ghost btn-sm", "🔄 Повторити невдалі");
+            retryBtn.style.marginTop = "8px";
+            retryBtn.addEventListener("click", function () {
+              retryBtn.disabled = true; retryBtn.textContent = "Ставимо в чергу…";
+              api("POST", "/api/crm/broadcasts/" + b.id + "/retry").then(function () { loadHistory(); });
+            });
+            it.appendChild(retryBtn);
+          }
           hist.appendChild(it);
         });
         /* Поки щось у черзі — оновлюємось самі, щоб «у черзі» на очах

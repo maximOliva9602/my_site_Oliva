@@ -1337,11 +1337,33 @@ router.get("/broadcasts", owner, function (req, res) {
   const stat = db.prepare(
     `SELECT status, COUNT(*) c FROM broadcast_messages WHERE broadcast_id=? GROUP BY status`
   );
+  const errQ = db.prepare(
+    `SELECT error, COUNT(*) c FROM broadcast_messages
+      WHERE broadcast_id=? AND error IS NOT NULL GROUP BY error ORDER BY c DESC LIMIT 2`
+  );
   rows.forEach(function (b) {
     b.stats = {};
     stat.all(b.id).forEach(function (s) { b.stats[s.status] = s.c; });
+    /* Текст помилки від провайдера — без нього «помилка 1» ні про що:
+       не видно, чи це токен, чи непогоджений відправник, чи баланс. */
+    b.errors = errQ.all(b.id).map(function (e) { return e.error + (e.c > 1 ? " (×" + e.c + ")" : ""); });
   });
   res.json({ ok: true, broadcasts: rows, driver: require("./notify").DRIVER_NAME });
+});
+
+/* Повторити невдалі повідомлення розсилки (після виправлення токена,
+   відправника чи поповнення балансу). */
+router.post("/broadcasts/:id/retry", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const info = db.prepare(
+    "UPDATE broadcast_messages SET status='queued', error=NULL WHERE broadcast_id=? AND status='failed'"
+  ).run(id);
+  res.json({ ok: true, requeued: info.changes });
+  if (info.changes) setImmediate(function () {
+    try {
+      require("./notify").flushBroadcasts().catch(function (e) { console.error("[broadcasts] retry flush:", e.message); });
+    } catch (e) { console.error("[broadcasts] retry flush:", e.message); }
+  });
 });
 
 /* Перемикач «не надсилати розсилки» для клієнта. */
