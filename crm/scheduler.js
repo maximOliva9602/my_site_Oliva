@@ -54,6 +54,7 @@ async function tick() {
     const now = Date.now();
     queueDueReminders(now);
     await notify.flushQueued();
+    await notify.flushBroadcasts();
     if (now - lastPoll > 5 * 60 * 1000) { // опитування статусів ~раз на 5 хв
       lastPoll = now;
       await notify.pollStatuses();

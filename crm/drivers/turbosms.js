@@ -27,11 +27,14 @@ module.exports = {
   name: "turbosms",
   async sendMessage(opts) {
     if (!TOKEN) throw new Error("TURBOSMS_TOKEN не задано");
-    // Каскад: спершу Viber, фолбек на SMS у тому ж запиті
+    // Каскад: спершу Viber, фолбек на SMS у тому ж запиті.
+    // is_transactional=false для масових розсилок: рекламу не можна слати
+    // як службове повідомлення, у Viber це різні тарифи й правила.
+    const transactional = opts.transactional !== false;
     const body = {
       recipients: [opts.phone],
       sms: { sender: SMS_SENDER, text: opts.text },
-      viber: { sender: VIBER_SENDER, text: opts.text, is_transactional: true },
+      viber: { sender: VIBER_SENDER, text: opts.text, is_transactional: transactional },
     };
     const res = await fetch(API + "/message/send.json", {
       method: "POST",

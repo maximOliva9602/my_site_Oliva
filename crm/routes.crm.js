@@ -1212,6 +1212,87 @@ router.delete("/subscriptions/:id", owner, function (req, res) {
   res.json({ ok: true });
 });
 
+/* ---- Масові розсилки ---------------------------------------------
+   Відправка не миттєва: складаємо чергу, а розсилає планувальник
+   порціями (notify.flushBroadcasts). Так довгий список не блокує
+   запит і не б'є по провайдеру залпом. */
+
+const BROADCAST_MAX_LEN = 500;
+
+/* Отримувачі: клієнти з телефоном, без відмови від розсилок і не в
+   чорному списку. Дублікати за нормалізованим номером прибирає UNIQUE
+   у broadcast_messages. */
+function broadcastRecipients(all, clientIds) {
+  let rows;
+  if (all) {
+    rows = db.prepare(
+      "SELECT id, name, phone FROM clients WHERE phone IS NOT NULL AND phone <> '' AND no_marketing=0 AND blacklisted=0 ORDER BY id"
+    ).all();
+  } else {
+    const ids = (clientIds || []).map(function (x) { return parseInt(x, 10); }).filter(Boolean);
+    if (!ids.length) return [];
+    rows = db.prepare(
+      `SELECT id, name, phone FROM clients
+        WHERE id IN (${ids.map(function () { return "?"; }).join(",")})
+          AND phone IS NOT NULL AND phone <> '' AND no_marketing=0 AND blacklisted=0`
+    ).all(...ids);
+  }
+  return rows;
+}
+
+/* Скільки отримає повідомлення — щоб показати число до відправки. */
+router.post("/broadcasts/preview", owner, function (req, res) {
+  const b = req.body || {};
+  const rows = broadcastRecipients(!!b.all, b.client_ids);
+  const phones = new Set(rows.map(function (r) { return tz.normPhone(r.phone); }));
+  res.json({ ok: true, recipients: phones.size });
+});
+
+router.post("/broadcasts", owner, function (req, res) {
+  const b = req.body || {};
+  const text = clean(b.text, BROADCAST_MAX_LEN);
+  if (!text) return res.status(400).json({ ok: false, error: "empty text" });
+  const rows = broadcastRecipients(!!b.all, b.client_ids);
+  if (!rows.length) return res.status(400).json({ ok: false, error: "no recipients" });
+
+  const now = Date.now();
+  let id, queued = 0;
+  db.transaction(function () {
+    id = db.prepare("INSERT INTO broadcasts (text,total,created_at) VALUES (?,0,?)").run(text, now).lastInsertRowid;
+    const ins = db.prepare(
+      "INSERT OR IGNORE INTO broadcast_messages (broadcast_id,client_id,phone,status,created_at) VALUES (?,?,?, 'queued', ?)"
+    );
+    for (const r of rows) {
+      const phone = tz.normPhone(r.phone);
+      if (!phone || phone.length < 7) continue;
+      if (ins.run(id, r.id, phone, now).changes) queued++;
+    }
+    db.prepare("UPDATE broadcasts SET total=? WHERE id=?").run(queued, id);
+  })();
+  res.json({ ok: true, id: id, queued: queued, skipped: rows.length - queued });
+});
+
+/* Історія розсилок зі зведенням по статусах. */
+router.get("/broadcasts", owner, function (req, res) {
+  const rows = db.prepare("SELECT * FROM broadcasts ORDER BY id DESC LIMIT 30").all();
+  const stat = db.prepare(
+    `SELECT status, COUNT(*) c FROM broadcast_messages WHERE broadcast_id=? GROUP BY status`
+  );
+  rows.forEach(function (b) {
+    b.stats = {};
+    stat.all(b.id).forEach(function (s) { b.stats[s.status] = s.c; });
+  });
+  res.json({ ok: true, broadcasts: rows });
+});
+
+/* Перемикач «не надсилати розсилки» для клієнта. */
+router.patch("/clients/:id/no-marketing", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const v = (req.body && req.body.no_marketing) ? 1 : 0;
+  db.prepare("UPDATE clients SET no_marketing=? WHERE id=?").run(v, id);
+  res.json({ ok: true, no_marketing: v });
+});
+
 /* ---- Відгуки ---- */
 router.get("/reviews", owner, function (req, res) {
   const rows = db.prepare(

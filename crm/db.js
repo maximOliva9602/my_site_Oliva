@@ -306,6 +306,40 @@ try { db.exec("ALTER TABLE clients ADD COLUMN blacklisted INTEGER NOT NULL DEFAU
 try { db.exec("ALTER TABLE masters ADD COLUMN branch_id INTEGER REFERENCES branches(id)"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN can_see_phones INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN experience_years INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+/* Відмова від масових розсилок. Нагадувань про запис не стосується —
+   ті транзакційні й надсилаються завжди. */
+try { db.exec("ALTER TABLE clients ADD COLUMN no_marketing INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+
+/* ---------------- Масові розсилки ---------------- */
+db.exec(`
+CREATE TABLE IF NOT EXISTS broadcasts (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  text       TEXT    NOT NULL,
+  total      INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS broadcast_messages (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  broadcast_id INTEGER NOT NULL,
+  client_id    INTEGER,
+  phone        TEXT    NOT NULL,
+  status       TEXT    NOT NULL DEFAULT 'queued', -- queued|sent|delivered|undelivered|failed
+  provider     TEXT,
+  provider_msg_id TEXT,
+  final_channel TEXT,
+  error        TEXT,
+  created_at   INTEGER NOT NULL,
+  sent_at      INTEGER,
+  status_at    INTEGER,
+  -- один номер не отримує ту саму розсилку двічі, навіть якщо в базі
+  -- два записи клієнта з однаковим телефоном
+  UNIQUE (broadcast_id, phone),
+  FOREIGN KEY (broadcast_id) REFERENCES broadcasts(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_bmsg_status   ON broadcast_messages(status);
+CREATE INDEX IF NOT EXISTS idx_bmsg_provider ON broadcast_messages(provider_msg_id);
+`);
 
 /* Разові блокування часу в календарі */
 db.exec(`

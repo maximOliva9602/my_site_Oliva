@@ -211,11 +211,12 @@
       TABS.push({ id: "masters",   name: "Майстри",     render: renderMasters });
       TABS.push({ id: "users",     name: "Доступи",     render: renderUsers });
       TABS.push({ id: "notif",     name: "Сповіщення",  render: renderNotif });
+      TABS.push({ id: "broadcast", name: "📣 Розсилка", render: renderBroadcast });
       TABS.push({ id: "filiyi",    name: "🏢 Філії",    render: renderBranchesTab });
     }
     /* ── Іконки і короткі назви для мобільного nav ── */
-    var TAB_ICOS  = { dashboard:"📊", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", filiyi:"🏢" };
-    var TAB_SHORT = { dashboard:"Дашборд", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", filiyi:"Філії" };
+    var TAB_ICOS  = { dashboard:"📊", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", broadcast:"📣", filiyi:"🏢" };
+    var TAB_SHORT = { dashboard:"Дашборд", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії" };
     var BOTTOM_COUNT = Math.min(4, TABS.length);
     var hasDrawer    = TABS.length > BOTTOM_COUNT;
 
@@ -2985,6 +2986,9 @@
           '<div style="padding:10px 16px 8px;font-size:.72rem;color:var(--text-dim);font-weight:500;border-bottom:1px solid var(--line);">Додаткові дії</div>' +
           '<button id="cc-edit"   style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;cursor:pointer;border-bottom:1px solid var(--line);">Редагувати</button>' +
           '<button id="cc-black"  style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;cursor:pointer;border-bottom:1px solid var(--line);">' + (c.blacklisted ? 'Прибрати з чорного списку' : 'Додати до чорного списку') + '</button>' +
+          /* Відмова від розсилок — окремо від чорного списку: клієнт може
+             й далі ходити, просто не хоче рекламних повідомлень. */
+          (ME.role === "owner" ? '<button id="cc-nomark" style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;cursor:pointer;border-bottom:1px solid var(--line);">' + (c.no_marketing ? 'Дозволити розсилки' : 'Не надсилати розсилки') + '</button>' : '') +
           (ME.role === "owner" ? '<button id="cc-del" style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;color:#c04040;cursor:pointer;">Видалити</button>' : '');
         document.body.appendChild(ctx);
 
@@ -3014,6 +3018,14 @@
           closeCtx();
           api("PATCH", "/api/crm/clients/" + id, { blacklisted: c.blacklisted ? 0 : 1 }).then(function() { renderClientCard(id); });
         });
+
+        if (document.getElementById("cc-nomark")) {
+          document.getElementById("cc-nomark").addEventListener("click", function() {
+            closeCtx();
+            api("PATCH", "/api/crm/clients/" + id + "/no-marketing", { no_marketing: c.no_marketing ? 0 : 1 })
+              .then(function() { renderClientCard(id); });
+          });
+        }
 
         if (ME.role === "owner") {
           document.getElementById("cc-del").addEventListener("click", function() {
@@ -4430,6 +4442,196 @@
   /* ============================================================
      СПОВІЩЕННЯ (журнал)
      ============================================================ */
+  /* ── Масова розсилка (тільки власник) ────────────────────────────
+     Надсилає той самий драйвер, що й нагадування: Viber із фолбеком на
+     SMS. Відправка не миттєва — запит лише ставить у чергу, розсилає
+     планувальник порціями, тому великий список не вішає інтерфейс. */
+  function renderBroadcast() {
+    var main = $("main"); main.innerHTML = "";
+    var bar = el("div", "bar"); bar.appendChild(el("h2", null, "📣 Масова розсилка"));
+    main.appendChild(bar);
+
+    var mode = "all";               // all | selected
+    var selected = {};              // client_id -> true
+    var allClients = [];
+
+    /* --- Текст --- */
+    var card = el("div", "item"); card.style.marginBottom = "16px";
+    card.appendChild(el("div", "t", "Текст повідомлення"));
+    var ta = document.createElement("textarea");
+    ta.maxLength = 500; ta.rows = 5;
+    ta.placeholder = "Напр.: Вітаємо! У серпні знижка 15% на масаж спини. Записатися: massage-solomyanskyi.com.ua";
+    ta.style.cssText = "width:100%;margin-top:8px;";
+    card.appendChild(ta);
+    var counter = el("div", "sub"); counter.style.marginTop = "4px";
+    card.appendChild(counter);
+    function updCounter() {
+      var n = ta.value.length;
+      /* Кирилиця в SMS — 70 символів на частину, і кожна частина
+         тарифікується окремо. Показуємо, щоб текст не коштував утричі. */
+      var parts = n === 0 ? 0 : (n <= 70 ? 1 : Math.ceil(n / 67));
+      counter.textContent = n + " символів · " + parts + " SMS-частин" + (parts > 1 ? " (дорожче)" : "");
+      counter.style.color = parts > 1 ? "var(--warn)" : "var(--text-dim)";
+    }
+    ta.addEventListener("input", updCounter); updCounter();
+    main.appendChild(card);
+
+    /* --- Кому --- */
+    var whoCard = el("div", "item"); whoCard.style.marginBottom = "16px";
+    whoCard.appendChild(el("div", "t", "Кому надіслати"));
+    var modeRow = el("div", "acts"); modeRow.style.margin = "8px 0";
+    var bAll = el("button", "btn btn-primary btn-sm", "Усім клієнтам");
+    var bSel = el("button", "btn btn-ghost btn-sm", "Обрати вручну");
+    modeRow.appendChild(bAll); modeRow.appendChild(bSel);
+    whoCard.appendChild(modeRow);
+
+    var listWrap = el("div", ""); listWrap.style.display = "none";
+    var search = document.createElement("input");
+    search.type = "search"; search.placeholder = "Пошук за іменем або телефоном…";
+    search.style.cssText = "width:100%;margin-bottom:8px;";
+    listWrap.appendChild(search);
+    var list = el("div", ""); list.style.cssText = "max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;";
+    listWrap.appendChild(list);
+    whoCard.appendChild(listWrap);
+
+    var cntLine = el("div", "sub"); cntLine.style.marginTop = "8px";
+    whoCard.appendChild(cntLine);
+    main.appendChild(whoCard);
+
+    function setMode(m) {
+      mode = m;
+      bAll.className = "btn btn-sm " + (m === "all" ? "btn-primary" : "btn-ghost");
+      bSel.className = "btn btn-sm " + (m === "selected" ? "btn-primary" : "btn-ghost");
+      listWrap.style.display = m === "selected" ? "block" : "none";
+      refreshCount();
+    }
+    bAll.addEventListener("click", function () { setMode("all"); });
+    bSel.addEventListener("click", function () { setMode("selected"); if (!allClients.length) loadClients(""); });
+
+    function renderList(q) {
+      list.innerHTML = "";
+      var rows = allClients.filter(function (c) {
+        if (!q) return true;
+        var s = (c.name || "") + " " + (c.phone || "");
+        return s.toLowerCase().indexOf(q.toLowerCase()) > -1;
+      });
+      if (!rows.length) { list.appendChild(el("div", "empty", "Нікого не знайдено")); return; }
+      rows.forEach(function (c) {
+        var row = el("div", ""); row.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);";
+        var cb = document.createElement("input"); cb.type = "checkbox"; cb.style.cssText = "width:18px;height:18px;flex-shrink:0;";
+        cb.checked = !!selected[c.id];
+        /* Клієнтів без телефону або з відмовою від розсилок обрати не можна —
+           інакше в підсумку буде число, яке сервер однаково відкине. */
+        var blocked = !c.phone || c.no_marketing || c.blacklisted;
+        cb.disabled = blocked;
+        cb.addEventListener("change", function () {
+          if (cb.checked) selected[c.id] = true; else delete selected[c.id];
+          refreshCount();
+        });
+        row.appendChild(cb);
+        var info = el("div", ""); info.style.cssText = "flex:1;min-width:0;";
+        info.innerHTML = '<div style="font-size:.88rem;color:var(--cream);font-weight:600;">' + (c.name || "—") + '</div>' +
+          '<div style="font-size:.74rem;color:var(--text-dim);">' + (c.phone || "без телефону") +
+          (c.no_marketing ? ' · <span style="color:var(--warn);">відмовився від розсилок</span>' : "") +
+          (c.blacklisted ? ' · <span style="color:var(--err);">чорний список</span>' : "") + '</div>';
+        row.appendChild(info);
+        list.appendChild(row);
+      });
+    }
+
+    function loadClients(q) {
+      list.innerHTML = '<div class="empty">Завантаження…</div>';
+      api("GET", "/api/crm/clients" + (q ? "?q=" + encodeURIComponent(q) : "")).then(function (r) {
+        allClients = (r.j && r.j.clients) || [];
+        renderList("");
+      });
+    }
+    var searchTimer = null;
+    search.addEventListener("input", function () {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () { renderList(search.value.trim()); }, 200);
+    });
+
+    /* Кількість отримувачів рахує сервер — саме він відсіює дублі номерів
+       і відмови, тож показане число дорівнює тому, що реально піде. */
+    function refreshCount() {
+      var body = mode === "all" ? { all: true } : { client_ids: Object.keys(selected) };
+      if (mode === "selected" && !Object.keys(selected).length) {
+        cntLine.textContent = "Нікого не обрано";
+        cntLine.style.color = "var(--text-dim)";
+        return;
+      }
+      api("POST", "/api/crm/broadcasts/preview", body).then(function (r) {
+        var n = (r.j && r.j.recipients) || 0;
+        cntLine.textContent = "Отримають повідомлення: " + n;
+        cntLine.style.color = n ? "var(--olive-light)" : "var(--err)";
+      });
+    }
+
+    /* --- Відправка --- */
+    var sendCard = el("div", "item"); sendCard.style.marginBottom = "16px";
+    var sendErr = el("div", "sub"); sendErr.style.cssText = "margin-bottom:8px;color:var(--err);";
+    sendCard.appendChild(sendErr);
+    var sendBtn = el("button", "btn btn-primary", "📣 Надіслати розсилку");
+    sendBtn.addEventListener("click", function () {
+      sendErr.textContent = "";
+      var text = ta.value.trim();
+      if (!text) { sendErr.textContent = "Введіть текст повідомлення"; return; }
+      var body = mode === "all" ? { all: true, text: text } : { client_ids: Object.keys(selected), text: text };
+      if (mode === "selected" && !body.client_ids.length) { sendErr.textContent = "Оберіть отримувачів"; return; }
+      /* Розсилку не відкотиш, тому підтверджуємо з реальним числом. */
+      api("POST", "/api/crm/broadcasts/preview", body).then(function (p) {
+        var n = (p.j && p.j.recipients) || 0;
+        if (!n) { sendErr.textContent = "Немає кому надсилати"; return; }
+        if (!confirm("Надіслати повідомлення " + n + " клієнтам? Скасувати відправку буде неможливо.")) return;
+        sendBtn.disabled = true; sendBtn.textContent = "Ставимо в чергу…";
+        api("POST", "/api/crm/broadcasts", body).then(function (r) {
+          sendBtn.disabled = false; sendBtn.textContent = "📣 Надіслати розсилку";
+          if (!r.j.ok) { sendErr.textContent = "Помилка: " + (r.j.error || ""); return; }
+          ta.value = ""; updCounter(); selected = {}; setMode("all");
+          alert("У черзі " + r.j.queued + " повідомлень. Надсилаються порціями — статус видно нижче.");
+          loadHistory();
+        });
+      });
+    });
+    sendCard.appendChild(sendBtn);
+    main.appendChild(sendCard);
+
+    /* --- Історія --- */
+    var histBar = el("div", "bar"); histBar.appendChild(el("h2", null, "Історія розсилок"));
+    main.appendChild(histBar);
+    var hist = el("div", ""); main.appendChild(hist);
+
+    function loadHistory() {
+      hist.innerHTML = '<div class="empty">Завантаження…</div>';
+      api("GET", "/api/crm/broadcasts").then(function (r) {
+        var rows = (r.j && r.j.broadcasts) || [];
+        hist.innerHTML = "";
+        if (!rows.length) { hist.appendChild(el("div", "empty", "Розсилок ще не було")); return; }
+        rows.forEach(function (b) {
+          var s = b.stats || {};
+          var it = el("div", "item");
+          var when = new Date(b.created_at);
+          it.innerHTML =
+            '<div class="t">' + (b.text.length > 90 ? b.text.slice(0, 90) + "…" : b.text) + '</div>' +
+            '<div class="sub" style="margin-top:5px;">' +
+              when.toLocaleDateString("uk-UA") + " " + when.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }) +
+              " · всього " + b.total +
+              (s.queued ? ' · <span style="color:var(--text-dim);">у черзі ' + s.queued + '</span>' : "") +
+              (s.sent ? ' · <span style="color:var(--olive-light);">надіслано ' + s.sent + '</span>' : "") +
+              (s.delivered ? ' · <span style="color:var(--ok);">доставлено ' + s.delivered + '</span>' : "") +
+              (s.undelivered ? ' · <span style="color:var(--warn);">не доставлено ' + s.undelivered + '</span>' : "") +
+              (s.failed ? ' · <span style="color:var(--err);">помилка ' + s.failed + '</span>' : "") +
+            '</div>';
+          hist.appendChild(it);
+        });
+      });
+    }
+
+    setMode("all");
+    loadHistory();
+  }
+
   function renderNotif() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Журнал сповіщень"));

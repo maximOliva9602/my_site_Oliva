@@ -90,22 +90,57 @@ async function flushQueued() {
   return rows.length;
 }
 
+/* Масова розсилка: надсилає порцію queued-повідомлень.
+   Ліміт на тік свідомо невеликий — провайдер не любить залпи, та й при
+   помилці ми не спалимо всю базу номерів однією ітерацією. */
+const BROADCAST_PER_TICK = parseInt(process.env.BROADCAST_PER_TICK || "20", 10);
+
+async function flushBroadcasts() {
+  const rows = db.prepare(
+    "SELECT * FROM broadcast_messages WHERE status='queued' ORDER BY id LIMIT ?"
+  ).all(BROADCAST_PER_TICK);
+  for (const m of rows) {
+    const text = db.prepare("SELECT text FROM broadcasts WHERE id=?").get(m.broadcast_id);
+    if (!text) { db.prepare("UPDATE broadcast_messages SET status='failed', error=? WHERE id=?").run("no broadcast", m.id); continue; }
+    try {
+      const r = await driver.sendMessage({ phone: m.phone, text: text.text, transactional: false });
+      db.prepare(
+        "UPDATE broadcast_messages SET status='sent', provider=?, provider_msg_id=?, final_channel=?, sent_at=? WHERE id=?"
+      ).run(driver.name, r.providerMsgId, r.channel || null, Date.now(), m.id);
+    } catch (e) {
+      console.error(`[notify] розсилка #${m.id}:`, e.message);
+      db.prepare("UPDATE broadcast_messages SET status='failed', error=? WHERE id=?").run(String(e.message).slice(0, 300), m.id);
+    }
+  }
+  return rows.length;
+}
+
 /* Записати статус від вебхука/опитування за provider_msg_id. */
 function recordStatus(providerMsgId, status, channel) {
   if (!providerMsgId) return false;
   const allowed = ["sent", "delivered", "undelivered", "failed"];
   if (allowed.indexOf(status) === -1) return false;
+  const now = Date.now();
   const info = db.prepare(
     "UPDATE notifications SET status=?, final_channel=COALESCE(?, final_channel), status_at=? WHERE provider_msg_id=?"
-  ).run(status, channel || null, Date.now(), String(providerMsgId));
-  return info.changes > 0;
+  ).run(status, channel || null, now, String(providerMsgId));
+  // Той самий вебхук обслуговує й розсилки — id повідомлень від провайдера спільні
+  const info2 = db.prepare(
+    "UPDATE broadcast_messages SET status=?, final_channel=COALESCE(?, final_channel), status_at=? WHERE provider_msg_id=?"
+  ).run(status, channel || null, now, String(providerMsgId));
+  return info.changes > 0 || info2.changes > 0;
 }
 
 /* Опитати фінальний статус для відправлених без статусу (фолбек до вебхука). */
 async function pollStatuses() {
   if (typeof driver.pollStatus !== "function") return 0;
   const rows = db.prepare(
-    "SELECT provider_msg_id FROM notifications WHERE status='sent' AND status_at IS NULL AND provider_msg_id IS NOT NULL LIMIT 100"
+    `SELECT provider_msg_id FROM notifications
+      WHERE status='sent' AND status_at IS NULL AND provider_msg_id IS NOT NULL
+     UNION
+     SELECT provider_msg_id FROM broadcast_messages
+      WHERE status='sent' AND status_at IS NULL AND provider_msg_id IS NOT NULL
+     LIMIT 100`
   ).all();
   if (!rows.length) return 0;
   const ids = rows.map(function (r) { return r.provider_msg_id; });
@@ -128,5 +163,5 @@ async function sendDirect(phone, text) {
 module.exports = {
   driver, DRIVER_NAME, STUDIO_ADDRESS,
   apptView, renderTemplate, queueNotification,
-  flushQueued, recordStatus, pollStatuses, sendDirect,
+  flushQueued, flushBroadcasts, recordStatus, pollStatuses, sendDirect,
 };
