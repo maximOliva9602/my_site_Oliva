@@ -45,9 +45,24 @@ function viewAppt(a) {
   // Абонемент клієнта за цією послугою (для позначки «по абонементу» + лічильника в календарі)
   try {
     const sub = db.prepare(
-      "SELECT used_sessions, total_sessions FROM subscriptions WHERE client_id=? AND service_id=? ORDER BY (used_sessions < total_sessions) DESC, id DESC LIMIT 1"
+      "SELECT used_sessions, total_sessions, created_at FROM subscriptions WHERE client_id=? AND service_id=? ORDER BY (used_sessions < total_sessions) DESC, id DESC LIMIT 1"
     ).get(a.client_id, a.service_id);
-    if (sub) { out.sub_used = sub.used_sessions; out.sub_total = sub.total_sessions; }
+    if (sub) {
+      out.sub_used = sub.used_sessions;
+      out.sub_total = sub.total_sessions;
+      /* Порядковий номер саме цього візиту в абонементі. Сам used_sessions
+         росте лише коли запис позначають «виконано», тому на картках усіх
+         майбутніх візитів світилося б однакове число — виглядало як «не
+         рахується». Рахуємо позицію запису серед візитів клієнта за цією
+         послугою, починаючи з дня купівлі абонемента (минулі візити до
+         покупки не враховуємо). */
+      const subDate = tz.nowKyiv(undefined, sub.created_at).date;
+      out.sub_index = db.prepare(
+        `SELECT COUNT(*) c FROM appointments
+          WHERE client_id=? AND service_id=? AND status<>'cancelled' AND date>=?
+            AND (date < ? OR (date = ? AND start_min <= ?))`
+      ).get(a.client_id, a.service_id, subDate, a.date, a.date, a.start_min).c;
+    }
   } catch (e) { /* абонементів може не бути */ }
   return out;
 }
