@@ -8,10 +8,15 @@
      TURBOSMS_TOKEN        — Bearer-токен з кабінету
      TURBOSMS_SENDER       — зареєстроване Alpha-ім'я для SMS (напр. "Oliva")
      TURBOSMS_VIBER_SENDER — зареєстроване ім'я Viber-відправника
+     TURBOSMS_CHANNELS     — "viber_sms" (за замовчуванням) або "sms".
+       "sms" шле чистими SMS без Viber-частини: комерційний
+       Viber-відправник коштує від ~10 000 грн/міс мінімального пакета,
+       а SMS тарифікується поштучно без жодних пакетів.
 */
 const TOKEN = process.env.TURBOSMS_TOKEN || "";
 const SMS_SENDER = process.env.TURBOSMS_SENDER || "Oliva";
 const VIBER_SENDER = process.env.TURBOSMS_VIBER_SENDER || SMS_SENDER;
+const CHANNELS = (process.env.TURBOSMS_CHANNELS || "viber_sms").toLowerCase();
 const API = "https://api.turbosms.ua";
 
 function mapStatus(s) {
@@ -34,8 +39,12 @@ module.exports = {
     const body = {
       recipients: [opts.phone],
       sms: { sender: SMS_SENDER, text: opts.text },
-      viber: { sender: VIBER_SENDER, text: opts.text, is_transactional: transactional },
     };
+    // Без Viber-відправника (TURBOSMS_CHANNELS=sms) viber-частину не
+    // додаємо взагалі — інакше API відхиляє весь запит разом зі своєю SMS.
+    if (CHANNELS !== "sms") {
+      body.viber = { sender: VIBER_SENDER, text: opts.text, is_transactional: transactional };
+    }
     const res = await fetch(API + "/message/send.json", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + TOKEN },
