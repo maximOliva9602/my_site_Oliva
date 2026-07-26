@@ -1038,7 +1038,12 @@
           ctx.innerHTML =
             '<div style="font-size:.68rem;color:#888;padding:4px 8px 6px;border-bottom:1px solid #eee;font-weight:500;">' +
             fmtMin(absMin) + ' · ' + (master.name || '') + '</div>' +
-            (!unavail ? '<button id="ctx-appt" style="display:block;width:100%;text-align:left;background:none;border:none;padding:10px 10px;font-size:.9rem;cursor:pointer;border-radius:6px;">📅 Новий запис</button>' : '') +
+            /* Запис у перерву / поза графіком дозволений: персонал інколи
+               мусить втиснути клієнта саме туди. Позначаємо це в пункті меню,
+               щоб натиснути випадково було важче. */
+            '<button id="ctx-appt" style="display:block;width:100%;text-align:left;background:none;border:none;padding:10px 10px;font-size:.9rem;cursor:pointer;border-radius:6px;">📅 Новий запис' +
+              (unavail ? '<span style="display:block;font-size:.68rem;color:var(--warn);">поза вільними віконцями</span>' : '') +
+            '</button>' +
             '<button id="ctx-break" style="display:block;width:100%;text-align:left;background:none;border:none;padding:10px 10px;font-size:.9rem;cursor:pointer;border-radius:6px;">⏸ Перерва</button>';
           document.body.appendChild(ctx);
 
@@ -2289,8 +2294,22 @@
       sum.innerHTML = (picked ? "Обрати інший час" : "Вільний час") + ' <span class="da-caret">▾</span>';
     }
 
+    /* Показ обраного часу. manual = час поза вільними віконцями (перерва,
+       поза графіком) — його підставив персонал кліком по календарю. */
+    function showChosenTime(min, manual) {
+      var ct = $("mChosenTime"); if (!ct) return;
+      if (min == null) { ct.style.display = "none"; ct.textContent = ""; return; }
+      ct.style.display = "block";
+      ct.innerHTML = "⏰ Час: " + fmtMin(min) +
+        (manual ? ' <span style="font-weight:500;color:var(--warn);">· поза вільними віконцями</span>' : "");
+    }
+
     function loadSlots() {
+      /* Скидаємо і підпис теж: без цього після зміни дати/майстра лишався
+         старий «⏰ Час: …», хоча вибір уже злетів, і збереження вимагало
+         обрати час, який нібито вже стоїть. */
       chosen.start_min = null;
+      showChosenTime(null);
       var sid = $("mService").value, mid = $("mMaster").value, date = $("mDate").value;
       if (!sid || !mid || !date) return;
       var wantStartMin = prefill.startMin;
@@ -2304,21 +2323,29 @@
       api("GET", slotsUrl).then(function (res) {
         var slots = res.j.slots || [];
         box.innerHTML = "";
-        if (!slots.length) { box.className = "muted"; box.textContent = "Вільних віконець немає"; syncSlotsBox(); return; }
+        if (!slots.length) {
+          box.className = "muted"; box.textContent = "Вільних віконець немає";
+          if (wantStartMin != null) { chosen.start_min = wantStartMin; showChosenTime(wantStartMin, true); }
+          syncSlotsBox(); return;
+        }
+        var matched = false;
         var grid = el("div", "slots");
         slots.forEach(function (s) {
           var c = el("div", "slot", s.time);
           c.addEventListener("click", (function(slot) { return function () {
             grid.querySelectorAll(".slot").forEach(function (x) { x.classList.remove("sel"); });
             c.classList.add("sel"); chosen.start_min = slot.start_min;
-            var ct = $("mChosenTime");
-            if (ct) { ct.style.display = "block"; ct.textContent = "⏰ Час: " + slot.time; }
+            showChosenTime(slot.start_min);
             syncSlotsBox();
           }; })(s));
           grid.appendChild(c);
-          if (wantStartMin != null && s.start_min === wantStartMin) c.click();
+          if (wantStartMin != null && s.start_min === wantStartMin) { matched = true; c.click(); }
         });
         box.appendChild(grid);
+        /* Клік по клітинці в перерві / поза графіком: такого старту серед
+           вільних віконець нема, але персонал свідомо ставить запис туди —
+           лишаємо час обраним і позначаємо його. */
+        if (!matched && wantStartMin != null) { chosen.start_min = wantStartMin; showChosenTime(wantStartMin, true); }
         syncSlotsBox();
       });
     }
