@@ -554,7 +554,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <label class="fld">Ваше ім'я</label>
       <input type="text" id="nameInput" placeholder="Ваше ім'я" maxlength="100" />
       <label class="fld">Телефон</label>
-      <input type="tel" id="phoneInput" placeholder="+380667894576" maxlength="13" inputmode="numeric" />
+      <input type="tel" id="phoneInput" placeholder="+380667894576" maxlength="16" inputmode="tel" />
     </div>
 
     <div class="addextra" id="addExtraRow">
@@ -882,35 +882,44 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   function $(id) { return document.getElementById(id); }
   function money(kop) { return kop ? Math.round(kop / 100).toLocaleString("uk-UA") + " грн" : ""; }
 
-  /* Телефон: жорстко +380 і рівно 9 цифр після — не більше й не менше.
-     Розбираємо на "префікс" + "хвіст цифр", а не на суцільний рядок:
-     якщо парсити все наскрізь (включно з уже вставленим +380), перша
-     цифра "0" від локального номера ("0667894576") плутається з тим
-     самим "380" з префікса й губиться. */
-  function isValidPhone(v) { return /^\+380\d{9}$/.test(v); }
+  /* Телефон: за замовчуванням підставляємо +380 (переважна більшість
+     клієнтів — українські номери, їм досить ввести 9 цифр), але не
+     тримаємо префікс силою: стерши його, можна ввести будь-який
+     міжнародний номер (+48…, +49…, +1…). Валідація: український
+     +380XXXXXXXXX або міжнародний E.164 — «+», 8–15 цифр. */
+  function isValidPhone(v) {
+    if (/^\+380\d{9}$/.test(v)) return true;                 // укр. формат
+    return !/^\+380/.test(v) && /^\+[1-9]\d{7,14}$/.test(v); // міжнародний
+  }
   var phoneInput = document.getElementById("phoneInput");
   phoneInput.value = "+380";
   phoneInput.addEventListener("input", function () {
-    var v = this.value, suffix;
+    var v = this.value;
+    /* Користувач стирає префікс, щоб ввести свій код країни ("+38",
+       "+3", "+", "") — не заважаємо і не підставляємо +380 назад. */
+    if (v === "" || "+380".indexOf(v) === 0) return;
     if (v.slice(0, 4) === "+380") {
-      suffix = v.slice(4);
-    } else if ("+380".indexOf(v) === 0) {
-      // Стерли (бекспейсом) частину префікса — просто починаємо занову.
-      suffix = "";
-    } else {
-      // Вставили щось довільне (напр. без "+") — розбираємо з нуля.
-      var raw = v.replace(/\D/g, "");
-      if (raw.indexOf("380") === 0) raw = raw.slice(3);
-      suffix = raw;
+      // Український шлях: нормалізуємо хвіст після префікса.
+      var suffix = v.slice(4).replace(/\D/g, "");
+      /* Хтось, не помітивши вже підставлений префікс, за звичкою додає
+         свій власний "380" або "0" на початку хвоста — прибираємо. */
+      if (suffix.indexOf("380") === 0) suffix = suffix.slice(3);
+      else if (suffix.charAt(0) === "0") suffix = suffix.slice(1);
+      this.value = "+380" + suffix.slice(0, 9);
+      this.setSelectionRange(this.value.length, this.value.length);
+      return;
     }
-    suffix = suffix.replace(/\D/g, "");
-    /* Хтось, не помітивши вже підставлений префікс, за звичкою додає
-       свій власний "380" або "0" на початку хвоста — прибираємо теж. */
-    if (suffix.indexOf("380") === 0) suffix = suffix.slice(3);
-    else if (suffix.charAt(0) === "0") suffix = suffix.slice(1);
-    suffix = suffix.slice(0, 9);
-    this.value = "+380" + suffix;
-    this.setSelectionRange(this.value.length, this.value.length);
+    var raw = v.replace(/\D/g, "");
+    if (v.charAt(0) === "+") {
+      // Інший код країни — лишаємо як є, тільки чистимо сміття.
+      this.value = "+" + raw.slice(0, 15);
+      return;
+    }
+    // Вставили/ввели без "+": локальний 0XX… чи 380… — це Україна,
+    // решту вважаємо міжнародним номером без плюса.
+    if (raw.indexOf("380") === 0) this.value = "+380" + raw.slice(3, 12);
+    else if (raw.charAt(0) === "0" && raw.length <= 10) this.value = "+380" + raw.slice(1, 10);
+    else this.value = raw ? "+" + raw.slice(0, 15) : "";
   });
   phoneInput.addEventListener("focus", function () {
     if (!this.value) this.value = "+380";
@@ -1516,7 +1525,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var name = $("nameInput").value.trim(), phone = $("phoneInput").value.trim();
     var err = $("bookErr"); err.textContent = "";
     if (!name) { err.textContent = "Вкажіть ім'я"; return; }
-    if (!isValidPhone(phone)) { err.textContent = "Ви вказали невірний номер — формат: +380667894576"; return; }
+    if (!isValidPhone(phone)) { err.textContent = "Ви вказали невірний номер — формат: +380667894576 (міжнародні — з кодом країни, напр. +48...)"; return; }
     var btn = this; btn.disabled = true; btn.textContent = "Зачекайте…";
     fetch("/api/public/book", {
       method: "POST", headers: { "Content-Type": "application/json" },
