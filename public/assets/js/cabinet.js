@@ -1895,6 +1895,9 @@
         '<div class="grid2"><div><label>Ім\'я</label><input type="text" id="mName" placeholder="Олена" maxlength="60"/></div>' +
         '<div><label>Прізвище</label><input type="text" id="mSurname" placeholder="Коваленко" maxlength="60"/></div></div>' +
         '<label style="margin-top:8px;display:block;">Телефон</label><input type="tel" id="mPhone" maxlength="30"/>' +
+        /* Підказка «номер уже в базі»: без неї запис тихо чіпляється до
+           старої картки, і здається, що новий клієнт не створився. */
+        '<div id="mPhoneHint" style="display:none;font-size:.74rem;color:var(--warn);margin-top:5px;line-height:1.4;"></div>' +
       '</div>' +
 
       // 2. ПОСЛУГА
@@ -2208,6 +2211,31 @@
     }
 
     $("mClientClear").addEventListener("click", resetToSearch);
+
+    /* Живa перевірка номера у формі нового клієнта: якщо він уже в базі,
+       новий клієнт НЕ створиться — запис піде на наявну картку. Кажемо це
+       одразу, поки номер вводять, а не мовчки після збереження. */
+    var phoneHintTimer = null;
+    $("mPhone").addEventListener("input", function() {
+      clearTimeout(phoneHintTimer);
+      var v = this.value.trim();
+      var hint = $("mPhoneHint");
+      if (v.replace(/\D/g, "").length < 9) { hint.style.display = "none"; return; }
+      phoneHintTimer = setTimeout(function() {
+        api("GET", "/api/crm/clients/by-phone?phone=" + encodeURIComponent(v)).then(function(r) {
+          var c = r.j && r.j.client;
+          var cur = $("mPhone") ? $("mPhone").value.trim() : "";
+          if (cur !== v || !$("mPhoneHint")) return; // номер уже змінили / модалку закрили
+          if (c) {
+            hint.style.display = "block";
+            hint.textContent = "ℹ️ Цей номер уже є в базі: " + c.name +
+              ". Новий клієнт не створиться — запис піде на цю картку (ім'я оновиться на введене).";
+          } else {
+            hint.style.display = "none";
+          }
+        });
+      }, 300);
+    });
 
     var searchTimer = null;
     $("mClientQ").addEventListener("input", function() {

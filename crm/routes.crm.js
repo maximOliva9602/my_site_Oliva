@@ -643,6 +643,18 @@ router.get("/clients", any, function (req, res) {
   if (!showPhone) rows = rows.map(function(c) { return Object.assign({}, c, { phone: null }); });
   res.json({ ok: true, clients: rows });
 });
+/* Чи належить номер уже наявному клієнту. Порівнюємо нормалізовані
+   номери, бо в базі трапляються обидва формати (0XX… і +380XX…), а
+   createAppointment шукає за нормалізованим — саме так і зникає
+   «новий» клієнт: запис тихо чіпляється до старої картки. */
+router.get("/clients/by-phone", any, function (req, res) {
+  const norm = tz.normPhone(clean(req.query.phone, 30));
+  if (!norm || norm.length < 8) return res.json({ ok: true, client: null });
+  const rows = db.prepare("SELECT id, name, phone FROM clients").all();
+  const hit = rows.find(function (c) { return tz.normPhone(c.phone) === norm; });
+  res.json({ ok: true, client: hit ? { id: hit.id, name: hit.name } : null });
+});
+
 router.get("/clients/:id", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
   let client = db.prepare("SELECT * FROM clients WHERE id=?").get(id);
