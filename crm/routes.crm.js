@@ -1251,12 +1251,37 @@ router.get("/broadcasts/clients", owner, function (req, res) {
   res.json({ ok: true, clients: rows });
 });
 
-/* Скільки отримає повідомлення — щоб показати число до відправки. */
+/* Скільки отримає повідомлення — щоб показати число до відправки.
+   Разом із розкладкою, чому решта не потрапила: інакше «457» нічим не
+   пояснити й незрозуміло, куди подівся щойно доданий клієнт. */
 router.post("/broadcasts/preview", owner, function (req, res) {
   const b = req.body || {};
   const rows = broadcastRecipients(!!b.all, b.client_ids);
   const phones = new Set(rows.map(function (r) { return tz.normPhone(r.phone); }));
-  res.json({ ok: true, recipients: phones.size });
+  const out = { ok: true, recipients: phones.size, duplicates: rows.length - phones.size };
+  if (b.all) {
+    const x = db.prepare(
+      `SELECT COUNT(*) total,
+              SUM(CASE WHEN phone IS NULL OR phone='' THEN 1 ELSE 0 END) no_phone,
+              SUM(CASE WHEN blacklisted=1 THEN 1 ELSE 0 END) blacklisted,
+              SUM(CASE WHEN no_marketing=1 THEN 1 ELSE 0 END) opted_out
+         FROM clients`
+    ).get();
+    out.total = x.total;
+    out.no_phone = x.no_phone || 0;
+    out.blacklisted = x.blacklisted || 0;
+    out.opted_out = x.opted_out || 0;
+    // Останній доданий клієнт — щоб одразу було видно, чи він у розсилці
+    const last = db.prepare("SELECT id, name, phone, no_marketing, blacklisted FROM clients ORDER BY id DESC LIMIT 1").get();
+    if (last) {
+      out.last_client = {
+        name: last.name,
+        phone: last.phone || "",
+        included: !!(last.phone && !last.no_marketing && !last.blacklisted),
+      };
+    }
+  }
+  res.json(out);
 });
 
 router.post("/broadcasts", owner, function (req, res) {

@@ -4565,9 +4565,26 @@
         return;
       }
       api("POST", "/api/crm/broadcasts/preview", body).then(function (r) {
-        var n = (r.j && r.j.recipients) || 0;
-        cntLine.textContent = "Отримають повідомлення: " + n;
-        cntLine.style.color = n ? "var(--olive-light)" : "var(--err)";
+        var j = r.j || {};
+        var n = j.recipients || 0;
+        var html = '<span style="color:' + (n ? "var(--olive-light)" : "var(--err)") + ';font-weight:600;">Отримають повідомлення: ' + n + '</span>';
+        if (j.total != null) {
+          /* Розкладка, куди подівся кожен клієнт: без неї число ні з чим
+             не звірити й незрозуміло, чому щойно доданий не додався. */
+          var parts = [];
+          if (j.no_phone)    parts.push(j.no_phone + " без телефону");
+          if (j.blacklisted) parts.push(j.blacklisted + " у чорному списку");
+          if (j.opted_out)   parts.push(j.opted_out + " відмовились");
+          if (j.duplicates)  parts.push(j.duplicates + " дублів номера");
+          html += '<div style="font-size:.72rem;color:var(--text-dim);margin-top:3px;">Усього клієнтів: ' + j.total +
+            (parts.length ? " · не отримають: " + parts.join(", ") : "") + '</div>';
+          if (j.last_client) {
+            html += '<div style="font-size:.72rem;margin-top:3px;color:' + (j.last_client.included ? "var(--text-dim)" : "var(--warn)") + ';">' +
+              'Останній доданий: ' + j.last_client.name + ' · ' + (j.last_client.phone || "без телефону") +
+              (j.last_client.included ? " — у розсилці ✓" : " — не отримає") + '</div>';
+          }
+        }
+        cntLine.innerHTML = html;
       });
     }
 
