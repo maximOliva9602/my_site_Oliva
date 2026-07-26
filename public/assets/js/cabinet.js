@@ -4506,7 +4506,8 @@
       refreshCount();
     }
     bAll.addEventListener("click", function () { setMode("all"); });
-    bSel.addEventListener("click", function () { setMode("selected"); if (!allClients.length) loadClients(""); });
+    /* Перезавантажуємо щоразу: клієнта могли додати щойно, в іншій вкладці. */
+    bSel.addEventListener("click", function () { setMode("selected"); loadClients(); });
 
     function renderList(q) {
       list.innerHTML = "";
@@ -4539,11 +4540,13 @@
       });
     }
 
-    function loadClients(q) {
+    /* Свій ендпоінт, а не /clients: той віддає лише 200 записів за
+       останнім візитом, тому щойно доданий клієнт у список не потрапляв. */
+    function loadClients() {
       list.innerHTML = '<div class="empty">Завантаження…</div>';
-      api("GET", "/api/crm/clients" + (q ? "?q=" + encodeURIComponent(q) : "")).then(function (r) {
+      api("GET", "/api/crm/broadcasts/clients").then(function (r) {
         allClients = (r.j && r.j.clients) || [];
-        renderList("");
+        renderList(search.value.trim());
       });
     }
     var searchTimer = null;

@@ -1240,6 +1240,17 @@ function broadcastRecipients(all, clientIds) {
   return rows;
 }
 
+/* Список для ручного вибору отримувачів. Окремо від GET /clients: там
+   LIMIT 200 і сортування за останнім візитом, через що щойно доданий
+   клієнт (візитів ще нема, last_visit_at IS NULL) опинявся в кінці й
+   не потрапляв у список узагалі. Тут без ліміту й новіші згори. */
+router.get("/broadcasts/clients", owner, function (req, res) {
+  const rows = db.prepare(
+    `SELECT id, name, phone, no_marketing, blacklisted FROM clients ORDER BY id DESC`
+  ).all();
+  res.json({ ok: true, clients: rows });
+});
+
 /* Скільки отримає повідомлення — щоб показати число до відправки. */
 router.post("/broadcasts/preview", owner, function (req, res) {
   const b = req.body || {};
