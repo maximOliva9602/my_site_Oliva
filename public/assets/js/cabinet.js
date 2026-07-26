@@ -1941,7 +1941,13 @@
         '<div id="mDateLabel" style="font-size:.85rem;color:var(--text-dim);white-space:nowrap;"></div>' +
       '</div>' +
       '<div id="mChosenTime" style="display:none;margin-top:4px;padding:6px 10px;background:var(--panel-2);border-radius:8px;font-size:.85rem;font-weight:600;color:var(--cream);"></div>' +
-      '<label style="margin-top:10px;display:block;">Вільний час</label><div id="mSlots" class="muted">Оберіть послугу, майстра й дату</div>' +
+      /* Сітка слотів у розкривному блоці: коли час уже обраний (клік по
+         вільній клітинці календаря або вибір зі списку), решта віконець
+         лише відсуває вниз коментар і кнопку «Створити». */
+      '<details id="mSlotsBox" class="da-more" open style="margin-top:10px;">' +
+        '<summary id="mSlotsSummary" style="cursor:pointer;font-size:.78rem;color:var(--text-dim);margin:10px 0 5px;">Вільний час <span class="da-caret">▾</span></summary>' +
+        '<div id="mSlots" class="muted">Оберіть послугу, майстра й дату</div>' +
+      '</details>' +
 
       '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
@@ -2273,6 +2279,16 @@
     $("mMaster").addEventListener("change", loadSlots);
     $("mDate").addEventListener("change", loadSlots);
 
+    /* Згорнуто = час уже обраний, і його видно в #mChosenTime; розгорнуто =
+       обирати ще нема з чого, тож ховати сітку не можна. */
+    function syncSlotsBox() {
+      var boxEl = $("mSlotsBox"), sum = $("mSlotsSummary");
+      if (!boxEl || !sum) return;
+      var picked = chosen.start_min != null;
+      boxEl.open = !picked;
+      sum.innerHTML = (picked ? "Обрати інший час" : "Вільний час") + ' <span class="da-caret">▾</span>';
+    }
+
     function loadSlots() {
       chosen.start_min = null;
       var sid = $("mService").value, mid = $("mMaster").value, date = $("mDate").value;
@@ -2280,6 +2296,7 @@
       var wantStartMin = prefill.startMin;
       prefill.startMin = null;
       var box = $("mSlots"); box.className = ""; box.innerHTML = "Завантаження…";
+      syncSlotsBox();
       // Підрахуємо загальну тривалість усіх послуг для коректних слотів
       var totalDur = selectedServices.reduce(function(s, x) { return s + x.duration_min; }, 0);
       var slotsUrl = "/api/public/slots?service=" + sid + "&master=" + mid + "&date=" + date;
@@ -2287,7 +2304,7 @@
       api("GET", slotsUrl).then(function (res) {
         var slots = res.j.slots || [];
         box.innerHTML = "";
-        if (!slots.length) { box.className = "muted"; box.textContent = "Вільних віконець немає"; return; }
+        if (!slots.length) { box.className = "muted"; box.textContent = "Вільних віконець немає"; syncSlotsBox(); return; }
         var grid = el("div", "slots");
         slots.forEach(function (s) {
           var c = el("div", "slot", s.time);
@@ -2296,11 +2313,13 @@
             c.classList.add("sel"); chosen.start_min = slot.start_min;
             var ct = $("mChosenTime");
             if (ct) { ct.style.display = "block"; ct.textContent = "⏰ Час: " + slot.time; }
+            syncSlotsBox();
           }; })(s));
           grid.appendChild(c);
           if (wantStartMin != null && s.start_min === wantStartMin) c.click();
         });
         box.appendChild(grid);
+        syncSlotsBox();
       });
     }
 
