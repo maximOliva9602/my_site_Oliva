@@ -147,7 +147,30 @@ function createAppointment(d, session) {
     adminNotify.notifyNewAppt(appointmentId, "crm");
   } catch (e) { console.error("[routes.crm] adminNotify error:", e.message); }
 
+  /* SMS-підтвердження клієнту про запис, створений майстром (запис одразу
+     'confirmed'). Вимикається у Сповіщеннях («Запис, створений майстром»). */
+  if (settingOn("notif_confirm_staff", true)) {
+    try {
+      const notify = require("./notify");
+      const q = notify.queueNotification(appointmentId, "confirmation");
+      if (q && q.ok && !q.duplicate) {
+        setImmediate(function () {
+          notify.flushQueued().catch(function (e) { console.error("[staff-confirm] flush:", e.message); });
+        });
+      }
+    } catch (e) { console.error("[staff-confirm]", e.message); }
+  }
+
   return { status: 200, body: { ok: true, public_id: publicId, appointment: viewAppt(apptRow(appointmentId)) } };
+}
+
+/* Перемикачі SMS-сповіщень із app_settings ("1"/"0"; dfltOn — типове значення). */
+function settingOn(key, dfltOn) {
+  try {
+    const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(key);
+    if (!r) return !!dfltOn;
+    return r.value === "1" || r.value === "true";
+  } catch (e) { return !!dfltOn; }
 }
 
 /* ---------- зміна статусу ---------- */
@@ -160,7 +183,7 @@ function setStatus(id, status, session) {
   }
   db.prepare("UPDATE appointments SET status=?, updated_at=? WHERE id=?").run(status, Date.now(), id);
   recomputeClient(a.client_id);
-  if (status === "confirmed") {
+  if (status === "confirmed" && settingOn("notif_confirm", true)) {
     /* SMS клієнту «Ваш запис … підтверджений» — саме в момент, коли майстер
        підтвердив запис у CRM (а не при створенні онлайн-запису).
        UNIQUE(appointment_id, kind) робить це ідемпотентним: повторне
@@ -174,6 +197,18 @@ function setStatus(id, status, session) {
         });
       }
     } catch (e) { console.error("[confirm] queue:", e.message); }
+  }
+  if (status === "cancelled" && settingOn("notif_cancel", false)) {
+    /* SMS про скасування (типово вимкнено — вмикається у Сповіщеннях). */
+    try {
+      const notify = require("./notify");
+      const q = notify.queueNotification(id, "cancellation");
+      if (q && q.ok && !q.duplicate) {
+        setImmediate(function () {
+          notify.flushQueued().catch(function (e) { console.error("[cancel-sms] flush:", e.message); });
+        });
+      }
+    } catch (e) { console.error("[cancel-sms] queue:", e.message); }
   }
   if (status === "completed") {
     // Автоматично списуємо сеанс абонементу (якщо ще не списали)
@@ -256,9 +291,26 @@ router.patch("/appointments/:id", any, function (req, res) {
   const comment = d.comment !== undefined ? clean(d.comment, 500) : a.comment;
   if (!tz.isDate(date) || !(startMin >= 0)) return res.status(400).json({ ok: false, error: "bad params" });
 
-  if (date !== a.date || startMin !== a.start_min || masterId !== a.master_id) {
+  const timeChanged = (date !== a.date || startMin !== a.start_min);
+  if (timeChanged || masterId !== a.master_id) {
     db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, comment=?, updated_at=? WHERE id=?")
       .run(date, startMin, startMin + a.duration_min, masterId, comment, Date.now(), id);
+    /* SMS про перенесення (типово вимкнено; вмикається у Сповіщеннях).
+       Лише коли реально змінились дата/час активного запису. Попереднє
+       reschedule-сповіщення видаляємо, щоб UNIQUE не блокував повторне
+       перенесення того ж запису. */
+    if (timeChanged && (a.status === "pending" || a.status === "confirmed") && settingOn("notif_reschedule", false)) {
+      try {
+        const notify = require("./notify");
+        db.prepare("DELETE FROM notifications WHERE appointment_id=? AND kind='reschedule'").run(id);
+        const q = notify.queueNotification(id, "reschedule");
+        if (q && q.ok) {
+          setImmediate(function () {
+            notify.flushQueued().catch(function (e) { console.error("[resched] flush:", e.message); });
+          });
+        }
+      } catch (e) { console.error("[resched]", e.message); }
+    }
   } else {
     db.prepare("UPDATE appointments SET comment=?, updated_at=? WHERE id=?").run(comment, Date.now(), id);
   }
@@ -688,11 +740,13 @@ router.patch("/clients/:id", any, function (req, res) {
   const d = req.body || {};
   const c = db.prepare("SELECT * FROM clients WHERE id=?").get(id);
   if (!c) return res.status(404).json({ ok: false });
-  db.prepare("UPDATE clients SET name=?, phone=?, note=?, blacklisted=? WHERE id=?").run(
+  db.prepare("UPDATE clients SET name=?, phone=?, note=?, blacklisted=?, birthday=? WHERE id=?").run(
     d.name        !== undefined ? clean(d.name,  100)  : c.name,
     d.phone       !== undefined ? clean(d.phone,  30)  : c.phone,
     d.note        !== undefined ? clean(d.note, 1000)  : c.note,
     d.blacklisted !== undefined ? (d.blacklisted ? 1 : 0) : (c.blacklisted || 0),
+    /* День народження: 'YYYY-MM-DD' або порожньо (null) — для SMS-привітання */
+    d.birthday    !== undefined ? (tz.isDate(String(d.birthday || "")) ? String(d.birthday) : null) : (c.birthday || null),
     id
   );
   res.json({ ok: true });
@@ -1412,7 +1466,7 @@ router.patch("/clients/:id/no-reminders", any, function (req, res) {
   res.json({ ok: true, no_reminders: v });
 });
 
-/* ---- Налаштування нагадувань (час) ---- */
+/* ---- Налаштування SMS-сповіщень (перемикачі + час нагадувань) ---- */
 router.get("/notify-settings", owner, function (req, res) {
   function get(k, dflt) {
     const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(k);
@@ -1422,6 +1476,11 @@ router.get("/notify-settings", owner, function (req, res) {
     ok: true,
     reminder1_hours: parseFloat(get("reminder1_hours", "24")) || 0,
     reminder2_hours: parseFloat(get("reminder2_hours", process.env.REMINDER2_HOURS || "0")) || 0,
+    notif_confirm:       get("notif_confirm", "1") === "1",
+    notif_confirm_staff: get("notif_confirm_staff", "1") === "1",
+    notif_reschedule:    get("notif_reschedule", "0") === "1",
+    notif_cancel:        get("notif_cancel", "0") === "1",
+    notif_birthday:      get("notif_birthday", "1") === "1",
   });
 });
 router.patch("/notify-settings", owner, function (req, res) {
@@ -1432,6 +1491,9 @@ router.patch("/notify-settings", owner, function (req, res) {
   const up = db.prepare("INSERT INTO app_settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value");
   up.run("reminder1_hours", String(h1));
   up.run("reminder2_hours", String(h2));
+  ["notif_confirm", "notif_confirm_staff", "notif_reschedule", "notif_cancel", "notif_birthday"].forEach(function (k) {
+    if (d[k] !== undefined) up.run(k, d[k] ? "1" : "0");
+  });
   res.json({ ok: true, reminder1_hours: h1, reminder2_hours: h2 });
 });
 
