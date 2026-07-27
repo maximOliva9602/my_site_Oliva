@@ -426,9 +426,10 @@
             '<span style="color:var(--cream);font-weight:600;font-size:.95rem;">' + m.name + '</span>' +
             '<span style="font-size:.72rem;color:var(--text-dim);">' + (m.level || "—") + '</span>' +
           '</div>' +
-          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:9px;">' +
+          '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:9px;">' +
             cell("Записів", m.bookings || 0) +
             cell("Дохід", grn(m.revenue)) +
+            cell("Заробіток майстра", grn(m.earnings)) +
             cell("Вільно сьогодні", free) +
           '</div>' +
           '<div style="display:flex;align-items:center;gap:8px;">' +
@@ -3934,15 +3935,93 @@
             scheduleEditPage(m, todayStr(), "masters");
           });
           var off = el("button", "btn btn-sm btn-ghost", "Вихідні"); off.addEventListener("click", function () { timeoffModal(m); });
+          var pay = el("button", "btn btn-sm btn-ghost", "💰 Зарплата"); pay.addEventListener("click", function () { salaryModal(m); });
           var del = el("button", "btn btn-sm btn-ghost", "Видалити");
           del.addEventListener("click", function () { if (confirm("Видалити майстра?")) api("DELETE", "/api/crm/masters/" + m.id).then(load); });
-          row.appendChild(prof); row.appendChild(sch); row.appendChild(off); row.appendChild(del);
+          row.appendChild(prof); row.appendChild(sch); row.appendChild(off); row.appendChild(pay); row.appendChild(del);
           item.appendChild(row); listEl.appendChild(item);
         });
         if (!masters.length) listEl.appendChild(el("div", "empty", "Майстрів ще немає"));
       });
     }
     window.__reloadMasters = load; load();
+  }
+
+  /* ── Зарплата майстра: типовий % + персональні ставки по послугах ── */
+  function salaryModal(m) {
+    openModal('<h3>💰 Зарплата — ' + m.name + (m.last_name ? " " + m.last_name : "") + '</h3><div id="payBody"><div class="empty">Завантаження…</div></div>');
+    api("GET", "/api/crm/masters/" + m.id + "/pay").then(function (r) {
+      if (!(r.j && r.j.ok)) { $("payBody").innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
+      var d = r.j;
+      function grn(k) { return Math.round((k || 0) / 100).toLocaleString("uk-UA") + " грн"; }
+      var ovMap = {}; (d.overrides || []).forEach(function (o) { ovMap[o.service_id] = o; });
+
+      var html = '';
+      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">' +
+        [["Сьогодні", d.earnings.today], ["Тиждень", d.earnings.week], ["Місяць", d.earnings.month]].map(function (x) {
+          return '<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 6px;text-align:center;">' +
+            '<div style="font-size:.68rem;color:var(--text-dim);margin-bottom:3px;">' + x[0] + '</div>' +
+            '<div style="font-weight:700;color:var(--cream);font-size:.92rem;">' + grn(x[1]) + '</div></div>';
+        }).join("") + '</div>';
+      html += '<div class="sub" style="margin-bottom:12px;">Заробіток рахується із <b>завершених</b> візитів: персональна ставка на послугу, інакше — типовий відсоток.</div>';
+      html += '<label>Типовий відсоток від ціни послуги</label>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<input type="number" id="payDef" min="0" max="100" step="0.5" style="width:110px;" value="' + (d.master.pay_percent != null ? d.master.pay_percent : "") + '" placeholder="0">' +
+        '<span class="muted">% (діє на послуги без окремої ставки)</span></div>';
+      html += '<div style="margin-top:14px;margin-bottom:6px;font-size:.85rem;font-weight:600;color:var(--cream);">Ставки по послугах</div>';
+      html += '<div style="max-height:290px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;">';
+      if (!(d.services || []).length) html += '<div class="empty">У майстра немає активних послуг</div>';
+      (d.services || []).forEach(function (s) {
+        var o = ovMap[s.id];
+        var mode = o ? o.mode : "default";
+        var val = o ? (o.mode === "fixed" ? Math.round(o.value / 100) : o.value) : "";
+        html += '<div data-ps="' + s.id + '" style="padding:9px 10px;border-bottom:1px solid var(--line);">' +
+          '<div style="font-size:.78rem;color:var(--cream);margin-bottom:6px;">' + s.name + ' <span class="muted">· ' + Math.round((s.price || 0) / 100) + ' грн</span></div>' +
+          '<div style="display:flex;gap:6px;align-items:center;">' +
+          '<select data-mode style="flex:1;min-width:0;font-size:.8rem;padding:6px 8px;">' +
+            '<option value="default"' + (mode === "default" ? " selected" : "") + '>Типовий %</option>' +
+            '<option value="percent"' + (mode === "percent" ? " selected" : "") + '>Свій відсоток</option>' +
+            '<option value="fixed"' + (mode === "fixed" ? " selected" : "") + '>Фікс. грн за візит</option>' +
+          '</select>' +
+          '<input data-val type="number" min="0" step="0.5" style="width:92px;font-size:.8rem;padding:6px 8px;" value="' + val + '"' + (mode === "default" ? " disabled" : "") + '>' +
+          '</div></div>';
+      });
+      html += '</div>';
+      html += '<div class="err" id="payErr"></div>' +
+        '<div class="modal-foot"><button class="btn btn-primary" id="paySave">Зберегти</button><button class="btn btn-ghost" id="payClose">Закрити</button></div>';
+      $("payBody").innerHTML = html;
+
+      $("payBody").querySelectorAll("[data-ps]").forEach(function (row) {
+        var sel = row.querySelector("[data-mode]"), inp = row.querySelector("[data-val]");
+        sel.addEventListener("change", function () {
+          inp.disabled = sel.value === "default";
+          if (inp.disabled) inp.value = "";
+        });
+      });
+
+      $("paySave").addEventListener("click", function () {
+        var overrides = [], bad = null;
+        $("payBody").querySelectorAll("[data-ps]").forEach(function (row) {
+          var mode = row.querySelector("[data-mode]").value;
+          if (mode === "default") return;
+          var num = parseFloat(row.querySelector("[data-val]").value);
+          if (!isFinite(num) || num < 0) { bad = "Вкажіть ставку для всіх послуг зі своєю ставкою"; return; }
+          if (mode === "percent" && num > 100) { bad = "Відсоток не може перевищувати 100"; return; }
+          overrides.push({
+            service_id: parseInt(row.getAttribute("data-ps"), 10),
+            mode: mode,
+            value: mode === "fixed" ? Math.round(num * 100) : num, // фікс — у копійках
+          });
+        });
+        if (bad) { $("payErr").textContent = bad; return; }
+        var def = $("payDef").value.trim();
+        api("PATCH", "/api/crm/masters/" + m.id + "/pay", { pay_percent: def === "" ? null : def, overrides: overrides }).then(function (r2) {
+          if (!(r2.j && r2.j.ok)) { $("payErr").textContent = (r2.j && r2.j.error) || "Помилка збереження"; return; }
+          closeModal();
+        });
+      });
+      $("payClose").addEventListener("click", closeModal);
+    });
   }
 
   /* Послуги майстра більше не обираються вручну — прайс підставляється
