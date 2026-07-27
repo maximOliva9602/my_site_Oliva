@@ -3029,6 +3029,7 @@
           var html = '<h3>Редагувати клієнта</h3>' +
             '<label>Ім\'я</label><input type="text" id="ceN" value="' + (c.name||"").replace(/"/g,"&quot;") + '" maxlength="100">' +
             '<label style="margin-top:10px;display:block;">Телефон</label><input type="tel" id="cePh" value="' + (c.phone||"") + '" maxlength="30">' +
+            '<label style="margin-top:10px;display:block;">День народження <span style="color:var(--text-dim);font-weight:400;">(для SMS-привітання)</span></label><input type="date" id="ceBd" value="' + (c.birthday||"") + '">' +
             '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="ceNote" maxlength="1000">' + (c.note||"") + '</textarea>' +
             '<div class="err" id="ceErr"></div>' +
             '<div class="modal-foot"><button class="btn btn-primary" id="ceSave">Зберегти</button><button class="btn btn-ghost" id="ceClose">Скасувати</button></div>';
@@ -3036,7 +3037,7 @@
           $("ceSave").addEventListener("click", function() {
             var name = $("ceN").value.trim(), phone = $("cePh").value.trim();
             if (!name) { $("ceErr").textContent = "Вкажи ім\'я"; return; }
-            api("PATCH", "/api/crm/clients/" + id, { name: name, phone: phone, note: $("ceNote").value.trim() }).then(function(r) {
+            api("PATCH", "/api/crm/clients/" + id, { name: name, phone: phone, note: $("ceNote").value.trim(), birthday: $("ceBd").value || "" }).then(function(r) {
               if (!r.j.ok) { $("ceErr").textContent = "Помилка"; return; }
               closeModal(); renderClientCard(id);
             });
@@ -3109,6 +3110,12 @@
         noRemEl.style.cssText = "font-size:.72rem;color:var(--warn);margin-top:4px;";
         noRemEl.textContent = "🔕 SMS-нагадування вимкнені";
         heroDiv.appendChild(noRemEl);
+      }
+      if (c.birthday) {
+        var bdEl = document.createElement("div");
+        bdEl.style.cssText = "font-size:.72rem;color:var(--text-dim);margin-top:4px;";
+        bdEl.textContent = "🎂 " + c.birthday.slice(8,10) + "." + c.birthday.slice(5,7) + "." + c.birthday.slice(0,4);
+        heroDiv.appendChild(bdEl);
       }
       main.appendChild(heroDiv);
 
@@ -4781,49 +4788,107 @@
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Журнал сповіщень"));
     main.appendChild(bar);
 
-    /* ── Налаштування часу нагадувань ── */
+    /* ── SMS-сповіщення клієнтам: перемикачі тригерів (аналог Bookon) ── */
     var remCard = el("div", "item"); remCard.style.marginBottom = "16px";
-    remCard.appendChild(el("div", "t", "⏰ Нагадування клієнтам про візит"));
-    var remHint = el("div", "sub"); remHint.style.margin = "6px 0 10px";
-    remHint.textContent = "Надсилаються автоматично всім клієнтам. Вимкнути окремому клієнту можна в його картці (меню ⋮ → Вимкнути SMS-нагадування).";
+    remCard.appendChild(el("div", "t", "📨 SMS-сповіщення клієнтам"));
+    var remHint = el("div", "sub"); remHint.style.margin = "6px 0 4px";
+    remHint.textContent = "Тексти короткі й фіксовані (1 SMS-частина). День народження клієнта вводиться в його картці (⋮ → Редагувати).";
     remCard.appendChild(remHint);
-    function remInput(labelText) {
-      var wrap = el("div", "");
-      wrap.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;";
-      var lbl = el("span", "muted", labelText);
-      lbl.style.cssText = "min-width:52px;";
+
+    function togRow(title, whenTxt, smsTxt) {
+      var row = el("div", "");
+      row.style.cssText = "border-top:1px solid var(--line);padding:10px 0 12px;";
+      var top = document.createElement("label");
+      top.style.cssText = "display:flex;align-items:flex-start;gap:10px;cursor:pointer;";
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.style.cssText = "width:19px;height:19px;accent-color:var(--olive-light);flex-shrink:0;margin-top:2px;";
+      var tt = el("div", "");
+      tt.innerHTML = '<div style="font-size:.9rem;font-weight:600;color:var(--cream);">' + title + '</div>' +
+        '<div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">' + whenTxt + '</div>';
+      top.appendChild(cb); top.appendChild(tt);
+      row.appendChild(top);
+      if (smsTxt) {
+        var pv = el("div", "");
+        pv.style.cssText = "margin:8px 0 0 29px;padding:8px 10px;background:var(--panel-2);border-radius:8px;font-size:.74rem;color:var(--text);white-space:pre-line;line-height:1.4;";
+        pv.textContent = smsTxt;
+        row.appendChild(pv);
+      }
+      remCard.appendChild(row);
+      return cb;
+    }
+
+    var cbConfirm = togRow("Підтвердження запису",
+      "Коли майстер підтверджує запис у CRM",
+      "Ваш запис 27.07.2026 о 14:10 підтверджений. До зустрічі!\n{телефон студії}");
+    var cbConfirmStaff = togRow("Запис, створений майстром",
+      "Одразу після збереження нового запису в CRM",
+      "Ваш запис 27.07.2026 о 14:10 підтверджений. До зустрічі!\n{телефон студії}");
+
+    /* Нагадування — з полями часу */
+    var remRow = el("div", "");
+    remRow.style.cssText = "border-top:1px solid var(--line);padding:10px 0 12px;";
+    remRow.innerHTML = '<div style="font-size:.9rem;font-weight:600;color:var(--cream);">Нагадування про візит</div>' +
+      '<div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">Автоматично всім клієнтам; вимкнути окремому — в його картці (⋮ → Вимкнути SMS-нагадування)</div>';
+    function hoursInput() {
       var inp = document.createElement("input");
       inp.type = "number"; inp.min = "0"; inp.max = "240"; inp.step = "0.5";
-      inp.style.cssText = "width:90px;";
-      wrap.appendChild(lbl); wrap.appendChild(inp);
-      wrap.appendChild(el("span", "muted", "год до візиту (0 — вимкнено)"));
-      return { wrap: wrap, inp: inp };
+      inp.style.cssText = "width:84px;";
+      return inp;
     }
-    var rem1 = remInput("Перше:");
-    var rem2 = remInput("Друге:");
-    remCard.appendChild(rem1.wrap);
-    remCard.appendChild(rem2.wrap);
-    var remActs = el("div", "acts");
-    var remSave = el("button", "btn btn-primary btn-sm", "Зберегти");
+    var rem1 = hoursInput(), rem2 = hoursInput();
+    function hrLine(lbl, inp) {
+      var w = el("div", ""); w.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
+      var l = el("span", "muted", lbl); l.style.minWidth = "50px";
+      w.appendChild(l); w.appendChild(inp);
+      w.appendChild(el("span", "muted", "год до візиту (0 — вимк)"));
+      return w;
+    }
+    var hrWrap = el("div", "");
+    hrWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-top:8px;";
+    hrWrap.appendChild(hrLine("Перше:", rem1));
+    hrWrap.appendChild(hrLine("Друге:", rem2));
+    remRow.appendChild(hrWrap);
+    remCard.appendChild(remRow);
+
+    var cbResched = togRow("Перенесення візиту",
+      "Одразу після зміни дати або часу запису",
+      "Ваш візит перенесено на 27.07.2026 о 14:10. Чекаємо!\n{телефон студії}");
+    var cbCancel = togRow("Скасування візиту",
+      "Одразу після скасування запису",
+      "Відміна запису. А ми так чекали вас :( До зустрічі!");
+    var cbBday = togRow("Привітання з днем народження",
+      "О 10:00 у день народження, раз на рік (потрібна дата в картці клієнта; не шлеться відмовникам від розсилок)",
+      "З Днем народження! Чекаємо на вас.\n{телефон студії}");
+
+    var remActs = el("div", "acts"); remActs.style.marginTop = "4px";
+    var remSave = el("button", "btn btn-primary btn-sm", "Зберегти налаштування");
     remActs.appendChild(remSave);
     remCard.appendChild(remActs);
     var remMsg = el("div", "sub"); remMsg.style.marginTop = "6px";
     remCard.appendChild(remMsg);
+
     api("GET", "/api/crm/notify-settings").then(function (r) {
-      if (r.j && r.j.ok) { rem1.inp.value = r.j.reminder1_hours; rem2.inp.value = r.j.reminder2_hours; }
+      if (!(r.j && r.j.ok)) return;
+      rem1.value = r.j.reminder1_hours;
+      rem2.value = r.j.reminder2_hours;
+      cbConfirm.checked      = !!r.j.notif_confirm;
+      cbConfirmStaff.checked = !!r.j.notif_confirm_staff;
+      cbResched.checked      = !!r.j.notif_reschedule;
+      cbCancel.checked       = !!r.j.notif_cancel;
+      cbBday.checked         = !!r.j.notif_birthday;
     });
     remSave.addEventListener("click", function () {
       remSave.disabled = true;
-      api("PATCH", "/api/crm/notify-settings", { reminder1_hours: rem1.inp.value, reminder2_hours: rem2.inp.value }).then(function (r) {
+      api("PATCH", "/api/crm/notify-settings", {
+        reminder1_hours: rem1.value, reminder2_hours: rem2.value,
+        notif_confirm: cbConfirm.checked, notif_confirm_staff: cbConfirmStaff.checked,
+        notif_reschedule: cbResched.checked, notif_cancel: cbCancel.checked,
+        notif_birthday: cbBday.checked,
+      }).then(function (r) {
         remSave.disabled = false;
-        if (r.j && r.j.ok) {
-          remMsg.style.color = "var(--ok)";
-          remMsg.textContent = "✓ Збережено: перше — " + (r.j.reminder1_hours ? "за " + r.j.reminder1_hours + " год" : "вимкнено") +
-            ", друге — " + (r.j.reminder2_hours ? "за " + r.j.reminder2_hours + " год" : "вимкнено") + ". Діє одразу.";
-        } else {
-          remMsg.style.color = "var(--err)";
-          remMsg.textContent = "✗ " + ((r.j && r.j.error) || "Помилка збереження");
-        }
+        if (r.j && r.j.ok) { remMsg.style.color = "var(--ok)"; remMsg.textContent = "✓ Збережено — діє одразу."; }
+        else { remMsg.style.color = "var(--err)"; remMsg.textContent = "✗ " + ((r.j && r.j.error) || "Помилка збереження"); }
       });
     });
     main.appendChild(remCard);
@@ -4871,7 +4936,7 @@
     main.appendChild(pushCard);
 
     var listEl = el("div", "list"); main.appendChild(listEl);
-    var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 24г", reminder_2h: "Нагадування 2г" };
+    var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 1", reminder_2h: "Нагадування 2", reschedule: "Перенесення", cancellation: "Скасування візиту" };
     var ST = { queued: "у черзі", sent: "відправлено", delivered: "доставлено", undelivered: "не доставлено", failed: "помилка", cancelled: "скасовано" };
     listEl.innerHTML = '<div class="empty">Завантаження…</div>';
     api("GET", "/api/crm/notifications").then(function (res) {
