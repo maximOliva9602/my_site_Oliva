@@ -60,12 +60,41 @@ function queueDueReminders(now) {
   return queued;
 }
 
+/* Привітання з днем народження: раз на рік на клієнта, о 10:00–19:59 за
+   Києвом (нічні SMS заборонені операторами), лише клієнтам із датою
+   народження в картці, не з чорного списку і без відмови від розсилок.
+   Позначаємо надісланим ДО відправки: повтор при збої (спам + витрати)
+   гірший за одне пропущене привітання. */
+function sendBirthdaysDue() {
+  try {
+    if (getSetting("notif_birthday", "1") !== "1") return;
+    const nowK = tz.nowKyiv();
+    if (nowK.min < 10 * 60 || nowK.min >= 20 * 60) return;
+    const md = nowK.date.slice(5); // 'MM-DD'
+    const year = parseInt(nowK.date.slice(0, 4), 10);
+    const rows = db.prepare(
+      `SELECT id, phone FROM clients
+        WHERE birthday IS NOT NULL AND length(birthday) >= 10 AND substr(birthday, 6, 5) = ?
+          AND phone IS NOT NULL AND COALESCE(blacklisted, 0) = 0 AND COALESCE(no_marketing, 0) = 0`
+    ).all(md);
+    for (const c of rows) {
+      const dup = db.prepare("SELECT 1 FROM birthday_greetings WHERE client_id=? AND year=?").get(c.id, year);
+      if (dup) continue;
+      db.prepare("INSERT INTO birthday_greetings (client_id, year, sent_at) VALUES (?,?,?)").run(c.id, year, Date.now());
+      notify.sendDirect(c.phone, notify.birthdayText())
+        .then(function () { console.log(`[birthday] привітання клієнту #${c.id} надіслано`); })
+        .catch(function (e) { console.error("[birthday] send:", e.message); });
+    }
+  } catch (e) { console.error("[birthday]", e.message); }
+}
+
 async function tick() {
   if (ticking) return;
   ticking = true;
   try {
     const now = Date.now();
     queueDueReminders(now);
+    sendBirthdaysDue();
     await notify.flushQueued();
     await notify.flushBroadcasts();
     if (now - lastPoll > 5 * 60 * 1000) { // опитування статусів ~раз на 5 хв
