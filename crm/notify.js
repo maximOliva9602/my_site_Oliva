@@ -114,7 +114,13 @@ async function flushQueued() {
       ).run(driver.name, r.providerMsgId, r.channel || null, Date.now(), n.id);
     } catch (e) {
       console.error(`[notify] помилка відправки #${n.id}:`, e.message);
-      db.prepare("UPDATE notifications SET status='failed' WHERE id=?").run(n.id);
+      /* «Некоректний номер» не вилікується повтором — одразу скасовуємо,
+         інакше рядок ретраїться щохвилини й засмічує логи. */
+      if (String(e.message || "").includes("некоректний номер")) {
+        db.prepare("UPDATE notifications SET status='cancelled', status_at=? WHERE id=?").run(Date.now(), n.id);
+      } else {
+        db.prepare("UPDATE notifications SET status='failed' WHERE id=?").run(n.id);
+      }
     }
   }
   return live.length;
