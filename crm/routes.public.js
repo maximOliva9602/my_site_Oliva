@@ -235,6 +235,14 @@ router.post("/book", function (req, res) {
       // upsert клієнта за телефоном
       let client = db.prepare("SELECT id FROM clients WHERE phone = ?").get(phone);
       if (!client) {
+        /* У базі трапляються обидва формати номера (097… і +380…) —
+           точний збіг не знаходить стару картку і плодив би дублі.
+           Фолбек: порівнюємо нормалізовані номери. */
+        const hit = db.prepare("SELECT id, phone FROM clients").all()
+          .find(function (c) { return tz.normPhone(c.phone) === phone; });
+        if (hit) client = { id: hit.id };
+      }
+      if (!client) {
         const info = db.prepare(
           "INSERT INTO clients (phone, name, visit_count, created_at) VALUES (?,?,0,?)"
         ).run(phone, name, now);
