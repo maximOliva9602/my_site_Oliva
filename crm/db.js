@@ -307,8 +307,15 @@ try { db.exec("ALTER TABLE masters ADD COLUMN branch_id INTEGER REFERENCES branc
 try { db.exec("ALTER TABLE masters ADD COLUMN can_see_phones INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN experience_years INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 /* Відмова від масових розсилок. Нагадувань про запис не стосується —
-   ті транзакційні й надсилаються завжди. */
+   ті транзакційні й типово надсилаються всім. */
 try { db.exec("ALTER TABLE clients ADD COLUMN no_marketing INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+/* Вимкнення SMS-нагадувань для ОКРЕМОГО клієнта (типово всім увімкнено). */
+try { db.exec("ALTER TABLE clients ADD COLUMN no_reminders INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+
+/* ---------------- Налаштування (key-value) ----------------
+   Напр. reminder1_hours / reminder2_hours — за скільки годин до візиту
+   надсилати нагадування (редагується у CRM, вкладка Сповіщення). */
+db.exec("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)");
 
 /* ---------------- Масові розсилки ---------------- */
 db.exec(`
