@@ -3963,11 +3963,14 @@
             '<div style="font-size:.68rem;color:var(--text-dim);margin-bottom:3px;">' + x[0] + '</div>' +
             '<div style="font-weight:700;color:var(--cream);font-size:.92rem;">' + grn(x[1]) + '</div></div>';
         }).join("") + '</div>';
-      html += '<div class="sub" style="margin-bottom:12px;">Заробіток рахується із <b>завершених</b> візитів: персональна ставка на послугу, інакше — типовий відсоток.</div>';
+      html += '<div class="sub" style="margin-bottom:12px;">Заробіток рахується із <b>завершених</b> візитів. <b>Новий</b> — перший завершений візит клієнта у цього майстра; <b>повторний</b> — усі наступні.</div>';
       html += '<label>Типовий відсоток від ціни послуги</label>' +
-        '<div style="display:flex;align-items:center;gap:8px;">' +
-        '<input type="number" id="payDef" min="0" max="100" step="0.5" style="width:110px;" value="' + (d.master.pay_percent != null ? d.master.pay_percent : "") + '" placeholder="0">' +
-        '<span class="muted">% (діє на послуги без окремої ставки)</span></div>';
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="min-width:88px;">Новий клієнт:</span>' +
+        '<input type="number" id="payDef" min="0" max="100" step="0.5" style="width:100px;" value="' + (d.master.pay_percent != null ? d.master.pay_percent : "") + '" placeholder="0"><span class="muted">%</span></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="min-width:88px;">Повторний:</span>' +
+        '<input type="number" id="payDefRet" min="0" max="100" step="0.5" style="width:100px;" value="' + (d.master.pay_percent_return != null ? d.master.pay_percent_return : "") + '" placeholder="як новий"><span class="muted">% (порожньо — як для нового)</span></div>' +
+        '</div>';
       html += '<div style="margin-top:14px;margin-bottom:6px;font-size:.85rem;font-weight:600;color:var(--cream);">Ставки по послугах</div>';
       html += '<div style="max-height:290px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;">';
       if (!(d.services || []).length) html += '<div class="empty">У майстра немає активних послуг</div>';
@@ -3975,15 +3978,19 @@
         var o = ovMap[s.id];
         var mode = o ? o.mode : "default";
         var val = o ? (o.mode === "fixed" ? Math.round(o.value / 100) : o.value) : "";
+        var valRet = (o && o.value_return != null) ? (o.mode === "fixed" ? Math.round(o.value_return / 100) : o.value_return) : "";
         html += '<div data-ps="' + s.id + '" style="padding:9px 10px;border-bottom:1px solid var(--line);">' +
           '<div style="font-size:.78rem;color:var(--cream);margin-bottom:6px;">' + s.name + ' <span class="muted">· ' + Math.round((s.price || 0) / 100) + ' грн</span></div>' +
-          '<div style="display:flex;gap:6px;align-items:center;">' +
-          '<select data-mode style="flex:1;min-width:0;font-size:.8rem;padding:6px 8px;">' +
+          '<select data-mode style="width:100%;font-size:.8rem;padding:6px 8px;margin-bottom:6px;">' +
             '<option value="default"' + (mode === "default" ? " selected" : "") + '>Типовий %</option>' +
             '<option value="percent"' + (mode === "percent" ? " selected" : "") + '>Свій відсоток</option>' +
             '<option value="fixed"' + (mode === "fixed" ? " selected" : "") + '>Фікс. грн за візит</option>' +
           '</select>' +
-          '<input data-val type="number" min="0" step="0.5" style="width:92px;font-size:.8rem;padding:6px 8px;" value="' + val + '"' + (mode === "default" ? " disabled" : "") + '>' +
+          '<div data-vals style="display:' + (mode === "default" ? "none" : "flex") + ';gap:6px;align-items:center;flex-wrap:wrap;">' +
+            '<span class="muted" style="font-size:.72rem;">новий:</span>' +
+            '<input data-val type="number" min="0" step="0.5" style="width:84px;font-size:.8rem;padding:6px 8px;" value="' + val + '">' +
+            '<span class="muted" style="font-size:.72rem;">повторний:</span>' +
+            '<input data-val-ret type="number" min="0" step="0.5" style="width:84px;font-size:.8rem;padding:6px 8px;" value="' + valRet + '" placeholder="як новий">' +
           '</div></div>';
       });
       html += '</div>';
@@ -3992,10 +3999,11 @@
       $("payBody").innerHTML = html;
 
       $("payBody").querySelectorAll("[data-ps]").forEach(function (row) {
-        var sel = row.querySelector("[data-mode]"), inp = row.querySelector("[data-val]");
+        var sel = row.querySelector("[data-mode]"), vals = row.querySelector("[data-vals]");
         sel.addEventListener("change", function () {
-          inp.disabled = sel.value === "default";
-          if (inp.disabled) inp.value = "";
+          var off = sel.value === "default";
+          vals.style.display = off ? "none" : "flex";
+          if (off) { row.querySelector("[data-val]").value = ""; row.querySelector("[data-val-ret]").value = ""; }
         });
       });
 
@@ -4005,17 +4013,31 @@
           var mode = row.querySelector("[data-mode]").value;
           if (mode === "default") return;
           var num = parseFloat(row.querySelector("[data-val]").value);
-          if (!isFinite(num) || num < 0) { bad = "Вкажіть ставку для всіх послуг зі своєю ставкою"; return; }
+          var retRaw = row.querySelector("[data-val-ret]").value.trim();
+          if (!isFinite(num) || num < 0) { bad = "Вкажіть ставку (новий клієнт) для всіх послуг зі своєю ставкою"; return; }
           if (mode === "percent" && num > 100) { bad = "Відсоток не може перевищувати 100"; return; }
+          var retVal = null;
+          if (retRaw !== "") {
+            var retNum = parseFloat(retRaw);
+            if (!isFinite(retNum) || retNum < 0) { bad = "Некоректна ставка для повторного клієнта"; return; }
+            if (mode === "percent" && retNum > 100) { bad = "Відсоток (повторний) не може перевищувати 100"; return; }
+            retVal = mode === "fixed" ? Math.round(retNum * 100) : retNum;
+          }
           overrides.push({
             service_id: parseInt(row.getAttribute("data-ps"), 10),
             mode: mode,
             value: mode === "fixed" ? Math.round(num * 100) : num, // фікс — у копійках
+            value_return: retVal, // null = як для нового
           });
         });
         if (bad) { $("payErr").textContent = bad; return; }
         var def = $("payDef").value.trim();
-        api("PATCH", "/api/crm/masters/" + m.id + "/pay", { pay_percent: def === "" ? null : def, overrides: overrides }).then(function (r2) {
+        var defRet = $("payDefRet").value.trim();
+        api("PATCH", "/api/crm/masters/" + m.id + "/pay", {
+          pay_percent: def === "" ? null : def,
+          pay_percent_return: defRet === "" ? null : defRet,
+          overrides: overrides,
+        }).then(function (r2) {
           if (!(r2.j && r2.j.ok)) { $("payErr").textContent = (r2.j && r2.j.error) || "Помилка збереження"; return; }
           closeModal();
         });
