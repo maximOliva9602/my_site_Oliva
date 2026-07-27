@@ -160,6 +160,21 @@ function setStatus(id, status, session) {
   }
   db.prepare("UPDATE appointments SET status=?, updated_at=? WHERE id=?").run(status, Date.now(), id);
   recomputeClient(a.client_id);
+  if (status === "confirmed") {
+    /* SMS клієнту «Ваш запис … підтверджений» — саме в момент, коли майстер
+       підтвердив запис у CRM (а не при створенні онлайн-запису).
+       UNIQUE(appointment_id, kind) робить це ідемпотентним: повторне
+       підтвердження того ж запису другу SMS не надішле. */
+    try {
+      const notify = require("./notify");
+      const q = notify.queueNotification(id, "confirmation");
+      if (q && q.ok && !q.duplicate) {
+        setImmediate(function () {
+          notify.flushQueued().catch(function (e) { console.error("[confirm] flush:", e.message); });
+        });
+      }
+    } catch (e) { console.error("[confirm] queue:", e.message); }
+  }
   if (status === "completed") {
     // Автоматично списуємо сеанс абонементу (якщо ще не списали)
     const full = db.prepare("SELECT client_id, service_id, subscription_used FROM appointments WHERE id=?").get(id);
