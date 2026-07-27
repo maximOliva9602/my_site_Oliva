@@ -23,6 +23,22 @@ const API = process.env.ALPHASMS_API || "https://alphasms.ua/api/json.php";
 let seq = 0;
 function nextId() { return Date.now() * 100 + (seq++ % 100); }
 
+/* Номер у міжнародний формат для оператора: 380XXXXXXXXX (цифри без «+»).
+   ВАЖЛИВО: AlphaSMS тарифікує будь-яке ПРИЙНЯТЕ повідомлення, навіть якщо
+   оператор не може його доставити. Тому локальні «0XX…» без коду країни —
+   це просто злиті гроші (шлюз бере оплату, доставки нема). UA-номери
+   доводимо до 380…, іноземні лишаємо як є, а вочевидь побиті відсікаємо
+   ще до відправки (див. валідацію у sendMessage). */
+function normalizeUA(raw) {
+  let d = String(raw == null ? "" : raw).replace(/\D/g, "");
+  if (!d) return "";
+  if (d.startsWith("380")) return d;                          // вже міжнародний UA
+  if (d.startsWith("0") && d.length === 10) return "38" + d;  // 0XXXXXXXXX -> 380XXXXXXXXX
+  if (d.startsWith("80") && d.length === 11) return "3" + d;  // 80XXXXXXXXX -> 380XXXXXXXXX
+  if (d.length === 9) return "380" + d;                       // XXXXXXXXX -> 380XXXXXXXXX
+  return d;                                                    // іноземний номер — лишаємо
+}
+
 /* Статуси AlphaSMS (SMPP-подібні, рядком або кодом) -> наш enum.
    Негативні — першими: UNDELIVERABLE містить підрядок DELIVER, тож
    зворотний порядок мапив би його в «доставлено». */
@@ -53,11 +69,18 @@ module.exports = {
 
   async sendMessage(opts) {
     if (!KEY) throw new Error("ALPHASMS_KEY не задано");
+    const phone = normalizeUA(opts.phone);
+    // Не палимо гроші на завідомо некоректних номерах: якщо після нормалізації
+    // це не схоже на міжнародний номер (11–15 цифр) — навіть не звертаємось до
+    // API (інакше AlphaSMS прийме, спише кошти, а оператор не доставить).
+    if (!/^\d{11,15}$/.test(phone)) {
+      throw new Error("alphasms: некоректний номер «" + opts.phone + "» — пропущено (очікується формат 380XXXXXXXXX)");
+    }
     const id = nextId();
     const j = await call([{
       type: "sms",
       id: id,
-      phone: String(opts.phone).replace(/\D/g, ""), // API хоче цифри без «+»
+      phone: phone, // міжнародний формат, цифри без «+»
       sms_signature: SENDER,
       sms_message: opts.text,
       sms_lifetime: 86400,
