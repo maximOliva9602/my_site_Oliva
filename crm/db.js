@@ -314,8 +314,19 @@ try { db.exec("ALTER TABLE clients ADD COLUMN no_reminders INTEGER NOT NULL DEFA
 
 /* ---------------- Налаштування (key-value) ----------------
    Напр. reminder1_hours / reminder2_hours — за скільки годин до візиту
-   надсилати нагадування (редагується у CRM, вкладка Сповіщення). */
+   надсилати нагадування; notif_* — перемикачі типів SMS-сповіщень
+   (редагується у CRM, вкладка Сповіщення). */
 db.exec("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)");
+
+/* День народження клієнта ('YYYY-MM-DD') — для SMS-привітання. */
+try { db.exec("ALTER TABLE clients ADD COLUMN birthday TEXT"); } catch(e) {}
+/* Журнал надісланих привітань: раз на рік на клієнта, переживає рестарти. */
+db.exec(`CREATE TABLE IF NOT EXISTS birthday_greetings (
+  client_id INTEGER NOT NULL,
+  year      INTEGER NOT NULL,
+  sent_at   INTEGER,
+  PRIMARY KEY (client_id, year)
+)`);
 
 /* ---------------- Масові розсилки ---------------- */
 db.exec(`
