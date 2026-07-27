@@ -25,6 +25,7 @@ console.log(`[notify] драйвер: ${driver.name}`);
 function apptView(appointmentId) {
   return db.prepare(
     `SELECT a.*, c.name AS client_name, c.phone AS client_phone,
+            c.no_reminders AS client_no_reminders,
             s.name AS service_name, m.name AS master_name
        FROM appointments a
        JOIN clients c  ON c.id = a.client_id
@@ -63,6 +64,11 @@ function renderTemplate(kind, v) {
 function queueNotification(appointmentId, kind) {
   const v = apptView(appointmentId);
   if (!v || !v.client_phone) return { ok: false, error: "no appt/phone" };
+  /* Персональне вимкнення нагадувань (картка клієнта, меню ⋮).
+     Стосується лише нагадувань — підтвердження запису йде завжди. */
+  if ((kind === "reminder_24h" || kind === "reminder_2h") && v.client_no_reminders) {
+    return { ok: false, error: "reminders disabled for client" };
+  }
   const text = renderTemplate(kind, v);
   if (!text) return { ok: false, error: "no template for kind " + kind };
   try {
