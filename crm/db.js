@@ -322,11 +322,15 @@ db.exec("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TE
 try { db.exec("ALTER TABLE clients ADD COLUMN birthday TEXT"); } catch(e) {}
 
 /* ---------------- Оплата праці майстрів ----------------
-   masters.pay_percent — типовий відсоток майстра від ціни послуги.
+   masters.pay_percent — типовий відсоток майстра для НОВОГО клієнта;
+   masters.pay_percent_return — для ПОВТОРНОГО (null = як для нового).
+   Повторний = клієнт, який уже має завершений візит у цього ж майстра.
    master_service_pay — персональна ставка на конкретну послугу:
-   mode='percent' (value у %) або mode='fixed' (value у КОПІЙКАХ за візит).
+   mode='percent' (value у %) або mode='fixed' (value у КОПІЙКАХ за візит);
+   value — для нового клієнта, value_return — для повторного (null = як value).
    Заробіток рахується із завершених (completed) візитів. */
 try { db.exec("ALTER TABLE masters ADD COLUMN pay_percent REAL"); } catch(e) {}
+try { db.exec("ALTER TABLE masters ADD COLUMN pay_percent_return REAL"); } catch(e) {}
 db.exec(`CREATE TABLE IF NOT EXISTS master_service_pay (
   master_id  INTEGER NOT NULL,
   service_id INTEGER NOT NULL,
@@ -336,6 +340,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS master_service_pay (
   FOREIGN KEY (master_id)  REFERENCES masters(id)  ON DELETE CASCADE,
   FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 )`);
+try { db.exec("ALTER TABLE master_service_pay ADD COLUMN value_return REAL"); } catch(e) {}
 /* Журнал надісланих привітань: раз на рік на клієнта, переживає рестарти. */
 db.exec(`CREATE TABLE IF NOT EXISTS birthday_greetings (
   client_id INTEGER NOT NULL,
