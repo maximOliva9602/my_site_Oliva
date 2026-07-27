@@ -12,8 +12,6 @@ const notify = require("./notify");
 
 const TICK_MS = 60 * 1000;
 const REMINDER2_HOURS = parseFloat(process.env.REMINDER2_HOURS || "0"); // env-фолбек для 2-го нагадування
-const ACTIVE = ["pending", "confirmed"];
-
 let ticking = false;
 let lastPoll = 0;
 
@@ -36,19 +34,36 @@ function dueWindows() {
   return w;
 }
 
-/* Знаходить записи, момент яких у (now, now+lead], і ставить нагадування. */
+/* Знаходить записи, момент яких у (now, now+lead], і ставить нагадування.
+   Правила (щоб клієнт не отримував зайвого одразу після запису):
+   1. ЛИШЕ підтверджені записи — доки майстер не підтвердив, клієнту тиша.
+   2. Якщо клієнт записався вже всередині вікна нагадування (напр. за 3 год
+      до візиту при нагадуванні «за 24 год») — це нагадування пропускається:
+      він щойно записався і все пам'ятає.
+   3. Протухлі нагадування (момент минув понад 3 год тому, бо запис довго
+      висів непідтвердженим) не надолужуються.
+   4. Якщо підтвердження надіслано щойно (<30 хв) — нагадування чекає,
+      щоб клієнт не отримав дві SMS підряд. */
 function queueDueReminders(now) {
   let queued = 0;
   const appts = db.prepare(
-    `SELECT id, date, start_min FROM appointments WHERE status IN ('pending','confirmed')`
+    `SELECT id, date, start_min, created_at FROM appointments WHERE status='confirmed'`
   ).all();
   const windows = dueWindows();
+  const confStmt = db.prepare(
+    "SELECT sent_at FROM notifications WHERE appointment_id=? AND kind='confirmation' AND sent_at IS NOT NULL"
+  );
   for (const a of appts) {
     const instant = tz.apptInstant(a.date, a.start_min);
     if (instant <= now) continue;
     const untilMs = instant - now;
     for (const win of windows) {
       if (untilMs > win.leadMs) continue; // ще рано для цього вікна
+      const momentMs = instant - win.leadMs; // коли мало піти це нагадування
+      if (momentMs < (a.created_at || 0) + 2 * 3600 * 1000) continue; // (2)
+      if (now - momentMs > 3 * 3600 * 1000) continue;                 // (3)
+      const conf = confStmt.get(a.id);
+      if (conf && now - conf.sent_at < 30 * 60 * 1000) continue;      // (4)
       const exists = db.prepare(
         "SELECT 1 FROM notifications WHERE appointment_id=? AND kind=?"
       ).get(a.id, win.kind);
