@@ -11,15 +11,28 @@ const tz = require("./tz");
 const notify = require("./notify");
 
 const TICK_MS = 60 * 1000;
-const REMINDER2_HOURS = parseFloat(process.env.REMINDER2_HOURS || "0"); // 0 = вимкнено
+const REMINDER2_HOURS = parseFloat(process.env.REMINDER2_HOURS || "0"); // env-фолбек для 2-го нагадування
 const ACTIVE = ["pending", "confirmed"];
 
 let ticking = false;
 let lastPoll = 0;
 
+/* Час нагадувань редагується у CRM (вкладка Сповіщення) і зберігається в
+   app_settings; env — лише початкове значення. Читаємо щотіка (раз на
+   хвилину, для SQLite це дрібниця), тому зміни діють одразу без рестарту. */
+function getSetting(key, dflt) {
+  try {
+    const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(key);
+    return r ? r.value : dflt;
+  } catch (e) { return dflt; }
+}
+
 function dueWindows() {
-  const w = [{ kind: "reminder_24h", leadMs: 24 * 60 * 60 * 1000 }];
-  if (REMINDER2_HOURS > 0) w.push({ kind: "reminder_2h", leadMs: REMINDER2_HOURS * 60 * 60 * 1000 });
+  const h1 = parseFloat(getSetting("reminder1_hours", "24")) || 0;
+  const h2 = parseFloat(getSetting("reminder2_hours", process.env.REMINDER2_HOURS || "0")) || 0;
+  const w = [];
+  if (h1 > 0) w.push({ kind: "reminder_24h", leadMs: h1 * 60 * 60 * 1000 });
+  if (h2 > 0) w.push({ kind: "reminder_2h", leadMs: h2 * 60 * 60 * 1000 });
   return w;
 }
 
