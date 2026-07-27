@@ -76,7 +76,37 @@ async function flushQueued() {
   const rows = db.prepare(
     "SELECT * FROM notifications WHERE status IN ('queued','failed') ORDER BY id LIMIT 50"
   ).all();
+  if (!rows.length) return 0;
+
+  /* ── Захист від «протухлого» хвоста ──────────────────────────────
+     failed-рядки повторюються щохвилини. Поки на рахунку провайдера
+     нема грошей — вони висять, а одразу після поповнення ВЕСЬ хвіст
+     вилітає одним залпом і з'їдає баланс (27.07: 7 повідомлень пішли
+     в нікуди на ~46 грн). Тому перед відправкою скасовуємо те, що
+     надсилати вже безглуздо: старше 24 год; запис видалений,
+     скасований, завершений або його час уже минув. */
+  const nowK = tz.nowKyiv();
+  const cancelStmt = db.prepare("UPDATE notifications SET status='cancelled', status_at=? WHERE id=?");
+  const live = [];
   for (const n of rows) {
+    let reason = null;
+    if (Date.now() - n.created_at > 24 * 3600 * 1000) {
+      reason = "старше 24 год";
+    } else {
+      const a = db.prepare("SELECT date, start_min, status FROM appointments WHERE id=?").get(n.appointment_id);
+      if (!a) reason = "запис видалено";
+      else if (a.status === "cancelled" || a.status === "no_show" || a.status === "completed") reason = "запис має статус " + a.status;
+      else if (a.date < nowK.date || (a.date === nowK.date && a.start_min <= nowK.min)) reason = "час запису минув";
+    }
+    if (reason) {
+      cancelStmt.run(Date.now(), n.id);
+      console.log(`[notify] сповіщення #${n.id} скасовано (${reason})`);
+      continue;
+    }
+    live.push(n);
+  }
+
+  for (const n of live) {
     try {
       const r = await driver.sendMessage({ phone: n.phone, text: n.text });
       db.prepare(
@@ -87,7 +117,7 @@ async function flushQueued() {
       db.prepare("UPDATE notifications SET status='failed' WHERE id=?").run(n.id);
     }
   }
-  return rows.length;
+  return live.length;
 }
 
 /* Масова розсилка: надсилає порцію queued-повідомлень.
