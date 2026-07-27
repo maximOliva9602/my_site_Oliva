@@ -10,7 +10,10 @@ const tz = require("./tz");
 
 const DRIVER_NAME = process.env.NOTIFY_DRIVER || "console";
 const STUDIO_ADDRESS = process.env.STUDIO_ADDRESS || "м. Київ, вул. Борщагівська, 145";
-const STUDIO_PHONE = process.env.STUDIO_PHONE || "+380974340112";
+/* Телефон у SMS — завжди компактно (+380XXXXXXXXX, без дужок/пробілів):
+   кожен зайвий символ наближає текст до межі 70 символів (2-га частина =
+   подвійна ціна). Тому стискаємо незалежно від того, як записано в env. */
+const STUDIO_PHONE = (process.env.STUDIO_PHONE || "+380974340112").replace(/[^\d+]/g, "");
 
 let driver;
 try {
