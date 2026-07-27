@@ -1296,6 +1296,20 @@ router.post("/broadcasts/preview", owner, function (req, res) {
   res.json(out);
 });
 
+/* Тестова SMS РІВНО на один номер — повз чергу й повз список клієнтів.
+   Використовується, щоб перевірити налаштування, нікого більше не зачепивши. */
+router.post("/broadcasts/test", owner, function (req, res) {
+  const b = req.body || {};
+  const phone = tz.normPhone(clean(b.phone, 30));
+  const text = clean(b.text, BROADCAST_MAX_LEN) || "Тестове повідомлення від Oliva. Якщо ви це бачите — SMS працює.";
+  if (!phone || phone.replace(/\D/g, "").length < 11) {
+    return res.json({ ok: false, error: "Некоректний номер (очікується формат 0XX… або +380XX…)" });
+  }
+  require("./notify").sendDirect(phone, text)
+    .then(function () { res.json({ ok: true, phone: phone }); })
+    .catch(function (e) { res.json({ ok: false, error: String((e && e.message) || e) }); });
+});
+
 router.post("/broadcasts", owner, function (req, res) {
   const b = req.body || {};
   const text = clean(b.text, BROADCAST_MAX_LEN);
