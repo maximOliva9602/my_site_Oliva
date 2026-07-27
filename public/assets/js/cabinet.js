@@ -3017,6 +3017,8 @@
           /* Відмова від розсилок — окремо від чорного списку: клієнт може
              й далі ходити, просто не хоче рекламних повідомлень. */
           (ME.role === "owner" ? '<button id="cc-nomark" style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;cursor:pointer;border-bottom:1px solid var(--line);">' + (c.no_marketing ? 'Дозволити розсилки' : 'Не надсилати розсилки') + '</button>' : '') +
+          /* Персональний перемикач SMS-нагадувань про візит (типово всім увімкнено) */
+          '<button id="cc-norem" style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;cursor:pointer;border-bottom:1px solid var(--line);">' + (c.no_reminders ? '🔔 Увімкнути SMS-нагадування' : '🔕 Вимкнути SMS-нагадування') + '</button>' +
           (ME.role === "owner" ? '<button id="cc-del" style="display:block;width:100%;text-align:left;background:none;border:none;padding:13px 16px;font-size:.9rem;color:#c04040;cursor:pointer;">Видалити</button>' : '');
         document.body.appendChild(ctx);
 
@@ -3051,6 +3053,14 @@
           document.getElementById("cc-nomark").addEventListener("click", function() {
             closeCtx();
             api("PATCH", "/api/crm/clients/" + id + "/no-marketing", { no_marketing: c.no_marketing ? 0 : 1 })
+              .then(function() { renderClientCard(id); });
+          });
+        }
+
+        if (document.getElementById("cc-norem")) {
+          document.getElementById("cc-norem").addEventListener("click", function() {
+            closeCtx();
+            api("PATCH", "/api/crm/clients/" + id + "/no-reminders", { no_reminders: c.no_reminders ? 0 : 1 })
               .then(function() { renderClientCard(id); });
           });
         }
@@ -3094,6 +3104,12 @@
       nameEl.style.cssText = "font-size:1.25rem;font-weight:700;color:var(--cream);text-align:center;" + (c.blacklisted ? "opacity:.6;" : "");
       nameEl.textContent = c.name + (c.blacklisted ? " 🚫" : "");
       heroDiv.appendChild(nameEl);
+      if (c.no_reminders) {
+        var noRemEl = document.createElement("div");
+        noRemEl.style.cssText = "font-size:.72rem;color:var(--warn);margin-top:4px;";
+        noRemEl.textContent = "🔕 SMS-нагадування вимкнені";
+        heroDiv.appendChild(noRemEl);
+      }
       main.appendChild(heroDiv);
 
       // ── Телефон ─────────────────────────────────────────────────────
@@ -4764,6 +4780,53 @@
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Журнал сповіщень"));
     main.appendChild(bar);
+
+    /* ── Налаштування часу нагадувань ── */
+    var remCard = el("div", "item"); remCard.style.marginBottom = "16px";
+    remCard.appendChild(el("div", "t", "⏰ Нагадування клієнтам про візит"));
+    var remHint = el("div", "sub"); remHint.style.margin = "6px 0 10px";
+    remHint.textContent = "Надсилаються автоматично всім клієнтам. Вимкнути окремому клієнту можна в його картці (меню ⋮ → Вимкнути SMS-нагадування).";
+    remCard.appendChild(remHint);
+    function remInput(labelText) {
+      var wrap = el("div", "");
+      wrap.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;";
+      var lbl = el("span", "muted", labelText);
+      lbl.style.cssText = "min-width:52px;";
+      var inp = document.createElement("input");
+      inp.type = "number"; inp.min = "0"; inp.max = "240"; inp.step = "0.5";
+      inp.style.cssText = "width:90px;";
+      wrap.appendChild(lbl); wrap.appendChild(inp);
+      wrap.appendChild(el("span", "muted", "год до візиту (0 — вимкнено)"));
+      return { wrap: wrap, inp: inp };
+    }
+    var rem1 = remInput("Перше:");
+    var rem2 = remInput("Друге:");
+    remCard.appendChild(rem1.wrap);
+    remCard.appendChild(rem2.wrap);
+    var remActs = el("div", "acts");
+    var remSave = el("button", "btn btn-primary btn-sm", "Зберегти");
+    remActs.appendChild(remSave);
+    remCard.appendChild(remActs);
+    var remMsg = el("div", "sub"); remMsg.style.marginTop = "6px";
+    remCard.appendChild(remMsg);
+    api("GET", "/api/crm/notify-settings").then(function (r) {
+      if (r.j && r.j.ok) { rem1.inp.value = r.j.reminder1_hours; rem2.inp.value = r.j.reminder2_hours; }
+    });
+    remSave.addEventListener("click", function () {
+      remSave.disabled = true;
+      api("PATCH", "/api/crm/notify-settings", { reminder1_hours: rem1.inp.value, reminder2_hours: rem2.inp.value }).then(function (r) {
+        remSave.disabled = false;
+        if (r.j && r.j.ok) {
+          remMsg.style.color = "var(--ok)";
+          remMsg.textContent = "✓ Збережено: перше — " + (r.j.reminder1_hours ? "за " + r.j.reminder1_hours + " год" : "вимкнено") +
+            ", друге — " + (r.j.reminder2_hours ? "за " + r.j.reminder2_hours + " год" : "вимкнено") + ". Діє одразу.";
+        } else {
+          remMsg.style.color = "var(--err)";
+          remMsg.textContent = "✗ " + ((r.j && r.j.error) || "Помилка збереження");
+        }
+      });
+    });
+    main.appendChild(remCard);
 
     /* ── Push-сповіщення на телефон ── */
     var pushCard = el("div", "item"); pushCard.style.marginBottom = "16px";
