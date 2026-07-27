@@ -164,6 +164,28 @@ function createAppointment(d, session) {
   return { status: 200, body: { ok: true, public_id: publicId, appointment: viewAppt(apptRow(appointmentId)) } };
 }
 
+/* ---- Оплата праці майстра ----
+   Ставка на послугу: персональна (master_service_pay: % або фікс. копійки),
+   інакше типовий відсоток майстра (masters.pay_percent), інакше 0.
+   Заробіток = сума ставок по завершених візитах за період. */
+function masterEarnings(masterId, from, to) {
+  const m = db.prepare("SELECT pay_percent FROM masters WHERE id=?").get(masterId);
+  const defPercent = (m && m.pay_percent) || 0;
+  const overrides = {};
+  db.prepare("SELECT service_id, mode, value FROM master_service_pay WHERE master_id=?")
+    .all(masterId).forEach(function (r) { overrides[r.service_id] = r; });
+  const rows = db.prepare(
+    "SELECT service_id, price FROM appointments WHERE master_id=? AND status='completed' AND date>=? AND date<=?"
+  ).all(masterId, from, to);
+  let total = 0;
+  for (const a of rows) {
+    const o = overrides[a.service_id];
+    if (o) total += o.mode === "fixed" ? Math.round(o.value) : Math.round((a.price || 0) * o.value / 100);
+    else if (defPercent) total += Math.round((a.price || 0) * defPercent / 100);
+  }
+  return total; // копійки
+}
+
 /* Перемикачі SMS-сповіщень із app_settings ("1"/"0"; dfltOn — типове значення). */
 function settingOn(key, dfltOn) {
   try {
@@ -882,6 +904,9 @@ router.get("/dashboard", owner, function (req, res) {
       ).get(m.id, today).s;
       m.free_today_h = Math.max(0, Math.round((shiftMin - busyToday) / 60 * 10) / 10);
     }
+
+    /* Заробіток майстра за місяць (ставки: % або фікс на послугу) */
+    m.earnings = masterEarnings(m.id, mStart, today);
   });
 
   // --- 3. Клієнти ---
@@ -1464,6 +1489,62 @@ router.patch("/clients/:id/no-reminders", any, function (req, res) {
   const v = (req.body && req.body.no_reminders) ? 1 : 0;
   db.prepare("UPDATE clients SET no_reminders=? WHERE id=?").run(v, id);
   res.json({ ok: true, no_reminders: v });
+});
+
+/* ---- Зарплата майстра: ставки і заробіток ---- */
+router.get("/masters/:id/pay", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const m = db.prepare("SELECT id, name, last_name, pay_percent FROM masters WHERE id=?").get(id);
+  if (!m) return res.status(404).json({ ok: false });
+  const services = db.prepare(
+    `SELECT s.id, s.name, s.price FROM master_services ms
+       JOIN services s ON s.id = ms.service_id
+      WHERE ms.master_id=? AND s.active=1 ORDER BY s.name`
+  ).all(id);
+  const overrides = db.prepare(
+    "SELECT service_id, mode, value FROM master_service_pay WHERE master_id=?"
+  ).all(id);
+  const today = tz.nowKyiv().date;
+  const dt = new Date(today + "T00:00:00");
+  const dow = dt.getDay() === 0 ? 6 : dt.getDay() - 1;
+  const ws = new Date(dt); ws.setDate(dt.getDate() - dow);
+  const wStart = ws.toISOString().slice(0, 10);
+  const mStart = today.slice(0, 7) + "-01";
+  res.json({
+    ok: true, master: m, services: services, overrides: overrides,
+    earnings: {
+      today: masterEarnings(id, today, today),
+      week:  masterEarnings(id, wStart, today),
+      month: masterEarnings(id, mStart, today),
+    },
+  });
+});
+
+router.patch("/masters/:id/pay", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!db.prepare("SELECT id FROM masters WHERE id=?").get(id)) return res.status(404).json({ ok: false });
+  const d = req.body || {};
+  let pp = (d.pay_percent === undefined || d.pay_percent === null || d.pay_percent === "") ? null : parseFloat(d.pay_percent);
+  if (pp !== null && (!isFinite(pp) || pp < 0 || pp > 100)) {
+    return res.status(400).json({ ok: false, error: "Типовий відсоток: число 0–100" });
+  }
+  const list = Array.isArray(d.overrides) ? d.overrides : [];
+  for (const o of list) {
+    const sid = parseInt(o.service_id, 10);
+    const mode = o.mode === "fixed" ? "fixed" : "percent";
+    const val = parseFloat(o.value);
+    if (!sid || !isFinite(val) || val < 0) return res.status(400).json({ ok: false, error: "Некоректна ставка" });
+    if (mode === "percent" && val > 100) return res.status(400).json({ ok: false, error: "Відсоток: 0–100" });
+  }
+  db.transaction(function () {
+    db.prepare("UPDATE masters SET pay_percent=? WHERE id=?").run(pp, id);
+    db.prepare("DELETE FROM master_service_pay WHERE master_id=?").run(id);
+    const ins = db.prepare("INSERT INTO master_service_pay (master_id, service_id, mode, value) VALUES (?,?,?,?)");
+    for (const o of list) {
+      ins.run(id, parseInt(o.service_id, 10), o.mode === "fixed" ? "fixed" : "percent", parseFloat(o.value));
+    }
+  })();
+  res.json({ ok: true });
 });
 
 /* ---- Налаштування SMS-сповіщень (перемикачі + час нагадувань) ---- */
