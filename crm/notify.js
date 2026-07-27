@@ -35,20 +35,25 @@ function apptView(appointmentId) {
 }
 
 function ddmm(date) { const p = date.split("-"); return p[2] + "." + p[1]; }
+function ddmmyyyy(date) { const p = date.split("-"); return p[2] + "." + p[1] + "." + p[0]; }
 
 function renderTemplate(kind, v) {
-  const when = `Дата: ${ddmm(v.date)}\nЧас: ${tz.fmtMin(v.start_min)}`;
   if (kind === "confirmation") {
-    return `Студія масажу Oliva — запис підтверджено ✅\n` +
-      `Майстер: ${v.master_name}\n` +
-      `${when}\n` +
-      `Адреса: ${STUDIO_ADDRESS}\n` +
-      `Чекаємо на вас! Якщо плани зміняться — телефонуйте: ${STUDIO_PHONE}`;
+    /* Коротко і в 1 SMS-частину (кирилиця: ліміт 70 символів — цей текст
+       рівно вкладається). Надсилається ПІСЛЯ підтвердження майстром у CRM. */
+    return `Ваш запис ${ddmmyyyy(v.date)} о ${tz.fmtMin(v.start_min)} підтверджений. До зустрічі!\n${STUDIO_PHONE}`;
+  }
+  if (kind === "review_request") {
+    /* Окремого шаблону поки немає (і публічної сторінки відгуку теж).
+       Раніше цей kind провалювався в гілку нагадування і слав клієнту
+       ХИБНИЙ текст після кожного завершеного візиту (зайві витрати).
+       null = не ставити в чергу взагалі. */
+    return null;
   }
   // reminder_24h / reminder_2h
   return `Нагадування від Oliva 💆\n` +
     `Майстер: ${v.master_name}\n` +
-    `${when}\n` +
+    `Дата: ${ddmm(v.date)}\nЧас: ${tz.fmtMin(v.start_min)}\n` +
     `Адреса: ${STUDIO_ADDRESS}\n` +
     `Питання? ${STUDIO_PHONE}`;
 }
@@ -59,6 +64,7 @@ function queueNotification(appointmentId, kind) {
   const v = apptView(appointmentId);
   if (!v || !v.client_phone) return { ok: false, error: "no appt/phone" };
   const text = renderTemplate(kind, v);
+  if (!text) return { ok: false, error: "no template for kind " + kind };
   try {
     const info = db.prepare(
       `INSERT INTO notifications (appointment_id, kind, phone, text, provider, status, created_at)
