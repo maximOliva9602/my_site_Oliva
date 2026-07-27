@@ -4504,6 +4504,44 @@
     ta.addEventListener("input", updCounter); updCounter();
     main.appendChild(card);
 
+    /* --- Тестова SMS на один номер --- */
+    var testCard = el("div", "item"); testCard.style.marginBottom = "16px";
+    testCard.appendChild(el("div", "t", "🧪 Тестова SMS (лише на один номер)"));
+    var testHint = el("div", "sub"); testHint.style.margin = "6px 0 8px";
+    testHint.textContent = "Введіть номер — надішлеться рівно одне повідомлення тільки на нього. Іншим клієнтам нічого не піде. Візьметься текст зверху (або типовий тестовий).";
+    testCard.appendChild(testHint);
+    var testRow = el("div", "acts"); testRow.style.cssText = "gap:8px;flex-wrap:nowrap;";
+    var testPhone = document.createElement("input");
+    testPhone.type = "tel"; testPhone.placeholder = "напр. 0671234567";
+    testPhone.style.cssText = "flex:1;min-width:0;";
+    var testBtn = el("button", "btn btn-primary btn-sm", "Надіслати тест");
+    testBtn.style.flexShrink = "0";
+    testRow.appendChild(testPhone); testRow.appendChild(testBtn);
+    testCard.appendChild(testRow);
+    var testMsg = el("div", "sub"); testMsg.style.marginTop = "8px";
+    testCard.appendChild(testMsg);
+    testBtn.addEventListener("click", function () {
+      var phone = testPhone.value.trim();
+      if (!phone) { testMsg.style.color = "var(--err)"; testMsg.textContent = "Введіть номер"; return; }
+      var text = ta.value.trim() || "Тестове повідомлення від Oliva. Якщо ви це бачите — SMS працює.";
+      testBtn.disabled = true; testBtn.textContent = "Надсилаю…";
+      testMsg.style.color = "var(--text-dim)"; testMsg.textContent = "";
+      api("POST", "/api/crm/broadcasts/test", { phone: phone, text: text }).then(function (r) {
+        testBtn.disabled = false; testBtn.textContent = "Надіслати тест";
+        if (r.j && r.j.ok) {
+          testMsg.style.color = "var(--ok)";
+          testMsg.textContent = "✓ Надіслано на " + (r.j.phone || phone) + ". Перевірте телефон.";
+        } else {
+          testMsg.style.color = "var(--err)";
+          testMsg.textContent = "✗ " + ((r.j && r.j.error) || "помилка відправки");
+        }
+      }).catch(function () {
+        testBtn.disabled = false; testBtn.textContent = "Надіслати тест";
+        testMsg.style.color = "var(--err)"; testMsg.textContent = "✗ помилка мережі";
+      });
+    });
+    main.appendChild(testCard);
+
     /* --- Кому --- */
     var whoCard = el("div", "item"); whoCard.style.marginBottom = "16px";
     whoCard.appendChild(el("div", "t", "Кому надіслати"));
