@@ -4809,7 +4809,7 @@
 
     var listEl = el("div", "list"); main.appendChild(listEl);
     var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 24г", reminder_2h: "Нагадування 2г" };
-    var ST = { queued: "у черзі", sent: "відправлено", delivered: "доставлено", undelivered: "не доставлено", failed: "помилка" };
+    var ST = { queued: "у черзі", sent: "відправлено", delivered: "доставлено", undelivered: "не доставлено", failed: "помилка", cancelled: "скасовано" };
     listEl.innerHTML = '<div class="empty">Завантаження…</div>';
     api("GET", "/api/crm/notifications").then(function (res) {
       var list = res.j.notifications || []; listEl.innerHTML = "";
