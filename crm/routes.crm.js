@@ -1403,6 +1403,38 @@ router.patch("/clients/:id/no-marketing", owner, function (req, res) {
   res.json({ ok: true, no_marketing: v });
 });
 
+/* Вимк/увімк SMS-нагадування ОКРЕМОМУ клієнту (типово увімкнені всім).
+   Стосується лише нагадувань про візит; підтвердження запису йде завжди. */
+router.patch("/clients/:id/no-reminders", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const v = (req.body && req.body.no_reminders) ? 1 : 0;
+  db.prepare("UPDATE clients SET no_reminders=? WHERE id=?").run(v, id);
+  res.json({ ok: true, no_reminders: v });
+});
+
+/* ---- Налаштування нагадувань (час) ---- */
+router.get("/notify-settings", owner, function (req, res) {
+  function get(k, dflt) {
+    const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(k);
+    return r ? r.value : dflt;
+  }
+  res.json({
+    ok: true,
+    reminder1_hours: parseFloat(get("reminder1_hours", "24")) || 0,
+    reminder2_hours: parseFloat(get("reminder2_hours", process.env.REMINDER2_HOURS || "0")) || 0,
+  });
+});
+router.patch("/notify-settings", owner, function (req, res) {
+  const d = req.body || {};
+  function num(x) { const v = parseFloat(x); return isFinite(v) && v >= 0 && v <= 240 ? v : null; }
+  const h1 = num(d.reminder1_hours), h2 = num(d.reminder2_hours);
+  if (h1 === null || h2 === null) return res.status(400).json({ ok: false, error: "Години: число від 0 до 240" });
+  const up = db.prepare("INSERT INTO app_settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value");
+  up.run("reminder1_hours", String(h1));
+  up.run("reminder2_hours", String(h2));
+  res.json({ ok: true, reminder1_hours: h1, reminder2_hours: h2 });
+});
+
 /* ---- Відгуки ---- */
 router.get("/reviews", owner, function (req, res) {
   const rows = db.prepare(
