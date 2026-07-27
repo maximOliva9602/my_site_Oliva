@@ -44,6 +44,14 @@ function renderTemplate(kind, v) {
        рівно вкладається). Надсилається ПІСЛЯ підтвердження майстром у CRM. */
     return `Ваш запис ${ddmmyyyy(v.date)} о ${tz.fmtMin(v.start_min)} підтверджений. До зустрічі!\n${STUDIO_PHONE}`;
   }
+  if (kind === "reschedule") {
+    /* Перенесення візиту (66 символів = 1 SMS-частина). */
+    return `Ваш візит перенесено на ${ddmmyyyy(v.date)} о ${tz.fmtMin(v.start_min)}. Чекаємо!\n${STUDIO_PHONE}`;
+  }
+  if (kind === "cancellation") {
+    /* Скасування візиту (51 символ = 1 SMS-частина). */
+    return `Відміна запису. А ми так чекали вас :( До зустрічі!`;
+  }
   if (kind === "review_request") {
     /* Окремого шаблону поки немає (і публічної сторінки відгуку теж).
        Раніше цей kind провалювався в гілку нагадування і слав клієнту
@@ -107,7 +115,10 @@ async function flushQueued() {
     } else {
       const a = db.prepare("SELECT date, start_min, status FROM appointments WHERE id=?").get(n.appointment_id);
       if (!a) reason = "запис видалено";
-      else if (a.status === "cancelled" || a.status === "no_show" || a.status === "completed") reason = "запис має статус " + a.status;
+      /* Для kind='cancellation' статус cancelled — очікуваний (це і є SMS про
+         скасування), тому цей kind не відсіюємо за статусом. */
+      else if (a.status === "cancelled" && n.kind !== "cancellation") reason = "запис має статус cancelled";
+      else if (a.status === "no_show" || a.status === "completed") reason = "запис має статус " + a.status;
       else if (a.date < nowK.date || (a.date === nowK.date && a.start_min <= nowK.min)) reason = "час запису минув";
     }
     if (reason) {
@@ -208,8 +219,14 @@ async function sendDirect(phone, text) {
   await driver.sendMessage({ phone, text });
 }
 
+/* Текст SMS-привітання з днем народження (48 символів = 1 частина). */
+function birthdayText() {
+  return `З Днем народження! Чекаємо на вас.\n${STUDIO_PHONE}`;
+}
+
 module.exports = {
   driver, DRIVER_NAME, STUDIO_ADDRESS,
   apptView, renderTemplate, queueNotification,
   flushQueued, flushBroadcasts, recordStatus, pollStatuses, sendDirect,
+  birthdayText,
 };
