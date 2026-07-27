@@ -320,6 +320,22 @@ db.exec("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TE
 
 /* День народження клієнта ('YYYY-MM-DD') — для SMS-привітання. */
 try { db.exec("ALTER TABLE clients ADD COLUMN birthday TEXT"); } catch(e) {}
+
+/* ---------------- Оплата праці майстрів ----------------
+   masters.pay_percent — типовий відсоток майстра від ціни послуги.
+   master_service_pay — персональна ставка на конкретну послугу:
+   mode='percent' (value у %) або mode='fixed' (value у КОПІЙКАХ за візит).
+   Заробіток рахується із завершених (completed) візитів. */
+try { db.exec("ALTER TABLE masters ADD COLUMN pay_percent REAL"); } catch(e) {}
+db.exec(`CREATE TABLE IF NOT EXISTS master_service_pay (
+  master_id  INTEGER NOT NULL,
+  service_id INTEGER NOT NULL,
+  mode       TEXT NOT NULL CHECK (mode IN ('percent','fixed')),
+  value      REAL NOT NULL,
+  PRIMARY KEY (master_id, service_id),
+  FOREIGN KEY (master_id)  REFERENCES masters(id)  ON DELETE CASCADE,
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+)`);
 /* Журнал надісланих привітань: раз на рік на клієнта, переживає рестарти. */
 db.exec(`CREATE TABLE IF NOT EXISTS birthday_greetings (
   client_id INTEGER NOT NULL,
