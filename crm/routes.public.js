@@ -250,7 +250,9 @@ router.post("/book", function (req, res) {
          VALUES (?,?,?,?,?,?,?,?,?, 'pending', 'public', ?, ?, ?, ?)`
       ).run(publicId, client.id, masterId, serviceId, date, startMin, endMin, totalDur, totalPrice, comment, extraServices, now, now);
       appointmentId = ai.lastInsertRowid;
-      notify.queueNotification(appointmentId, "confirmation");
+      /* SMS-підтвердження клієнту тут НЕ ставимо: запис створюється як
+         'pending', і повідомлення «підтверджений» піде лише коли майстер
+         підтвердить його в CRM (див. setStatus у routes.crm.js). */
     });
     txn();
   } catch (e) {
@@ -258,9 +260,6 @@ router.post("/book", function (req, res) {
     console.error("[book]", e.message);
     return res.status(500).json({ ok: false, error: "server error" });
   }
-
-  // Одразу надсилаємо підтвердження клієнту (не чекаємо scheduler)
-  notify.flushQueued().catch(function(e) { console.warn("[book] flush err:", e.message); });
 
   // Push + Telegram сповіщення адміну про новий запис із сайту
   try {
