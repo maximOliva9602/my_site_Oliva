@@ -2010,7 +2010,19 @@
         (function(idx) {
           delBtn.addEventListener("click", function() {
             selectedServices.splice(idx, 1);
-            if (idx === 0) { $("mService").value = ""; refreshSubSection(); }
+            if (idx === 0) {
+              if (selectedServices.length) {
+                // Наступна послуга в списку стає новою основною.
+                $("mService").value = selectedServices[0].id;
+              } else {
+                // Послуг не лишилось — повертаємо поле пошуку, щоб
+                // можна було обрати послугу заново без перезаходу в запис.
+                $("mService").value = "";
+                $("mSvcWrap").style.display = "";
+                $("mSvcQ").value = "";
+              }
+              refreshSubSection();
+            }
             renderSvcList();
             loadSlots();
           });
