@@ -1716,7 +1716,6 @@
 
   function apptEditModal(a) {
     var M_UA2 = ["","січ","лют","бер","квіт","трав","черв","лип","серп","вер","жовт","лист","груд"];
-    var svcName = (a.service_name||'').replace(/\s*\([^)]*\)\s*/g,'').trim();
     openModal(
       '<h3>Редагування запису</h3>' +
       // Клієнт (тільки відображення)
@@ -1739,9 +1738,11 @@
       '<label style="margin-top:10px;display:block;">Час</label>' +
       '<div id="eSlots" class="muted">Завантаження…</div>' +
       '<div id="eChosenTime" style="display:none;margin-top:4px;padding:6px 10px;background:var(--panel-2);border-radius:8px;font-size:.85rem;font-weight:600;color:var(--cream);"></div>' +
-      // Послуга (display only)
+      // Послуга (редагована)
       '<label style="margin-top:10px;display:block;">Послуга</label>' +
-      '<div style="padding:8px 12px;background:var(--panel-2);border-radius:8px;font-size:.88rem;color:var(--cream);font-weight:500;">' + svcName + ' · ' + (a.duration_min||60) + ' хв</div>' +
+      '<select id="eService"></select>' +
+      // Абонемент
+      '<div id="eSubSection" style="display:none;margin-top:10px;"></div>' +
       // Коментар
       '<label style="margin-top:10px;display:block;">Коментар</label>' +
       '<textarea id="eComment" maxlength="500" rows="2">' + (a.comment||'') + '</textarea>' +
@@ -1755,6 +1756,8 @@
     var chosenMin = a.start_min;
     var M_UA3 = ["","січ","лют","бер","квіт","трав","черв","лип","серп","вер","жовт","лист","груд"];
     var DOW_UA3 = ["нд","пн","вт","ср","чт","пт","сб"];
+    var allMastersE = [], allServicesE = [];
+    var markSubUsed = false; // локальний прапорець "списати сеанс абонементу" — надсилається лише при збереженні
 
     function updateDateLbl(val) {
       var lbl = $("eDateLabel"); if (!lbl||!val) return;
@@ -1773,10 +1776,10 @@
     ct.textContent = "⏰ Час: " + fmtMin(a.start_min);
 
     function loadESlots() {
-      var mid = $("eMaster").value, date = $("eDate").value;
-      if (!mid || !date || !a.service_id) return;
+      var mid = $("eMaster").value, date = $("eDate").value, sid = $("eService").value;
+      if (!mid || !date || !sid) return;
       var box = $("eSlots"); box.innerHTML = "Завантаження…"; box.className = "";
-      api("GET", "/api/public/slots?service=" + a.service_id + "&master=" + mid + "&date=" + date).then(function(r) {
+      api("GET", "/api/public/slots?service=" + sid + "&master=" + mid + "&date=" + date).then(function(r) {
         var slots = r.j.slots || [];
         box.innerHTML = "";
         if (!slots.length) { box.className = "muted"; box.textContent = "Вільних віконець немає"; return; }
@@ -1796,26 +1799,99 @@
       });
     }
 
-    api("GET", "/api/crm/masters").then(function(res) {
+    // ── Послуга: перебудова списку під обраного майстра ──────────────
+    function rebuildEServiceOptions(preserveId) {
+      var mid = $("eMaster").value;
+      var master = allMastersE.find(function(m) { return String(m.id) === String(mid); });
+      var svcIds = master ? (master.service_ids || []) : [];
+      var opts = allServicesE.filter(function(s) { return svcIds.indexOf(s.id) !== -1; });
+      // Поточна послуга запису могла бути деактивована чи не належати
+      // майстру формально — все одно лишаємо її в списку, щоб не губити вибір.
+      if (preserveId && !opts.some(function(s) { return String(s.id) === String(preserveId); })) {
+        var cur = allServicesE.find(function(s) { return String(s.id) === String(preserveId); });
+        if (cur) opts = [cur].concat(opts);
+      }
+      var sel = $("eService");
+      sel.innerHTML = "";
+      opts.forEach(function(s) {
+        sel.appendChild(new Option(s.name + " · " + s.duration_min + " хв · " + money(s.price), s.id));
+      });
+      if (preserveId && opts.some(function(s) { return String(s.id) === String(preserveId); })) {
+        sel.value = String(preserveId);
+      } else if (opts.length) {
+        sel.value = String(opts[0].id);
+      }
+    }
+
+    // ── Абонемент ──────────────────────────────────────────────────
+    function refreshSubSectionE() {
+      var section = $("eSubSection");
+      var svcId = $("eService").value;
+      if (!a.client_id || !svcId) { section.style.display = "none"; return; }
+      section.style.display = "block";
+      section.innerHTML = '<div class="empty" style="padding:6px 0;">Перевірка абонементу…</div>';
+      if (a.subscription_used) {
+        section.innerHTML = '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#2e7d32;">🎟 За цей візит уже списано сеанс абонементу</div>';
+        return;
+      }
+      if (markSubUsed) {
+        section.innerHTML = '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#2e7d32;">🎟 Сеанс буде списано при збереженні</div>';
+        return;
+      }
+      api("GET", "/api/crm/subscriptions/check?client_id=" + a.client_id + "&service_id=" + svcId).then(function(r) {
+        var sub = r.j.active;
+        if (sub) {
+          var rem = sub.total_sessions - sub.used_sessions;
+          section.innerHTML =
+            '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:6px;">' +
+              '<span>🎟</span><span style="color:#2e7d32;font-weight:600;">Абонемент: ' + rem + ' сеанс' + (rem===1?'':'ів') + ' залишилось</span>' +
+            '</div>' +
+            '<button type="button" id="eSubUseBtn" class="btn btn-sm btn-ghost" style="width:100%;">Списати сеанс за цей візит</button>';
+          $("eSubUseBtn").addEventListener("click", function() {
+            markSubUsed = true;
+            refreshSubSectionE();
+          });
+        } else {
+          section.innerHTML = '<div class="empty" style="padding:6px 0;font-size:.8rem;">Активного абонементу на цю послугу немає</div>';
+        }
+      });
+    }
+
+    Promise.all([
+      api("GET", "/api/crm/masters"),
+      api("GET", "/api/crm/services")
+    ]).then(function(rs) {
+      allMastersE = rs[0].j.masters || [];
+      allServicesE = rs[1].j.services || [];
+
       var sel = $("eMaster");
-      (res.j.masters||[]).forEach(function(m) {
+      allMastersE.forEach(function(m) {
         if (ME.role !== "owner" && m.id !== ME.masterId) return;
         var o = new Option(m.name + (m.last_name?" "+m.last_name:""), m.id);
         sel.appendChild(o);
       });
       sel.value = String(a.master_id);
       if (ME.role !== "owner") $("eMasterRow").style.display = "none";
-      sel.addEventListener("change", loadESlots);
+
+      rebuildEServiceOptions(a.service_id);
+
+      sel.addEventListener("change", function() { markSubUsed = false; rebuildEServiceOptions($("eService").value); loadESlots(); refreshSubSectionE(); });
+      $("eService").addEventListener("change", function() { markSubUsed = false; loadESlots(); refreshSubSectionE(); });
+
       loadESlots();
+      refreshSubSectionE();
     });
 
     $("eSave").addEventListener("click", function() {
       var err = $("eErr"); err.textContent = "";
+      if (chosenMin == null) { err.textContent = "Оберіть час"; return; }
       api("PATCH", "/api/crm/appointments/" + a.id, {
         master: $("eMaster").value,
+        service: $("eService").value,
         date: $("eDate").value,
         start_min: chosenMin,
-        comment: $("eComment").value.trim()
+        comment: $("eComment").value.trim(),
+        subscription_used: markSubUsed || undefined
       }).then(function(r) {
         if (r.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
         if (!r.j.ok) { err.textContent = "Помилка: " + (r.j.error||""); return; }

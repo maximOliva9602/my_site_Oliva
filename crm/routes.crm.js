@@ -356,10 +356,22 @@ router.patch("/appointments/:id", any, function (req, res) {
   const comment = d.comment !== undefined ? clean(d.comment, 500) : a.comment;
   if (!tz.isDate(date) || !(startMin >= 0)) return res.status(400).json({ ok: false, error: "bad params" });
 
+  // Зміна послуги — перераховуємо тривалість і ціну під нову послугу.
+  let serviceId = a.service_id, durationMin = a.duration_min, price = a.price;
+  if (d.service !== undefined) {
+    const newServiceId = parseInt(d.service, 10);
+    if (newServiceId && newServiceId !== a.service_id) {
+      const svc = db.prepare("SELECT id, duration_min, price FROM services WHERE id=? AND active=1").get(newServiceId);
+      if (!svc) return res.status(404).json({ ok: false, error: "service not found" });
+      serviceId = svc.id; durationMin = svc.duration_min; price = svc.price;
+    }
+  }
+
   const timeChanged = (date !== a.date || startMin !== a.start_min);
-  if (timeChanged || masterId !== a.master_id) {
-    db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, comment=?, updated_at=? WHERE id=?")
-      .run(date, startMin, startMin + a.duration_min, masterId, comment, Date.now(), id);
+  const serviceChanged = serviceId !== a.service_id;
+  if (timeChanged || masterId !== a.master_id || serviceChanged) {
+    db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, service_id=?, duration_min=?, price=?, comment=?, updated_at=? WHERE id=?")
+      .run(date, startMin, startMin + durationMin, masterId, serviceId, durationMin, price, comment, Date.now(), id);
     /* SMS про перенесення (типово вимкнено; вмикається у Сповіщеннях).
        Лише коли реально змінились дата/час активного запису. Попереднє
        reschedule-сповіщення видаляємо, щоб UNIQUE не блокував повторне
@@ -379,6 +391,18 @@ router.patch("/appointments/:id", any, function (req, res) {
   } else {
     db.prepare("UPDATE appointments SET comment=?, updated_at=? WHERE id=?").run(comment, Date.now(), id);
   }
+
+  // Ручна відмітка «використати абонемент за цей візит» (лише unset → set).
+  if (d.subscription_used === true && !a.subscription_used) {
+    const sub = db.prepare(
+      "SELECT id FROM subscriptions WHERE client_id=? AND service_id=? AND used_sessions < total_sessions ORDER BY id LIMIT 1"
+    ).get(a.client_id, serviceId);
+    if (sub) {
+      db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
+      db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(id);
+    }
+  }
+
   res.json({ ok: true, appointment: viewAppt(apptRow(id)) });
 });
 
