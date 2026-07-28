@@ -281,9 +281,18 @@ function setStatus(id, status, session) {
 router.get("/me/appointments", any, function (req, res) {
   const s = req.session;
   const from = clean(req.query.from, 10), to = clean(req.query.to, 10);
+  const masterParam = clean(req.query.master, 20);
   let sql = "SELECT a.*, c.name client_name, c.phone client_phone, s.name service_name, m.name master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id WHERE 1=1";
   const args = [];
-  if (s.role !== "owner") { sql += " AND a.master_id=?"; args.push(s.masterId); }
+  // master=<id> — явний фільтр на конкретного майстра (доступно всім,
+  // календар і так показує розклад усіх майстрів). master=all — явно
+  // прибрати фільтр і показати записи всіх майстрів. Без параметра —
+  // стара поведінка: власник бачить усіх, майстер лише себе.
+  if (masterParam && masterParam !== "all") {
+    sql += " AND a.master_id=?"; args.push(parseInt(masterParam, 10));
+  } else if (masterParam !== "all" && s.role !== "owner") {
+    sql += " AND a.master_id=?"; args.push(s.masterId);
+  }
   if (tz.isDate(from)) { sql += " AND a.date>=?"; args.push(from); }
   if (tz.isDate(to)) { sql += " AND a.date<=?"; args.push(to); }
   sql += " ORDER BY a.date, a.start_min";

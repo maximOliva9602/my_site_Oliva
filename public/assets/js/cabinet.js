@@ -578,7 +578,9 @@
     main.appendChild(masterFilterWrap);
     var contentEl = el("div"); contentEl.id = "apptContent"; main.appendChild(contentEl);
 
-    var activeMasterFilter = "";
+    // Власник: "" = усі майстри (дефолт). Майстер: власний id = тільки свої
+    // записи (дефолт), "all" = усі майстри (щоб бачити накладки).
+    var activeMasterFilter = ME.role === "owner" ? "" : String(ME.masterId);
 
     if (ME.role === "owner") {
       api("GET", "/api/crm/masters").then(function (res) {
@@ -595,6 +597,16 @@
         reloadView();
       });
     } else {
+      var selM = el("select");
+      selM.style.cssText = "flex:1 1 auto;min-width:0;";
+      selM.appendChild(new Option("Тільки я", String(ME.masterId)));
+      selM.appendChild(new Option("Усі майстри", "all"));
+      selM.value = activeMasterFilter;
+      selM.addEventListener("change", function () { activeMasterFilter = selM.value; reloadView(selM.value); });
+      var mLbl2 = el("span", "muted", "Перегляд:");
+      mLbl2.style.flexShrink = "0";
+      masterFilterWrap.appendChild(mLbl2);
+      masterFilterWrap.appendChild(selM);
       newBtn.style.marginLeft = "auto";
       masterFilterWrap.appendChild(newBtn);
       reloadView();
@@ -715,7 +727,7 @@
       contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
       var url = ME.role === "owner"
         ? "/api/crm/appointments?date=" + apptDate + (masterId ? "&master=" + masterId : "")
-        : "/api/crm/me/appointments?from=" + apptDate + "&to=" + apptDate;
+        : "/api/crm/me/appointments?from=" + apptDate + "&to=" + apptDate + (masterId ? "&master=" + masterId : "");
       api("GET", url).then(function (res) {
         /* Скасовані ховаємо зі списку — вони й так порахуються в
            дашборді (окремий запит до БД, цього фільтра не бачить). */
@@ -955,7 +967,7 @@
         var dayBlocksArr = (rs[3].j && rs[3].j.blocks) || [];
         var dayOvs = (rs[4].j && rs[4].j.overrides) || [];
 
-        var masters = masterFilter
+        var masters = (masterFilter && masterFilter !== "all")
           ? allMasters.filter(function(m) { return String(m.id) === String(masterFilter); })
           : allMasters;
 
@@ -2367,13 +2379,17 @@
     function loadSlots() {
       /* Скидаємо і підпис теж: без цього після зміни дати/майстра лишався
          старий «⏰ Час: …», хоча вибір уже злетів, і збереження вимагало
-         обрати час, який нібито вже стоїть. */
+         обрати час, який нібито вже стоїть.
+         Але сам вибір намагаємось відновити нижче (wantStartMin) — інакше
+         додавання ще однієї послуги чи зміна тривалості скидає раніше
+         обраний час без жодної причини. */
+      var prevStartMin = chosen.start_min;
       chosen.start_min = null;
       freeStarts = [];
       showChosenTime(null);
       var sid = $("mService").value, mid = $("mMaster").value, date = $("mDate").value;
       if (!sid || !mid || !date) return;
-      var wantStartMin = prefill.startMin;
+      var wantStartMin = prefill.startMin != null ? prefill.startMin : prevStartMin;
       prefill.startMin = null;
       var box = $("mSlots"); box.className = ""; box.innerHTML = "Завантаження…";
       syncSlotsBox();
@@ -3972,14 +3988,17 @@
         '<input type="number" id="payDefRet" min="0" max="100" step="0.5" style="width:100px;" value="' + (d.master.pay_percent_return != null ? d.master.pay_percent_return : "") + '" placeholder="як новий"><span class="muted">% (порожньо — як для нового)</span></div>' +
         '</div>';
       html += '<div style="margin-top:14px;margin-bottom:6px;font-size:.85rem;font-weight:600;color:var(--cream);">Ставки по послугах</div>';
-      html += '<div style="max-height:290px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;">';
+      if ((d.services || []).length > 5) {
+        html += '<input type="text" id="payServiceSearch" placeholder="🔍 Пошук послуги…" style="margin-bottom:8px;">';
+      }
+      html += '<div id="payServiceList" style="max-height:290px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;">';
       if (!(d.services || []).length) html += '<div class="empty">У майстра немає активних послуг</div>';
       (d.services || []).forEach(function (s) {
         var o = ovMap[s.id];
         var mode = o ? o.mode : "default";
         var val = o ? (o.mode === "fixed" ? Math.round(o.value / 100) : o.value) : "";
         var valRet = (o && o.value_return != null) ? (o.mode === "fixed" ? Math.round(o.value_return / 100) : o.value_return) : "";
-        html += '<div data-ps="' + s.id + '" style="padding:9px 10px;border-bottom:1px solid var(--line);">' +
+        html += '<div data-ps="' + s.id + '" data-name="' + s.name.toLowerCase().replace(/"/g, "&quot;") + '" style="padding:9px 10px;border-bottom:1px solid var(--line);">' +
           '<div style="font-size:.78rem;color:var(--cream);margin-bottom:6px;">' + s.name + ' <span class="muted">· ' + Math.round((s.price || 0) / 100) + ' грн</span></div>' +
           '<select data-mode style="width:100%;font-size:.8rem;padding:6px 8px;margin-bottom:6px;">' +
             '<option value="default"' + (mode === "default" ? " selected" : "") + '>Типовий %</option>' +
@@ -4006,6 +4025,29 @@
           if (off) { row.querySelector("[data-val]").value = ""; row.querySelector("[data-val-ret]").value = ""; }
         });
       });
+
+      var svcSearch = $("payServiceSearch");
+      if (svcSearch) {
+        svcSearch.addEventListener("input", function () {
+          var q = svcSearch.value.trim().toLowerCase();
+          var anyVisible = false;
+          $("payServiceList").querySelectorAll("[data-ps]").forEach(function (row) {
+            var match = !q || row.getAttribute("data-name").indexOf(q) > -1;
+            row.style.display = match ? "" : "none";
+            if (match) anyVisible = true;
+          });
+          var emptyEl = $("payServiceEmpty");
+          if (!anyVisible) {
+            if (!emptyEl) {
+              emptyEl = document.createElement("div");
+              emptyEl.id = "payServiceEmpty";
+              emptyEl.className = "empty";
+              emptyEl.textContent = "Нічого не знайдено";
+              $("payServiceList").appendChild(emptyEl);
+            }
+          } else if (emptyEl) { emptyEl.remove(); }
+        });
+      }
 
       $("paySave").addEventListener("click", function () {
         var overrides = [], bad = null;
