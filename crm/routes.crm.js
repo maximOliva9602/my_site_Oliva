@@ -90,13 +90,16 @@ function createAppointment(d, session) {
   const startMin = parseInt(d.start_min, 10);
   const name = clean(d.name, 100);
   const phone = tz.normPhone(clean(d.phone, 30));
+  // Клієнт, обраний зі списку (пошук), може мати прихований телефон
+  // (немає can_see_phones) — тоді d.phone порожній, але client_id є.
+  const clientId = parseInt(d.client_id, 10) || null;
   const comment = clean(d.comment, 500);
   const colorMarker = clean(d.color_marker, 20) || null;
 
   // майстер може створювати лише собі
   if (session.role !== "owner") masterId = session.masterId;
 
-  if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name || phone.length < 7) {
+  if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name || (!clientId && phone.length < 7)) {
     return { status: 400, body: { ok: false, error: "missing fields" } };
   }
   const svc = db.prepare("SELECT duration_min, price FROM services WHERE id=? AND active=1").get(serviceId);
@@ -123,15 +126,22 @@ function createAppointment(d, session) {
   let publicId, appointmentId;
   try {
     db.transaction(function () {
-      let client = db.prepare("SELECT id FROM clients WHERE phone=?").get(phone);
-      if (!client) {
-        /* Фолбек для двох форматів номера в базі (097… і +380…) —
-           шукаємо за нормалізованим, щоб не плодити дублі карток. */
-        const hit = db.prepare("SELECT id, phone FROM clients").all()
-          .find(function (c) { return tz.normPhone(c.phone) === phone; });
-        if (hit) client = { id: hit.id };
+      let client = null;
+      if (clientId) client = db.prepare("SELECT id FROM clients WHERE id=?").get(clientId);
+      if (!client && phone.length >= 7) {
+        client = db.prepare("SELECT id FROM clients WHERE phone=?").get(phone);
+        if (!client) {
+          /* Фолбек для двох форматів номера в базі (097… і +380…) —
+             шукаємо за нормалізованим, щоб не плодити дублі карток. */
+          const hit = db.prepare("SELECT id, phone FROM clients").all()
+            .find(function (c) { return tz.normPhone(c.phone) === phone; });
+          if (hit) client = { id: hit.id };
+        }
       }
       if (!client) {
+        if (phone.length < 7) {
+          const err = new Error("CLIENT_NOT_FOUND"); err.code = "CLIENT_NOT_FOUND"; throw err;
+        }
         const info = db.prepare("INSERT INTO clients (phone,name,visit_count,created_at) VALUES (?,?,0,?)").run(phone, name, now);
         client = { id: info.lastInsertRowid };
       } else {
@@ -146,6 +156,7 @@ function createAppointment(d, session) {
     })();
   } catch (e) {
     if (e.code === "SLOT_TAKEN") return { status: 409, body: { ok: false, error: "SLOT_TAKEN" } };
+    if (e.code === "CLIENT_NOT_FOUND") return { status: 404, body: { ok: false, error: "CLIENT_NOT_FOUND" } };
     return { status: 500, body: { ok: false, error: e.message } };
   }
   // Сповіщення адміну в Telegram + PWA push

@@ -2447,10 +2447,12 @@
       api("POST", url, {
         service: $("mService").value, master: $("mMaster").value, date: $("mDate").value,
         start_min: chosen.start_min, name: name, phone: phone,
+        client_id: selectedClient ? selectedClient.id : null,
         comment: $("mComment").value.trim(), color_marker: chosen.color_marker || null,
         extra_services: extras.length ? JSON.stringify(extras) : null
       }).then(function (res) {
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
+        if (res.code === 404 && res.j.error === "CLIENT_NOT_FOUND") { err.textContent = "Клієнта не знайдено. Спробуйте обрати ще раз."; return; }
         if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); return; }
 
         var clientId = res.j.appointment && res.j.appointment.client_id;
