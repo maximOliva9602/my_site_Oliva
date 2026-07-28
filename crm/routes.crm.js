@@ -1361,13 +1361,28 @@ router.post("/subscriptions", any, function (req, res) {
   const total     = parseInt(b.total_sessions, 10);
   const price     = parseInt(b.price || 0, 10);
   const note      = clean(b.note, 300) || null;
+  // Якщо абонемент оформлюють одразу при створенні запису (перший сеанс
+  // уже зараховано через used_sessions) — цей самий візит слід позначити
+  // subscription_used, інакше при завершенні візиту автосписання
+  // спише ще один сеанс за той самий прийом (подвійне списання).
+  const appointmentId = parseInt(b.appointment_id, 10) || null;
   if (!clientId || !serviceId || !total || total < 1)
     return res.status(400).json({ ok: false, error: "missing fields" });
   const usedInit = Math.min(parseInt(b.used_sessions || 0, 10) || 0, total);
-  const info = db.prepare(
-    "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at) VALUES (?,?,?,?,?,?,?)"
-  ).run(clientId, serviceId, total, usedInit, price, note, Date.now());
-  res.json({ ok: true, id: info.lastInsertRowid });
+  let subId;
+  db.transaction(function () {
+    const info = db.prepare(
+      "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at) VALUES (?,?,?,?,?,?,?)"
+    ).run(clientId, serviceId, total, usedInit, price, note, Date.now());
+    subId = info.lastInsertRowid;
+    if (appointmentId && usedInit > 0) {
+      const appt = db.prepare("SELECT id, client_id FROM appointments WHERE id=?").get(appointmentId);
+      if (appt && appt.client_id === clientId) {
+        db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(appointmentId);
+      }
+    }
+  })();
+  res.json({ ok: true, id: subId });
 });
 
 router.patch("/subscriptions/:id/use", any, function (req, res) {

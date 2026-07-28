@@ -2544,6 +2544,7 @@
         if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); return; }
 
         var clientId = res.j.appointment && res.j.appointment.client_id;
+        var appointmentId = res.j.appointment && res.j.appointment.id;
         var subForm = $("mSubForm");
         var subOpen = subForm && subForm.style.display !== "none";
 
@@ -2557,7 +2558,8 @@
             total_sessions: chosen.subSessions,
             used_sessions: 1,
             price: price,
-            note: null
+            note: null,
+            appointment_id: appointmentId
           }).then(done);
         } else {
           done();
