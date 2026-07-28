@@ -3982,10 +3982,15 @@
             '<div style="font-weight:700;color:var(--cream);font-size:.92rem;">' + grn(x[1]) + '</div></div>';
         }).join("") + '</div>';
       html += '<div class="sub" style="margin-bottom:12px;">Заробіток рахується із <b>завершених</b> візитів. <b>Новий</b> — перший завершений візит клієнта у цього майстра; <b>повторний</b> — усі наступні.</div>';
+      var payNotSet = d.master.pay_percent == null;
+      if (payNotSet) {
+        html += '<div style="background:#fff4e0;border:1px solid #e6c789;border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:.8rem;color:#8a6414;">' +
+          '⚠️ Відсоток оплати ще не задано — заробіток рахуватиметься як 0 грн, доки ви не вкажете %.</div>';
+      }
       html += '<label>Типовий відсоток від ціни послуги</label>' +
         '<div style="display:flex;flex-direction:column;gap:6px;">' +
         '<div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="min-width:88px;">Новий клієнт:</span>' +
-        '<input type="number" id="payDef" min="0" max="100" step="0.5" style="width:100px;" value="' + (d.master.pay_percent != null ? d.master.pay_percent : "") + '" placeholder="0"><span class="muted">%</span></div>' +
+        '<input type="number" id="payDef" min="0" max="100" step="0.5" style="width:100px;" value="' + (d.master.pay_percent != null ? d.master.pay_percent : "") + '" placeholder="не задано"><span class="muted">%</span></div>' +
         '<div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="min-width:88px;">Повторний:</span>' +
         '<input type="number" id="payDefRet" min="0" max="100" step="0.5" style="width:100px;" value="' + (d.master.pay_percent_return != null ? d.master.pay_percent_return : "") + '" placeholder="як новий"><span class="muted">% (порожньо — як для нового)</span></div>' +
         '</div>';
