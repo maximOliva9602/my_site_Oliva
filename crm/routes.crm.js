@@ -470,9 +470,13 @@ router.get("/appointments/month-counts", any, function (req, res) {
   const ym = clean(req.query.month, 7); // "2026-07"
   if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return res.status(400).json({ ok: false });
   const from = ym + "-01", to = ym + "-31";
-  const rows = req.session.role === "owner"
-    ? db.prepare("SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled') GROUP BY date").all(from, to)
-    : db.prepare("SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled') AND master_id=? GROUP BY date").all(from, to, req.session.masterId);
+  // Власник може обрати конкретного майстра у фільтрі («Майстер: …») —
+  // бейджі кількості записів у календарі мають рахувати саме його,
+  // а не всіх, інакше цифри не змінюються при перемиканні фільтра.
+  const filterMasterId = req.session.role === "owner" ? parseInt(req.query.master, 10) || null : req.session.masterId;
+  const rows = filterMasterId
+    ? db.prepare("SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled') AND master_id=? GROUP BY date").all(from, to, filterMasterId)
+    : db.prepare("SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled') GROUP BY date").all(from, to);
   const counts = {};
   rows.forEach(function(r) { counts[r.date] = r.n; });
   res.json({ ok: true, counts: counts });

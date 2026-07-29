@@ -665,8 +665,10 @@
         cell.textContent = d; grid.appendChild(cell);
       });
 
-      // Завантажити к-ть записів і відрендерити
-      api("GET", "/api/crm/appointments/month-counts?month=" + apptMonth).then(function(res) {
+      // Завантажити к-ть записів і відрендерити (з урахуванням фільтра майстра)
+      var mcUrl = "/api/crm/appointments/month-counts?month=" + apptMonth;
+      if (activeMasterFilter && activeMasterFilter !== "all") mcUrl += "&master=" + activeMasterFilter;
+      api("GET", mcUrl).then(function(res) {
         var counts = (res.j && res.j.counts) || {};
         var today = todayStr();
 
