@@ -395,7 +395,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .addon-card { display: flex; align-items: stretch; background: rgba(20,15,10,0.55); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; transition: border-color .2s, background .2s; }
 .addon-card.on { border-color: rgba(217,185,120,0.55); background: rgba(122,145,86,0.10); }
 @media (hover:hover){ .addon-card:hover { border-color: rgba(217,185,120,0.4); } }
-.addon-photo { width: 104px; flex-shrink: 0; background-size: cover; background-position: center; background-color: #1a140e; }
+.addon-photo { width: 104px; flex-shrink: 0; background-size: cover; background-position: center; background-color: #1a140e; display: flex; align-items: center; justify-content: center; }
+.addon-photo-ph { font-size: 1.8rem; opacity: .75; }
 .addon-body { flex: 1; min-width: 0; padding: 12px 8px 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .addon-titlerow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .addon-name { color: #F2EDE4; font-family: 'Playfair Display', serif; font-size: 1.04rem; font-weight: 600; line-height: 1.15; }
@@ -1223,6 +1224,9 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       desc: "Живлення шкіри та ніжний догляд під час сеансу.", variants: [{ min: 0, price: 10000 }] },
     { key: "candles", name: "Композиція зі свічок", img: "relaks-spa-programa-kyiv.jpg",
       desc: "Атмосфера спокою з ароматом теплих свічок.", variants: [{ min: 0, price: 15000 }] },
+    { key: "shower",  name: "Душ",
+      desc: "У вартість входять: рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.",
+      variants: [{ min: 10, price: 15000 }] },
   ];
   var addonVarIdx = {}; // обраний варіант для кожного add-on
   function isAddonOn(key) { return state.extras.some(function(e){ return e.key === key; }); }
@@ -1295,7 +1299,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         ? '<span class="addon-nofit">Недостатньо вільного часу</span>'
         : '<span class="ic">' + CLOCK + '</span><span>' + (v.min > 0 ? v.min + " хв" : "без часу") + '</span><span class="sep">|</span><span class="price">+' + money(v.price) + '</span>';
       card.innerHTML =
-        '<div class="addon-photo" style="background-image:url(\'assets/img/' + a.img + '\')"></div>' +
+        '<div class="addon-photo"' + (a.img ? ' style="background-image:url(\'assets/img/' + a.img + '\')"' : '') + '>' + (a.img ? '' : '<span class="addon-photo-ph">🚿</span>') + '</div>' +
         '<div class="addon-body">' +
           '<div class="addon-titlerow"><span class="addon-name">' + a.name + '</span>' +
             (a.badge ? '<span class="addon-badge ' + badgeCls + '">' + a.badge + '</span>' : '') +
