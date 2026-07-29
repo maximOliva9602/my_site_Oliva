@@ -514,6 +514,7 @@
   var calSlotH = 22; // px per 10-min slot, adjustable by zoom
   var calScroller = null; // shared scroller ref for zoom-only reload
   var calBody = null;     // shared body ref for pinch transform
+  var nowLineTimer = null; // інтервал оновлення лінії поточного часу
 
   var MONTH_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
   var DOW_UA = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
@@ -1561,6 +1562,33 @@
 
           body.appendChild(mCol);
         });
+
+        // ── Лінія поточного часу (тільки на сьогоднішньому дні) ──
+        if (nowLineTimer) { clearInterval(nowLineTimer); nowLineTimer = null; }
+        body.style.position = "relative";
+        function drawNowLine() {
+          var line = body.querySelector("[data-now-line]");
+          if (apptDate !== todayStr()) { if (line) line.remove(); return; }
+          var d = new Date();
+          var nowMin = d.getHours() * 60 + d.getMinutes();
+          if (nowMin < HOUR_START * 60 || nowMin > HOUR_END * 60) { if (line) line.remove(); return; }
+          var topPx = ((nowMin - HOUR_START * 60) / STEP) * SLOT_H;
+          if (!line) {
+            line = document.createElement("div");
+            line.setAttribute("data-now-line", "1");
+            line.style.cssText = "position:absolute;left:0;right:0;height:0;z-index:15;pointer-events:none;";
+            line.innerHTML =
+              '<div style="position:absolute;left:0;right:0;top:0;border-top:2px solid #e05050;"></div>' +
+              '<div style="position:absolute;left:0;top:-1px;width:8px;height:8px;border-radius:50%;background:#e05050;transform:translate(-3px,-3px);"></div>' +
+              '<div data-now-bubble style="position:absolute;left:2px;top:-9px;background:#1a1a1a;color:#fff;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:9px;white-space:nowrap;"></div>';
+            body.appendChild(line);
+          }
+          line.style.top = topPx + "px";
+          var bubble = line.querySelector("[data-now-bubble]");
+          if (bubble) bubble.textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+        }
+        drawNowLine();
+        nowLineTimer = setInterval(drawNowLine, 30000);
 
         // Авто-прокрутка: сьогодні → поточний час - 30 хв, інші дні → 9:00
         var scrollMin;
@@ -4092,15 +4120,19 @@
       '<label>Назва</label><input type="text" id="sName" maxlength="150" />' +
       '<div class="grid2"><div><label>Тривалість (хв)</label><input type="number" id="sDur" min="5" step="5" /></div>' +
       '<div><label>Ціна (грн)</label><input type="number" id="sPrice" min="0" step="10" /></div></div>' +
+      '<label>Опис (необов\'язково)</label><textarea id="sDescription" maxlength="500" rows="2" placeholder="Наприклад: У вартість входять рушник, капці…"></textarea>' +
       '<div class="err" id="sErr"></div>' +
       '<div class="modal-foot"><button class="btn btn-ghost" id="sCancel">Скасувати</button><button class="btn btn-primary" id="sSave">Зберегти</button></div>'
     );
-    if (s) { $("sName").value = s.name; $("sDur").value = s.duration_min; $("sPrice").value = (s.price / 100) || 0; }
+    if (s) {
+      $("sName").value = s.name; $("sDur").value = s.duration_min; $("sPrice").value = (s.price / 100) || 0;
+      $("sDescription").value = s.description || "";
+    }
     $("sCancel").addEventListener("click", closeModal);
     $("sSave").addEventListener("click", function () {
       var name = $("sName").value.trim(), dur = parseInt($("sDur").value, 10), price = Math.round(parseFloat($("sPrice").value || 0) * 100);
       if (!name || !(dur > 0)) { $("sErr").textContent = "Вкажіть назву й тривалість"; return; }
-      var body = { name: name, duration_min: dur, price: price };
+      var body = { name: name, duration_min: dur, price: price, description: $("sDescription").value.trim() };
       var p = s ? api("PUT", "/api/crm/services/" + s.id, body) : api("POST", "/api/crm/services", body);
       p.then(function () { closeModal(); window.__reloadServices(); });
     });

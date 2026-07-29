@@ -762,8 +762,8 @@ router.post("/services", owner, function (req, res) {
   const name = clean(d.name, 150);
   const dur = parseInt(d.duration_min, 10);
   if (!name || !(dur > 0)) return res.status(400).json({ ok: false, error: "name+duration required" });
-  const info = db.prepare("INSERT INTO services (name,duration_min,price,active,sort_order,created_at) VALUES (?,?,?,1,?,?)")
-    .run(name, dur, parseInt(d.price, 10) || 0, parseInt(d.sort_order, 10) || 0, Date.now());
+  const info = db.prepare("INSERT INTO services (name,duration_min,price,active,sort_order,created_at,description) VALUES (?,?,?,1,?,?,?)")
+    .run(name, dur, parseInt(d.price, 10) || 0, parseInt(d.sort_order, 10) || 0, Date.now(), clean(d.description, 500) || null);
   res.json({ ok: true, id: info.lastInsertRowid });
 });
 router.put("/services/:id", owner, function (req, res) {
@@ -771,11 +771,12 @@ router.put("/services/:id", owner, function (req, res) {
   const s = db.prepare("SELECT * FROM services WHERE id=?").get(id);
   if (!s) return res.status(404).json({ ok: false });
   const d = req.body || {};
-  db.prepare("UPDATE services SET name=?, duration_min=?, price=?, sort_order=? WHERE id=?").run(
+  db.prepare("UPDATE services SET name=?, duration_min=?, price=?, sort_order=?, description=? WHERE id=?").run(
     d.name !== undefined ? clean(d.name, 150) : s.name,
     d.duration_min !== undefined ? (parseInt(d.duration_min, 10) || s.duration_min) : s.duration_min,
     d.price !== undefined ? (parseInt(d.price, 10) || 0) : s.price,
     d.sort_order !== undefined ? parseInt(d.sort_order, 10) || 0 : s.sort_order,
+    d.description !== undefined ? (clean(d.description, 500) || null) : s.description,
     id
   );
   res.json({ ok: true });
@@ -1726,3 +1727,4 @@ router.get("/notifications", owner, function (req, res) {
 });
 
 module.exports = router;
+module.exports.setStatus = setStatus;

@@ -103,12 +103,37 @@ function sendBirthdaysDue() {
   } catch (e) { console.error("[birthday]", e.message); }
 }
 
+/* Автозавершення підтверджених візитів: коли минула половина тривалості
+   запису (start_min + duration_min/2), позначаємо статус «Завершено» —
+   персоналу не треба клацати вручну для кожного візиту. Лише
+   status='confirmed' (неприйняті pending-записи не чіпаємо — може, клієнт
+   узагалі не прийде і майстер скасує). setStatus сам подбає про списання
+   абонементу й запит відгуку — та сама логіка, що й при ручному кліку. */
+function autoCompleteDue(now) {
+  let completed = 0;
+  try {
+    const routes = require("./routes.crm");
+    const rows = db.prepare(
+      "SELECT id, date, start_min, duration_min FROM appointments WHERE status='confirmed'"
+    ).all();
+    for (const a of rows) {
+      const startMs = tz.apptInstant(a.date, a.start_min);
+      const midMs = startMs + (a.duration_min / 2) * 60000;
+      if (now < midMs) continue;
+      const r = routes.setStatus(a.id, "completed", { role: "owner" });
+      if (r && r.status === 200) completed++;
+    }
+  } catch (e) { console.error("[auto-complete]", e.message); }
+  return completed;
+}
+
 async function tick() {
   if (ticking) return;
   ticking = true;
   try {
     const now = Date.now();
     queueDueReminders(now);
+    autoCompleteDue(now);
     sendBirthdaysDue();
     await notify.flushQueued();
     await notify.flushBroadcasts();
@@ -129,4 +154,4 @@ function start() {
   return setInterval(tick, TICK_MS);
 }
 
-module.exports = { start, tick, queueDueReminders, REMINDER2_HOURS };
+module.exports = { start, tick, queueDueReminders, autoCompleteDue, REMINDER2_HOURS };
