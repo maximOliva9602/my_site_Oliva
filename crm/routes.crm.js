@@ -232,13 +232,28 @@ function settingOn(key, dfltOn) {
 /* ---------- зміна статусу ---------- */
 function setStatus(id, status, session) {
   if (STATUSES.indexOf(status) === -1) return { status: 400, body: { ok: false, error: "bad status" } };
-  const a = db.prepare("SELECT id, master_id, client_id, public_id FROM appointments WHERE id=?").get(id);
+  const a = db.prepare("SELECT id, master_id, client_id, public_id, status, service_id, subscription_used FROM appointments WHERE id=?").get(id);
   if (!a) return { status: 404, body: { ok: false, error: "not found" } };
   if (session.role !== "owner" && a.master_id !== session.masterId) {
     return { status: 403, body: { ok: false, error: "forbidden" } };
   }
+  const wasCompleted = a.status === "completed";
   db.prepare("UPDATE appointments SET status=?, updated_at=? WHERE id=?").run(status, Date.now(), id);
   recomputeClient(a.client_id);
+
+  /* Знімаємо «Завершено» (вручну чи це був помилковий автозавершений
+     запис) — повертаємо сеанс абонементу, якщо його вже списали.
+     Немає FK на конкретний subscription_id, тому шукаємо евристично:
+     останній (за id) абонемент клієнта на цю послугу, з used_sessions>0. */
+  if (wasCompleted && status !== "completed" && a.subscription_used && a.client_id && a.service_id) {
+    const sub = db.prepare(
+      "SELECT id FROM subscriptions WHERE client_id=? AND service_id=? AND used_sessions>0 ORDER BY id DESC LIMIT 1"
+    ).get(a.client_id, a.service_id);
+    if (sub) {
+      db.prepare("UPDATE subscriptions SET used_sessions=used_sessions-1 WHERE id=?").run(sub.id);
+      db.prepare("UPDATE appointments SET subscription_used=0 WHERE id=?").run(id);
+    }
+  }
   if (status === "confirmed" && settingOn("notif_confirm", true)) {
     /* SMS клієнту «Ваш запис … підтверджений» — саме в момент, коли майстер
        підтвердив запис у CRM (а не при створенні онлайн-запису).
@@ -268,11 +283,10 @@ function setStatus(id, status, session) {
   }
   if (status === "completed") {
     // Автоматично списуємо сеанс абонементу (якщо ще не списали)
-    const full = db.prepare("SELECT client_id, service_id, subscription_used FROM appointments WHERE id=?").get(id);
-    if (full && !full.subscription_used && full.client_id && full.service_id) {
+    if (!a.subscription_used && a.client_id && a.service_id) {
       const sub = db.prepare(
         "SELECT id, used_sessions, total_sessions FROM subscriptions WHERE client_id=? AND service_id=? AND used_sessions < total_sessions ORDER BY id LIMIT 1"
-      ).get(full.client_id, full.service_id);
+      ).get(a.client_id, a.service_id);
       if (sub) {
         db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
         db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(id);
@@ -356,22 +370,39 @@ router.patch("/appointments/:id", any, function (req, res) {
   const comment = d.comment !== undefined ? clean(d.comment, 500) : a.comment;
   if (!tz.isDate(date) || !(startMin >= 0)) return res.status(400).json({ ok: false, error: "bad params" });
 
-  // Зміна послуги — перераховуємо тривалість і ціну під нову послугу.
-  let serviceId = a.service_id, durationMin = a.duration_min, price = a.price;
+  // Зміна послуги — перераховуємо базову тривалість і ціну під нову послугу.
+  let serviceId = a.service_id;
   if (d.service !== undefined) {
     const newServiceId = parseInt(d.service, 10);
-    if (newServiceId && newServiceId !== a.service_id) {
-      const svc = db.prepare("SELECT id, duration_min, price FROM services WHERE id=? AND active=1").get(newServiceId);
-      if (!svc) return res.status(404).json({ ok: false, error: "service not found" });
-      serviceId = svc.id; durationMin = svc.duration_min; price = svc.price;
-    }
+    if (newServiceId && newServiceId !== a.service_id) serviceId = newServiceId;
   }
+  const baseSvc = db.prepare("SELECT duration_min, price FROM services WHERE id=?").get(serviceId);
+  if (!baseSvc) return res.status(404).json({ ok: false, error: "service not found" });
+
+  /* Додаткові послуги: можна явно передати новий список (JSON-рядок
+     масиву [{id,name,duration_min,price}] або null/""  щоб очистити) —
+     інакше лишаємо, що вже було. appointments.duration_min/price завжди
+     зберігають ПОВНУ суму (база + extras), бо саме так рахує createAppointment. */
+  let extraServicesJson = d.extra_services !== undefined ? (d.extra_services || null) : a.extra_services;
+  let extraDur = 0, extraPrice = 0;
+  try {
+    const extras = extraServicesJson ? JSON.parse(extraServicesJson) : null;
+    if (Array.isArray(extras)) {
+      extras.forEach(function (ex) { extraDur += parseInt(ex.duration_min, 10) || 0; extraPrice += parseInt(ex.price, 10) || 0; });
+    } else {
+      extraServicesJson = null;
+    }
+  } catch (e) { extraServicesJson = a.extra_services; }
+
+  const durationMin = baseSvc.duration_min + extraDur;
+  const price = baseSvc.price + extraPrice;
 
   const timeChanged = (date !== a.date || startMin !== a.start_min);
   const serviceChanged = serviceId !== a.service_id;
-  if (timeChanged || masterId !== a.master_id || serviceChanged) {
-    db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, service_id=?, duration_min=?, price=?, comment=?, updated_at=? WHERE id=?")
-      .run(date, startMin, startMin + durationMin, masterId, serviceId, durationMin, price, comment, Date.now(), id);
+  const totalsChanged = durationMin !== a.duration_min || price !== a.price || extraServicesJson !== a.extra_services;
+  if (timeChanged || masterId !== a.master_id || serviceChanged || totalsChanged) {
+    db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, service_id=?, duration_min=?, price=?, extra_services=?, comment=?, updated_at=? WHERE id=?")
+      .run(date, startMin, startMin + durationMin, masterId, serviceId, durationMin, price, extraServicesJson, comment, Date.now(), id);
     /* SMS про перенесення (типово вимкнено; вмикається у Сповіщеннях).
        Лише коли реально змінились дата/час активного запису. Попереднє
        reschedule-сповіщення видаляємо, щоб UNIQUE не блокував повторне

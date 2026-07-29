@@ -1649,6 +1649,13 @@
     if (a.status === "pending") html += '<button class="btn btn-primary btn-sm" id="dConfirm">Підтвердити</button>';
     if (a.status === "pending" || a.status === "confirmed") {
       html += '<button class="btn btn-ghost btn-sm" id="dComplete">Завершити</button>';
+    }
+    if (a.status === "completed") {
+      /* Візит міг зарахуватись автоматично (минула половина тривалості) —
+         дає змогу відкотити помилкове автозавершення назад у "Підтверджено". */
+      html += '<button class="btn btn-ghost btn-sm" id="dUncomplete">↩️ Повернути в підтверджені</button>';
+    }
+    if (a.status !== "cancelled") {
       html += '<button class="btn btn-ghost btn-sm" id="dCancel">Скасувати</button>';
     }
     html += '<button class="btn btn-ghost btn-sm" id="dEdit">✏️ Редагувати</button>';
@@ -1739,6 +1746,7 @@
     }
     if ($("dConfirm")) $("dConfirm").addEventListener("click", function() { setStatus("confirmed"); });
     if ($("dComplete")) $("dComplete").addEventListener("click", function() { setStatus("completed"); });
+    if ($("dUncomplete")) $("dUncomplete").addEventListener("click", function() { setStatus("confirmed"); });
     if ($("dNoShow")) $("dNoShow").addEventListener("click", function() { setStatus("no_show"); });
     if ($("dCancel")) $("dCancel").addEventListener("click", function() { setStatus("cancelled"); });
     $("dClose").addEventListener("click", function() {
@@ -1777,6 +1785,15 @@
       // Послуга (редагована)
       '<label style="margin-top:10px;display:block;">Послуга</label>' +
       '<select id="eService"></select>' +
+      // Додаткові послуги
+      '<div id="eExtraList" style="margin-top:8px;"></div>' +
+      '<div id="eAddExtraWrap" style="margin-top:6px;">' +
+        '<button type="button" id="eAddExtraBtn" style="width:100%;padding:8px;border-radius:8px;border:1.5px dashed var(--line);background:transparent;color:var(--text-dim);font-size:.85rem;cursor:pointer;">+ Додати послугу</button>' +
+        '<div id="eAddExtraSearch" style="display:none;position:relative;margin-top:4px;">' +
+          '<input type="text" id="eAddExtraQ" placeholder="Пошук послуги…" autocomplete="off">' +
+          '<div id="eAddExtraDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:200px;overflow-y:auto;margin-top:3px;"></div>' +
+        '</div>' +
+      '</div>' +
       // Абонемент
       '<div id="eSubSection" style="display:none;margin-top:10px;"></div>' +
       // Коментар
@@ -1795,6 +1812,75 @@
     var allMastersE = [], allServicesE = [];
     var markSubUsed = false; // локальний прапорець "списати сеанс абонементу" — надсилається лише при збереженні
     var newSubIntent = null; // { sessions, price } — новий абонемент, оформлюється лише при збереженні
+
+    // ── Додаткові послуги ────────────────────────────────────────────
+    var eExtras = [];
+    try {
+      var parsedEExtras = a.extra_services ? JSON.parse(a.extra_services) : null;
+      if (Array.isArray(parsedEExtras)) eExtras = parsedEExtras.slice();
+    } catch (e) {}
+
+    function eExtrasMin() { return eExtras.reduce(function(s, x) { return s + (x.duration_min || 0); }, 0); }
+
+    function renderEExtraList() {
+      var listEl = $("eExtraList"); if (!listEl) return;
+      listEl.innerHTML = "";
+      eExtras.forEach(function(ex, i) {
+        var row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:4px;";
+        var nameSpan = document.createElement("span");
+        nameSpan.style.cssText = "flex:1;font-size:.85rem;font-weight:600;color:var(--cream);";
+        nameSpan.textContent = ex.name + (ex.duration_min ? " · " + ex.duration_min + " хв" : "");
+        var priceSpan = document.createElement("span");
+        priceSpan.style.cssText = "font-size:.82rem;color:var(--text-dim);white-space:nowrap;";
+        priceSpan.textContent = money(ex.price);
+        var delBtn = document.createElement("button");
+        delBtn.style.cssText = "background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:.9rem;padding:2px 4px;";
+        delBtn.textContent = "✕";
+        (function(idx) {
+          delBtn.addEventListener("click", function() {
+            eExtras.splice(idx, 1);
+            renderEExtraList();
+            loadESlots();
+          });
+        })(i);
+        row.appendChild(nameSpan); row.appendChild(priceSpan); row.appendChild(delBtn);
+        listEl.appendChild(row);
+      });
+    }
+    renderEExtraList();
+
+    function renderEAddExtraDrop(q) {
+      var drop = $("eAddExtraDrop"); if (!drop) return;
+      var filtered = allServicesE.filter(function(s) { return !q || s.name.toLowerCase().indexOf(q.toLowerCase()) > -1; });
+      drop.innerHTML = "";
+      filtered.slice(0, 30).forEach(function(s) {
+        var row = document.createElement("div");
+        row.style.cssText = "padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line);font-size:.88rem;color:var(--cream);";
+        row.innerHTML = '<span style="font-weight:600;">' + s.name + '</span>' +
+          '<span style="color:var(--text-dim);font-size:.78rem;margin-left:8px;">' + s.duration_min + ' хв · ' + money(s.price) + '</span>';
+        row.addEventListener("mousedown", function(e) {
+          e.preventDefault();
+          eExtras.push({ id: s.id, name: s.name, duration_min: s.duration_min, price: s.price });
+          $("eAddExtraQ").value = ""; $("eAddExtraSearch").style.display = "none";
+          renderEExtraList(); loadESlots();
+        });
+        drop.appendChild(row);
+      });
+      drop.style.display = filtered.length ? "block" : "none";
+    }
+    if ($("eAddExtraBtn")) {
+      $("eAddExtraBtn").addEventListener("click", function() {
+        var srch = $("eAddExtraSearch");
+        var open = srch.style.display !== "none";
+        srch.style.display = open ? "none" : "block";
+        if (!open) { $("eAddExtraQ").value = ""; $("eAddExtraQ").focus(); renderEAddExtraDrop(""); }
+      });
+      $("eAddExtraQ").addEventListener("input", function() { renderEAddExtraDrop(this.value.trim()); });
+      $("eAddExtraQ").addEventListener("blur", function() {
+        setTimeout(function() { var d = $("eAddExtraDrop"); if (d) d.style.display = "none"; }, 150);
+      });
+    }
 
     function updateDateLbl(val) {
       var lbl = $("eDateLabel"); if (!lbl||!val) return;
@@ -1816,7 +1902,10 @@
       var mid = $("eMaster").value, date = $("eDate").value, sid = $("eService").value;
       if (!mid || !date || !sid) return;
       var box = $("eSlots"); box.innerHTML = "Завантаження…"; box.className = "";
-      api("GET", "/api/public/slots?service=" + sid + "&master=" + mid + "&date=" + date).then(function(r) {
+      var url = "/api/public/slots?service=" + sid + "&master=" + mid + "&date=" + date;
+      var extraDur = eExtrasMin();
+      if (extraDur > 0) url += "&extra=" + extraDur;
+      api("GET", url).then(function(r) {
         var slots = r.j.slots || [];
         box.innerHTML = "";
         if (!slots.length) { box.className = "muted"; box.textContent = "Вільних віконець немає"; return; }
@@ -1996,6 +2085,7 @@
         date: $("eDate").value,
         start_min: chosenMin,
         comment: $("eComment").value.trim(),
+        extra_services: eExtras.length ? JSON.stringify(eExtras) : null,
         subscription_used: markSubUsed || undefined
       }).then(function(r) {
         if (r.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
@@ -2049,7 +2139,6 @@
     if (a.status === "pending" || a.status === "confirmed") {
       acts.appendChild(actBtn("Завершити", "completed"));
       acts.appendChild(actBtn("Не прийшов", "no_show"));
-      acts.appendChild(actBtn("Скасувати", "cancelled"));
       var resB = el("button", "btn btn-sm btn-ghost", "Перенести");
       resB.addEventListener("click", function () { rescheduleModal(a); });
       acts.appendChild(resB);
@@ -2060,6 +2149,13 @@
       payB.addEventListener("click", function () { paymentModal(a); });
       acts.appendChild(payB);
     }
+    // Візит міг зарахуватись автоматично (минула половина тривалості) —
+    // дає змогу відкотити помилкове автозавершення назад.
+    if (a.status === "completed") acts.appendChild(actBtn("↩️ Повернути в підтверджені", "confirmed"));
+    if (a.status !== "cancelled") acts.appendChild(actBtn("Скасувати", "cancelled"));
+    var editB = el("button", "btn btn-sm btn-ghost", "✏️ Редагувати");
+    editB.addEventListener("click", function () { apptEditModal(a); });
+    acts.appendChild(editB);
     item.appendChild(acts);
     return item;
   }
