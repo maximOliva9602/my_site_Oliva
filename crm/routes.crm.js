@@ -931,15 +931,20 @@ router.get("/dashboard", owner, function (req, res) {
   const mStart = today.slice(0, 7) + "-01";
 
   function apptStats(from, to) {
+    /* total не враховує скасовані — так само, як бейджі кількості записів
+       у місячному календарі (GET /appointments/month-counts). Раніше total
+       рахував і скасовані, тому «Сьогодні/Тиждень/Місяць» на дашборді не
+       збігалося з тим, що власник бачить у календарі. */
     const r = db.prepare(
       `SELECT
-         COUNT(*) total,
+         SUM(CASE WHEN status<>'cancelled' THEN 1 ELSE 0 END) total,
          SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) completed,
          SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) cancelled,
          SUM(CASE WHEN status='no_show'   THEN 1 ELSE 0 END) no_show,
          SUM(CASE WHEN status IN ('pending','confirmed') THEN 1 ELSE 0 END) active
        FROM appointments WHERE date >= ? AND date <= ?`
     ).get(from, to);
+    r.total = r.total || 0;
     return r;
   }
 
