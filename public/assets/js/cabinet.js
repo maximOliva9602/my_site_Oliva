@@ -1766,6 +1766,7 @@
     var DOW_UA3 = ["нд","пн","вт","ср","чт","пт","сб"];
     var allMastersE = [], allServicesE = [];
     var markSubUsed = false; // локальний прапорець "списати сеанс абонементу" — надсилається лише при збереженні
+    var newSubIntent = null; // { sessions, price } — новий абонемент, оформлюється лише при збереженні
 
     function updateDateLbl(val) {
       var lbl = $("eDateLabel"); if (!lbl||!val) return;
@@ -1837,7 +1838,7 @@
       var svcId = $("eService").value;
       if (!a.client_id || !svcId) { section.style.display = "none"; return; }
       section.style.display = "block";
-      section.innerHTML = '<div class="empty" style="padding:6px 0;">Перевірка абонементу…</div>';
+
       if (a.subscription_used) {
         section.innerHTML = '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#2e7d32;">🎟 За цей візит уже списано сеанс абонементу</div>';
         return;
@@ -1846,6 +1847,16 @@
         section.innerHTML = '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#2e7d32;">🎟 Сеанс буде списано при збереженні</div>';
         return;
       }
+      if (newSubIntent) {
+        section.innerHTML =
+          '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#2e7d32;">' +
+            '🎟 Новий абонемент (' + newSubIntent.sessions + ' сеансів, ' + uahGroup(newSubIntent.price / 100) + ' грн) буде оформлено при збереженні — цей візит зарахується першим сеансом' +
+          '</div>' +
+          '<button type="button" id="eSubNewUndo" class="btn btn-sm btn-ghost" style="width:100%;margin-top:6px;">Скасувати</button>';
+        $("eSubNewUndo").addEventListener("click", function() { newSubIntent = null; refreshSubSectionE(); });
+        return;
+      }
+      section.innerHTML = '<div class="empty" style="padding:6px 0;">Перевірка абонементу…</div>';
       api("GET", "/api/crm/subscriptions/check?client_id=" + a.client_id + "&service_id=" + svcId).then(function(r) {
         var sub = r.j.active;
         if (sub) {
@@ -1860,8 +1871,66 @@
             refreshSubSectionE();
           });
         } else {
-          section.innerHTML = '<div class="empty" style="padding:6px 0;font-size:.8rem;">Активного абонементу на цю послугу немає</div>';
+          section.innerHTML =
+            '<div class="empty" style="padding:6px 0;font-size:.8rem;">Активного абонементу на цю послугу немає</div>' +
+            '<button type="button" id="eSubCreateBtn" style="width:100%;padding:9px 14px;border-radius:10px;border:1.5px dashed #6e9145;background:transparent;color:#5a7a48;font-size:.85rem;font-weight:600;cursor:pointer;text-align:left;">🎟 Оформити абонемент</button>';
+          $("eSubCreateBtn").addEventListener("click", showCreateSubFormE);
         }
+      });
+    }
+
+    // ── Оформлення нового абонементу прямо з редагування запису ─────
+    function showCreateSubFormE() {
+      var svcId = $("eService").value;
+      var svc = allServicesE.find(function(s) { return String(s.id) === String(svcId); });
+      var priceUAH = svc ? svc.price / 100 : 0;
+      var sessions = 10;
+
+      var html =
+        '<div style="background:#f0f7ee;border:1px solid #b8d4a8;border-radius:10px;padding:12px;">' +
+          '<div style="font-size:.8rem;font-weight:600;color:#3d5430;margin-bottom:8px;">К-ть сеансів</div>' +
+          '<div id="eSubNewPresets" style="display:flex;gap:6px;margin-bottom:10px;">' +
+            [5, 10, 15].map(function(n) {
+              return '<button type="button" class="e-sub-preset" data-n="' + n + '" style="flex:1;padding:8px 0;border-radius:8px;border:1.5px solid #6e9145;background:' + (n === 10 ? "#6e9145" : "#fff") + ';color:' + (n === 10 ? "#fff" : "#3d5430") + ';font-weight:700;cursor:pointer;">' + n + '</button>';
+            }).join("") +
+          '</div>' +
+          '<label>Сума оплати (грн)</label>' +
+          '<input type="number" id="eSubNewPrice" min="0" style="margin-bottom:4px;">' +
+          '<div id="eSubNewCalc" style="font-size:.73rem;color:#5a7a48;margin-bottom:6px;"></div>' +
+          '<div style="font-size:.73rem;color:#5a7a48;margin-bottom:8px;">✓ Цей візит зараховується як перший сеанс</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<button type="button" id="eSubNewCancel" class="btn btn-sm btn-ghost" style="flex:1;">Скасувати</button>' +
+            '<button type="button" id="eSubNewConfirm" class="btn btn-sm btn-primary" style="flex:1;">Оформити</button>' +
+          '</div>' +
+        '</div>';
+      $("eSubSection").innerHTML = html;
+
+      function calc() {
+        var pct = subDiscountPct(sessions);
+        var total = subTotalUAH(priceUAH, sessions);
+        $("eSubNewPrice").value = total;
+        $("eSubNewCalc").textContent = (priceUAH > 0)
+          ? uahGroup(priceUAH) + " грн × " + sessions + (pct > 0 ? " − " + pct + "%" : "") + " = " + uahGroup(total) + " грн"
+          : "";
+      }
+      calc();
+
+      document.querySelectorAll(".e-sub-preset").forEach(function(b) {
+        b.addEventListener("click", function() {
+          sessions = parseInt(b.dataset.n, 10);
+          document.querySelectorAll(".e-sub-preset").forEach(function(x) {
+            var active = x === b;
+            x.style.background = active ? "#6e9145" : "#fff";
+            x.style.color = active ? "#fff" : "#3d5430";
+          });
+          calc();
+        });
+      });
+      $("eSubNewCancel").addEventListener("click", function() { refreshSubSectionE(); });
+      $("eSubNewConfirm").addEventListener("click", function() {
+        var price = Math.round(parseFloat($("eSubNewPrice").value || 0) * 100);
+        newSubIntent = { sessions: sessions, price: price };
+        refreshSubSectionE();
       });
     }
 
@@ -1883,8 +1952,8 @@
 
       rebuildEServiceOptions(a.service_id);
 
-      sel.addEventListener("change", function() { markSubUsed = false; rebuildEServiceOptions($("eService").value); loadESlots(); refreshSubSectionE(); });
-      $("eService").addEventListener("change", function() { markSubUsed = false; loadESlots(); refreshSubSectionE(); });
+      sel.addEventListener("change", function() { markSubUsed = false; newSubIntent = null; rebuildEServiceOptions($("eService").value); loadESlots(); refreshSubSectionE(); });
+      $("eService").addEventListener("change", function() { markSubUsed = false; newSubIntent = null; loadESlots(); refreshSubSectionE(); });
 
       loadESlots();
       refreshSubSectionE();
@@ -1903,8 +1972,22 @@
       }).then(function(r) {
         if (r.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
         if (!r.j.ok) { err.textContent = "Помилка: " + (r.j.error||""); return; }
-        closeModal();
-        if (window.__reloadAppts) window.__reloadAppts();
+
+        function done() { closeModal(); if (window.__reloadAppts) window.__reloadAppts(); }
+
+        if (newSubIntent && a.client_id) {
+          api("POST", "/api/crm/subscriptions", {
+            client_id: a.client_id,
+            service_id: $("eService").value,
+            total_sessions: newSubIntent.sessions,
+            used_sessions: 1,
+            price: newSubIntent.price,
+            note: null,
+            appointment_id: a.id
+          }).then(done);
+        } else {
+          done();
+        }
       });
     });
   }
