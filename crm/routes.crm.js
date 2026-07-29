@@ -1200,19 +1200,21 @@ router.get("/dashboard/analytics", owner, function (req, res) {
     new: periodClientFlags.length - periodReturning,
   };
 
-  // ── Лояльність до майстра ────────────────────────────────────────
+  // ── Лояльність до майстра (у межах вибраного періоду, як і решта
+  //    показників на цій вкладці — інакше цифри не збігаються з іншими
+  //    картками при зміні дат) ─────────────────────────────────────
   const masters = db.prepare("SELECT id, name FROM masters WHERE active=1").all();
   const masterLoyalty = masters.map(function(m) {
     const total = db.prepare(
-      `SELECT COUNT(DISTINCT client_id) v FROM appointments WHERE master_id=? AND status='completed'`
-    ).get(m.id).v;
+      `SELECT COUNT(DISTINCT client_id) v FROM appointments WHERE master_id=? AND status='completed' AND date>=? AND date<=?`
+    ).get(m.id, from, to).v;
     const returning = db.prepare(
       `SELECT COUNT(*) v FROM (
          SELECT client_id FROM appointments
-          WHERE master_id=? AND status='completed'
+          WHERE master_id=? AND status='completed' AND date>=? AND date<=?
           GROUP BY client_id HAVING COUNT(*)>1
        )`
-    ).get(m.id).v;
+    ).get(m.id, from, to).v;
     return { id: m.id, name: m.name, total_clients: total, returning: returning,
              loyalty_pct: total > 0 ? Math.round(returning / total * 100) : 0 };
   });
