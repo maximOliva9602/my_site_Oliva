@@ -455,6 +455,16 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     <div class="grp-list" id="groupGrid"></div>
   </div>
 
+  <!-- 1b. Філія (лише якщо філій більше однієї й увімкнено в CRM) -->
+  <div class="step hide" id="stepBranch">
+    <div class="shead">
+      <button class="sback" data-back="1" aria-label="Назад">&#8249;</button>
+      <h1 class="stitle">Оберіть філію</h1>
+      <div class="ssub">Де вам зручніше</div>
+    </div>
+    <div class="mst-list" id="branchGrid"></div>
+  </div>
+
   <!-- 2. Конкретна послуга -->
   <div class="step hide" id="step2">
     <div class="shead">
@@ -803,7 +813,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 
 <script>
 (function () {
-  var state = { group: null, category: null, master: null, service: null, date: "", start_min: null, extras: [] };
+  var state = { group: null, category: null, master: null, service: null, date: "", start_min: null, extras: [], branch: null };
+  var branches = [], branchStepEnabled = false;
   var allServices = [], allMasters = [];
   var DOW = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
   var ICONS = {
@@ -953,8 +964,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     if (tb) tb.style.display = (n === 1) ? "" : "none";
     if (bc) bc.style.display = (n === 1) ? "" : "none";
 
-    var id = (n === "done") ? "stepDone" : (n === "extras") ? "stepExtras" : "step" + n;
-    ["step1","step2","step3","step4","stepExtras","step5","step6","stepDone"].forEach(function(x) { $(x).classList.add("hide"); });
+    var id = (n === "done") ? "stepDone" : (n === "extras") ? "stepExtras" : (n === "branch") ? "stepBranch" : "step" + n;
+    ["step1","stepBranch","step2","step3","step4","stepExtras","step5","step6","stepDone"].forEach(function(x) { $(x).classList.add("hide"); });
     $(id).classList.remove("hide");
     // прогрес (7 сегментів): послуга=1, майстер=2, тривалість=3, додаткові=4, дата=5, запис=6, готово=7
     var ORDER = ["step2","step3","step4","step5","stepExtras","step6","stepDone"];
@@ -968,14 +979,45 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   // Завантаження
   Promise.all([
     fetch("/api/public/services").then(function(r) { return r.json(); }),
-    fetch("/api/public/all-masters").then(function(r) { return r.json(); })
+    fetch("/api/public/all-masters").then(function(r) { return r.json(); }),
+    fetch("/api/public/branches").then(function(r) { return r.json(); }).catch(function() { return { ok: false }; })
   ]).then(function(rs) {
     allServices = rs[0].ok ? rs[0].services : [];
     allMasters  = rs[1].ok ? rs[1].masters  : [];
+    branches = (rs[2] && rs[2].ok) ? rs[2].branches : [];
+    branchStepEnabled = !!(rs[2] && rs[2].ok && rs[2].enabled);
     renderGroups();
   }).catch(function() {
     $("groupGrid").innerHTML = '<div class="empty">Помилка завантаження. Оновіть сторінку.</div>';
   });
+
+  // Крок 1b: Філії (показується лише коли branchStepEnabled і філій > 1)
+  function renderBranches() {
+    var box = $("branchGrid"); box.innerHTML = "";
+    branches.forEach(function(b) {
+      var card = document.createElement("div"); card.className = "mst-card";
+      card.innerHTML =
+        (b.photo ? '<img class="mst-photo" src="' + b.photo + '" alt="' + b.name + '" />' : '<div class="mst-photo-ph">🏢</div>') +
+        '<div class="mst-body"><div class="mst-top"><div class="mst-name">' + b.name + '</div></div></div>' +
+        '<span class="mst-arrow">›</span>';
+      card.addEventListener("click", function() { state.branch = b.id; renderCats(); goStep(2); });
+      box.appendChild(card);
+    });
+  }
+
+  /* Майстри для обраної категорії, звужені до обраної філії (якщо крок
+     "Оберіть філію" активний і клієнт уже щось обрав). */
+  function eligibleMasters() {
+    var catServices = allServices.filter(function(s) { return parseName(s.name).cat === state.category; });
+    var catIds = catServices.map(function(s) { return s.id; });
+    var list = allMasters.filter(function(m) {
+      return (m.service_ids || []).some(function(id) { return catIds.indexOf(id) !== -1; });
+    });
+    if (branchStepEnabled && state.branch) {
+      list = list.filter(function(m) { return m.branch_id === state.branch; });
+    }
+    return { catIds: catIds, eligible: list };
+  }
 
   // Крок 1: Групи послуг
   function renderGroups() {
@@ -988,8 +1030,12 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         '<div class="grp-body"><div class="grp-title">' + g.name + '</div><div class="grp-sub">' + g.sub + '</div></div>' +
         '<div class="grp-arrow">›</div>';
       btn.addEventListener("click", function() {
-        state.group = g.key; state.category = null; state.master = null; state.service = null; state.start_min = null;
-        renderCats(); goStep(2);
+        state.group = g.key; state.category = null; state.master = null; state.service = null; state.start_min = null; state.branch = null;
+        if (branchStepEnabled && branches.length > 1) {
+          renderBranches(); goStep("branch");
+        } else {
+          renderCats(); goStep(2);
+        }
       });
       box.appendChild(btn);
     });
@@ -1014,6 +1060,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   function renderCats() {
     var g = GROUPS.filter(function(x){ return x.key === state.group; })[0];
     $("step2title").textContent = g ? g.name : "Послуги";
+    var step2Back = document.querySelector("#step2 .sback");
+    if (step2Back) step2Back.dataset.back = (branchStepEnabled && branches.length > 1) ? "branch" : "1";
     var sb = $("catSearch"); if (sb) sb.value = ""; // скинути пошук при вході в категорію
     var box = $("catGrid"); box.innerHTML = "";
     var cats = {};
@@ -1098,10 +1146,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   function renderMasters() {
     var box = $("masterGrid"); box.innerHTML = "";
     var catServices = allServices.filter(function(s) { return parseName(s.name).cat === state.category; });
-    var catIds = catServices.map(function(s) { return s.id; });
-    var eligible = allMasters.filter(function(m) {
-      return (m.service_ids || []).some(function(id) { return catIds.indexOf(id) !== -1; });
-    });
+    var em = eligibleMasters();
+    var catIds = em.catIds, eligible = em.eligible;
     if (!eligible.length) {
       box.innerHTML = '<div class="empty">Для цієї послуги майстрів поки немає.</div>'; return;
     }
@@ -1373,9 +1419,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   /* Крок 5: перемикання між майстрами прямо на екрані дати/часу */
   function renderOtherMasters() {
     var wrap = $("otherMList"); if (!wrap) return;
-    var catServices = allServices.filter(function(s){ return parseName(s.name).cat === state.category; });
-    var catIds = catServices.map(function(s){ return s.id; });
-    var eligible = allMasters.filter(function(m){ return (m.service_ids||[]).some(function(id){ return catIds.indexOf(id) !== -1; }); });
+    var eligible = eligibleMasters().eligible;
     wrap.innerHTML = "";
     eligible.forEach(function(m){
       var chip = document.createElement("button");

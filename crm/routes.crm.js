@@ -583,7 +583,16 @@ router.get("/branches", any, function (req, res) {
     b.schedule = db.prepare("SELECT weekday,work_start,work_end FROM branch_schedule WHERE branch_id=? ORDER BY weekday").all(b.id);
     b.masters  = db.prepare("SELECT id,name,last_name,photo,level FROM masters WHERE branch_id=? AND active=1").all(b.id);
   });
-  res.json({ ok: true, branches: rows });
+  res.json({ ok: true, branches: rows, booking_branch_step: settingOn("booking_branch_step", false) });
+});
+
+/* Перемикач "показувати крок вибору філії в онлайн-записі" — має сенс
+   лише коли філій більше однієї (перевіряється на публічній стороні). */
+router.patch("/settings/booking-branch-step", owner, function (req, res) {
+  const enabled = !!(req.body || {}).enabled;
+  db.prepare("INSERT INTO app_settings (key,value) VALUES ('booking_branch_step',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+    .run(enabled ? "1" : "0");
+  res.json({ ok: true, enabled: enabled });
 });
 
 router.post("/branches", owner, function (req, res) {

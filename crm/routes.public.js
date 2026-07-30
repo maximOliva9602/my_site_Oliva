@@ -29,7 +29,7 @@ function attachStats(m) {
 /* Всі активні майстри з фото та рівнем */
 router.get("/all-masters", function (req, res) {
   const masters = db.prepare(
-    "SELECT id, name, photo, level, experience_years FROM masters WHERE active = 1 ORDER BY sort_order, id"
+    "SELECT id, name, photo, level, experience_years, branch_id FROM masters WHERE active = 1 ORDER BY sort_order, id"
   ).all();
   const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id = ?");
   masters.forEach(function (m) {
@@ -37,6 +37,18 @@ router.get("/all-masters", function (req, res) {
     attachStats(m);
   });
   res.json({ ok: true, masters: masters });
+});
+
+/* Філії — для кроку "Оберіть філію" в онлайн-записі (лише коли власник
+   увімкнув перемикач "booking_branch_step" у CRM і філій більше однієї —
+   з однією філією цей крок для клієнта не має сенсу). */
+router.get("/branches", function (req, res) {
+  const setting = db.prepare("SELECT value FROM app_settings WHERE key='booking_branch_step'").get();
+  const enabled = !!setting && setting.value === "1";
+  const branches = db.prepare(
+    "SELECT id, name, photo FROM branches WHERE active=1 ORDER BY sort_order, id"
+  ).all();
+  res.json({ ok: true, enabled: enabled && branches.length > 1, branches: branches });
 });
 
 /* Активні послуги */

@@ -3061,12 +3061,50 @@
     }
     main.appendChild(bar);
 
+    /* ── Перемикач кроку "Оберіть філію" в онлайн-записі ──
+       Має сенс лише коли філій більше однієї — з однією клієнту нема
+       з чого обирати, крок сам не показується навіть при увімкненому
+       перемикачі (перевіряється на публічній стороні). */
+    var togCard = el("div", "item"); togCard.style.marginBottom = "14px";
+    var togRow = document.createElement("label");
+    togRow.style.cssText = "display:flex;align-items:flex-start;gap:10px;cursor:pointer;";
+    var togCb = document.createElement("input");
+    togCb.type = "checkbox";
+    togCb.style.cssText = "width:19px;height:19px;accent-color:var(--olive-light);flex-shrink:0;margin-top:2px;";
+    var togTxt = el("div", "");
+    togTxt.innerHTML = '<div style="font-size:.9rem;font-weight:600;color:var(--cream);">Крок "Оберіть філію" в онлайн-записі</div>' +
+      '<div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">Клієнт спершу обирає філію, і вже потім бачить майстрів саме цієї філії. Працює лише коли філій більше однієї.</div>';
+    togRow.appendChild(togCb); togRow.appendChild(togTxt);
+    togCard.appendChild(togRow);
+    var togMsg = el("div", "sub"); togMsg.style.margin = "6px 0 0 29px";
+    togCard.appendChild(togMsg);
+    main.appendChild(togCard);
+    if (ME.role === "owner") {
+      togCb.addEventListener("change", function() {
+        togCb.disabled = true;
+        api("PATCH", "/api/crm/settings/booking-branch-step", { enabled: togCb.checked }).then(function(r) {
+          togCb.disabled = false;
+          if (r.j && r.j.ok) { togMsg.style.color = "var(--ok)"; togMsg.textContent = "✓ Збережено"; }
+          else { togCb.checked = !togCb.checked; togMsg.style.color = "var(--err)"; togMsg.textContent = "✗ Помилка збереження"; }
+        });
+      });
+    } else {
+      togCb.disabled = true;
+    }
+
     var listEl = el("div", "list"); main.appendChild(listEl);
 
     function load() {
       listEl.innerHTML = '<div class="empty">Завантаження…</div>';
       api("GET", "/api/crm/branches").then(function(res) {
         var branches = res.j.branches || [];
+        togCb.checked = !!res.j.booking_branch_step;
+        if (branches.length < 2) {
+          togMsg.style.color = "var(--text-dim)";
+          togMsg.textContent = "Потрібно щонайменше 2 філії, щоб цей крок з'явився в онлайн-записі.";
+        } else {
+          togMsg.textContent = "";
+        }
         listEl.innerHTML = "";
         if (!branches.length) { listEl.innerHTML = '<div class="empty">Філій ще немає. Натисніть + Філія</div>'; return; }
         branches.forEach(function(b) {
