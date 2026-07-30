@@ -345,7 +345,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .dur-cost { color: var(--gold); font-size: 1rem; font-weight: 600; white-space: nowrap; }
 .dur-check { width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #2b2113; display: none; align-items: center; justify-content: center; flex-shrink: 0; font-size: .8rem; font-weight: 700; }
 .dur-row.sel .dur-check { display: flex; }
-.help-card { display: flex; gap: 14px; align-items: center; margin: 18px 16px 0; background: rgba(20,15,10,0.45); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.help-card { display: flex; gap: 14px; align-items: center; margin: 18px 16px 0; background: rgba(20,15,10,0.45); border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-decoration: none; cursor: pointer; transition: border-color .15s, background .15s; }
+.help-card:hover, .help-card:active { border-color: rgba(217,185,120,0.4); background: rgba(20,15,10,0.6); }
 .help-ico { color: var(--gold); flex-shrink: 0; display: flex; }
 .help-ico svg { width: 30px; height: 30px; }
 .help-t { color: var(--gold); font-size: .92rem; font-weight: 600; margin-bottom: 3px; }
@@ -493,10 +494,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
     <div class="dur-list2" id="durList"></div>
-    <div class="help-card">
+    <a class="help-card" href="https://t.me/massage_oliva_kyiv" target="_blank" rel="noopener noreferrer">
       <span class="help-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 3-3 6 0 9 3-3 3-6 0-9z"/><path d="M12 12c-2.5-1.5-5-1.5-7.5 0 2.5 2 5 2 7.5 0z"/><path d="M12 12c2.5-1.5 5-1.5 7.5 0-2.5 2-5 2-7.5 0z"/><path d="M12 12v9"/></svg></span>
-      <div><div class="help-t">Не знаєте, що обрати?</div><div class="help-d">Наші адміністратори допоможуть підібрати ідеальний сеанс для вас</div></div>
-    </div>
+      <div><div class="help-t">Не знаєте, що обрати?</div><div class="help-d">Напишіть нам у Telegram — адміністратори допоможуть підібрати ідеальний сеанс для вас</div></div>
+    </a>
     <div class="step-foot"><button class="btn btn-ghost" data-back="3">&#8592; Назад</button></div>
   </div>
 
