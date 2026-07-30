@@ -38,11 +38,12 @@ async function notifyNewAppt(appointmentId, source) {
       SELECT a.date, a.start_min, a.duration_min, a.comment, a.extra_services,
              c.name client_name, c.phone client_phone,
              s.name service_name,
-             m.name master_name
+             m.name master_name, b.name branch_name
       FROM appointments a
       JOIN clients  c ON c.id = a.client_id
       JOIN services s ON s.id = a.service_id
       JOIN masters  m ON m.id = a.master_id
+      LEFT JOIN branches b ON b.id = m.branch_id
       WHERE a.id = ?
     `).get(appointmentId);
     if (!a) return;
@@ -59,13 +60,24 @@ async function notifyNewAppt(appointmentId, source) {
       }
     } catch (_) {}
 
+    // Філія — лише коли власник увімкнув крок вибору філії в онлайн-записі
+    // (той самий перемикач, що й на сайті) і майстер до неї прив'язаний.
+    let branchLine = "";
+    try {
+      const setting = db.prepare("SELECT value FROM app_settings WHERE key='booking_branch_step'").get();
+      if (setting && setting.value === "1" && a.branch_name) {
+        branchLine = `\n🏢 <b>Філія:</b> ${a.branch_name}`;
+      }
+    } catch (_) {}
+
     const who   = source === "site" ? "🌐 Сайт" : "📋 CRM";
     const text  =
       `📅 <b>Новий запис!</b> ${who}\n\n` +
       `👤 <b>Клієнт:</b> ${a.client_name}\n` +
       `📞 <b>Телефон:</b> ${a.client_phone}\n` +
       `💆 <b>Послуга:</b> ${a.service_name}\n` +
-      `👩‍🔧 <b>Майстер:</b> ${a.master_name}\n` +
+      `👩‍🔧 <b>Майстер:</b> ${a.master_name}` +
+      branchLine + `\n` +
       `📆 <b>Дата:</b> ${ddmm(a.date)}, ${fmtMin(a.start_min)}–${fmtMin(a.start_min + a.duration_min)}` +
       extrasLine +
       (a.comment ? `\n💬 <b>Коментар:</b> ${a.comment}` : "");
