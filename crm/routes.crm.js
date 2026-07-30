@@ -188,16 +188,23 @@ function createAppointment(d, session) {
    НОВИЙ vs ПОВТОРНИЙ клієнт: повторний — той, хто вже має завершений візит
    у ЦЬОГО Ж майстра раніше за поточний. Для повторного беруться
    value_return / pay_percent_return, якщо задані (інакше — як для нового).
+   АБОНЕМЕНТ: якщо візит зарахований з абонементу (subscription_used) —
+   майстер отримує окрему (типово вищу) ставку з master_subscription_pay /
+   pay_percent_subscription замість нової/повторної; завжди у % (без fixed).
    Заробіток = сума ставок по завершених візитах за період. */
 function masterEarnings(masterId, from, to) {
-  const m = db.prepare("SELECT pay_percent, pay_percent_return FROM masters WHERE id=?").get(masterId);
+  const m = db.prepare("SELECT pay_percent, pay_percent_return, pay_percent_subscription FROM masters WHERE id=?").get(masterId);
   const defNew = (m && m.pay_percent) || 0;
   const defRet = (m && m.pay_percent_return != null) ? m.pay_percent_return : defNew;
+  const defSub = (m && m.pay_percent_subscription != null) ? m.pay_percent_subscription : defNew;
   const overrides = {};
   db.prepare("SELECT service_id, mode, value, value_return FROM master_service_pay WHERE master_id=?")
     .all(masterId).forEach(function (r) { overrides[r.service_id] = r; });
+  const subOverrides = {};
+  db.prepare("SELECT service_id, value FROM master_subscription_pay WHERE master_id=?")
+    .all(masterId).forEach(function (r) { subOverrides[r.service_id] = r.value; });
   const rows = db.prepare(
-    `SELECT id, client_id, service_id, price, date, start_min
+    `SELECT id, client_id, service_id, price, date, start_min, subscription_used
        FROM appointments WHERE master_id=? AND status='completed' AND date>=? AND date<=?`
   ).all(masterId, from, to);
   const isRetStmt = db.prepare(
@@ -207,8 +214,13 @@ function masterEarnings(masterId, from, to) {
   );
   let total = 0;
   for (const a of rows) {
-    const isReturn = !!isRetStmt.get(a.client_id, masterId, a.id, a.date, a.date, a.start_min);
     const o = overrides[a.service_id];
+    if (a.subscription_used) {
+      const pct = subOverrides[a.service_id] != null ? subOverrides[a.service_id] : defSub;
+      if (pct) total += Math.round((a.price || 0) * pct / 100);
+      continue;
+    }
+    const isReturn = !!isRetStmt.get(a.client_id, masterId, a.id, a.date, a.date, a.start_min);
     if (o) {
       const val = (isReturn && o.value_return != null) ? o.value_return : o.value;
       total += o.mode === "fixed" ? Math.round(val) : Math.round((a.price || 0) * val / 100);
@@ -1619,7 +1631,7 @@ router.patch("/clients/:id/no-reminders", any, function (req, res) {
 /* ---- Зарплата майстра: ставки і заробіток ---- */
 router.get("/masters/:id/pay", owner, function (req, res) {
   const id = parseInt(req.params.id, 10);
-  const m = db.prepare("SELECT id, name, last_name, pay_percent, pay_percent_return FROM masters WHERE id=?").get(id);
+  const m = db.prepare("SELECT id, name, last_name, pay_percent, pay_percent_return, pay_percent_subscription FROM masters WHERE id=?").get(id);
   if (!m) return res.status(404).json({ ok: false });
   const services = db.prepare(
     `SELECT s.id, s.name, s.price FROM master_services ms
@@ -1629,6 +1641,9 @@ router.get("/masters/:id/pay", owner, function (req, res) {
   const overrides = db.prepare(
     "SELECT service_id, mode, value, value_return FROM master_service_pay WHERE master_id=?"
   ).all(id);
+  const subOverrides = db.prepare(
+    "SELECT service_id, value FROM master_subscription_pay WHERE master_id=?"
+  ).all(id);
   const today = tz.nowKyiv().date;
   const dt = new Date(today + "T00:00:00");
   const dow = dt.getDay() === 0 ? 6 : dt.getDay() - 1;
@@ -1636,7 +1651,7 @@ router.get("/masters/:id/pay", owner, function (req, res) {
   const wStart = ws.toISOString().slice(0, 10);
   const mStart = today.slice(0, 7) + "-01";
   res.json({
-    ok: true, master: m, services: services, overrides: overrides,
+    ok: true, master: m, services: services, overrides: overrides, sub_overrides: subOverrides,
     earnings: {
       today: masterEarnings(id, today, today),
       week:  masterEarnings(id, wStart, today),
@@ -1655,10 +1670,11 @@ router.patch("/masters/:id/pay", owner, function (req, res) {
     if (!isFinite(v) || v < 0 || v > 100) throw new Error(label + ": число 0–100");
     return v;
   }
-  let pp, ppRet;
+  let pp, ppRet, ppSub;
   try {
     pp    = pct(d.pay_percent, "Відсоток (новий клієнт)");
     ppRet = pct(d.pay_percent_return, "Відсоток (повторний клієнт)");
+    ppSub = pct(d.pay_percent_subscription, "Відсоток (абонемент)");
   } catch (e) { return res.status(400).json({ ok: false, error: e.message }); }
   const list = Array.isArray(d.overrides) ? d.overrides : [];
   for (const o of list) {
@@ -1673,13 +1689,24 @@ router.patch("/masters/:id/pay", owner, function (req, res) {
       if (mode === "percent" && vr > 100) return res.status(400).json({ ok: false, error: "Відсоток (повторний): 0–100" });
     }
   }
+  const subList = Array.isArray(d.sub_overrides) ? d.sub_overrides : [];
+  for (const o of subList) {
+    const sid = parseInt(o.service_id, 10);
+    const val = parseFloat(o.value);
+    if (!sid || !isFinite(val) || val < 0 || val > 100) return res.status(400).json({ ok: false, error: "Відсоток (абонемент): 0–100" });
+  }
   db.transaction(function () {
-    db.prepare("UPDATE masters SET pay_percent=?, pay_percent_return=? WHERE id=?").run(pp, ppRet, id);
+    db.prepare("UPDATE masters SET pay_percent=?, pay_percent_return=?, pay_percent_subscription=? WHERE id=?").run(pp, ppRet, ppSub, id);
     db.prepare("DELETE FROM master_service_pay WHERE master_id=?").run(id);
     const ins = db.prepare("INSERT INTO master_service_pay (master_id, service_id, mode, value, value_return) VALUES (?,?,?,?,?)");
     for (const o of list) {
       const vr = (o.value_return === undefined || o.value_return === null || o.value_return === "") ? null : parseFloat(o.value_return);
       ins.run(id, parseInt(o.service_id, 10), o.mode === "fixed" ? "fixed" : "percent", parseFloat(o.value), vr);
+    }
+    db.prepare("DELETE FROM master_subscription_pay WHERE master_id=?").run(id);
+    const insSub = db.prepare("INSERT INTO master_subscription_pay (master_id, service_id, value) VALUES (?,?,?)");
+    for (const o of subList) {
+      insSub.run(id, parseInt(o.service_id, 10), parseFloat(o.value));
     }
   })();
   res.json({ ok: true });

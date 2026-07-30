@@ -4284,6 +4284,7 @@
       var d = r.j;
       function grn(k) { return Math.round((k || 0) / 100).toLocaleString("uk-UA") + " грн"; }
       var ovMap = {}; (d.overrides || []).forEach(function (o) { ovMap[o.service_id] = o; });
+      var subOvMap = {}; (d.sub_overrides || []).forEach(function (o) { subOvMap[o.service_id] = o.value; });
 
       var html = '';
       html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">' +
@@ -4292,6 +4293,15 @@
             '<div style="font-size:.68rem;color:var(--text-dim);margin-bottom:3px;">' + x[0] + '</div>' +
             '<div style="font-weight:700;color:var(--cream);font-size:.92rem;">' + grn(x[1]) + '</div></div>';
         }).join("") + '</div>';
+
+      // ── Перемикач вкладок ──
+      html += '<div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line);">' +
+        '<button type="button" class="btn btn-sm" id="payTabBtnRegular" style="border-radius:8px 8px 0 0;">Звичайні візити</button>' +
+        '<button type="button" class="btn btn-sm btn-ghost" id="payTabBtnSub" style="border-radius:8px 8px 0 0;">Розрахунок за абонемент</button>' +
+        '</div>';
+
+      // ── Вкладка 1: звичайні візити ──
+      html += '<div id="payTabRegular">';
       html += '<div class="sub" style="margin-bottom:12px;">Заробіток рахується із <b>завершених</b> візитів. <b>Новий</b> — перший завершений візит клієнта у цього майстра; <b>повторний</b> — усі наступні.</div>';
       var payNotSet = d.master.pay_percent == null;
       if (payNotSet) {
@@ -4330,10 +4340,43 @@
             '<input data-val-ret type="number" min="0" step="0.5" style="width:84px;font-size:.8rem;padding:6px 8px;" value="' + valRet + '" placeholder="як новий">' +
           '</div></div>';
       });
-      html += '</div>';
+      html += '</div></div>'; // /payServiceList /payTabRegular
+
+      // ── Вкладка 2: розрахунок за абонемент ──
+      html += '<div id="payTabSub" style="display:none;">';
+      html += '<div class="sub" style="margin-bottom:12px;">Якщо візит клієнта зарахований з абонементу, майстер, що продав цей абонемент, отримує окрему (типово вищу) ставку замість звичайної нової/повторної.</div>';
+      html += '<label>Типовий відсоток за абонементський візит</label>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<input type="number" id="paySubDef" min="0" max="100" step="0.5" style="width:100px;" value="' + (d.master.pay_percent_subscription != null ? d.master.pay_percent_subscription : "") + '" placeholder="як для нового"><span class="muted">% (порожньо — як для нового клієнта)</span></div>';
+      html += '<div style="margin-top:14px;margin-bottom:6px;font-size:.85rem;font-weight:600;color:var(--cream);">Ставки за абонемент по послугах</div>';
+      if ((d.services || []).length > 5) {
+        html += '<input type="text" id="paySubServiceSearch" placeholder="🔍 Пошук послуги…" style="margin-bottom:8px;">';
+      }
+      html += '<div id="paySubServiceList" style="max-height:290px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;">';
+      if (!(d.services || []).length) html += '<div class="empty">У майстра немає активних послуг</div>';
+      (d.services || []).forEach(function (s) {
+        var subVal = subOvMap[s.id] != null ? subOvMap[s.id] : "";
+        html += '<div data-pss="' + s.id + '" data-name="' + s.name.toLowerCase().replace(/"/g, "&quot;") + '" style="padding:9px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+          '<div style="font-size:.78rem;color:var(--cream);min-width:0;">' + s.name + ' <span class="muted">· ' + Math.round((s.price || 0) / 100) + ' грн</span></div>' +
+          '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+            '<input data-sub-val type="number" min="0" max="100" step="0.5" style="width:80px;font-size:.8rem;padding:6px 8px;" value="' + subVal + '" placeholder="типовий">' +
+            '<span class="muted" style="font-size:.72rem;">%</span>' +
+          '</div></div>';
+      });
+      html += '</div></div>'; // /paySubServiceList /payTabSub
+
       html += '<div class="err" id="payErr"></div>' +
         '<div class="modal-foot"><button class="btn btn-primary" id="paySave">Зберегти</button><button class="btn btn-ghost" id="payClose">Закрити</button></div>';
       $("payBody").innerHTML = html;
+
+      $("payTabBtnRegular").addEventListener("click", function () {
+        $("payTabRegular").style.display = ""; $("payTabSub").style.display = "none";
+        $("payTabBtnRegular").className = "btn btn-sm"; $("payTabBtnSub").className = "btn btn-sm btn-ghost";
+      });
+      $("payTabBtnSub").addEventListener("click", function () {
+        $("payTabRegular").style.display = "none"; $("payTabSub").style.display = "";
+        $("payTabBtnRegular").className = "btn btn-sm btn-ghost"; $("payTabBtnSub").className = "btn btn-sm";
+      });
 
       $("payBody").querySelectorAll("[data-ps]").forEach(function (row) {
         var sel = row.querySelector("[data-mode]"), vals = row.querySelector("[data-vals]");
@@ -4367,6 +4410,29 @@
         });
       }
 
+      var subSvcSearch = $("paySubServiceSearch");
+      if (subSvcSearch) {
+        subSvcSearch.addEventListener("input", function () {
+          var q = subSvcSearch.value.trim().toLowerCase();
+          var anyVisible = false;
+          $("paySubServiceList").querySelectorAll("[data-pss]").forEach(function (row) {
+            var match = !q || row.getAttribute("data-name").indexOf(q) > -1;
+            row.style.display = match ? "" : "none";
+            if (match) anyVisible = true;
+          });
+          var emptyEl = $("paySubServiceEmpty");
+          if (!anyVisible) {
+            if (!emptyEl) {
+              emptyEl = document.createElement("div");
+              emptyEl.id = "paySubServiceEmpty";
+              emptyEl.className = "empty";
+              emptyEl.textContent = "Нічого не знайдено";
+              $("paySubServiceList").appendChild(emptyEl);
+            }
+          } else if (emptyEl) { emptyEl.remove(); }
+        });
+      }
+
       $("paySave").addEventListener("click", function () {
         var overrides = [], bad = null;
         $("payBody").querySelectorAll("[data-ps]").forEach(function (row) {
@@ -4391,12 +4457,24 @@
           });
         });
         if (bad) { $("payErr").textContent = bad; return; }
+        var subOverrides = [];
+        $("payBody").querySelectorAll("[data-pss]").forEach(function (row) {
+          var raw = row.querySelector("[data-sub-val]").value.trim();
+          if (raw === "") return;
+          var num = parseFloat(raw);
+          if (!isFinite(num) || num < 0 || num > 100) { bad = "Відсоток за абонемент має бути 0–100"; return; }
+          subOverrides.push({ service_id: parseInt(row.getAttribute("data-pss"), 10), value: num });
+        });
+        if (bad) { $("payErr").textContent = bad; return; }
         var def = $("payDef").value.trim();
         var defRet = $("payDefRet").value.trim();
+        var defSub = $("paySubDef").value.trim();
         api("PATCH", "/api/crm/masters/" + m.id + "/pay", {
           pay_percent: def === "" ? null : def,
           pay_percent_return: defRet === "" ? null : defRet,
+          pay_percent_subscription: defSub === "" ? null : defSub,
           overrides: overrides,
+          sub_overrides: subOverrides,
         }).then(function (r2) {
           if (!(r2.j && r2.j.ok)) { $("payErr").textContent = (r2.j && r2.j.error) || "Помилка збереження"; return; }
           closeModal();

@@ -341,6 +341,22 @@ db.exec(`CREATE TABLE IF NOT EXISTS master_service_pay (
   FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 )`);
 try { db.exec("ALTER TABLE master_service_pay ADD COLUMN value_return REAL"); } catch(e) {}
+
+/* Підвищена ставка за візити, зараховані з абонементу (майстер, що продав
+   абонемент клієнту, отримує трохи більший %). masters.pay_percent_subscription —
+   типовий відсоток (null = як для нового клієнта). Окрема таблиця, а не ще
+   одна колонка в master_service_pay: субставка на послугу не прив'язана до
+   mode/value звичайної ставки — послуга може мати лише абонементський %,
+   без окремого override для нового/повторного клієнта. */
+try { db.exec("ALTER TABLE masters ADD COLUMN pay_percent_subscription REAL"); } catch(e) {}
+db.exec(`CREATE TABLE IF NOT EXISTS master_subscription_pay (
+  master_id  INTEGER NOT NULL,
+  service_id INTEGER NOT NULL,
+  value      REAL NOT NULL,
+  PRIMARY KEY (master_id, service_id),
+  FOREIGN KEY (master_id)  REFERENCES masters(id)  ON DELETE CASCADE,
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+)`);
 /* Журнал надісланих привітань: раз на рік на клієнта, переживає рестарти. */
 db.exec(`CREATE TABLE IF NOT EXISTS birthday_greetings (
   client_id INTEGER NOT NULL,
