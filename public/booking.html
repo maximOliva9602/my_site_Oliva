@@ -1587,7 +1587,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         if (!res.j.ok) { err.textContent = "Помилка. Спробуйте ще раз."; return; }
         var p = parseName(state.service.name);
         var h = Math.floor(state.start_min/60), m = state.start_min%60;
-        $("doneText").innerHTML = "Нагадаємо про візит за 24 години.<br><br><b>" + p.cat + "</b> · " + state.master.name + "<br>" + state.date.split("-").reverse().slice(0,2).join(".") + ", " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+        $("doneText").innerHTML = "<b>" + p.cat + "</b> · " + state.master.name + "<br>" + state.date.split("-").reverse().slice(0,2).join(".") + ", " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
         buildCalendar();
         goStep("done");
       }).catch(function() { btn.disabled = false; btn.textContent = "Підтвердити запис"; err.textContent = "Помилка з'єднання."; });
