@@ -2936,46 +2936,39 @@
 
           var totalCols = days.length + 1;
 
-          // ── Секція ФІЛІЇ (якщо є)
-          if (branches.length > 0) {
-            tbody.appendChild(sectionRow("ФІЛІЯ", totalCols));
-            branches.forEach(function(branch) {
-              var bSchedMap = {};
-              (branch.schedule || []).forEach(function(s) { bSchedMap[s.weekday] = s; });
+          function branchRow(branch) {
+            var bSchedMap = {};
+            (branch.schedule || []).forEach(function(s) { bSchedMap[s.weekday] = s; });
 
-              var tr = document.createElement("tr");
-              tr.style.cssText = "border-bottom:1px solid #e8ece4;";
-              var tdAv = document.createElement("td");
-              tdAv.style.cssText = "padding:6px 4px;text-align:center;position:sticky;left:0;background:#fff;z-index:1;min-width:68px;cursor:pointer;";
-              tdAv.innerHTML = (branch.photo
-                ? '<img src="' + branch.photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1.5px solid #8aA462;" alt="">'
-                : '<div style="width:32px;height:32px;border-radius:50%;background:#5a7a48;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem;margin:0 auto;">🏢</div>') +
-                '<div style="font-size:.58rem;color:#1a2016;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;max-width:66px;text-overflow:ellipsis;">' + (branch.name||'') + '</div>';
+            var tr = document.createElement("tr");
+            tr.style.cssText = "border-bottom:1px solid #e8ece4;";
+            var tdAv = document.createElement("td");
+            tdAv.style.cssText = "padding:6px 4px;text-align:center;position:sticky;left:0;background:#fff;z-index:1;min-width:68px;cursor:pointer;";
+            tdAv.innerHTML = (branch.photo
+              ? '<img src="' + branch.photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1.5px solid #8aA462;" alt="">'
+              : '<div style="width:32px;height:32px;border-radius:50%;background:#5a7a48;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem;margin:0 auto;">🏢</div>') +
+              '<div style="font-size:.58rem;color:#1a2016;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;max-width:66px;text-overflow:ellipsis;">' + (branch.name||'') + '</div>';
+            if (ME.role === "owner") {
+              tdAv.addEventListener("click", (function(b2) { return function() {
+                branchEditPage(b2, "grafik");
+              }; })(branch));
+            }
+            tr.appendChild(tdAv);
+            days.forEach(function(day) {
+              var td = document.createElement("td");
+              td.style.cssText = "padding:3px;text-align:center;" + (ME.role === "owner" ? "cursor:pointer;" : "");
+              td.innerHTML = schedCellHtml(bSchedMap[day.jsDay]);
               if (ME.role === "owner") {
-                tdAv.addEventListener("click", (function(b2) { return function() {
-                  var gi = TABS.findIndex(function(t){return t.id==="grafik";});
+                td.addEventListener("click", (function(b2) { return function() {
                   branchEditPage(b2, "grafik");
                 }; })(branch));
               }
-              tr.appendChild(tdAv);
-              days.forEach(function(day) {
-                var td = document.createElement("td");
-                td.style.cssText = "padding:3px;text-align:center;" + (ME.role === "owner" ? "cursor:pointer;" : "");
-                td.innerHTML = schedCellHtml(bSchedMap[day.jsDay]);
-                if (ME.role === "owner") {
-                  td.addEventListener("click", (function(b2) { return function() {
-                    branchEditPage(b2, "grafik");
-                  }; })(branch));
-                }
-                tr.appendChild(td);
-              });
-              tbody.appendChild(tr);
+              tr.appendChild(td);
             });
+            return tr;
           }
 
-          // ── Секція ФАХІВЦІ
-          tbody.appendChild(sectionRow("ФАХІВЦІ", totalCols));
-          masterRows.forEach(function(row) {
+          function masterRow(row) {
             var m = row.master;
             var schedMap = masterSchedMap[m.id] || {};
             var tr = document.createElement("tr");
@@ -3007,8 +3000,35 @@
               }; })(m, day.dateStr));
               tr.appendChild(td);
             });
-            tbody.appendChild(tr);
+            return tr;
+          }
+
+          // ── Філія, одразу під нею — її майстри; наприкінці — майстри без філії
+          var rowsByBranch = {};
+          var unassigned = [];
+          masterRows.forEach(function(row) {
+            var bid = row.master.branch_id;
+            if (bid && branches.some(function(b) { return b.id === bid; })) {
+              (rowsByBranch[bid] || (rowsByBranch[bid] = [])).push(row);
+            } else {
+              unassigned.push(row);
+            }
           });
+
+          if (branches.length > 0) {
+            branches.forEach(function(branch) {
+              tbody.appendChild(sectionRow((branch.name || "ФІЛІЯ").toUpperCase(), totalCols));
+              tbody.appendChild(branchRow(branch));
+              (rowsByBranch[branch.id] || []).forEach(function(row) { tbody.appendChild(masterRow(row)); });
+            });
+            if (unassigned.length) {
+              tbody.appendChild(sectionRow("БЕЗ ФІЛІЇ", totalCols));
+              unassigned.forEach(function(row) { tbody.appendChild(masterRow(row)); });
+            }
+          } else {
+            tbody.appendChild(sectionRow("ФАХІВЦІ", totalCols));
+            masterRows.forEach(function(row) { tbody.appendChild(masterRow(row)); });
+          }
 
           table.appendChild(tbody);
           tableWrap.appendChild(table);

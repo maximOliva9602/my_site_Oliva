@@ -592,7 +592,12 @@ router.post("/branches", owner, function (req, res) {
   if (!name) return res.status(400).json({ ok: false, error: "name required" });
   const info = db.prepare("INSERT INTO branches (name,photo,active,sort_order,created_at) VALUES (?,?,1,?,?)")
     .run(name, d.photo ? d.photo.slice(0, 500) : null, parseInt(d.sort_order, 10) || 0, Date.now());
-  res.json({ ok: true, id: info.lastInsertRowid });
+  const branchId = info.lastInsertRowid;
+  if (Array.isArray(d.master_ids) && d.master_ids.length) {
+    const stmt = db.prepare("UPDATE masters SET branch_id=? WHERE id=?");
+    d.master_ids.forEach(function (mid) { stmt.run(branchId, parseInt(mid, 10)); });
+  }
+  res.json({ ok: true, id: branchId });
 });
 
 router.put("/branches/:id", owner, function (req, res) {
