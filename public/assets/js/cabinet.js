@@ -4100,7 +4100,10 @@
 
       /* ---- Середній рядок: сторінки + джерела ---- */
       var midRow = document.createElement("div");
-      midRow.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;";
+      /* auto-fit/minmax замість фіксованих 1fr 1fr — на вузькому екрані
+         телефону дві колонки по ~170px ламали текст/бари, тепер блоки
+         складаються в один стовпець, коли не влазять по 280px. */
+      midRow.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:14px;";
 
       // Топ сторінок
       var topPages = d.top_pages || [];
@@ -4145,7 +4148,10 @@
 
       /* ---- Нижній рядок: пристрої + кліки + пік годин ---- */
       var botRow = document.createElement("div");
-      botRow.style.cssText = "display:grid;grid-template-columns:1fr 1.2fr 1.4fr;gap:14px;margin-bottom:14px;";
+      /* Було 3 фіксовані колонки — на телефоні кожна ставала ~110px і
+         сітка "по годинах" (8 колонок всередині) ставала нечитабельною.
+         auto-fit складає блоки в один стовпець, доки не влазять по 240px. */
+      botRow.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:14px;";
 
       // Пристрої (donut-like)
       var devices = d.devices || [];
