@@ -3111,10 +3111,15 @@
       var gi = TABS.findIndex(function(t){ return t.id === destId; });
       if (gi < 0) gi = 0;
       var mBtns = document.getElementById("mob-nav").querySelectorAll(".mob-tab");
-      if (mBtns[gi]) {
+      if (mBtns[gi] && gi < mBtns.length - 1) {
+        // не остання кнопка (⋯"Ще") — це справжня вкладка нижньої панелі
         mBtns[gi].click();
       } else {
-        activateTab(gi);
+        // вкладка живе лише в шторці "Ще" (desktop) — activateTab тут поза
+        // областю видимості, тож клікаємо відповідну кнопку верхньої панелі
+        // вкладок, яка завжди в DOM незалежно від мобільного/десктопного виду
+        var topBtn = document.querySelectorAll(".tab")[gi];
+        if (topBtn) topBtn.click();
       }
     }
 
@@ -4606,10 +4611,15 @@
       var gi = TABS.findIndex(function(t){ return t.id === targetId; });
       if (gi < 0) gi = 0;
       var mBtns = document.getElementById("mob-nav").querySelectorAll(".mob-tab");
-      if (mBtns[gi]) {
+      if (mBtns[gi] && gi < mBtns.length - 1) {
+        // не остання кнопка (⋯"Ще") — це справжня вкладка нижньої панелі
         mBtns[gi].click();
       } else {
-        activateTab(gi);
+        // вкладка живе лише в шторці "Ще" (desktop) — activateTab тут поза
+        // областю видимості, тож клікаємо відповідну кнопку верхньої панелі
+        // вкладок, яка завжди в DOM незалежно від мобільного/десктопного виду
+        var topBtn = document.querySelectorAll(".tab")[gi];
+        if (topBtn) topBtn.click();
       }
     };
     var hdrTitle = document.createElement("div");
