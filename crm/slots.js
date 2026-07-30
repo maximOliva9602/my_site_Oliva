@@ -11,7 +11,7 @@ const db = require("./db");
 const tz = require("./tz");
 
 const STEP = 15;                                  // крок стартів, хв
-const LEAD_MIN   = parseInt(process.env.LEAD_MIN   || "0",  10); // мін. запас від «зараз», хв
+const LEAD_MIN   = parseInt(process.env.LEAD_MIN   || "30", 10); // мін. запас від «зараз», хв
 const BUFFER_MIN = parseInt(process.env.BUFFER_MIN || "10", 10); // буфер між записами, хв
 
 function ceilToStep(min, step) { return Math.ceil(min / step) * step; }
