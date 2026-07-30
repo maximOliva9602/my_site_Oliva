@@ -2601,9 +2601,21 @@
     }
 
     // ── Послуги і майстри ────────────────────────────────────────────
-    api("GET", "/api/crm/services").then(function (res) {
+    // Майстер (не власник) обирає лише зі своїх послуг — інакше в
+    // пошуку/списку висвічувались варіанти й "Майстер", і "Топ Майстер"
+    // одразу, незалежно від власної кваліфікації.
+    Promise.all([
+      api("GET", "/api/crm/services"),
+      api("GET", "/api/crm/masters")
+    ]).then(function (results) {
+      var svcRes = results[0], mstRes = results[1];
       var sel = $("mService");
-      allServices = (res.j.services || []);
+      allServices = svcRes.j.services || [];
+      if (ME.role !== "owner") {
+        var me = (mstRes.j.masters || []).find(function (m) { return m.id === ME.masterId; });
+        var ids = me ? (me.service_ids || []) : [];
+        allServices = allServices.filter(function (s) { return ids.indexOf(s.id) !== -1; });
+      }
       allServices.forEach(function (s) {
         var o = new Option(s.name + " (" + s.duration_min + " хв)", s.id);
         o.dataset.dur = s.duration_min; sel.appendChild(o);
@@ -2612,11 +2624,11 @@
         var found = allServices.find(function(s) { return String(s.id) === String(prefill.serviceId); });
         if (found) { selectService(found); }
       }
-      loadMasters();
+      loadMasters(mstRes);
     });
 
-    function loadMasters() {
-      api("GET", "/api/crm/masters").then(function (res) {
+    function loadMasters(mstRes) {
+      function apply(res) {
         var sel = $("mMaster");
         (res.j.masters || []).forEach(function (m) {
           if (ME.role !== "owner" && m.id !== ME.masterId) return;
@@ -2631,7 +2643,9 @@
           sel.value = String(prefill.masterId);
         }
         loadSlots();
-      });
+      }
+      if (mstRes) { apply(mstRes); return; }
+      api("GET", "/api/crm/masters").then(apply);
     }
 
     $("mService").addEventListener("change", function() { loadSlots(); refreshSubSection(); });
