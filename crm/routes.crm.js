@@ -102,10 +102,10 @@ function viewAppt(a) {
           WHERE client_id=? AND service_id IN (${inList(svcIds.length)}) AND status<>'cancelled' AND date>=?
             AND (date < ? OR (date = ? AND start_min <= ?))`
       ).get(a.client_id, ...svcIds, subDate, a.date, a.date, a.start_min).c;
-      /* Після останнього сеансу (наприклад, 5/5) усі наступні записи —
-         звичайні. Не передаємо їм дані абонемента, інакше календар показує
-         помилковий бейдж «6-й у черзі · спожито 5/5». */
-      if (subIndex <= sub.total_sessions) {
+      /* Після останнього сеансу (наприклад, 5/5) усі незавершені записи —
+         звичайні. Не передаємо їм дані абонемента, навіть якщо запис було
+         створено раніше й має малий номер у черзі. */
+      if (sub.used_sessions < sub.total_sessions && subIndex <= sub.total_sessions) {
         out.sub_used = sub.used_sessions;
         out.sub_total = sub.total_sessions;
         out.sub_index = subIndex;
