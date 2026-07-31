@@ -973,8 +973,8 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
 
 /* ---------------- Міграція: оновити майстрів ---------------- */
 (function updateMasters() {
-  // Людмила → рівень "Майстриня"
-  db.prepare("UPDATE masters SET level='Майстриня' WHERE name='Людмила' AND level='Майстер'").run();
+  // Застарілий рівень «Майстриня» об'єднано з рівнем «Майстер».
+  db.prepare("UPDATE masters SET level='Майстер' WHERE level='Майстриня'").run();
   // Додати Андрія якщо ще немає
   var andrii = db.prepare("SELECT id FROM masters WHERE name='Андрій'").get();
   if (!andrii) {
@@ -1002,7 +1002,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
  * Запускається щоразу при старті. Додає відсутні послуги майстрам згідно їхнього рівня.
  * Рівні:
  *   "Топ Майстер"        → послуги з "(Топ Майстер)" + спільні (без мітки)
- *   "Майстер"/"Майстриня"→ послуги з "(Майстер)" (НЕ Топ) + спільні
+ *   "Майстер"            → послуги з "(Майстер)" (НЕ Топ) + спільні
  *   Решта                → лише спільні
  *
  * Існуючі зв'язки не видаляються (використовується INSERT OR IGNORE).
@@ -1017,7 +1017,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
     masters.forEach(function(m) {
       var lvl = (m.level || "").trim();
       var isTop = lvl === "Топ Майстер";
-      var isMaster = lvl === "Майстер" || lvl === "Майстриня";
+      var isMaster = lvl === "Майстер";
 
       allSvcs.forEach(function(s) {
         var hasTop    = s.name.indexOf("(Топ Майстер)") !== -1;

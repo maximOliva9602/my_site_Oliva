@@ -26,6 +26,7 @@ function canSeePhones(session) {
   return !!(m && m.can_see_phones);
 }
 const STATUSES = ["pending", "confirmed", "cancelled", "completed", "no_show"];
+const MASTER_LEVELS = ["Майстер", "Топ Майстер"];
 
 /* Кожна послуга існує у двох тарифних варіантах — окремий service_id для
    "(Майстер)" і "(Топ Майстер)" (та сама процедура й тривалість, різна
@@ -61,7 +62,7 @@ function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const isMaster = name.includes("(Майстер)") && !isTop;
   if (!isTop && !isMaster) return true; // спільна послуга без рівня
   if (isTop) return masterLevel === "Топ Майстер";
-  return masterLevel === "Майстер" || masterLevel === "Майстриня";
+  return masterLevel === "Майстер";
 }
 
 /* ---------- спільне: повна картка запису ---------- */
@@ -617,6 +618,7 @@ router.post("/masters", owner, function (req, res) {
   const name = clean(d.name, 100);
   if (!name) return res.status(400).json({ ok: false, error: "name required" });
   const level = clean(d.level, 50) || 'Майстер';
+  if (MASTER_LEVELS.indexOf(level) === -1) return res.status(400).json({ ok: false, error: "bad master level" });
   const info = db.prepare("INSERT INTO masters (name,last_name,phone,color,active,sort_order,created_at,photo,level,mono_link) VALUES (?,?,?,?,1,?,?,?,?,?)")
     .run(name, clean(d.last_name, 100) || null, clean(d.phone, 30), clean(d.color, 20), parseInt(d.sort_order, 10) || 0, Date.now(),
       clean(d.photo, 500) || null, level, clean(d.mono_link, 500) || null);
@@ -628,6 +630,9 @@ router.put("/masters/:id", owner, function (req, res) {
   const m = db.prepare("SELECT * FROM masters WHERE id=?").get(id);
   if (!m) return res.status(404).json({ ok: false });
   const d = req.body || {};
+  if (d.level !== undefined && MASTER_LEVELS.indexOf(clean(d.level, 50)) === -1) {
+    return res.status(400).json({ ok: false, error: "bad master level" });
+  }
   db.prepare("UPDATE masters SET name=?, last_name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=?, can_see_phones=? WHERE id=?").run(
     d.name           !== undefined ? clean(d.name, 100)      : m.name,
     d.last_name      !== undefined ? clean(d.last_name, 100) : m.last_name,

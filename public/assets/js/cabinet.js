@@ -72,7 +72,7 @@
     var isTop = name.indexOf("(Топ Майстер)") !== -1;
     var isMaster = name.indexOf("(Майстер)") !== -1 && !isTop;
     if (!isTop && !isMaster) return true; // послуга без прив'язки до рівня
-    return isTop ? level === "Топ Майстер" : (level === "Майстер" || level === "Майстриня");
+    return isTop ? level === "Топ Майстер" : level === "Майстер";
   }
 
   function api(method, url, body) {
@@ -2281,8 +2281,10 @@
       '</div>' +
       // Список обраних послуг
       '<div id="mSvcList"></div>' +
-      // Пошук послуги
-      '<div id="mSvcWrap" style="position:relative;margin-top:4px;">' +
+      // Спочатку обираємо категорію, потім конкретну послугу — як в онлайн-записі.
+      '<div id="mSvcCategories" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:4px;"></div>' +
+      '<div id="mSvcWrap" style="display:none;position:relative;margin-top:4px;">' +
+        '<button type="button" id="mSvcGroupBack" class="btn btn-ghost btn-sm" style="margin-bottom:7px;">← Усі категорії</button>' +
         '<input type="text" id="mSvcQ" placeholder="Пошук послуги…" autocomplete="off">' +
         '<div id="mSvcDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:200px;overflow-y:auto;margin-top:3px;"></div>' +
       '</div>' +
@@ -2350,6 +2352,23 @@
     var selectedClient = null;
     var allServices = [];
     var selectedServices = []; // [{id, name, duration_min, price}, ...]
+    var activeServiceGroup = null;
+    var SERVICE_GROUPS = [
+      { key: "massage", icon: "💆", title: "Масажі", sub: "Оздоровлення та відновлення" },
+      { key: "spa-two", icon: "👥", title: "SPA для двох", sub: "Парні процедури та релакс" },
+      { key: "spa-one", icon: "🌿", title: "SPA для одного", sub: "Індивідуальний релакс" },
+      { key: "body", icon: "✨", title: "Корекція фігури", sub: "Моделювання та догляд за тілом" },
+      { key: "extra", icon: "➕", title: "Додаткові послуги", sub: "Додатковий догляд" }
+    ];
+    function serviceGroup(s) {
+      var name = String((s && s.name) || "").toLowerCase();
+      if (/парний|чотири руки|для двох/.test(name)) return "spa-two";
+      if (/фітобоч|spa[ -]?ритуал|гарячим камінням|тепловий spa/.test(name)) return "spa-one";
+      if (/обличчя|кобідо|гуа-ша|букальн/.test(name)) return "massage";
+      if (/антицелюліт|моделююч|лімфодренаж|вакуум|обгортан|трансформац|сольове/.test(name)) return "body";
+      if (/кінезіотейп/.test(name)) return "extra";
+      return "massage";
+    }
 
     function renderSvcList() {
       var listEl = $("mSvcList"); if (!listEl) return;
@@ -2379,7 +2398,10 @@
                 // Послуг не лишилось — повертаємо поле пошуку, щоб
                 // можна було обрати послугу заново без перезаходу в запис.
                 $("mService").value = "";
-                $("mSvcWrap").style.display = "";
+                activeServiceGroup = null;
+                $("mSvcWrap").style.display = "none";
+                $("mSvcCategories").style.display = "grid";
+                renderSvcCategories();
                 $("mSvcQ").value = "";
               }
               refreshSubSection();
@@ -2497,6 +2519,7 @@
       if (selectedServices.length === 0) {
         $("mService").value = s.id;
         $("mSvcWrap").style.display = "none";
+        $("mSvcCategories").style.display = "none";
         refreshSubSection();
       }
       selectedServices.push({ id: s.id, name: s.name, duration_min: s.duration_min, price: s.price });
@@ -2520,9 +2543,41 @@
 
     function renderSvcDrop(q) {
       var drop = $("mSvcDrop");
-      var filtered = allServices.filter(function(s) { return !q || s.name.toLowerCase().indexOf(q.toLowerCase()) > -1; });
+      var filtered = allServices.filter(function(s) {
+        return serviceGroup(s) === activeServiceGroup && (!q || s.name.toLowerCase().indexOf(q.toLowerCase()) > -1);
+      });
       buildSvcDropRows(drop, filtered, function(s) { selectService(s); });
     }
+
+    function renderSvcCategories() {
+      var box = $("mSvcCategories"); if (!box) return;
+      box.innerHTML = "";
+      SERVICE_GROUPS.forEach(function(group) {
+        if (!allServices.some(function(s) { return serviceGroup(s) === group.key; })) return;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.style.cssText = "display:flex;align-items:center;gap:10px;text-align:left;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);cursor:pointer;color:var(--cream);";
+        btn.innerHTML = '<span style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--panel);font-size:1.15rem;flex-shrink:0;">' + group.icon + '</span>' +
+          '<span style="min-width:0;flex:1;"><span style="display:block;font-weight:700;font-size:.88rem;">' + group.title + '</span><span style="display:block;font-size:.72rem;color:var(--text-dim);margin-top:2px;">' + group.sub + '</span></span><span style="font-size:1.35rem;color:var(--olive-light);">›</span>';
+        btn.addEventListener("click", function() {
+          activeServiceGroup = group.key;
+          box.style.display = "none";
+          $("mSvcWrap").style.display = "block";
+          $("mSvcQ").value = "";
+          $("mSvcQ").placeholder = "Пошук у категорії «" + group.title + "»…";
+          renderSvcDrop("");
+          $("mSvcQ").focus();
+        });
+        box.appendChild(btn);
+      });
+    }
+
+    $("mSvcGroupBack").addEventListener("click", function() {
+      activeServiceGroup = null;
+      $("mSvcWrap").style.display = "none";
+      $("mSvcCategories").style.display = "grid";
+      renderSvcCategories();
+    });
 
     $("mSvcQ").addEventListener("input", function() { renderSvcDrop(this.value.trim()); });
     $("mSvcQ").addEventListener("focus", function() { renderSvcDrop(this.value.trim()); });
@@ -2690,6 +2745,7 @@
         var o = new Option(s.name + " (" + s.duration_min + " хв)", s.id);
         o.dataset.dur = s.duration_min; sel.appendChild(o);
       });
+      if (!prefill.serviceId) renderSvcCategories();
       if (prefill.serviceId) {
         var found = allServices.find(function(s) { return String(s.id) === String(prefill.serviceId); });
         if (found) { selectService(found); }
@@ -4670,7 +4726,7 @@
       '<label>Ім\'я</label><input type="text" id="mmFirstName" maxlength="60" placeholder="Максим" />' +
       '<label>Прізвище</label><input type="text" id="mmLastName" maxlength="60" placeholder="необов\'язково" />' +
       '<label>Ім\'я для додатку</label><input type="text" id="mmDisplayName" maxlength="100" placeholder="Як бачитимуть клієнти" />' +
-      '<label>Посада</label><select id="mmLevel"><option value="Майстер">Майстер</option><option value="Майстриня">Майстриня</option><option value="Топ Майстер">Топ Майстер</option></select>' +
+      '<label>Посада</label><select id="mmLevel"><option value="Майстер">Майстер</option><option value="Топ Майстер">Топ Майстер</option></select>' +
       '<label>Телефон</label><input type="text" id="mmPhone" maxlength="30" />' +
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #f0f2ee;margin-top:8px;">' +
         '<div><div style="font-size:.88rem;font-weight:600;color:#1a2016;">Бачити номери телефонів клієнтів</div>' +
