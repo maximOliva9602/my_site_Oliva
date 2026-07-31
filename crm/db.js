@@ -996,6 +996,55 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
   console.log('[db] Seeded category/description/image_url for ' + services.length + ' services.');
 })();
 
+/* ---------------- Перенесення add-on послуг у каталог онлайн-запису ----------------
+   Ці десять позицій раніше існували лише на фінальному кроці як доповнення.
+   Тепер вони є повноцінними послугами групи «Додаткові послуги».
+   Кінезіотейпування, навпаки, лишається фінальним add-on'ом на фронтенді. */
+(function moveBookingAddonsToCatalog() {
+  var now = Date.now();
+  var additions = [
+    ['Глибоке прогрівання у ІЧ Сауні', 'Глибоке прогрівання у ІЧ Сауні 30 хв', 30, 65000,
+      'Глибоке прогрівання організму, виведення токсинів і релакс.', '/assets/img/spa-sauna-kyiv.jpg'],
+    ['Гаряче каміння', 'Гаряче каміння 15 хв', 15, 35000,
+      'Локальне прогрівання м\'язів і глибоке розслаблення.', '/assets/img/stoun-terapiia-kyiv.jpg'],
+    ['Масаж долонь', 'Масаж долонь 15 хв', 15, 35000,
+      'Зняття напруги в кистях і передпліччях.', '/assets/img/relaks-masazh-shuliavska-kyiv.jpg'],
+    ['Масаж зі зволожувальним кремом', 'Масаж зі зволожувальним кремом 10 хв', 10, 10000,
+      'Живлення шкіри та ніжний догляд зі зволожувальним кремом.', '/assets/img/antystresovyi-masazh-kyiv.jpg'],
+    ['Композиція зі свічок', 'Композиція зі свічок 10 хв', 10, 15000,
+      'Атмосфера спокою з ароматом теплих свічок.', '/assets/img/relaks-spa-programa-kyiv.jpg'],
+    ['Душ', 'Душ 10 хв', 10, 15000,
+      'Рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.', '/assets/img/dush-oliva.png'],
+  ];
+  var exists = db.prepare("SELECT 1 FROM services WHERE active=1 AND name LIKE ? LIMIT 1");
+  var insert = db.prepare(
+    "INSERT INTO services (name,duration_min,price,active,sort_order,created_at,category,description,image_url) VALUES (?,?,?,1,850,?,'Додаткові послуги',?,?)"
+  );
+
+  additions.forEach(function(s) {
+    if (!exists.get(s[0] + '%')) insert.run(s[1], s[2], s[3], now, s[4], s[5]);
+  });
+
+  var catalog = [
+    ['Глибоке прогрівання у ІЧ Сауні%', 'Глибоке прогрівання організму, виведення токсинів і релакс.', '/assets/img/spa-sauna-kyiv.jpg'],
+    ['Гаряче каміння%', 'Локальне прогрівання м\'язів і глибоке розслаблення.', '/assets/img/stoun-terapiia-kyiv.jpg'],
+    ['Паріння у фітобочці%', 'Прогрівання тіла на цілющих травах перед масажем.', '/assets/img/parinnia-u-fitobochtsi-kyiv.jpg'],
+    ['Масаж голови%', 'Зняття напруги, покращення сну та концентрації.', '/assets/img/head_massage.jpg'],
+    ['Масаж шийно-комірцевої зони%', 'Розслаблення шиї та плечей, зняття напруги.', '/assets/img/masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg'],
+    ['Масаж долонь%', 'Зняття напруги в кистях і передпліччях.', '/assets/img/relaks-masazh-shuliavska-kyiv.jpg'],
+    ['Масаж стоп%', 'Розслаблення втомлених ніг і стоп.', '/assets/img/masazh-shuliavska-kyiv.jpg'],
+    ['Масаж зі зволожувальним кремом%', 'Живлення шкіри та ніжний догляд зі зволожувальним кремом.', '/assets/img/antystresovyi-masazh-kyiv.jpg'],
+    ['Композиція зі свічок%', 'Атмосфера спокою з ароматом теплих свічок.', '/assets/img/relaks-spa-programa-kyiv.jpg'],
+    ['Душ%', 'Рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.', '/assets/img/dush-oliva.png'],
+  ];
+  var update = db.prepare(
+    "UPDATE services SET category='Додаткові послуги',sort_order=?,description=COALESCE(NULLIF(description,''),?),image_url=COALESCE(NULLIF(image_url,''),?) WHERE active=1 AND name LIKE ?"
+  );
+  db.transaction(function() {
+    catalog.forEach(function(s, i) { update.run(700 + i, s[1], s[2], s[0]); });
+  })();
+})();
+
 /* ---------------- Міграція: оновити майстрів ---------------- */
 (function updateMasters() {
   // Застарілий рівень «Майстриня» об'єднано з рівнем «Майстер».
