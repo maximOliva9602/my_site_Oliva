@@ -1077,6 +1077,49 @@
         var calTouchMoved = false, calTX = 0, calTY = 0, calLpHandled = false;
         var lpActive = false, lpTimer = null, lpInd = null, lpAbsMin = 0, lpMasterRef = null;
         var dragState = { active: false, ghost: null, dropZone: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+        var desktopMouseDragEnabled = ME.role === "owner" && window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+        var desktopDragState = null;
+        var desktopDragSuppressClick = false;
+
+        function finishDesktopDrag(suppressClick) {
+          document.querySelectorAll(".cal-desktop-drag-hl").forEach(function(col) {
+            col.classList.remove("cal-desktop-drag-hl");
+            col.style.boxShadow = "";
+          });
+          if (desktopDragState && desktopDragState.sourceBlock) desktopDragState.sourceBlock.style.opacity = "";
+          desktopDragState = null;
+          if (suppressClick) {
+            desktopDragSuppressClick = true;
+            setTimeout(function() { desktopDragSuppressClick = false; }, 250);
+          }
+        }
+
+        function confirmDesktopMasterTransfer(appt, targetMaster) {
+          if (!appt || !targetMaster || String(appt.master_id) === String(targetMaster.id)) return;
+          var endMin = appt.end_min || (appt.start_min + appt.duration_min);
+          openModal(
+            '<h3 style="margin:0 0 10px;">Перенести запис?</h3>' +
+            '<div style="font-size:.92rem;color:#222;font-weight:600;margin-bottom:6px;">' + appt.client_name + '</div>' +
+            '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Новий майстер: <strong>' + (targetMaster.name || '') + '</strong></div>' +
+            '<div style="font-size:.85rem;color:#555;margin-bottom:18px;">Час залишається: <strong>' + fmtMin(appt.start_min) + ' – ' + fmtMin(endMin) + '</strong></div>' +
+            '<div class="modal-foot">' +
+            '<button id="desktopDragConfirmBtn" class="btn btn-primary">Перенести</button>' +
+            '<button id="desktopDragCancelBtn" class="btn btn-ghost">Скасувати</button>' +
+            '</div>'
+          );
+          document.getElementById("desktopDragCancelBtn").addEventListener("click", closeModal);
+          document.getElementById("desktopDragConfirmBtn").addEventListener("click", function() {
+            api("PATCH", "/api/crm/appointments/" + appt.id, {
+              master: parseInt(targetMaster.id, 10),
+              date: apptDate,
+              start_min: appt.start_min
+            }).then(function(r) {
+              if (!r.j || !r.j.ok) return;
+              closeModal();
+              loadCalendar(activeMasterFilter, { zoomOnly: true });
+            });
+          });
+        }
 
         function removeLpInd() { if (lpInd) { lpInd.remove(); lpInd = null; } }
 
@@ -1249,6 +1292,40 @@
           mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;touch-action:pan-x pan-y;";
           mCol.dataset.masterId = master.id;
           mCol.dataset.masterName = master.name || "";
+
+          // ПК, кабінет власника: запис можна перетягнути в колонку іншого майстра.
+          if (desktopMouseDragEnabled) {
+            mCol.addEventListener("dragover", function(e) {
+              if (!desktopDragState) return;
+              e.preventDefault();
+              if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+              document.querySelectorAll(".cal-desktop-drag-hl").forEach(function(col) {
+                if (col !== mCol) {
+                  col.classList.remove("cal-desktop-drag-hl");
+                  col.style.boxShadow = "";
+                }
+              });
+              if (String(desktopDragState.appointment.master_id) !== String(master.id)) {
+                mCol.classList.add("cal-desktop-drag-hl");
+                mCol.style.boxShadow = "inset 0 0 0 3px rgba(110,145,69,.65)";
+              }
+            });
+
+            mCol.addEventListener("dragleave", function(e) {
+              if (e.relatedTarget && mCol.contains(e.relatedTarget)) return;
+              mCol.classList.remove("cal-desktop-drag-hl");
+              mCol.style.boxShadow = "";
+            });
+
+            mCol.addEventListener("drop", function(e) {
+              if (!desktopDragState) return;
+              e.preventDefault();
+              e.stopPropagation();
+              var droppedAppointment = desktopDragState.appointment;
+              finishDesktopDrag(true);
+              confirmDesktopMasterTransfer(droppedAppointment, master);
+            });
+          }
 
           // Лінії кожні 10 хвилин
           for (var tm2 = (HOUR_START + 1) * 60; tm2 <= HOUR_END * 60; tm2 += STEP) {
@@ -1432,6 +1509,32 @@
             if (heightPx >= 84 && hasNote) html += '<div style="font-size:.64rem;color:rgba(255,255,255,.92);margin-top:3px;line-height:1.25;overflow:hidden;">💬 ' + cEsc + '</div>';
             block.innerHTML = html;
 
+            // Native mouse drag is enabled only for the owner on desktop.
+            if (desktopMouseDragEnabled) {
+              block.draggable = true;
+              block.style.cursor = "grab";
+              block.title = "Затисніть і перетягніть до іншого майстра";
+              block.addEventListener("dragstart", function(e) {
+                var oldP = document.getElementById("cal-popup");
+                if (oldP) oldP.remove();
+                desktopDragSuppressClick = false;
+                desktopDragState = {
+                  appointment: a,
+                  sourceBlock: block
+                };
+                if (e.dataTransfer) {
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", String(a.id));
+                }
+                setTimeout(function() {
+                  if (desktopDragState && desktopDragState.sourceBlock === block) block.style.opacity = ".35";
+                }, 0);
+              });
+              block.addEventListener("dragend", function() {
+                finishDesktopDrag(true);
+              });
+            }
+
             // ── Drag block: long-press → drag to new master or new time ──
             var blkDragX = 0, blkDragY = 0, blkDragRect = null, blkLpTimer = null, blkReady = false;
 
@@ -1584,7 +1687,7 @@
             });
 
             block.addEventListener("click", function(e) {
-              if (dragState.active) { e.stopPropagation(); return; }
+              if (dragState.active || desktopDragSuppressClick) { e.stopPropagation(); return; }
               e.stopPropagation();
               var oldP = document.getElementById("cal-popup");
               if (oldP) oldP.remove();
