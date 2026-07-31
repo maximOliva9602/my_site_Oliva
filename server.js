@@ -65,7 +65,7 @@ app.use(express.urlencoded({ extended: false, limit: "15mb" }));
 app.use(function (req, res, next) {
   const forwardedHost = String(req.headers["x-forwarded-host"] || "").split(",")[0].trim();
   const host = (forwardedHost || req.hostname || "").split(":")[0].toLowerCase();
-  if (host === LEGACY_SITE_HOST) return res.redirect(308, PRIMARY_SITE_URL + req.originalUrl);
+  if (host === LEGACY_SITE_HOST) return res.redirect(301, PRIMARY_SITE_URL + req.originalUrl);
   next();
 });
 /* Явні заголовки кешу. Без них Cloudflare підставляє свій max-age=14400,
