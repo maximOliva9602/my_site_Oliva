@@ -7,7 +7,7 @@
 
   var ME = { role: null, masterId: null, can_see_phones: false };
   var DOW = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-  var STATUS_LABEL = { pending: "Очікує", confirmed: "Підтверджено", completed: "Завершено", cancelled: "Скасовано", no_show: "Не прийшов" };
+  var STATUS_LABEL = { pending: "Очікує", confirmed: "✓ Підтверджено", completed: "Завершено", cancelled: "Скасовано", no_show: "Не прийшов" };
   var MARKER_COLORS = ["#4f86f7","#8b5cf6","#ec4899","#10b981","#f59e0b","#f97316","#ef4444","#06b6d4"];
   var DEFAULT_MARKER = "#4f86f7"; // якщо маркер не встановлений
 
@@ -1550,14 +1550,20 @@
             block.id = "cal-block-" + a.id;
             block.style.cssText = "position:absolute;left:calc(" + leftPct + "% + 2px);width:calc(" + pct + "% - 4px);top:" + topPx + "px;height:" + heightPx + "px;" +
               "background:" + markerHex + ";border-radius:5px;" +
-              "padding:3px 5px 2px 5px;overflow:hidden;cursor:pointer;z-index:3;";
+              "padding:3px 5px 2px 5px;overflow:hidden;cursor:pointer;z-index:3;" +
+              (a.status === "confirmed"
+                ? "border:2px solid #d9ff9f;box-shadow:0 0 0 1px #31531d,0 2px 7px rgba(49,83,29,.45);"
+                : "border:2px solid transparent;");
 
             var cEsc = (a.comment||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             var html = "";
             if (heightPx >= 22) {
               html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:2px;margin-bottom:1px;">' +
                 '<span style="font-size:.64rem;font-weight:700;color:rgba(255,255,255,.95);white-space:nowrap;">' + timeStr + '</span>' +
-                (hasNote ? '<span style="font-size:.64rem;opacity:.85;flex-shrink:0;line-height:1;">💬</span>' : '') +
+                '<span style="display:flex;gap:3px;align-items:center;flex-shrink:0;line-height:1;">' +
+                  (a.status === "confirmed" ? '<span title="Підтверджено" style="font-size:.68rem;font-weight:800;color:#e5ffb9;">✓</span>' : '') +
+                  (hasNote ? '<span style="font-size:.64rem;opacity:.85;">💬</span>' : '') +
+                '</span>' +
                 '</div>';
             }
             html += '<div style="font-size:.76rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
@@ -2367,6 +2373,10 @@
 
   function apptItem(a) {
     var item = el("div", "item");
+    if (a.status === "confirmed") {
+      item.style.border = "2px solid rgba(110,145,69,.75)";
+      item.style.boxShadow = "0 3px 12px rgba(61,84,48,.13)";
+    }
     var row = el("div", "row1");
     row.appendChild(el("span", "t", fmtMin(a.start_min)));
     var info = el("div");
