@@ -2559,6 +2559,9 @@
       { key: "extra", icon: "➕", title: "Додаткові послуги", sub: "Додатковий догляд" }
     ];
     function serviceGroup(s) {
+      // Категорія з бази має пріоритет над евристикою за назвою. Саме сюди
+      // міграція переносить усі add-on'и з фінального кроку онлайн-запису.
+      if (String((s && s.category) || "").trim().toLowerCase() === "додаткові послуги") return "extra";
       var name = String((s && s.name) || "").toLowerCase();
       if (/парний|чотири руки|для двох/.test(name)) return "spa-two";
       if (/фітобоч|spa[ -]?ритуал|гарячим камінням|тепловий spa/.test(name)) return "spa-one";
