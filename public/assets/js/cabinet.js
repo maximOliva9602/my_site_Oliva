@@ -336,12 +336,35 @@
 
     var rozkladIdx = TABS.findIndex(function(t) { return t.id === "rozklad"; });
     activateTab(rozkladIdx >= 0 ? rozkladIdx : 0);
+    openAppointmentFromNotification();
     initPush();     // тост або тиха підписка
     // Авто-оновлення коли повертаємось у додаток (напр. із фону)
     document.addEventListener("visibilitychange", function() {
       if (!document.hidden && window.__reloadAppts) {
         try { window.__reloadAppts(); } catch(e) {}
       }
+    });
+  }
+
+  /* Прямий перехід із push: /cabinet?appointment=123. Дані беремо
+     окремим захищеним запитом, тому картка відкривається незалежно від
+     поточного дня/тижня та вибраного у розкладі майстра. */
+  function openAppointmentFromNotification() {
+    var params = new URLSearchParams(window.location.search);
+    var appointmentId = parseInt(params.get("appointment"), 10);
+    if (!appointmentId) return;
+
+    api("GET", "/api/crm/appointments/" + appointmentId).then(function(res) {
+      if (!res.j || !res.j.ok || !res.j.appointment) return;
+      var a = res.j.appointment;
+      if (a.date) apptDate = a.date;
+      window.apptDetailModal(a);
+
+      // Картку вже відкрито — прибираємо службовий параметр, щоб звичайне
+      // оновлення сторінки не відкривало її повторно.
+      params.delete("appointment");
+      var query = params.toString();
+      history.replaceState(null, "", window.location.pathname + (query ? "?" + query : ""));
     });
   }
 

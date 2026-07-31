@@ -83,7 +83,11 @@ async function notifyNewAppt(appointmentId, source) {
       (a.comment ? `\n💬 <b>Коментар:</b> ${a.comment}` : "");
 
     await sendTg(text);
-    sendPushToAll(text.replace(/<[^>]+>/g, ""));   // push без HTML тегів
+    sendPushToAll(
+      text.replace(/<[^>]+>/g, ""),
+      `/cabinet?appointment=${appointmentId}`,
+      `new-appt-${appointmentId}`
+    ); // push без HTML тегів + пряме посилання на картку запису
   } catch (e) {
     console.error("[admin-notify] notifyNewAppt error:", e.message);
   }
@@ -105,7 +109,7 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
   }
 }
 
-async function sendPushToAll(body) {
+async function sendPushToAll(body, url, tag) {
   if (!webpush) return;
   let subs;
   try {
@@ -117,7 +121,8 @@ async function sendPushToAll(body) {
     body,
     icon: "/assets/img/logo.png",
     badge: "/assets/img/logo.png",
-    tag: "new-appt",
+    tag: tag || "oliva-notif",
+    url: url || "/cabinet",
   });
 
   for (const sub of subs) {

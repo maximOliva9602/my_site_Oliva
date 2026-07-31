@@ -412,6 +412,19 @@ router.post("/me/appointments", any, function (req, res) {
   res.status(r.status).json(r.body);
 });
 
+/* Один запис для прямого переходу з push-сповіщення. Майстер може
+   відкрити лише власний запис, власник — будь-який. */
+router.get("/appointments/:id(\\d+)", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = id ? apptRow(id) : null;
+  if (!a) return res.status(404).json({ ok: false, error: "not found" });
+  if (req.session.role !== "owner" && a.master_id !== req.session.masterId) {
+    return res.status(403).json({ ok: false, error: "forbidden" });
+  }
+  const out = canSeePhones(req.session) ? a : Object.assign({}, a, { client_phone: null });
+  res.json({ ok: true, appointment: viewAppt(out) });
+});
+
 router.get("/me/clients", any, function (req, res) {
   const s = req.session;
   let rows;

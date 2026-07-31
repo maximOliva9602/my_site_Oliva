@@ -1,4 +1,4 @@
-var CACHE = 'oliva-v9';
+var CACHE = 'oliva-v10';
 var STATIC = ['/cabinet', '/manifest.json', '/assets/img/logo.png'];
 
 self.addEventListener('install', function(e) {
@@ -42,18 +42,26 @@ self.addEventListener('push', function(e) {
   e.waitUntil(self.registration.showNotification(title, options));
 });
 
-/* Клік по сповіщенню → фокус уже відкритого вікна (/master або /cabinet), інакше — нове */
+/* Клік по сповіщенню → перейти за URL конкретного запису навіть тоді,
+   коли CRM уже відкрита у фоновому вікні. */
 self.addEventListener('notificationclick', function(e) {
   e.notification.close();
   var url = (e.notification.data && e.notification.data.url) || '/cabinet';
+  var targetUrl = new URL(url, self.location.origin).href;
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
       for (var i = 0; i < list.length; i++) {
         if (list[i].url.includes('/master') || list[i].url.includes('/cabinet')) {
-          return list[i].focus();
+          var crmWindow = list[i];
+          if (crmWindow.navigate) {
+            return crmWindow.navigate(targetUrl).then(function(navigated) {
+              return (navigated || crmWindow).focus();
+            }).catch(function() { return crmWindow.focus(); });
+          }
+          return crmWindow.focus();
         }
       }
-      return clients.openWindow(url);
+      return clients.openWindow(targetUrl);
     })
   );
 });
