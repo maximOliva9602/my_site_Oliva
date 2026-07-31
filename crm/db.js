@@ -366,6 +366,69 @@ db.exec(`CREATE TABLE IF NOT EXISTS master_subscription_pay (
 try { db.exec("ALTER TABLE appointments ADD COLUMN subscription_session_no INTEGER"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN subscription_session_total INTEGER"); } catch(e) {}
 
+/* Одноразове донарахування номерів сеансів для візитів, завершених ЩЕ ДО
+   появи полів вище (subscription_session_no тоді ще не було куди писати).
+   Рахуємо лише коли в клієнта РІВНО ОДИН абонемент на групу тарифів
+   послуги (типовий випадок) — так однозначно видно, яким за рахунком був
+   кожен візит. Якщо абонементів на ту саму послугу декілька (клієнт
+   купував повторно) — прив'язку неможливо відновити однозначно заднім
+   числом, такі рядки лишаємо NULL (як і було, без регресії). */
+try {
+  const pending = db.prepare(
+    `SELECT id, client_id, service_id, date, start_min FROM appointments
+      WHERE subscription_used=1 AND subscription_session_no IS NULL`
+  ).all();
+  if (pending.length) {
+    const allServices = db.prepare("SELECT id, name FROM services").all();
+    function baseKey(name) {
+      const cat = String(name || "")
+        .replace(/\s*\((Топ Майстер|Майстер)\)/, "")
+        .replace(/\s+\d+\s*хв$/, "")
+        .replace(/\s+\d+\s*год.*$/, "")
+        .trim().toLowerCase();
+      const durM = String(name || "").match(/(\d+)\s*хв/);
+      const durH = String(name || "").match(/(\d+)\s*год/);
+      const dur = durM ? parseInt(durM[1], 10) : (durH ? parseInt(durH[1], 10) * 60 : null);
+      return cat + "|" + (dur || "");
+    }
+    const nameById = {}; allServices.forEach(function (s) { nameById[s.id] = s.name; });
+    const groupIdsByKey = {};
+    allServices.forEach(function (s) {
+      const k = baseKey(s.name);
+      (groupIdsByKey[k] || (groupIdsByKey[k] = [])).push(s.id);
+    });
+
+    // Групуємо непроставлені візити за client_id + ключ групи послуги
+    const byGroup = {};
+    pending.forEach(function (a) {
+      const k = baseKey(nameById[a.service_id]);
+      const gk = a.client_id + "|" + k;
+      (byGroup[gk] || (byGroup[gk] = { clientId: a.client_id, key: k, rows: [] })).rows.push(a);
+    });
+
+    const upd = db.prepare("UPDATE appointments SET subscription_session_no=?, subscription_session_total=? WHERE id=?");
+    let fixed = 0;
+    Object.keys(byGroup).forEach(function (gk) {
+      const g = byGroup[gk];
+      const svcIds = groupIdsByKey[g.key] || [];
+      if (!svcIds.length) return;
+      const subsStmt = db.prepare(
+        `SELECT id, total_sessions, used_sessions FROM subscriptions WHERE client_id=? AND service_id IN (${svcIds.map(function(){return "?";}).join(",")})`
+      );
+      const subs = subsStmt.all.apply(subsStmt, [g.clientId].concat(svcIds));
+      if (subs.length !== 1) return; // неоднозначно — лишаємо як є
+      const sub = subs[0];
+      g.rows.sort(function (a, b) { return a.date === b.date ? a.start_min - b.start_min : (a.date < b.date ? -1 : 1); });
+      const n = Math.min(g.rows.length, sub.used_sessions);
+      for (let i = 0; i < n; i++) {
+        upd.run(i + 1, sub.total_sessions, g.rows[i].id);
+        fixed++;
+      }
+    });
+    if (fixed) console.log(`[db] донараховано номер сеансу абонементу для ${fixed} існуючих завершених візитів`);
+  }
+} catch (e) { console.error("[db] backfill subscription_session_no:", e.message); }
+
 /* Журнал надісланих привітань: раз на рік на клієнта, переживає рестарти. */
 db.exec(`CREATE TABLE IF NOT EXISTS birthday_greetings (
   client_id INTEGER NOT NULL,
