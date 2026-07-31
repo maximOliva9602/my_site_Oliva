@@ -786,7 +786,7 @@
         var wkStrip = document.createElement("div");
         wkStrip.id = "cal-week-strip";
         wkStrip.style.cssText = "position:fixed;left:0;right:0;bottom:" + navH + "px;height:" + WEEK_STRIP_H + "px;z-index:10;" +
-          "background:#fff;border-top:1px solid #d8ddd4;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;overflow:hidden;";
+          "background:#fff;border-top:1px solid #d8ddd4;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none;overflow:hidden;cursor:grab;";
 
         // Заголовок місяця
         var midDay = new Date(weekStart); midDay.setDate(weekStart.getDate() + 3);
@@ -835,6 +835,34 @@
         wkStrip.appendChild(swipePreview);
 
         var swTouchX = 0, swTouching = false, swMoved = false;
+        function positionWeekPreview(dx) {
+          var goLeft = dx < 0;
+          var width = wkStrip.offsetWidth || 375;
+          daysRow.style.transform = "translateX(" + dx + "px)";
+          swipePreview.style.transform = "translateX(" + (goLeft ? width + dx : -width + dx) + "px)";
+          var delta = goLeft ? 7 : -7;
+          var nextStart = new Date(weekStart); nextStart.setDate(weekStart.getDate() + delta);
+          var nextEnd = new Date(nextStart); nextEnd.setDate(nextStart.getDate() + 6);
+          swipeLabel.textContent = nextStart.getDate() + " " + MON_SHORT2[nextStart.getMonth()] + " – " + nextEnd.getDate() + " " + MON_SHORT2[nextEnd.getMonth()];
+        }
+        function finishWeekDrag(dx, moved) {
+          if (!moved || Math.abs(dx) < 55) {
+            daysRow.style.transition = "transform .2s";
+            daysRow.style.transform = "translateX(0)";
+            swipePreview.style.transition = "transform .2s";
+            var width = wkStrip.offsetWidth || 375;
+            swipePreview.style.transform = "translateX(" + (dx < 0 ? width : -width) + "px)";
+            return;
+          }
+          /* Стаємо на понеділок тижня, на який перекинулись, а не зсуваємо
+             дату на ±7 днів: інакше після свайпу з неділі відкривалась знову
+             неділя, тобто кінець нового тижня замість його початку. */
+          var delta = dx < 0 ? 7 : -7;
+          var nextDay = new Date(weekStart); nextDay.setDate(weekStart.getDate() + delta);
+          apptDate = nextDay.getFullYear() + "-" + String(nextDay.getMonth()+1).padStart(2,"0") + "-" + String(nextDay.getDate()).padStart(2,"0");
+          apptMonth = apptDate.slice(0,7);
+          loadCalendar(activeMasterFilter);
+        }
         wkStrip.addEventListener("touchstart", function(e) {
           if (e.touches.length !== 1) return;
           swTouchX = e.touches[0].clientX; swTouching = true; swMoved = false;
@@ -851,40 +879,13 @@
           var dx = e.touches[0].clientX - swTouchX;
           if (Math.abs(dx) > 12) swMoved = true;
           if (!swMoved) return;
-          var goLeft = dx < 0;
-          var sw1 = wkStrip.offsetWidth || 375;
-          // daysRow ковзає разом з пальцем
-          daysRow.style.transform = "translateX(" + dx + "px)";
-          // preview slide in from the opposite side
-          var previewOffset = goLeft ? (sw1 + dx) : (-sw1 + dx);
-          swipePreview.style.transform = "translateX(" + previewOffset + "px)";
-          // оновлюємо лейбл тижня
-          var delta  = goLeft ? 7 : -7;
-          var ns = new Date(weekStart); ns.setDate(weekStart.getDate() + delta);
-          var ne = new Date(ns); ne.setDate(ns.getDate() + 6);
-          swipeLabel.textContent = ns.getDate() + " " + MON_SHORT2[ns.getMonth()] + " – " + ne.getDate() + " " + MON_SHORT2[ne.getMonth()];
+          positionWeekPreview(dx);
         }, { passive: true });
         wkStrip.addEventListener("touchend", function(e) {
           if (!swTouching) return;
           swTouching = false;
           var dx = e.changedTouches[0].clientX - swTouchX;
-          if (!swMoved || Math.abs(dx) < 55) {
-            // Snap back
-            daysRow.style.transition = "transform .2s";
-            daysRow.style.transform = "translateX(0)";
-            swipePreview.style.transition = "transform .2s";
-            var sw2 = wkStrip.offsetWidth || 375;
-            swipePreview.style.transform = "translateX(" + (dx < 0 ? sw2 : -sw2) + "px)";
-            return;
-          }
-          /* Стаємо на понеділок тижня, на який перекинулись, а не зсуваємо
-             дату на ±7 днів: інакше після свайпу з неділі відкривалась знову
-             неділя, тобто кінець нового тижня замість його початку. */
-          var delta2 = dx < 0 ? 7 : -7;
-          var d2 = new Date(weekStart); d2.setDate(weekStart.getDate() + delta2);
-          apptDate = d2.getFullYear() + "-" + String(d2.getMonth()+1).padStart(2,"0") + "-" + String(d2.getDate()).padStart(2,"0");
-          apptMonth = apptDate.slice(0,7);
-          loadCalendar(activeMasterFilter);
+          finishWeekDrag(dx, swMoved);
         });
         wkStrip.addEventListener("touchcancel", function() {
           swTouching = false;
@@ -893,6 +894,36 @@
           var sw3 = wkStrip.offsetWidth || 375;
           swipePreview.style.transition = "transform .2s";
           swipePreview.style.transform = "translateX(" + sw3 + "px)";
+        });
+
+        // На ПК підтримуємо той самий жест затисканням лівої кнопки миші.
+        var swMouseX = 0, swMouseDown = false;
+        function endMouseWeekDrag(e) {
+          if (!swMouseDown) return;
+          swMouseDown = false;
+          wkStrip.style.cursor = "grab";
+          document.removeEventListener("mousemove", moveMouseWeekDrag);
+          document.removeEventListener("mouseup", endMouseWeekDrag);
+          finishWeekDrag(e.clientX - swMouseX, swMoved);
+        }
+        function moveMouseWeekDrag(e) {
+          if (!swMouseDown) return;
+          var dx = e.clientX - swMouseX;
+          if (Math.abs(dx) > 12) swMoved = true;
+          if (swMoved) positionWeekPreview(dx);
+        }
+        wkStrip.addEventListener("mousedown", function(e) {
+          if (e.button !== 0) return;
+          swMouseX = e.clientX; swMouseDown = true; swMoved = false;
+          wkStrip.style.cursor = "grabbing";
+          daysRow.style.transition = "none";
+          swipePreview.style.transition = "none";
+          var width = wkStrip.offsetWidth || 375;
+          swipePreview.style.left = "0";
+          swipePreview.style.width = width + "px";
+          swipePreview.style.transform = "translateX(" + width + "px)";
+          document.addEventListener("mousemove", moveMouseWeekDrag);
+          document.addEventListener("mouseup", endMouseWeekDrag);
         });
 
         /* Перемикання тижня скролом (миша/трекпад) — той самий рух, що й
