@@ -2274,7 +2274,10 @@
         '<div id="mPhoneHint" style="display:none;font-size:.74rem;color:var(--warn);margin-top:5px;line-height:1.4;"></div>' +
       '</div>' +
 
-      // 2. ПОСЛУГА
+      // 2. МАЙСТЕР — його кваліфікація визначає доступний прайс
+      '<div id="mMasterRow"><label style="margin-top:14px;display:block;">Майстер</label><select id="mMaster"></select></div>' +
+
+      // 3. ПОСЛУГА
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:4px;">' +
         '<label style="margin:0;">Послуга</label>' +
         '<span id="mTotalInfo" style="font-size:.78rem;color:var(--text-dim);"></span>' +
@@ -2318,8 +2321,7 @@
         '</div>' +
       '</div>' +
 
-      // 3. МАЙСТЕР + ДАТА + ЧАС
-      '<div id="mMasterRow"><label style="margin-top:14px;display:block;">Майстер</label><select id="mMaster"></select></div>' +
+      // 4. ДАТА + ЧАС
       '<label>Дата</label>' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
         '<input type="date" id="mDate" style="flex:1;" />' +
@@ -2351,6 +2353,7 @@
     var chosen = { start_min: null, color_marker: null, subSessions: 0 };
     var selectedClient = null;
     var allServices = [];
+    var appointmentMasters = [];
     var selectedServices = []; // [{id, name, duration_min, price}, ...]
     var activeServiceGroup = null;
     var SERVICE_GROUPS = [
@@ -2368,6 +2371,19 @@
       if (/антицелюліт|моделююч|лімфодренаж|вакуум|обгортан|трансформац|сольове/.test(name)) return "body";
       if (/кінезіотейп/.test(name)) return "extra";
       return "massage";
+    }
+    function selectedAppointmentMaster() {
+      var mid = $("mMaster") ? $("mMaster").value : "";
+      return appointmentMasters.find(function(m) { return String(m.id) === String(mid); }) || null;
+    }
+    function availableAppointmentServices() {
+      if (ME.role !== "owner") return allServices;
+      var master = selectedAppointmentMaster();
+      if (!master) return [];
+      var ids = master.service_ids || [];
+      return allServices.filter(function(s) {
+        return ids.indexOf(s.id) !== -1 && serviceMatchesMasterLevel(s, master);
+      });
     }
 
     function renderSvcList() {
@@ -2543,7 +2559,7 @@
 
     function renderSvcDrop(q) {
       var drop = $("mSvcDrop");
-      var filtered = allServices.filter(function(s) {
+      var filtered = availableAppointmentServices().filter(function(s) {
         return serviceGroup(s) === activeServiceGroup && (!q || s.name.toLowerCase().indexOf(q.toLowerCase()) > -1);
       });
       buildSvcDropRows(drop, filtered, function(s) { selectService(s); });
@@ -2552,8 +2568,13 @@
     function renderSvcCategories() {
       var box = $("mSvcCategories"); if (!box) return;
       box.innerHTML = "";
+      var services = availableAppointmentServices();
+      if (ME.role === "owner" && !selectedAppointmentMaster()) {
+        box.innerHTML = '<div class="empty" style="grid-column:1/-1;padding:12px 0;">Спочатку оберіть майстра — покажемо його послуги та тариф.</div>';
+        return;
+      }
       SERVICE_GROUPS.forEach(function(group) {
-        if (!allServices.some(function(s) { return serviceGroup(s) === group.key; })) return;
+        if (!services.some(function(s) { return serviceGroup(s) === group.key; })) return;
         var btn = document.createElement("button");
         btn.type = "button";
         btn.style.cssText = "display:flex;align-items:center;gap:10px;text-align:left;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);cursor:pointer;color:var(--cream);";
@@ -2596,7 +2617,7 @@
     $("mAddSvcQ") && $("mAddSvcQ").addEventListener("input", function() {
       var q = this.value.trim();
       var drop = $("mAddSvcDrop");
-      var filtered = allServices.filter(function(s) { return !q || s.name.toLowerCase().indexOf(q.toLowerCase()) > -1; });
+      var filtered = availableAppointmentServices().filter(function(s) { return !q || s.name.toLowerCase().indexOf(q.toLowerCase()) > -1; });
       buildSvcDropRows(drop, filtered, function(s) {
         selectedServices.push({ id: s.id, name: s.name, duration_min: s.duration_min, price: s.price });
         $("mAddSvcQ").value = ""; $("mAddSvcSearch").style.display = "none";
@@ -2605,7 +2626,7 @@
     });
     $("mAddSvcQ") && $("mAddSvcQ").addEventListener("focus", function() {
       var drop = $("mAddSvcDrop");
-      buildSvcDropRows(drop, allServices, function(s) {
+      buildSvcDropRows(drop, availableAppointmentServices(), function(s) {
         selectedServices.push({ id: s.id, name: s.name, duration_min: s.duration_min, price: s.price });
         $("mAddSvcQ").value = ""; $("mAddSvcSearch").style.display = "none";
         renderSvcList(); loadSlots();
@@ -2733,6 +2754,7 @@
     ]).then(function (results) {
       var svcRes = results[0], mstRes = results[1];
       var sel = $("mService");
+      appointmentMasters = mstRes.j.masters || [];
       allServices = svcRes.j.services || [];
       if (ME.role !== "owner") {
         var me = (mstRes.j.masters || []).find(function (m) { return m.id === ME.masterId; });
@@ -2745,7 +2767,6 @@
         var o = new Option(s.name + " (" + s.duration_min + " хв)", s.id);
         o.dataset.dur = s.duration_min; sel.appendChild(o);
       });
-      if (!prefill.serviceId) renderSvcCategories();
       if (prefill.serviceId) {
         var found = allServices.find(function(s) { return String(s.id) === String(prefill.serviceId); });
         if (found) { selectService(found); }
@@ -2756,6 +2777,7 @@
     function loadMasters(mstRes) {
       function apply(res) {
         var sel = $("mMaster");
+        appointmentMasters = res.j.masters || [];
         (res.j.masters || []).forEach(function (m) {
           if (ME.role !== "owner" && m.id !== ME.masterId) return;
           var label = m.name + (m.level ? " · " + m.level : ""); // дописати кваліфікацію майстра
@@ -2768,6 +2790,7 @@
         } else if (prefill.masterId) {
           sel.value = String(prefill.masterId);
         }
+        if (!prefill.serviceId) renderSvcCategories();
         loadSlots();
       }
       if (mstRes) { apply(mstRes); return; }
@@ -2775,7 +2798,19 @@
     }
 
     $("mService").addEventListener("change", function() { loadSlots(); refreshSubSection(); });
-    $("mMaster").addEventListener("change", loadSlots);
+    $("mMaster").addEventListener("change", function() {
+      if (ME.role === "owner" && selectedServices.length) {
+        selectedServices = [];
+        $("mService").value = "";
+        refreshSubSection();
+        renderSvcList();
+      }
+      activeServiceGroup = null;
+      $("mSvcWrap").style.display = "none";
+      $("mSvcCategories").style.display = "grid";
+      renderSvcCategories();
+      loadSlots();
+    });
     $("mDate").addEventListener("change", loadSlots);
 
     /* Згорнуто = час уже обраний, і його видно в #mChosenTime; розгорнуто =
