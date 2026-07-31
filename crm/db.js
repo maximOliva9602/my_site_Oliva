@@ -357,6 +357,15 @@ db.exec(`CREATE TABLE IF NOT EXISTS master_subscription_pay (
   FOREIGN KEY (master_id)  REFERENCES masters(id)  ON DELETE CASCADE,
   FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 )`);
+/* Номер сеансу абонементу, зафіксований НАЗАВЖДИ в момент завершення візиту
+   (і загальна к-ть сеансів абонементу на той момент) — щоб бейдж "3/5" на
+   картці завершеного візиту показував, яким сеансом БУВ САМЕ ЦЕЙ візит,
+   а не поточний підсумок абонементу (який однаковий на всіх картках і
+   росте далі з новими візитами). Скидається в NULL, якщо статус
+   "Завершено" знімають (сеанс повертається — див. setStatus). */
+try { db.exec("ALTER TABLE appointments ADD COLUMN subscription_session_no INTEGER"); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN subscription_session_total INTEGER"); } catch(e) {}
+
 /* Журнал надісланих привітань: раз на рік на клієнта, переживає рестарти. */
 db.exec(`CREATE TABLE IF NOT EXISTS birthday_greetings (
   client_id INTEGER NOT NULL,

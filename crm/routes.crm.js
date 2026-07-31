@@ -73,6 +73,16 @@ function viewAppt(a) {
   const out = Object.assign({}, a, { time: tz.fmtMin(a.start_min), end_time: tz.fmtMin(a.end_min) });
   // Абонемент клієнта за цією послугою (для позначки «по абонементу» + лічильника в календарі)
   try {
+    /* Завершений візит, для якого номер сеансу вже зафіксовано назавжди
+       (setStatus) — показуємо саме його, а не поточний підсумок
+       абонементу: інакше картки різних дат "їхали" б услід за подальшими
+       візитами того ж клієнта й усі показували б однакове число. */
+    if (a.status === "completed" && a.subscription_session_no != null && a.subscription_session_total != null) {
+      out.sub_used = a.subscription_session_no;
+      out.sub_total = a.subscription_session_total;
+      out.sub_index = a.subscription_session_no;
+      return out;
+    }
     const svcIds = subServiceIds(a.service_id);
     const sub = db.prepare(
       `SELECT used_sessions, total_sessions, created_at FROM subscriptions
@@ -296,7 +306,7 @@ function setStatus(id, status, session) {
     ).get(a.client_id, ...refundIds);
     if (sub) {
       db.prepare("UPDATE subscriptions SET used_sessions=used_sessions-1 WHERE id=?").run(sub.id);
-      db.prepare("UPDATE appointments SET subscription_used=0 WHERE id=?").run(id);
+      db.prepare("UPDATE appointments SET subscription_used=0, subscription_session_no=NULL, subscription_session_total=NULL WHERE id=?").run(id);
     }
   }
   if (status === "confirmed" && settingOn("notif_confirm", true)) {
@@ -335,7 +345,10 @@ function setStatus(id, status, session) {
       ).get(a.client_id, ...consumeIds);
       if (sub) {
         db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
-        db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(id);
+        // Фіксуємо номер сеансу назавжди — щоб бейдж на цій картці більше
+        // не "їхав" услід за подальшими візитами клієнта по цьому абонементу.
+        db.prepare("UPDATE appointments SET subscription_used=1, subscription_session_no=?, subscription_session_total=? WHERE id=?")
+          .run(sub.used_sessions + 1, sub.total_sessions, id);
       }
     }
     try {
@@ -473,11 +486,12 @@ router.patch("/appointments/:id", any, function (req, res) {
   if (d.subscription_used === true && !a.subscription_used) {
     const markIds = subServiceIds(serviceId);
     const sub = db.prepare(
-      `SELECT id FROM subscriptions WHERE client_id=? AND service_id IN (${inList(markIds.length)}) AND used_sessions < total_sessions ORDER BY id LIMIT 1`
+      `SELECT id, used_sessions, total_sessions FROM subscriptions WHERE client_id=? AND service_id IN (${inList(markIds.length)}) AND used_sessions < total_sessions ORDER BY id LIMIT 1`
     ).get(a.client_id, ...markIds);
     if (sub) {
       db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
-      db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(id);
+      db.prepare("UPDATE appointments SET subscription_used=1, subscription_session_no=?, subscription_session_total=? WHERE id=?")
+        .run(sub.used_sessions + 1, sub.total_sessions, id);
     }
   }
 
@@ -551,7 +565,8 @@ router.post("/appointments", owner, function (req, res) {
 /* ---- Розклад (для майстрів — загальний вигляд) ---- */
 router.get("/schedule", any, function (req, res) {
   const date = clean(req.query.date, 10) || new Date().toISOString().slice(0, 10);
-  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.price, a.paid, a.color_marker, a.comment, " +
+  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.client_id, a.price, a.paid, a.color_marker, a.comment, " +
+              "a.subscription_used, a.subscription_session_no, a.subscription_session_total, " +
               "c.name client_name, c.phone client_phone, s.name service_name, m.name master_name, " +
               "r.rating review_rating, r.comment review_comment " +
               "FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id " +
@@ -1483,7 +1498,8 @@ router.post("/subscriptions", any, function (req, res) {
     if (appointmentId && usedInit > 0) {
       const appt = db.prepare("SELECT id, client_id FROM appointments WHERE id=?").get(appointmentId);
       if (appt && appt.client_id === clientId) {
-        db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(appointmentId);
+        db.prepare("UPDATE appointments SET subscription_used=1, subscription_session_no=?, subscription_session_total=? WHERE id=?")
+          .run(usedInit, total, appointmentId);
       }
     }
   })();
