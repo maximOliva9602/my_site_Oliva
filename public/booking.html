@@ -1260,6 +1260,26 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   var ADDONS = [
     { key: "kinesio", name: "Кінезіотейпування", badge: "Рекомендуємо", img: "kinezioteipuvannia-kyiv.jpg",
       desc: "Накладання кінезіологічних тейпів для підтримки м'язів і суглобів.", variants: [{ min: 30, price: 50000 }] },
+    { key: "sauna",   name: "Глибоке прогрівання у ІЧ Сауні", badge: "Хіт", img: "spa-sauna-kyiv.jpg",
+      desc: "Глибоке прогрівання організму, виведення токсинів і релакс.", variants: [{ min: 30, price: 65000 }] },
+    { key: "stones",  name: "Гаряче каміння", badge: "Популярно", img: "stoun-terapiia-kyiv.jpg",
+      desc: "Локальне прогрівання м'язів, глибоке розслаблення.", variants: [{ min: 15, price: 35000 }] },
+    { key: "barrel",  name: "Паріння у фітобочці", badge: "Популярно", img: "parinnia-u-fitobochtsi-kyiv.jpg",
+      desc: "Прогрівання тіла на цілющих травах перед масажем.", variants: [{ min: 30, price: 80000 }, { min: 45, price: 90000 }] },
+    { key: "head",    name: "Масаж голови", img: "head_massage.jpg",
+      desc: "Зняття напруги, покращення сну та концентрації.", variants: [{ min: 15, price: 35000 }, { min: 30, price: 70000 }] },
+    { key: "neck",    name: "Шийно-комірцева зона", img: "masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg",
+      desc: "Розслаблення шиї та плечей, зняття напруги.", variants: [{ min: 15, price: 35000 }, { min: 30, price: 70000 }] },
+    { key: "hands",   name: "Масаж долонь", img: "relaks-masazh-shuliavska-kyiv.jpg",
+      desc: "Зняття напруги в кистях і передпліччях.", variants: [{ min: 15, price: 35000 }] },
+    { key: "feet",    name: "Масаж стоп", img: "masazh-shuliavska-kyiv.jpg",
+      desc: "Розслаблення втомлених ніг і стоп.", variants: [{ min: 15, price: 35000 }] },
+    { key: "cream",   name: "Масаж зі зволожувальним кремом", img: "antystresovyi-masazh-kyiv.jpg",
+      desc: "Живлення шкіри та ніжний догляд під час сеансу.", variants: [{ min: 0, price: 10000 }] },
+    { key: "candles", name: "Композиція зі свічок", img: "relaks-spa-programa-kyiv.jpg",
+      desc: "Атмосфера спокою з ароматом теплих свічок.", variants: [{ min: 0, price: 15000 }] },
+    { key: "shower",  name: "Душ", img: "dush-oliva.png",
+      desc: "У вартість входять: рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.", variants: [{ min: 10, price: 15000 }] },
   ];
   var addonVarIdx = {}; // обраний варіант для кожного add-on
   function isAddonOn(key) { return state.extras.some(function(e){ return e.key === key; }); }
