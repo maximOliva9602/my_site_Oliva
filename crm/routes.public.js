@@ -32,8 +32,10 @@ router.get("/all-masters", function (req, res) {
     "SELECT id, name, photo, level, experience_years, branch_id FROM masters WHERE active = 1 ORDER BY sort_order, id"
   ).all();
   const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id = ?");
+  const branchStmt = db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=? ORDER BY branch_id");
   masters.forEach(function (m) {
     m.service_ids = svcStmt.all(m.id).map(function (r) { return r.service_id; });
+    m.branch_ids = branchStmt.all(m.id).map(function (r) { return r.branch_id; });
     attachStats(m);
   });
   res.json({ ok: true, masters: masters });
@@ -193,6 +195,7 @@ router.post("/book", function (req, res) {
   const name = clean(d.name, 100);
   const phoneRaw = clean(d.phone, 30);
   const comment = clean(d.comment, 500);
+  let branchId = parseInt(d.branch, 10) || null;
   let master = clean(d.master, 10);
 
   if (!serviceId || !tz.isDate(date) || !(startMin >= 0) || !name || !phoneRaw) {
@@ -232,8 +235,20 @@ router.post("/book", function (req, res) {
     masterId = cand.masterIds[0];
   } else {
     masterId = parseInt(master, 10);
-    const m = db.prepare("SELECT id FROM masters WHERE id = ? AND active = 1").get(masterId);
+    const m = db.prepare("SELECT id,branch_id FROM masters WHERE id = ? AND active = 1").get(masterId);
     if (!m) return res.status(404).json({ ok: false, error: "master not found" });
+    if (!branchId) branchId = m.branch_id || null;
+  }
+
+  // Обрана філія повинна бути однією з філій цього майстра.
+  if (branchId) {
+    const membership = db.prepare(
+      `SELECT 1
+         FROM branch_masters bm
+         JOIN branches b ON b.id=bm.branch_id
+        WHERE bm.master_id=? AND bm.branch_id=? AND b.active=1`
+    ).get(masterId, branchId);
+    if (!membership) return res.status(400).json({ ok: false, error: "master not in branch" });
   }
 
   const now = Date.now();
@@ -266,9 +281,9 @@ router.post("/book", function (req, res) {
       const endMin = startMin + totalDur;
       const ai = db.prepare(
         `INSERT INTO appointments
-           (public_id, client_id, master_id, service_id, date, start_min, end_min, duration_min, price, status, source, comment, extra_services, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?, 'pending', 'public', ?, ?, ?, ?)`
-      ).run(publicId, client.id, masterId, serviceId, date, startMin, endMin, totalDur, totalPrice, comment, extraServices, now, now);
+           (public_id, client_id, master_id, branch_id, service_id, date, start_min, end_min, duration_min, price, status, source, comment, extra_services, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?, 'pending', 'public', ?, ?, ?, ?)`
+      ).run(publicId, client.id, masterId, branchId, serviceId, date, startMin, endMin, totalDur, totalPrice, comment, extraServices, now, now);
       appointmentId = ai.lastInsertRowid;
       /* SMS-підтвердження клієнту тут НЕ ставимо: запис створюється як
          'pending', і повідомлення «підтверджений» піде лише коли майстер

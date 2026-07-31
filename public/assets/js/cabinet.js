@@ -3319,14 +3319,22 @@
             return tr;
           }
 
-          // ── Філія, одразу під нею — її майстри; наприкінці — майстри без філії
+          // ── Філія, одразу під нею — її майстри. Один майстер може бути
+          // показаний у кількох філіях, але це все ще один обліковий запис.
           var rowsByBranch = {};
           var unassigned = [];
           masterRows.forEach(function(row) {
-            var bid = row.master.branch_id;
-            if (bid && branches.some(function(b) { return b.id === bid; })) {
-              (rowsByBranch[bid] || (rowsByBranch[bid] = [])).push(row);
-            } else {
+            var branchIds = Array.isArray(row.master.branch_ids)
+              ? row.master.branch_ids
+              : (row.master.branch_id ? [row.master.branch_id] : []);
+            var assigned = false;
+            branchIds.forEach(function(bid) {
+              if (branches.some(function(b) { return b.id === bid; })) {
+                (rowsByBranch[bid] || (rowsByBranch[bid] = [])).push(row);
+                assigned = true;
+              }
+            });
+            if (!assigned) {
               unassigned.push(row);
             }
           });
@@ -3545,6 +3553,10 @@
     var mastersLbl = document.createElement("div"); mastersLbl.textContent = "Майстри філії";
     mastersLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:10px;font-weight:600;";
     content.appendChild(mastersLbl);
+    var mastersHint = document.createElement("div");
+    mastersHint.textContent = "Майстер може працювати в кількох філіях. Додавання сюди не прибирає його з основної філії.";
+    mastersHint.style.cssText = "font-size:.72rem;color:#7a8573;margin:-4px 0 10px;line-height:1.4;";
+    content.appendChild(mastersHint);
 
     var mastersGrid = document.createElement("div");
     mastersGrid.style.cssText = "margin-bottom:24px;";
@@ -3562,6 +3574,12 @@
         var cb = document.createElement("input"); cb.type = "checkbox";
         cb.style.cssText = "width:18px;height:18px;accent-color:#3d5430;flex-shrink:0;";
         if (selectedMasterIds.indexOf(m.id) !== -1) cb.checked = true;
+        var isPrimaryHere = !!(branch && m.branch_id === branch.id);
+        if (isPrimaryHere) {
+          cb.checked = true;
+          cb.disabled = true;
+          cb.title = "Це основна філія майстра";
+        }
         cb.addEventListener("change", function() {
           if (cb.checked) { if (selectedMasterIds.indexOf(m.id) === -1) selectedMasterIds.push(m.id); }
           else { selectedMasterIds = selectedMasterIds.filter(function(id) { return id !== m.id; }); }
@@ -3571,7 +3589,7 @@
         ava2.style.cssText = "width:32px;height:32px;border-radius:50%;background:#3d5430;color:#8aA462;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;overflow:hidden;";
         ava2.innerHTML = m.photo ? '<img src="' + m.photo + '" style="width:100%;height:100%;object-fit:cover;">' : initials;
         var mName = document.createElement("div");
-        mName.textContent = m.name + (m.last_name ? ' '+m.last_name : '') + (m.level ? ' · ' + m.level : '');
+        mName.textContent = m.name + (m.last_name ? ' '+m.last_name : '') + (m.level ? ' · ' + m.level : '') + (isPrimaryHere ? ' · основна філія' : '');
         mName.style.cssText = "font-size:.88rem;color:#1a2016;";
         row2.appendChild(cb); row2.appendChild(ava2); row2.appendChild(mName);
         mastersGrid.appendChild(row2);

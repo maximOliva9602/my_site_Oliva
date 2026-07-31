@@ -161,7 +161,7 @@ function createAppointment(d, session) {
   }
   const svc = db.prepare("SELECT name, duration_min, price FROM services WHERE id=? AND active=1").get(serviceId);
   if (!svc) return { status: 404, body: { ok: false, error: "service not found" } };
-  const m = db.prepare("SELECT id, level FROM masters WHERE id=? AND active=1").get(masterId);
+  const m = db.prepare("SELECT id, level, branch_id FROM masters WHERE id=? AND active=1").get(masterId);
   if (!m) return { status: 404, body: { ok: false, error: "master not found" } };
   // У власному акаунті майстер не може створити запис за прайсом іншого рівня.
   if (session.role !== "owner" && !serviceMatchesMasterLevel(svc.name, m.level)) {
@@ -210,9 +210,9 @@ function createAppointment(d, session) {
       }
       publicId = crypto.randomBytes(8).toString("hex");
       const info = db.prepare(
-        `INSERT INTO appointments (public_id,client_id,master_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,extra_services,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?,?)`
-      ).run(publicId, client.id, masterId, serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
+        `INSERT INTO appointments (public_id,client_id,master_id,branch_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,extra_services,created_at,updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?,?)`
+      ).run(publicId, client.id, masterId, m.branch_id || null, serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
       appointmentId = info.lastInsertRowid;
     })();
   } catch (e) {
@@ -610,6 +610,7 @@ router.get("/masters", any, function (req, res) {
   // приклеїти services-ids
   rows.forEach(function (m) {
     m.service_ids = db.prepare("SELECT service_id FROM master_services WHERE master_id=?").all(m.id).map(function (r) { return r.service_id; });
+    m.branch_ids = db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=? ORDER BY branch_id").all(m.id).map(function (r) { return r.branch_id; });
   });
   res.json({ ok: true, masters: rows });
 });
@@ -660,7 +661,13 @@ router.get("/branches", any, function (req, res) {
   const rows = db.prepare("SELECT * FROM branches WHERE active=1 ORDER BY sort_order,id").all();
   rows.forEach(function (b) {
     b.schedule = db.prepare("SELECT weekday,work_start,work_end FROM branch_schedule WHERE branch_id=? ORDER BY weekday").all(b.id);
-    b.masters  = db.prepare("SELECT id,name,last_name,photo,level FROM masters WHERE branch_id=? AND active=1").all(b.id);
+    b.masters  = db.prepare(
+      `SELECT m.id,m.name,m.last_name,m.photo,m.level,m.branch_id
+         FROM masters m
+         JOIN branch_masters bm ON bm.master_id=m.id
+        WHERE bm.branch_id=? AND m.active=1
+        ORDER BY m.sort_order,m.id`
+    ).all(b.id);
   });
   res.json({ ok: true, branches: rows, booking_branch_step: settingOn("booking_branch_step", false) });
 });
@@ -678,13 +685,22 @@ router.post("/branches", owner, function (req, res) {
   const d = req.body || {};
   const name = (d.name || '').trim().slice(0, 100);
   if (!name) return res.status(400).json({ ok: false, error: "name required" });
-  const info = db.prepare("INSERT INTO branches (name,photo,active,sort_order,created_at) VALUES (?,?,1,?,?)")
-    .run(name, d.photo ? d.photo.slice(0, 500) : null, parseInt(d.sort_order, 10) || 0, Date.now());
-  const branchId = info.lastInsertRowid;
-  if (Array.isArray(d.master_ids) && d.master_ids.length) {
-    const stmt = db.prepare("UPDATE masters SET branch_id=? WHERE id=?");
-    d.master_ids.forEach(function (mid) { stmt.run(branchId, parseInt(mid, 10)); });
-  }
+  let branchId;
+  db.transaction(function () {
+    const info = db.prepare("INSERT INTO branches (name,photo,active,sort_order,created_at) VALUES (?,?,1,?,?)")
+      .run(name, d.photo ? d.photo.slice(0, 500) : null, parseInt(d.sort_order, 10) || 0, Date.now());
+    branchId = info.lastInsertRowid;
+    if (Array.isArray(d.master_ids)) {
+      const add = db.prepare("INSERT OR IGNORE INTO branch_masters (branch_id,master_id) VALUES (?,?)");
+      const setPrimary = db.prepare("UPDATE masters SET branch_id=? WHERE id=? AND branch_id IS NULL");
+      d.master_ids.forEach(function (mid) {
+        const masterId = parseInt(mid, 10);
+        if (!masterId) return;
+        add.run(branchId, masterId);
+        setPrimary.run(branchId, masterId);
+      });
+    }
+  })();
   res.json({ ok: true, id: branchId });
 });
 
@@ -699,17 +715,39 @@ router.put("/branches/:id", owner, function (req, res) {
          d.sort_order !== undefined ? parseInt(d.sort_order, 10) || 0 : b.sort_order, id);
   // Оновити список майстрів філії
   if (Array.isArray(d.master_ids)) {
-    db.prepare("UPDATE masters SET branch_id=NULL WHERE branch_id=?").run(id);
-    const stmt = db.prepare("UPDATE masters SET branch_id=? WHERE id=?");
-    d.master_ids.forEach(function (mid) { stmt.run(id, parseInt(mid, 10)); });
+    db.transaction(function () {
+      /* Прибираємо лише додаткові прив'язки. Майстри, для яких ця філія
+         основна, завжди залишаються в ній. */
+      db.prepare(
+        "DELETE FROM branch_masters WHERE branch_id=? AND master_id NOT IN (SELECT id FROM masters WHERE branch_id=?)"
+      ).run(id, id);
+      const add = db.prepare("INSERT OR IGNORE INTO branch_masters (branch_id,master_id) VALUES (?,?)");
+      const setPrimary = db.prepare("UPDATE masters SET branch_id=? WHERE id=? AND branch_id IS NULL");
+      d.master_ids.forEach(function (mid) {
+        const masterId = parseInt(mid, 10);
+        if (!masterId) return;
+        add.run(id, masterId);
+        setPrimary.run(id, masterId);
+      });
+      db.prepare(
+        "INSERT OR IGNORE INTO branch_masters (branch_id,master_id) SELECT branch_id,id FROM masters WHERE branch_id=?"
+      ).run(id);
+    })();
   }
   res.json({ ok: true });
 });
 
 router.delete("/branches/:id", owner, function (req, res) {
   const id = parseInt(req.params.id, 10);
-  db.prepare("UPDATE masters SET branch_id=NULL WHERE branch_id=?").run(id);
-  db.prepare("UPDATE branches SET active=0 WHERE id=?").run(id);
+  db.transaction(function () {
+    db.prepare("DELETE FROM branch_masters WHERE branch_id=?").run(id);
+    db.prepare(
+      `UPDATE masters
+          SET branch_id=(SELECT MIN(bm.branch_id) FROM branch_masters bm JOIN branches b ON b.id=bm.branch_id WHERE bm.master_id=masters.id AND b.active=1)
+        WHERE branch_id=?`
+    ).run(id);
+    db.prepare("UPDATE branches SET active=0 WHERE id=?").run(id);
+  })();
   res.json({ ok: true });
 });
 

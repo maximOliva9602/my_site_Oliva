@@ -521,6 +521,31 @@ CREATE TABLE IF NOT EXISTS branch_schedule (
   UNIQUE(branch_id, weekday),
   FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE
 );
+
+/* Один майстер може працювати в кількох філіях. masters.branch_id
+   залишається його основною філією для сумісності зі старими даними. */
+CREATE TABLE IF NOT EXISTS branch_masters (
+  branch_id INTEGER NOT NULL,
+  master_id INTEGER NOT NULL,
+  PRIMARY KEY (branch_id, master_id),
+  FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE,
+  FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_branch_masters_master ON branch_masters(master_id);
+`);
+
+/* Для майстра з кількома філіями запис повинен пам'ятати конкретну
+   філію, яку обрав клієнт. Старі записи залишаються сумісними (NULL). */
+try { db.exec("ALTER TABLE appointments ADD COLUMN branch_id INTEGER REFERENCES branches(id)"); } catch(e) {}
+
+/* Одноразово та безпечно переносимо старі прив'язки до нової таблиці.
+   INSERT OR IGNORE дозволяє запускати міграцію на кожному старті. */
+db.exec(`
+  INSERT OR IGNORE INTO branch_masters (branch_id, master_id)
+  SELECT m.branch_id, m.id
+    FROM masters m
+    JOIN branches b ON b.id=m.branch_id
+   WHERE m.branch_id IS NOT NULL
 `);
 
 /* Абонементи */

@@ -1014,7 +1014,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       return (m.service_ids || []).some(function(id) { return catIds.indexOf(id) !== -1; });
     });
     if (branchStepEnabled && state.branch) {
-      list = list.filter(function(m) { return m.branch_id === state.branch; });
+      list = list.filter(function(m) {
+        var branchIds = Array.isArray(m.branch_ids) ? m.branch_ids : (m.branch_id ? [m.branch_id] : []);
+        return branchIds.indexOf(state.branch) !== -1;
+      });
     }
     return { catIds: catIds, eligible: list };
   }
@@ -1578,7 +1581,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var btn = this; btn.disabled = true; btn.textContent = "Зачекайте…";
     fetch("/api/public/book", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service: state.service.id, master: state.master.id, date: state.date, start_min: state.start_min, name: name, phone: phone, comment: $("commentInput").value.trim(),
+      body: JSON.stringify({ service: state.service.id, master: state.master.id, branch: state.branch, date: state.date, start_min: state.start_min, name: name, phone: phone, comment: $("commentInput").value.trim(),
         extra_services: state.extras.length ? JSON.stringify(state.extras.map(function(e){ return { name: e.name, duration_min: e.duration_min, price: e.price }; })) : null })
     }).then(function(r) { return r.json().then(function(j) { return { code: r.status, j: j }; }); })
       .then(function(res) {

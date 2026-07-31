@@ -43,7 +43,7 @@ async function notifyNewAppt(appointmentId, source) {
       JOIN clients  c ON c.id = a.client_id
       JOIN services s ON s.id = a.service_id
       JOIN masters  m ON m.id = a.master_id
-      LEFT JOIN branches b ON b.id = m.branch_id
+      LEFT JOIN branches b ON b.id = COALESCE(a.branch_id, m.branch_id)
       WHERE a.id = ?
     `).get(appointmentId);
     if (!a) return;
