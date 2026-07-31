@@ -1086,6 +1086,7 @@
             col.classList.remove("cal-desktop-drag-hl");
             col.style.boxShadow = "";
           });
+          if (desktopDragState && desktopDragState.dropZone) desktopDragState.dropZone.remove();
           if (desktopDragState && desktopDragState.sourceBlock) desktopDragState.sourceBlock.style.opacity = "";
           desktopDragState = null;
           if (suppressClick) {
@@ -1094,14 +1095,17 @@
           }
         }
 
-        function confirmDesktopMasterTransfer(appt, targetMaster) {
-          if (!appt || !targetMaster || String(appt.master_id) === String(targetMaster.id)) return;
-          var endMin = appt.end_min || (appt.start_min + appt.duration_min);
+        function confirmDesktopAppointmentTransfer(appt, targetMaster, targetStartMin) {
+          if (!appt || !targetMaster || targetStartMin == null) return;
+          var masterChanged = String(appt.master_id) !== String(targetMaster.id);
+          var timeChanged = targetStartMin !== appt.start_min;
+          if (!masterChanged && !timeChanged) return;
+          var targetEndMin = targetStartMin + appt.duration_min;
           openModal(
             '<h3 style="margin:0 0 10px;">Перенести запис?</h3>' +
             '<div style="font-size:.92rem;color:#222;font-weight:600;margin-bottom:6px;">' + appt.client_name + '</div>' +
-            '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Новий майстер: <strong>' + (targetMaster.name || '') + '</strong></div>' +
-            '<div style="font-size:.85rem;color:#555;margin-bottom:18px;">Час залишається: <strong>' + fmtMin(appt.start_min) + ' – ' + fmtMin(endMin) + '</strong></div>' +
+            (masterChanged ? '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Новий майстер: <strong>' + (targetMaster.name || '') + '</strong></div>' : '') +
+            '<div style="font-size:.85rem;color:#555;margin-bottom:18px;">Новий час: <strong>' + fmtMin(targetStartMin) + ' – ' + fmtMin(targetEndMin) + '</strong></div>' +
             '<div class="modal-foot">' +
             '<button id="desktopDragConfirmBtn" class="btn btn-primary">Перенести</button>' +
             '<button id="desktopDragCancelBtn" class="btn btn-ghost">Скасувати</button>' +
@@ -1112,7 +1116,7 @@
             api("PATCH", "/api/crm/appointments/" + appt.id, {
               master: parseInt(targetMaster.id, 10),
               date: apptDate,
-              start_min: appt.start_min
+              start_min: targetStartMin
             }).then(function(r) {
               if (!r.j || !r.j.ok) return;
               closeModal();
@@ -1299,16 +1303,43 @@
               if (!desktopDragState) return;
               e.preventDefault();
               if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+              var draggedAppointment = desktopDragState.appointment;
               document.querySelectorAll(".cal-desktop-drag-hl").forEach(function(col) {
                 if (col !== mCol) {
                   col.classList.remove("cal-desktop-drag-hl");
                   col.style.boxShadow = "";
                 }
               });
-              if (String(desktopDragState.appointment.master_id) !== String(master.id)) {
+              if (String(draggedAppointment.master_id) !== String(master.id)) {
                 mCol.classList.add("cal-desktop-drag-hl");
                 mCol.style.boxShadow = "inset 0 0 0 3px rgba(110,145,69,.65)";
               }
+
+              var colRect = mCol.getBoundingClientRect();
+              var blockTopInColumn = e.clientY - colRect.top - (desktopDragState.grabOffsetPx || 0);
+              var rawMin = Math.round(blockTopInColumn / SLOT_H) * STEP + HOUR_START * 60;
+              var targetStartMin = Math.max(
+                HOUR_START * 60,
+                Math.min(HOUR_END * 60 - draggedAppointment.duration_min, rawMin)
+              );
+              desktopDragState.targetStartMin = targetStartMin;
+
+              if (!desktopDragState.dropZone || desktopDragState.dropZone.parentElement !== mCol) {
+                if (desktopDragState.dropZone) desktopDragState.dropZone.remove();
+                var desktopDropZone = document.createElement("div");
+                desktopDropZone.style.cssText = "position:absolute;left:2px;right:2px;border-radius:5px;pointer-events:none;z-index:5;" +
+                  "border:2px dashed rgba(255,255,255,.9);box-sizing:border-box;display:flex;align-items:flex-start;justify-content:center;" +
+                  "padding-top:4px;color:#fff;font-size:.68rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.45);";
+                mCol.appendChild(desktopDropZone);
+                desktopDragState.dropZone = desktopDropZone;
+              }
+              var dropZoneTop = ((targetStartMin - HOUR_START * 60) / STEP) * SLOT_H + 1;
+              var dropZoneHeight = Math.max((draggedAppointment.duration_min / STEP) * SLOT_H - 2, SLOT_H * 2 - 2);
+              desktopDragState.dropZone.style.top = dropZoneTop + "px";
+              desktopDragState.dropZone.style.height = dropZoneHeight + "px";
+              desktopDragState.dropZone.style.background = draggedAppointment.color_marker || DEFAULT_MARKER;
+              desktopDragState.dropZone.style.opacity = ".5";
+              desktopDragState.dropZone.textContent = fmtMin(targetStartMin) + " – " + fmtMin(targetStartMin + draggedAppointment.duration_min);
             });
 
             mCol.addEventListener("dragleave", function(e) {
@@ -1322,8 +1353,11 @@
               e.preventDefault();
               e.stopPropagation();
               var droppedAppointment = desktopDragState.appointment;
+              var droppedStartMin = desktopDragState.targetStartMin != null
+                ? desktopDragState.targetStartMin
+                : droppedAppointment.start_min;
               finishDesktopDrag(true);
-              confirmDesktopMasterTransfer(droppedAppointment, master);
+              confirmDesktopAppointmentTransfer(droppedAppointment, master, droppedStartMin);
             });
           }
 
@@ -1517,10 +1551,14 @@
               block.addEventListener("dragstart", function(e) {
                 var oldP = document.getElementById("cal-popup");
                 if (oldP) oldP.remove();
+                var blockRect = block.getBoundingClientRect();
                 desktopDragSuppressClick = false;
                 desktopDragState = {
                   appointment: a,
-                  sourceBlock: block
+                  sourceBlock: block,
+                  dropZone: null,
+                  targetStartMin: a.start_min,
+                  grabOffsetPx: Math.max(0, e.clientY - blockRect.top)
                 };
                 if (e.dataTransfer) {
                   e.dataTransfer.effectAllowed = "move";
