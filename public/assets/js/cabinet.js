@@ -2368,7 +2368,7 @@
       if (/парний|чотири руки|для двох/.test(name)) return "spa-two";
       if (/фітобоч|spa[ -]?ритуал|гарячим камінням|тепловий spa/.test(name)) return "spa-one";
       if (/обличчя|кобідо|гуа-ша|букальн/.test(name)) return "massage";
-      if (/антицелюліт|моделююч|лімфодренаж|вакуум|обгортан|трансформац|сольове/.test(name)) return "body";
+      if (/антицелюліт|моделююч|моделюван|лімфодренаж|вакуум|обгортан|трансформац|сольове/.test(name)) return "body";
       if (/кінезіотейп/.test(name)) return "extra";
       return "massage";
     }
