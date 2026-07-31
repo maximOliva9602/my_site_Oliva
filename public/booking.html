@@ -1070,8 +1070,6 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var cats = {};
     allServices.forEach(function(s) {
       var p = parseName(s.name);
-      // Кінезіотейпування перенесене на фінальний крок додаткових послуг.
-      if (p.cat === "Кінезіотейпування") return;
       if (resolveGroup(s, p.cat) !== state.group) return;
       if (!cats[p.cat]) cats[p.cat] = { min: Infinity, dur: null, img: null, hit: false };
       if (s.price < cats[p.cat].min) { cats[p.cat].min = s.price; cats[p.cat].dur = p.dur || s.duration_min; }
