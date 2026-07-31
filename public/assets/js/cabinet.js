@@ -5887,9 +5887,6 @@
     var cbConfirm = togRow("Підтвердження запису",
       "Коли майстер підтверджує запис у CRM",
       "Ваш запис 27.07.2026 о 14:10 підтверджений. До зустрічі!\n{телефон студії}");
-    var cbConfirmStaff = togRow("Запис, створений майстром",
-      "Одразу після збереження нового запису в CRM",
-      "Ваш запис 27.07.2026 о 14:10 підтверджений. До зустрічі!\n{телефон студії}");
 
     /* Нагадування — з полями часу */
     var remRow = el("div", "");
@@ -5939,7 +5936,6 @@
       rem1.value = r.j.reminder1_hours;
       rem2.value = r.j.reminder2_hours;
       cbConfirm.checked      = !!r.j.notif_confirm;
-      cbConfirmStaff.checked = !!r.j.notif_confirm_staff;
       cbResched.checked      = !!r.j.notif_reschedule;
       cbCancel.checked       = !!r.j.notif_cancel;
       cbBday.checked         = !!r.j.notif_birthday;
@@ -5948,7 +5944,7 @@
       remSave.disabled = true;
       api("PATCH", "/api/crm/notify-settings", {
         reminder1_hours: rem1.value, reminder2_hours: rem2.value,
-        notif_confirm: cbConfirm.checked, notif_confirm_staff: cbConfirmStaff.checked,
+        notif_confirm: cbConfirm.checked,
         notif_reschedule: cbResched.checked, notif_cancel: cbCancel.checked,
         notif_birthday: cbBday.checked,
       }).then(function (r) {
