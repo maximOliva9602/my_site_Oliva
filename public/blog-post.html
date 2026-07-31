@@ -12,7 +12,7 @@
   <meta property="og:title" content="" />
   <meta property="og:description" content="" />
   <meta property="og:url" content="" />
-  <meta property="og:image" content="https://massage-solomyanskyi.com.ua/assets/img/og-image.jpg" />
+  <meta property="og:image" content="https://massage-oliva.com/assets/img/og-image.jpg" />
   <link rel="canonical" href="" />
   <link rel="icon" href="/assets/img/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -94,7 +94,7 @@ fetch('/api/posts/' + slug)
   })
   .then(function(p){
     document.title = p.title + ' — Студія масажу Oliva';
-    var BASE = 'https://massage-solomyanskyi.com.ua';
+    var BASE = 'https://massage-oliva.com';
     var pageUrl = BASE + location.pathname;
     var ogImg = p.cover ? (p.cover.startsWith('http') ? p.cover : BASE + p.cover) : BASE + '/assets/img/og-image.jpg';
     document.querySelector('meta[name="description"]').content = p.excerpt || p.title;

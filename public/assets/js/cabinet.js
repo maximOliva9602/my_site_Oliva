@@ -5538,7 +5538,7 @@
     card.appendChild(el("div", "t", "Текст повідомлення"));
     var ta = document.createElement("textarea");
     ta.maxLength = 500; ta.rows = 5;
-    ta.placeholder = "Напр.: Вітаємо! У серпні знижка 15% на масаж спини. Записатися: massage-solomyanskyi.com.ua";
+    ta.placeholder = "Напр.: Вітаємо! У серпні знижка 15% на масаж спини. Записатися: massage-oliva.com";
     ta.style.cssText = "width:100%;margin-top:8px;";
     card.appendChild(ta);
     var counter = el("div", "sub"); counter.style.marginTop = "4px";

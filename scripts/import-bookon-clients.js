@@ -13,7 +13,8 @@ const CSV_PATH = path.resolve(__dirname, "../Bookon MyClients Export Jul 22 2026
   process.argv[2] || "/Users/roman/Downloads/Bookon MyClients Export Jul 22 2026.Csv";
 
 // URL проду на Railway
-const API_BASE = process.env.CRM_URL || "https://massage-solomyanskyi.com.ua";
+const API_BASE = String(process.env.CRM_URL || "https://massage-oliva.com")
+  .replace("massage-solomyanskyi.com.ua", "massage-oliva.com").replace(/\/+$/, "");
 const ADMIN_PASS = process.env.ADMIN_PASS;
 if (!ADMIN_PASS) { console.error("Вкажи пароль: ADMIN_PASS=... node scripts/import-bookon-clients.js"); process.exit(1); }
 

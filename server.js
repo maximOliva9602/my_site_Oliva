@@ -34,6 +34,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "oliva-admin";
 const IS_PROD = process.env.NODE_ENV === "production";
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+const PRIMARY_SITE_URL = "https://massage-oliva.com";
+const LEGACY_SITE_HOST = "massage-solomyanskyi.com.ua";
 
 if (!process.env.ADMIN_PASSWORD) {
   console.warn('[chat] УВАГА: ADMIN_PASSWORD не задано — використовується типовий "oliva-admin". Задайте у Railway → Variables.');
@@ -57,6 +59,15 @@ async function sendTelegram(text) {
 
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: false, limit: "15mb" }));
+/* Старий домен ще може бути у закладках, Google або повідомленнях.
+   Поки він підключений до сервісу, постійно переводимо весь трафік на
+   новий домен зі збереженням шляху та параметрів. */
+app.use(function (req, res, next) {
+  const forwardedHost = String(req.headers["x-forwarded-host"] || "").split(",")[0].trim();
+  const host = (forwardedHost || req.hostname || "").split(":")[0].toLowerCase();
+  if (host === LEGACY_SITE_HOST) return res.redirect(308, PRIMARY_SITE_URL + req.originalUrl);
+  next();
+});
 /* Явні заголовки кешу. Без них Cloudflare підставляє свій max-age=14400,
    і правки в js/css доїжджають до користувачів лише через 4 години.
    Код і розмітку віддаємо з обов'язковою ревалідацією (ETag все одно
@@ -663,7 +674,9 @@ io.on("connection", function (socket) {
     io.to("visitor:" + visitorId).emit("message", m);
     io.to("admins").emit("visitor:msg", { visitorId: visitorId, name: conv.name, message: m });
     io.to("admins").emit("conversations", summary());
-    const adminUrl = process.env.SITE_URL ? `${process.env.SITE_URL}/admin` : "https://massage-solomyanskyi.com.ua/admin";
+    const configuredSiteUrl = String(process.env.SITE_URL || PRIMARY_SITE_URL)
+      .replace(LEGACY_SITE_HOST, "massage-oliva.com").replace(/\/+$/, "");
+    const adminUrl = `${configuredSiteUrl}/admin`;
     sendTelegram(`💬 <b>Нове повідомлення з сайту</b>\n👤 ${conv.name}\n📝 ${text}\n\n🔗 <a href="${adminUrl}">Відповісти в адмін-панелі</a>`);
   });
 });

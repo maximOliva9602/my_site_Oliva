@@ -97,7 +97,8 @@ async function notifyNewAppt(appointmentId, source) {
 let webpush;
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY  || "";
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || "";
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT     || "mailto:admin@massage-solomyanskyi.com.ua";
+const VAPID_SUBJECT = String(process.env.VAPID_SUBJECT || "mailto:admin@massage-oliva.com")
+  .replace("massage-solomyanskyi.com.ua", "massage-oliva.com");
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
   try {
