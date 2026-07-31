@@ -27,6 +27,35 @@ function canSeePhones(session) {
 }
 const STATUSES = ["pending", "confirmed", "cancelled", "completed", "no_show"];
 
+/* Кожна послуга існує у двох тарифних варіантах — окремий service_id для
+   "(Майстер)" і "(Топ Майстер)" (та сама процедура й тривалість, різна
+   ціна залежно від рівня майстра). Абонемент купують під один тариф, але
+   клієнта далі міг обслуговувати майстер іншого рівня — тоді service_id
+   візиту вже інший, хоча послуга фізично та сама, і списання по точному
+   service_id мовчки не спрацьовувало (лічильник абонементу не зменшувався).
+   Тому підбір/списання абонементу йде по "групі" тарифів однієї послуги
+   (та сама назва без рівня й тривалості), а не по точному service_id. */
+function baseServiceKey(name) {
+  const cat = String(name || "")
+    .replace(/\s*\((Топ Майстер|Майстер)\)/, "")
+    .replace(/\s+\d+\s*хв$/, "")
+    .replace(/\s+\d+\s*год.*$/, "")
+    .trim().toLowerCase();
+  const durM = String(name || "").match(/(\d+)\s*хв/);
+  const durH = String(name || "").match(/(\d+)\s*год/);
+  const dur = durM ? parseInt(durM[1], 10) : (durH ? parseInt(durH[1], 10) * 60 : null);
+  return cat + "|" + (dur || "");
+}
+function subServiceIds(serviceId) {
+  const svc = db.prepare("SELECT name FROM services WHERE id=?").get(serviceId);
+  if (!svc) return [serviceId];
+  const key = baseServiceKey(svc.name);
+  const rows = db.prepare("SELECT id, name FROM services").all();
+  const ids = rows.filter(function (r) { return baseServiceKey(r.name) === key; }).map(function (r) { return r.id; });
+  return ids.length ? ids : [serviceId];
+}
+function inList(n) { return new Array(n).fill("?").join(","); }
+
 /* ---------- спільне: повна картка запису ---------- */
 function apptRow(id) {
   return db.prepare(
@@ -44,9 +73,12 @@ function viewAppt(a) {
   const out = Object.assign({}, a, { time: tz.fmtMin(a.start_min), end_time: tz.fmtMin(a.end_min) });
   // Абонемент клієнта за цією послугою (для позначки «по абонементу» + лічильника в календарі)
   try {
+    const svcIds = subServiceIds(a.service_id);
     const sub = db.prepare(
-      "SELECT used_sessions, total_sessions, created_at FROM subscriptions WHERE client_id=? AND service_id=? ORDER BY (used_sessions < total_sessions) DESC, id DESC LIMIT 1"
-    ).get(a.client_id, a.service_id);
+      `SELECT used_sessions, total_sessions, created_at FROM subscriptions
+        WHERE client_id=? AND service_id IN (${inList(svcIds.length)})
+        ORDER BY (used_sessions < total_sessions) DESC, id DESC LIMIT 1`
+    ).get(a.client_id, ...svcIds);
     if (sub) {
       out.sub_used = sub.used_sessions;
       out.sub_total = sub.total_sessions;
@@ -54,14 +86,14 @@ function viewAppt(a) {
          росте лише коли запис позначають «виконано», тому на картках усіх
          майбутніх візитів світилося б однакове число — виглядало як «не
          рахується». Рахуємо позицію запису серед візитів клієнта за цією
-         послугою, починаючи з дня купівлі абонемента (минулі візити до
-         покупки не враховуємо). */
+         послугою (усіма тарифними варіантами), починаючи з дня купівлі
+         абонемента (минулі візити до покупки не враховуємо). */
       const subDate = tz.nowKyiv(undefined, sub.created_at).date;
       out.sub_index = db.prepare(
         `SELECT COUNT(*) c FROM appointments
-          WHERE client_id=? AND service_id=? AND status<>'cancelled' AND date>=?
+          WHERE client_id=? AND service_id IN (${inList(svcIds.length)}) AND status<>'cancelled' AND date>=?
             AND (date < ? OR (date = ? AND start_min <= ?))`
-      ).get(a.client_id, a.service_id, subDate, a.date, a.date, a.start_min).c;
+      ).get(a.client_id, ...svcIds, subDate, a.date, a.date, a.start_min).c;
     }
   } catch (e) { /* абонементів може не бути */ }
   return out;
@@ -258,9 +290,10 @@ function setStatus(id, status, session) {
      Немає FK на конкретний subscription_id, тому шукаємо евристично:
      останній (за id) абонемент клієнта на цю послугу, з used_sessions>0. */
   if (wasCompleted && status !== "completed" && a.subscription_used && a.client_id && a.service_id) {
+    const refundIds = subServiceIds(a.service_id);
     const sub = db.prepare(
-      "SELECT id FROM subscriptions WHERE client_id=? AND service_id=? AND used_sessions>0 ORDER BY id DESC LIMIT 1"
-    ).get(a.client_id, a.service_id);
+      `SELECT id FROM subscriptions WHERE client_id=? AND service_id IN (${inList(refundIds.length)}) AND used_sessions>0 ORDER BY id DESC LIMIT 1`
+    ).get(a.client_id, ...refundIds);
     if (sub) {
       db.prepare("UPDATE subscriptions SET used_sessions=used_sessions-1 WHERE id=?").run(sub.id);
       db.prepare("UPDATE appointments SET subscription_used=0 WHERE id=?").run(id);
@@ -296,9 +329,10 @@ function setStatus(id, status, session) {
   if (status === "completed") {
     // Автоматично списуємо сеанс абонементу (якщо ще не списали)
     if (!a.subscription_used && a.client_id && a.service_id) {
+      const consumeIds = subServiceIds(a.service_id);
       const sub = db.prepare(
-        "SELECT id, used_sessions, total_sessions FROM subscriptions WHERE client_id=? AND service_id=? AND used_sessions < total_sessions ORDER BY id LIMIT 1"
-      ).get(a.client_id, a.service_id);
+        `SELECT id, used_sessions, total_sessions FROM subscriptions WHERE client_id=? AND service_id IN (${inList(consumeIds.length)}) AND used_sessions < total_sessions ORDER BY id LIMIT 1`
+      ).get(a.client_id, ...consumeIds);
       if (sub) {
         db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
         db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(id);
@@ -437,9 +471,10 @@ router.patch("/appointments/:id", any, function (req, res) {
 
   // Ручна відмітка «використати абонемент за цей візит» (лише unset → set).
   if (d.subscription_used === true && !a.subscription_used) {
+    const markIds = subServiceIds(serviceId);
     const sub = db.prepare(
-      "SELECT id FROM subscriptions WHERE client_id=? AND service_id=? AND used_sessions < total_sessions ORDER BY id LIMIT 1"
-    ).get(a.client_id, serviceId);
+      `SELECT id FROM subscriptions WHERE client_id=? AND service_id IN (${inList(markIds.length)}) AND used_sessions < total_sessions ORDER BY id LIMIT 1`
+    ).get(a.client_id, ...markIds);
     if (sub) {
       db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
       db.prepare("UPDATE appointments SET subscription_used=1 WHERE id=?").run(id);
@@ -1415,11 +1450,12 @@ router.get("/subscriptions/check", any, function (req, res) {
   const clientId  = parseInt(req.query.client_id,  10);
   const serviceId = parseInt(req.query.service_id, 10);
   if (!clientId || !serviceId) return res.json({ ok: true, active: null });
+  const checkIds = subServiceIds(serviceId);
   const row = db.prepare(
     `SELECT sub.*, s.name service_name FROM subscriptions sub JOIN services s ON s.id=sub.service_id
-      WHERE sub.client_id=? AND sub.service_id=? AND sub.used_sessions < sub.total_sessions
+      WHERE sub.client_id=? AND sub.service_id IN (${inList(checkIds.length)}) AND sub.used_sessions < sub.total_sessions
       ORDER BY sub.created_at ASC LIMIT 1`
-  ).get(clientId, serviceId);
+  ).get(clientId, ...checkIds);
   res.json({ ok: true, active: row || null });
 });
 
