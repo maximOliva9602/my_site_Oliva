@@ -515,6 +515,11 @@
   var calScroller = null; // shared scroller ref for zoom-only reload
   var calBody = null;     // shared body ref for pinch transform
   var nowLineTimer = null; // інтервал оновлення лінії поточного часу
+  /* Поза loadCalendar() — інакше кожен виклик loadCalendar() (у т.ч. з
+     самого перемикання тижня колесом) створював би нову змінну cooldown,
+     і серія wheel-подій одного руху трекпада перескакувала б одразу
+     через кілька тижнів замість одного. */
+  var calWheelBusy = false;
 
   var MONTH_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
   var DOW_UA = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
@@ -889,6 +894,24 @@
           swipePreview.style.transition = "transform .2s";
           swipePreview.style.transform = "translateX(" + sw3 + "px)";
         });
+
+        /* Перемикання тижня скролом (миша/трекпад) — той самий рух, що й
+           свайп пальцем, лише на ПК немає дотику. Один "клац" колеса =
+           один тиждень; невеликий cooldown, бо трекпад шле десятки wheel-
+           подій за один рух і без нього перемикало б одразу на кілька тижнів. */
+        wkStrip.addEventListener("wheel", function(e) {
+          if (calWheelBusy) { e.preventDefault(); return; }
+          var d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+          if (Math.abs(d) < 20) return; // дрібне тремтіння колеса ігноруємо
+          e.preventDefault();
+          calWheelBusy = true;
+          setTimeout(function() { calWheelBusy = false; }, 450);
+          var delta3 = d > 0 ? 7 : -7;
+          var d4 = new Date(weekStart); d4.setDate(weekStart.getDate() + delta3);
+          apptDate = d4.getFullYear() + "-" + String(d4.getMonth()+1).padStart(2,"0") + "-" + String(d4.getDate()).padStart(2,"0");
+          apptMonth = apptDate.slice(0,7);
+          loadCalendar(activeMasterFilter);
+        }, { passive: false });
 
         document.body.appendChild(wkStrip);
 
