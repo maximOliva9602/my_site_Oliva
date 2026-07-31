@@ -197,6 +197,20 @@
      BOOT + TABS
      ============================================================ */
   var TABS = [];
+  var topbarResizeObserver = null;
+
+  function syncPinnedTopbar() {
+    var topbar = document.querySelector(".topbar");
+    if (!topbar) return;
+    var height = Math.ceil(topbar.getBoundingClientRect().height);
+    if (height > 0) document.documentElement.style.setProperty("--crm-topbar-h", height + "px");
+
+    // Якщо календар уже відкритий, тримаємо його рівно під панеллю фільтрів.
+    var overlay = document.getElementById("cal-overlay");
+    var apptContent = document.getElementById("apptContent");
+    if (overlay && apptContent) overlay.style.top = Math.ceil(apptContent.getBoundingClientRect().top) + "px";
+  }
+
   function boot(me) {
     ME.role = me.role; ME.masterId = me.masterId; ME.can_see_phones = !!me.can_see_phones;
     $("login").style.display = "none";
@@ -312,6 +326,13 @@
     mobBackdrop.onclick = closeMobSheet;
     var mobSheetLogout = document.getElementById("mob-sheet-logout");
     mobSheetLogout.onclick = function() { closeMobSheet(); $("logoutBtn").click(); };
+
+    syncPinnedTopbar();
+    if (window.ResizeObserver && !topbarResizeObserver) {
+      topbarResizeObserver = new ResizeObserver(syncPinnedTopbar);
+      topbarResizeObserver.observe(document.querySelector(".topbar"));
+    }
+    window.addEventListener("resize", syncPinnedTopbar);
 
     var rozkladIdx = TABS.findIndex(function(t) { return t.id === "rozklad"; });
     activateTab(rozkladIdx >= 0 ? rozkladIdx : 0);

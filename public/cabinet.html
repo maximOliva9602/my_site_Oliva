@@ -41,8 +41,10 @@
 
   /* app */
   .app { display:none; }
-  .app.on { display:block; }
-  .topbar { position:sticky; top:0; z-index:30; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px;
+  .app.on { display:block; padding-top:var(--crm-topbar-h, 44px); }
+  /* Панель завжди закріплена у вікні. Sticky міг перестати працювати,
+     коли календар переносив сітку за межі контейнера #app. */
+  .topbar { position:fixed; top:0; left:0; right:0; z-index:80; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px;
     padding:max(8px, env(safe-area-inset-top, 8px)) 16px 8px; }
   .topbar img { width:26px; height:26px; object-fit:contain; flex-shrink:0; }
   .topbar .pf { color:var(--cream); font-size:.95rem; white-space:nowrap; flex-shrink:0; }
@@ -248,7 +250,7 @@
 <!-- MODAL -->
 <div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
-<script src="assets/js/cabinet.js?v=122"></script>
+<script src="assets/js/cabinet.js?v=123"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(){});
