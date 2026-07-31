@@ -90,8 +90,6 @@ function viewAppt(a) {
         ORDER BY (used_sessions < total_sessions) DESC, id DESC LIMIT 1`
     ).get(a.client_id, ...svcIds);
     if (sub) {
-      out.sub_used = sub.used_sessions;
-      out.sub_total = sub.total_sessions;
       /* Порядковий номер саме цього візиту в абонементі. Сам used_sessions
          росте лише коли запис позначають «виконано», тому на картках усіх
          майбутніх візитів світилося б однакове число — виглядало як «не
@@ -99,11 +97,19 @@ function viewAppt(a) {
          послугою (усіма тарифними варіантами), починаючи з дня купівлі
          абонемента (минулі візити до покупки не враховуємо). */
       const subDate = tz.nowKyiv(undefined, sub.created_at).date;
-      out.sub_index = db.prepare(
+      const subIndex = db.prepare(
         `SELECT COUNT(*) c FROM appointments
           WHERE client_id=? AND service_id IN (${inList(svcIds.length)}) AND status<>'cancelled' AND date>=?
             AND (date < ? OR (date = ? AND start_min <= ?))`
       ).get(a.client_id, ...svcIds, subDate, a.date, a.date, a.start_min).c;
+      /* Після останнього сеансу (наприклад, 5/5) усі наступні записи —
+         звичайні. Не передаємо їм дані абонемента, інакше календар показує
+         помилковий бейдж «6-й у черзі · спожито 5/5». */
+      if (subIndex <= sub.total_sessions) {
+        out.sub_used = sub.used_sessions;
+        out.sub_total = sub.total_sessions;
+        out.sub_index = subIndex;
+      }
     }
   } catch (e) { /* абонементів може не бути */ }
   return out;
