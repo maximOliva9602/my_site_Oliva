@@ -55,6 +55,14 @@ function subServiceIds(serviceId) {
   return ids.length ? ids : [serviceId];
 }
 function inList(n) { return new Array(n).fill("?").join(","); }
+function serviceMatchesMasterLevel(serviceName, masterLevel) {
+  const name = String(serviceName || "");
+  const isTop = name.includes("(Топ Майстер)");
+  const isMaster = name.includes("(Майстер)") && !isTop;
+  if (!isTop && !isMaster) return true; // спільна послуга без рівня
+  if (isTop) return masterLevel === "Топ Майстер";
+  return masterLevel === "Майстер" || masterLevel === "Майстриня";
+}
 
 /* ---------- спільне: повна картка запису ---------- */
 function apptRow(id) {
@@ -150,10 +158,14 @@ function createAppointment(d, session) {
   if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name || (!clientId && phone.length < 7)) {
     return { status: 400, body: { ok: false, error: "missing fields" } };
   }
-  const svc = db.prepare("SELECT duration_min, price FROM services WHERE id=? AND active=1").get(serviceId);
+  const svc = db.prepare("SELECT name, duration_min, price FROM services WHERE id=? AND active=1").get(serviceId);
   if (!svc) return { status: 404, body: { ok: false, error: "service not found" } };
-  const m = db.prepare("SELECT id FROM masters WHERE id=? AND active=1").get(masterId);
+  const m = db.prepare("SELECT id, level FROM masters WHERE id=? AND active=1").get(masterId);
   if (!m) return { status: 404, body: { ok: false, error: "master not found" } };
+  // У власному акаунті майстер не може створити запис за прайсом іншого рівня.
+  if (session.role !== "owner" && !serviceMatchesMasterLevel(svc.name, m.level)) {
+    return { status: 403, body: { ok: false, error: "service_level_forbidden" } };
+  }
 
   // Додаткові послуги: [{id, name, duration_min, price}]
   let extraServices = null;
@@ -441,7 +453,7 @@ router.patch("/appointments/:id", any, function (req, res) {
     const newServiceId = parseInt(d.service, 10);
     if (newServiceId && newServiceId !== a.service_id) serviceId = newServiceId;
   }
-  const baseSvc = db.prepare("SELECT duration_min, price FROM services WHERE id=?").get(serviceId);
+  const baseSvc = db.prepare("SELECT name, duration_min, price FROM services WHERE id=?").get(serviceId);
   if (!baseSvc) return res.status(404).json({ ok: false, error: "service not found" });
 
   /* Додаткові послуги: можна явно передати новий список (JSON-рядок
@@ -465,6 +477,12 @@ router.patch("/appointments/:id", any, function (req, res) {
   const timeChanged = (date !== a.date || startMin !== a.start_min);
   const serviceChanged = serviceId !== a.service_id;
   const totalsChanged = durationMin !== a.duration_min || price !== a.price || extraServicesJson !== a.extra_services;
+  if (req.session.role !== "owner" && serviceChanged) {
+    const master = db.prepare("SELECT level FROM masters WHERE id=?").get(masterId);
+    if (!master || !serviceMatchesMasterLevel(baseSvc.name, master.level)) {
+      return res.status(403).json({ ok: false, error: "service_level_forbidden" });
+    }
+  }
   if (timeChanged || masterId !== a.master_id || serviceChanged || totalsChanged) {
     db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, service_id=?, duration_min=?, price=?, extra_services=?, comment=?, updated_at=? WHERE id=?")
       .run(date, startMin, startMin + durationMin, masterId, serviceId, durationMin, price, extraServicesJson, comment, Date.now(), id);

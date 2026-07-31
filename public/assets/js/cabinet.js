@@ -66,6 +66,14 @@
   function ddmm(d) { var p = d.split("-"); return p[2] + "." + p[1]; }
   function todayStr() { return new Date().toISOString().slice(0, 10); }
   function dowOf(d) { return DOW[new Date(d + "T00:00:00").getDay()]; }
+  function serviceMatchesMasterLevel(service, master) {
+    var name = String((service && service.name) || "");
+    var level = String((master && master.level) || "");
+    var isTop = name.indexOf("(Топ Майстер)") !== -1;
+    var isMaster = name.indexOf("(Майстер)") !== -1 && !isTop;
+    if (!isTop && !isMaster) return true; // послуга без прив'язки до рівня
+    return isTop ? level === "Топ Майстер" : (level === "Майстер" || level === "Майстриня");
+  }
 
   function api(method, url, body) {
     var opts = { method: method, headers: {} };
@@ -1986,7 +1994,9 @@
       var mid = $("eMaster").value;
       var master = allMastersE.find(function(m) { return String(m.id) === String(mid); });
       var svcIds = master ? (master.service_ids || []) : [];
-      var opts = allServicesE.filter(function(s) { return svcIds.indexOf(s.id) !== -1; });
+      var opts = allServicesE.filter(function(s) {
+        return svcIds.indexOf(s.id) !== -1 && (ME.role === "owner" || serviceMatchesMasterLevel(s, master));
+      });
       // Поточна послуга запису могла бути деактивована чи не належати
       // майстру формально — все одно лишаємо її в списку, щоб не губити вибір.
       if (preserveId && !opts.some(function(s) { return String(s.id) === String(preserveId); })) {
@@ -2113,6 +2123,10 @@
     ]).then(function(rs) {
       allMastersE = rs[0].j.masters || [];
       allServicesE = rs[1].j.services || [];
+      if (ME.role !== "owner") {
+        var ownMasterE = allMastersE.find(function(m) { return m.id === ME.masterId; });
+        allServicesE = allServicesE.filter(function(s) { return serviceMatchesMasterLevel(s, ownMasterE); });
+      }
 
       var sel = $("eMaster");
       allMastersE.forEach(function(m) {
@@ -2668,7 +2682,9 @@
       if (ME.role !== "owner") {
         var me = (mstRes.j.masters || []).find(function (m) { return m.id === ME.masterId; });
         var ids = me ? (me.service_ids || []) : [];
-        allServices = allServices.filter(function (s) { return ids.indexOf(s.id) !== -1; });
+        allServices = allServices.filter(function (s) {
+          return ids.indexOf(s.id) !== -1 && serviceMatchesMasterLevel(s, me);
+        });
       }
       allServices.forEach(function (s) {
         var o = new Option(s.name + " (" + s.duration_min + " хв)", s.id);
