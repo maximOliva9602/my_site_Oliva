@@ -5415,6 +5415,45 @@
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Журнал сповіщень"));
     main.appendChild(bar);
 
+    /* ── Баланс SMS-провайдера (AlphaSMS) ──
+       Саме поповнення API не підтримує — лише перевірку балансу, тому
+       кнопка веде в їхній особистий кабінет, а не оплачує тут напряму. */
+    var balCard = el("div", "item"); balCard.style.marginBottom = "16px";
+    balCard.appendChild(el("div", "t", "💳 Баланс SMS (AlphaSMS)"));
+    var balBody = el("div", "sub"); balBody.style.margin = "8px 0 0";
+    balBody.textContent = "Завантаження…";
+    balCard.appendChild(balBody);
+    main.appendChild(balCard);
+    api("GET", "/api/crm/notify-balance").then(function (r) {
+      if (!(r.j && r.j.ok)) {
+        balBody.innerHTML = '<span style="color:var(--err);">Помилка: ' + ((r.j && r.j.error) || "не вдалось перевірити") + '</span>';
+        return;
+      }
+      if (!r.j.supported) {
+        balCard.style.display = "none"; // інший драйвер (console/turbosms) — баланс не показуємо
+        return;
+      }
+      if (r.j.error) {
+        balBody.innerHTML = '<span style="color:var(--err);">Помилка: ' + r.j.error + '</span>';
+        return;
+      }
+      balBody.innerHTML = "";
+      var row = el("div", "");
+      row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;";
+      var amt = el("div", "");
+      amt.style.cssText = "font-size:1.3rem;font-weight:700;color:var(--cream);font-family:'Playfair Display',serif;";
+      amt.textContent = Math.round((r.j.amount || 0) * 100) / 100 + " " + (r.j.currency || "UAH");
+      var topUpBtn = document.createElement("a");
+      topUpBtn.href = "https://alphasms.ua/panel/"; topUpBtn.target = "_blank"; topUpBtn.rel = "noopener noreferrer";
+      topUpBtn.className = "btn btn-sm btn-primary";
+      topUpBtn.textContent = "Поповнити →";
+      row.appendChild(amt); row.appendChild(topUpBtn);
+      balBody.appendChild(row);
+      var hint = el("div", ""); hint.style.cssText = "font-size:.7rem;color:var(--text-dim);margin-top:6px;";
+      hint.textContent = "Оплата — на стороні AlphaSMS (кнопка відкриє їхній особистий кабінет у новій вкладці).";
+      balBody.appendChild(hint);
+    });
+
     /* ── SMS-сповіщення клієнтам: перемикачі тригерів (аналог Bookon) ── */
     var remCard = el("div", "item"); remCard.style.marginBottom = "16px";
     remCard.appendChild(el("div", "t", "📨 SMS-сповіщення клієнтам"));

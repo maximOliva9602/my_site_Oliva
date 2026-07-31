@@ -1781,6 +1781,22 @@ router.patch("/masters/:id/pay", owner, function (req, res) {
 });
 
 /* ---- Налаштування SMS-сповіщень (перемикачі + час нагадувань) ---- */
+/* Баланс SMS-провайдера (лише alphasms — інші драйвери не мають такого API).
+   Саме поповнення робиться на стороні AlphaSMS (alphasms.ua/panel/) —
+   провайдер не дає API для оплати, лише для перевірки балансу. */
+router.get("/notify-balance", owner, async function (req, res) {
+  const notify = require("./notify");
+  if (notify.DRIVER_NAME !== "alphasms" || typeof notify.driver.getBalance !== "function") {
+    return res.json({ ok: true, supported: false });
+  }
+  try {
+    const b = await notify.driver.getBalance();
+    res.json({ ok: true, supported: true, amount: b.amount, currency: b.currency });
+  } catch (e) {
+    res.json({ ok: false, supported: true, error: e.message });
+  }
+});
+
 router.get("/notify-settings", owner, function (req, res) {
   function get(k, dflt) {
     const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(k);

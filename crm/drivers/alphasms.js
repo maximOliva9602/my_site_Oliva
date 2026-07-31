@@ -67,6 +67,18 @@ async function call(data) {
 module.exports = {
   name: "alphasms",
 
+  /* Поточний баланс акаунту (AlphaSMS не дає API для самого поповнення —
+     оплата лише через їхній особистий кабінет, alphasms.ua/panel/). */
+  async getBalance() {
+    if (!KEY) throw new Error("ALPHASMS_KEY не задано");
+    const j = await call([{ type: "balance" }]);
+    const item = j.data && j.data[0];
+    if (!item || item.success === false || !item.data) {
+      throw new Error("alphasms: " + JSON.stringify((item && item.error) || j));
+    }
+    return { amount: item.data.amount, currency: item.data.currency || "UAH" };
+  },
+
   async sendMessage(opts) {
     if (!KEY) throw new Error("ALPHASMS_KEY не задано");
     const phone = normalizeUA(opts.phone);
