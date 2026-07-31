@@ -903,7 +903,9 @@ router.get("/clients", any, function (req, res) {
   let rows;
   if (q) {
     const like = "%" + q + "%";
-    rows = db.prepare("SELECT * FROM clients WHERE name LIKE ? OR phone LIKE ? ORDER BY last_visit_at DESC NULLS LAST LIMIT 200").all(like, like);
+    // LOWERU (не вбудований LOWER) — щоб пошук по імені не залежав від
+    // регістру й для кириличних імен теж (LOWER() в SQLite опускає лише ASCII).
+    rows = db.prepare("SELECT * FROM clients WHERE LOWERU(name) LIKE LOWERU(?) OR phone LIKE ? ORDER BY last_visit_at DESC NULLS LAST LIMIT 200").all(like, like);
   } else {
     rows = db.prepare("SELECT * FROM clients ORDER BY last_visit_at DESC NULLS LAST, id DESC LIMIT 200").all();
   }

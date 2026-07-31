@@ -17,6 +17,15 @@ const db = new Database(DB_FILE);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
+/* SQLite LIKE/LOWER () регістронезалежні лише для ASCII — українські
+   імена/назви з великої літери не знаходились при пошуку в нижньому
+   регістрі (і навпаки). LOWERU — те саме, але через JS String.toLowerCase(),
+   який коректно опускає регістр і кирилиці. Використовувати як
+   "WHERE LOWERU(col) LIKE LOWERU(?)" замість вбудованого LIKE. */
+db.function("LOWERU", { deterministic: true }, function (s) {
+  return s == null ? null : String(s).toLowerCase();
+});
+
 /* ---------------- Міграції ---------------- */
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
