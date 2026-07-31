@@ -3844,11 +3844,6 @@
     var today = new Date().toISOString().slice(0,10);
     var defaultFrom = today.slice(0,7) + "-01";
 
-    function addDaysStr(dateStr, n) {
-      var d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + n);
-      return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
-    }
-
     // ── Шапка з фільтром дат ──────────────────────────────────────
     main.innerHTML = "";
     var filterBar = document.createElement("div");
@@ -3860,33 +3855,6 @@
       '<input type="date" id="aTo" value="' + today + '" style="width:140px;">' +
       '<button class="btn btn-primary btn-sm" id="aApply">Застосувати</button>';
     main.appendChild(filterBar);
-
-    // ── Швидкі періоди ──────────────────────────────────────────────
-    var presetBar = document.createElement("div");
-    presetBar.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px;";
-    var yesterday = addDaysStr(today, -1);
-    var PRESETS = [
-      { label: "Сьогодні", from: today, to: today },
-      { label: "Вчора", from: yesterday, to: yesterday },
-      { label: "10 днів", from: addDaysStr(today, -9), to: today },
-      { label: "30 днів", from: addDaysStr(today, -29), to: today },
-    ];
-    var presetBtns = [];
-    PRESETS.forEach(function (p) {
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "btn btn-ghost btn-sm";
-      b.textContent = p.label;
-      b.addEventListener("click", function () {
-        $("aFrom").value = p.from; $("aTo").value = p.to;
-        presetBtns.forEach(function (x) { x.classList.remove("btn-primary"); x.classList.add("btn-ghost"); });
-        b.classList.remove("btn-ghost"); b.classList.add("btn-primary");
-        loadStats(p.from, p.to);
-      });
-      presetBtns.push(b);
-      presetBar.appendChild(b);
-    });
-    main.appendChild(presetBar);
 
     var statsArea = document.createElement("div");
     main.appendChild(statsArea);
@@ -4102,11 +4070,6 @@
       }); // end api call
     } // end loadStats
 
-    function clearPresetHighlight() {
-      presetBtns.forEach(function (x) { x.classList.remove("btn-primary"); x.classList.add("btn-ghost"); });
-    }
-    $("aFrom").addEventListener("input", clearPresetHighlight);
-    $("aTo").addEventListener("input", clearPresetHighlight);
     $("aApply").addEventListener("click", function() {
       var f = $("aFrom").value, t = $("aTo").value;
       if (f && t && f <= t) loadStats(f, t);
@@ -4120,6 +4083,18 @@
      ============================================================ */
   function renderTraffic() {
     var main = $("main");
+    var today = todayStr();
+    function addDaysStr(dateStr, n) {
+      var d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + n);
+      return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    }
+    var TRAFFIC_PERIODS = [
+      { label: "Вчора", from: addDaysStr(today, -1), to: addDaysStr(today, -1) },
+      { label: "Сьогодні", from: today, to: today },
+      { label: "10 днів", from: addDaysStr(today, -9), to: today },
+      { label: "30 днів", from: addDaysStr(today, -29), to: today }
+    ];
+    var trafficPeriod = TRAFFIC_PERIODS[3];
 
     function load() {
       // Показуємо спінер лише якщо контент ще не завантажений
@@ -4127,11 +4102,23 @@
       var btn = document.getElementById("traffic-refresh");
       if (btn) { btn.textContent = "⟳"; btn.disabled = true; }
 
-      api("GET", "/api/crm/analytics/visits").then(function(res) {
+      api("GET", "/api/crm/analytics/visits?from=" + trafficPeriod.from + "&to=" + trafficPeriod.to).then(function(res) {
         if (!res.j.ok) { main.innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
         main.dataset.loaded = "1";
         var d = res.j;
         main.innerHTML = "";
+
+      var periodBar = document.createElement("div");
+      periodBar.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;";
+      TRAFFIC_PERIODS.forEach(function(p) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "btn btn-sm " + (p === trafficPeriod ? "btn-primary" : "btn-ghost");
+        b.textContent = p.label;
+        b.addEventListener("click", function() { if (p !== trafficPeriod) { trafficPeriod = p; load(); } });
+        periodBar.appendChild(b);
+      });
+      main.appendChild(periodBar);
 
       function sec(html) {
         var s = document.createElement("div");
@@ -4143,30 +4130,29 @@
       /* ---- KPI ---- */
       var kpi = d.kpi || {};
       var kpiRow = document.createElement("div");
-      kpiRow.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;";
+      kpiRow.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;";
       [
-        { icon:"👁",  label:"Сьогодні",     v: (kpi.today||{}).n||0, u: (kpi.today||{}).u||0 },
-        { icon:"📅", label:"Тиждень",       v: (kpi.week||{}).n||0,  u: (kpi.week||{}).u||0  },
-        { icon:"📆", label:"Місяць (30 дн)",v: (kpi.month||{}).n||0, u: (kpi.month||{}).u||0 },
+        { icon:"👁", label:"Перегляди · " + trafficPeriod.label, v: (kpi.period||{}).n||0 },
+        { icon:"👤", label:"Унікальні · " + trafficPeriod.label, v: (kpi.period||{}).u||0 },
       ].forEach(function(k) {
         var c = document.createElement("div");
         c.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 14px;";
         c.innerHTML = '<div style="font-size:1.4rem;margin-bottom:6px;">'+k.icon+'</div>'+
           '<div style="font-size:1.3rem;font-weight:700;color:var(--cream);font-family:\'Playfair Display\',serif;">'+k.v+'</div>'+
-          '<div style="font-size:.72rem;color:var(--text-dim);margin-top:3px;">'+k.u+' унікальних · '+k.label+'</div>';
+          '<div style="font-size:.72rem;color:var(--text-dim);margin-top:3px;">'+k.label+'</div>';
         kpiRow.appendChild(c);
       });
       main.appendChild(kpiRow);
 
       /* ---- Відвідування по днях (area chart) ---- */
       var vdays = d.visits_by_day || [];
-      if (vdays.length > 1) {
+      if (vdays.length) {
         var W=860,H=120,PL=42,PR=10,PT=10,PB=20;
         var pw=W-PL-PR, ph=H-PT-PB;
         var maxV = Math.max.apply(null, vdays.map(function(x){return x.total||0;})) || 1;
         var n = vdays.length;
-        var pts  = vdays.map(function(v,i){ return [PL+i/(n-1)*pw, PT+ph-(v.total||0)/maxV*ph, v]; });
-        var ptsU = vdays.map(function(v,i){ return [PL+i/(n-1)*pw, PT+ph-(v.uniq||0)/maxV*ph,  v]; });
+        var pts  = vdays.map(function(v,i){ var x = n === 1 ? PL + pw / 2 : PL + i / (n - 1) * pw; return [x, PT+ph-(v.total||0)/maxV*ph, v]; });
+        var ptsU = vdays.map(function(v,i){ var x = n === 1 ? PL + pw / 2 : PL + i / (n - 1) * pw; return [x, PT+ph-(v.uniq||0)/maxV*ph,  v]; });
 
         function areaPath(ps, bot) {
           var p="M "+ps[0][0]+","+bot;
@@ -4214,9 +4200,9 @@
         var legend='<div style="display:flex;gap:16px;margin-bottom:10px;font-size:.75rem;">'+
           '<span style="color:var(--olive-light);">─── Всього</span>'+
           '<span style="color:rgba(122,145,86,.7);">- - - Унікальних</span></div>';
-        main.appendChild(sec(ttl("👁 Відвідування за 30 днів")+legend+svg));
+        main.appendChild(sec(ttl("👁 Відвідування · " + trafficPeriod.label)+legend+svg));
       } else {
-        main.appendChild(sec(ttl("👁 Відвідування за 30 днів")+'<div class="empty" style="padding:20px 0;">Даних поки немає — дочекайтесь перших відвідувачів після деплою</div>'));
+        main.appendChild(sec(ttl("👁 Відвідування · " + trafficPeriod.label)+'<div class="empty" style="padding:20px 0;">Даних за цей період поки немає</div>'));
       }
 
       /* ---- Середній рядок: сторінки + джерела ---- */
@@ -4229,7 +4215,7 @@
       // Топ сторінок
       var topPages = d.top_pages || [];
       var maxP = Math.max.apply(null, topPages.map(function(p){return p.total||0;})) || 1;
-      var pgHtml = ttl("📄 Топ сторінок (30 дн)");
+      var pgHtml = ttl("📄 Топ сторінок · " + trafficPeriod.label);
       var PAGE_NAMES = { "/": "Головна", "/booking.html": "Запис", "/blog.html": "Блог",
         "/shop.html": "Магазин", "/training.html": "Навчання", "/tips.html": "Чайові",
         "/certificate.html": "Сертифікати", "/share.html": "Поділитись" };
@@ -4251,7 +4237,7 @@
       var maxS = Math.max.apply(null, sources.map(function(s){return s.n||0;})) || 1;
       var totalSrc = sources.reduce(function(a,s){return a+(s.n||0);},0)||1;
       var SRC_ICONS = { direct:"🔗", google:"🔍", instagram:"📸", facebook:"👍", telegram:"✈️", other:"🌐" };
-      var srcHtml = ttl("📡 Джерела трафіку (30 дн)");
+      var srcHtml = ttl("📡 Джерела трафіку · " + trafficPeriod.label);
       sources.forEach(function(s) {
         var pct = Math.round((s.n||0)/maxS*100);
         var share = Math.round((s.n||0)/totalSrc*100);
@@ -4311,7 +4297,7 @@
       // Пік годин (тиждень)
       var byHour = d.by_hour || [];
       var maxH = Math.max.apply(null, byHour.map(function(x){return x.n||0;})) || 1;
-      var hourHtml = ttl("🕐 Активність по годинах");
+      var hourHtml = ttl("🕐 Активність по годинах · " + trafficPeriod.label);
       hourHtml += '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;">';
       for (var hh=8;hh<=23;hh++){
         var hf=byHour.filter(function(x){return x.hour===hh;})[0];

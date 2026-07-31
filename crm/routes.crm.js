@@ -1367,37 +1367,44 @@ router.get("/dashboard/analytics", owner, function (req, res) {
 
 /* ---- Аналітика трафіку сайту ---- */
 router.get("/analytics/visits", owner, function (req, res) {
-  const now = Date.now();
-  const dayMs  = 86400000;
-  const t30    = now - 30 * dayMs;
-  const t7     = now - 7  * dayMs;
-  const t1     = now - 1  * dayMs;
+  const today = tz.todayKyiv();
+  const from = clean(req.query.from, 10) || (function() {
+    const d = new Date(today + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - 29);
+    return d.toISOString().slice(0, 10);
+  })();
+  const to = clean(req.query.to, 10) || today;
+  if (!tz.isDate(from) || !tz.isDate(to) || from > to) {
+    return res.status(400).json({ ok: false, error: "bad period" });
+  }
+  const end = new Date(to + "T12:00:00Z"); end.setUTCDate(end.getUTCDate() + 1);
+  const fromMs = tz.apptInstant(from, 0);
+  const toMs = tz.apptInstant(end.toISOString().slice(0, 10), 0);
+  const range = "created_at>=? AND created_at<?";
 
-  // Відвідування по днях (30 днів)
+  // Відвідування по днях за обраний період
   const visitsByDay = db.prepare(`
     SELECT substr(datetime(created_at/1000,'unixepoch','localtime'),1,10) day,
            COUNT(*) total,
            COUNT(DISTINCT ip_hash) uniq
-    FROM page_visits WHERE event='pageview' AND created_at>=?
+    FROM page_visits WHERE event='pageview' AND ${range}
     GROUP BY day ORDER BY day
-  `).all(t30);
+  `).all(fromMs, toMs);
 
-  // KPI
-  const kToday = db.prepare("SELECT COUNT(*) n, COUNT(DISTINCT ip_hash) u FROM page_visits WHERE event='pageview' AND created_at>=?").get(t1);
-  const kWeek  = db.prepare("SELECT COUNT(*) n, COUNT(DISTINCT ip_hash) u FROM page_visits WHERE event='pageview' AND created_at>=?").get(t7);
-  const kMonth = db.prepare("SELECT COUNT(*) n, COUNT(DISTINCT ip_hash) u FROM page_visits WHERE event='pageview' AND created_at>=?").get(t30);
+  const kPeriod = db.prepare(
+    "SELECT COUNT(*) n, COUNT(DISTINCT ip_hash) u FROM page_visits WHERE event='pageview' AND " + range
+  ).get(fromMs, toMs);
 
   // Топ сторінок
   const topPages = db.prepare(`
     SELECT path, COUNT(*) total, COUNT(DISTINCT ip_hash) uniq
-    FROM page_visits WHERE event='pageview' AND created_at>=?
+    FROM page_visits WHERE event='pageview' AND ${range}
     GROUP BY path ORDER BY total DESC LIMIT 10
-  `).all(t30);
+  `).all(fromMs, toMs);
 
   // Пристрої
   const devices = db.prepare(`
-    SELECT ua_type, COUNT(*) n FROM page_visits WHERE event='pageview' AND created_at>=? GROUP BY ua_type
-  `).all(t30);
+    SELECT ua_type, COUNT(*) n FROM page_visits WHERE event='pageview' AND ${range} GROUP BY ua_type
+  `).all(fromMs, toMs);
 
   // Джерела трафіку (referrer domain)
   const sources = db.prepare(`
@@ -1409,28 +1416,29 @@ router.get("/analytics/visits", owner, function (req, res) {
            WHEN referrer LIKE '%telegram%' THEN 'telegram'
            ELSE 'other' END
     ) src, COUNT(*) n
-    FROM page_visits WHERE event='pageview' AND created_at>=?
+    FROM page_visits WHERE event='pageview' AND ${range}
     GROUP BY src ORDER BY n DESC LIMIT 8
-  `).all(t30);
+  `).all(fromMs, toMs);
 
   // Кліки (кнопки/посилання)
   const clicks = db.prepare(`
     SELECT label, COUNT(*) n
-    FROM page_visits WHERE event='click' AND created_at>=?
+    FROM page_visits WHERE event='click' AND ${range}
     GROUP BY label ORDER BY n DESC LIMIT 10
-  `).all(t30);
+  `).all(fromMs, toMs);
 
   // Години активності
   const byHour = db.prepare(`
     SELECT CAST(strftime('%H', datetime(created_at/1000,'unixepoch','localtime')) AS INTEGER) hour,
            COUNT(*) n
-    FROM page_visits WHERE event='pageview' AND created_at>=?
+    FROM page_visits WHERE event='pageview' AND ${range}
     GROUP BY hour ORDER BY hour
-  `).all(t7);
+  `).all(fromMs, toMs);
 
   res.json({
     ok: true,
-    kpi: { today: kToday, week: kWeek, month: kMonth },
+    period: { from, to },
+    kpi: { period: kPeriod },
     visits_by_day: visitsByDay,
     top_pages: topPages,
     devices: devices,
