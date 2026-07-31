@@ -3797,10 +3797,15 @@
     var today = new Date().toISOString().slice(0,10);
     var defaultFrom = today.slice(0,7) + "-01";
 
+    function addDaysStr(dateStr, n) {
+      var d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + n);
+      return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    }
+
     // ── Шапка з фільтром дат ──────────────────────────────────────
     main.innerHTML = "";
     var filterBar = document.createElement("div");
-    filterBar.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;";
+    filterBar.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;";
     filterBar.innerHTML =
       '<span style="font-size:.82rem;color:var(--text-dim);flex-shrink:0;">Статистика за:</span>' +
       '<input type="date" id="aFrom" value="' + defaultFrom + '" style="width:140px;">' +
@@ -3808,6 +3813,33 @@
       '<input type="date" id="aTo" value="' + today + '" style="width:140px;">' +
       '<button class="btn btn-primary btn-sm" id="aApply">Застосувати</button>';
     main.appendChild(filterBar);
+
+    // ── Швидкі періоди ──────────────────────────────────────────────
+    var presetBar = document.createElement("div");
+    presetBar.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px;";
+    var yesterday = addDaysStr(today, -1);
+    var PRESETS = [
+      { label: "Сьогодні", from: today, to: today },
+      { label: "Вчора", from: yesterday, to: yesterday },
+      { label: "10 днів", from: addDaysStr(today, -9), to: today },
+      { label: "30 днів", from: addDaysStr(today, -29), to: today },
+    ];
+    var presetBtns = [];
+    PRESETS.forEach(function (p) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn btn-ghost btn-sm";
+      b.textContent = p.label;
+      b.addEventListener("click", function () {
+        $("aFrom").value = p.from; $("aTo").value = p.to;
+        presetBtns.forEach(function (x) { x.classList.remove("btn-primary"); x.classList.add("btn-ghost"); });
+        b.classList.remove("btn-ghost"); b.classList.add("btn-primary");
+        loadStats(p.from, p.to);
+      });
+      presetBtns.push(b);
+      presetBar.appendChild(b);
+    });
+    main.appendChild(presetBar);
 
     var statsArea = document.createElement("div");
     main.appendChild(statsArea);
@@ -4023,6 +4055,11 @@
       }); // end api call
     } // end loadStats
 
+    function clearPresetHighlight() {
+      presetBtns.forEach(function (x) { x.classList.remove("btn-primary"); x.classList.add("btn-ghost"); });
+    }
+    $("aFrom").addEventListener("input", clearPresetHighlight);
+    $("aTo").addEventListener("input", clearPresetHighlight);
     $("aApply").addEventListener("click", function() {
       var f = $("aFrom").value, t = $("aTo").value;
       if (f && t && f <= t) loadStats(f, t);
