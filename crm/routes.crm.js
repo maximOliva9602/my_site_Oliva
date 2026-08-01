@@ -10,6 +10,7 @@ const db = require("./db");
 const tz = require("./tz");
 const slots = require("./slots");
 const auth = require("./auth");
+const phonePrivacy = require("./phone-privacy");
 
 const router = express.Router();
 const owner = auth.requireAuth("owner");
@@ -24,6 +25,20 @@ function canSeePhones(session) {
   if (!session.masterId) return false;
   const m = db.prepare("SELECT can_see_phones FROM masters WHERE id=?").get(session.masterId);
   return !!(m && m.can_see_phones);
+}
+function protectAppointmentPhone(a, sessionOrAccess) {
+  if (!a) return a;
+  const showFull = typeof sessionOrAccess === "boolean" ? sessionOrAccess : canSeePhones(sessionOrAccess);
+  return Object.assign({}, a, {
+    client_phone: phonePrivacy.visiblePhone(a.client_phone, showFull),
+  });
+}
+function protectClientPhone(client, sessionOrAccess) {
+  if (!client) return client;
+  const showFull = typeof sessionOrAccess === "boolean" ? sessionOrAccess : canSeePhones(sessionOrAccess);
+  return Object.assign({}, client, {
+    phone: phonePrivacy.visiblePhone(client.phone, showFull),
+  });
 }
 const STATUSES = ["pending", "confirmed", "cancelled", "completed", "no_show"];
 const MASTER_LEVELS = ["Майстер", "Топ Майстер"];
@@ -230,7 +245,7 @@ function createAppointment(d, session) {
      підтверджує: SMS клієнту ставиться в чергу лише в setStatus(), коли
      майстер явно натисне «Підтвердити». */
 
-  return { status: 200, body: { ok: true, public_id: publicId, appointment: viewAppt(apptRow(appointmentId)) } };
+  return { status: 200, body: { ok: true, public_id: publicId, appointment: viewAppt(protectAppointmentPhone(apptRow(appointmentId), session)) } };
 }
 
 /* ---- Оплата праці майстра ----
@@ -365,7 +380,7 @@ function setStatus(id, status, session) {
       notify.queueNotification(id, "review_request");
     } catch(e) { /* review_request — необов'язково */ }
   }
-  return { status: 200, body: { ok: true, appointment: viewAppt(apptRow(id)) } };
+  return { status: 200, body: { ok: true, appointment: viewAppt(protectAppointmentPhone(apptRow(id), session)) } };
 }
 
 /* ============================================================
@@ -392,8 +407,7 @@ router.get("/me/appointments", any, function (req, res) {
   const stmt = db.prepare(sql);
   const showPhone = canSeePhones(s);
   res.json({ ok: true, appointments: stmt.all.apply(stmt, args).map(function(a) {
-    if (!showPhone) a = Object.assign({}, a, { client_phone: null });
-    return viewAppt(a);
+    return viewAppt(protectAppointmentPhone(a, showPhone));
   }) });
 });
 
@@ -411,7 +425,7 @@ router.get("/appointments/:id(\\d+)", any, function (req, res) {
   if (req.session.role !== "owner" && a.master_id !== req.session.masterId) {
     return res.status(403).json({ ok: false, error: "forbidden" });
   }
-  const out = canSeePhones(req.session) ? a : Object.assign({}, a, { client_phone: null });
+  const out = protectAppointmentPhone(a, req.session);
   res.json({ ok: true, appointment: viewAppt(out) });
 });
 
@@ -427,7 +441,7 @@ router.get("/me/clients", any, function (req, res) {
     ).all(s.masterId);
   }
   const showPhone = canSeePhones(s);
-  if (!showPhone) rows = rows.map(function(c) { return Object.assign({}, c, { phone: null }); });
+  rows = rows.map(function(c) { return protectClientPhone(c, showPhone); });
   res.json({ ok: true, clients: rows });
 });
 
@@ -523,7 +537,7 @@ router.patch("/appointments/:id", any, function (req, res) {
     }
   }
 
-  res.json({ ok: true, appointment: viewAppt(apptRow(id)) });
+  res.json({ ok: true, appointment: viewAppt(protectAppointmentPhone(apptRow(id), req.session)) });
 });
 
 /* ---- Оплата запису ---- */
@@ -602,8 +616,7 @@ router.get("/schedule", any, function (req, res) {
               "WHERE a.date=? AND a.status NOT IN ('cancelled','no_show') ORDER BY a.start_min";
   const showPhone = canSeePhones(req.session);
   res.json({ ok: true, appointments: db.prepare(sql).all(date).map(function(a) {
-    if (!showPhone) a = Object.assign({}, a, { client_phone: null });
-    return viewAppt(a);
+    return viewAppt(protectAppointmentPhone(a, showPhone));
   }) });
 });
 
@@ -980,7 +993,7 @@ router.get("/clients", any, function (req, res) {
     rows = db.prepare("SELECT * FROM clients ORDER BY last_visit_at DESC NULLS LAST, id DESC LIMIT 200").all();
   }
   const showPhone = canSeePhones(req.session);
-  if (!showPhone) rows = rows.map(function(c) { return Object.assign({}, c, { phone: null }); });
+  rows = rows.map(function(c) { return protectClientPhone(c, showPhone); });
   res.json({ ok: true, clients: rows });
 });
 /* Чи належить номер уже наявному клієнту. Порівнюємо нормалізовані
@@ -1005,7 +1018,7 @@ router.get("/clients/:id", any, function (req, res) {
        FROM appointments a JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id
       WHERE a.client_id=? ORDER BY a.date DESC, a.start_min DESC`
   ).all(id).map(viewAppt);
-  if (!canSeePhones(req.session)) client = Object.assign({}, client, { phone: null });
+  client = protectClientPhone(client, req.session);
   res.json({ ok: true, client: client, history: history });
 });
 router.patch("/clients/:id", any, function (req, res) {
@@ -1013,9 +1026,10 @@ router.patch("/clients/:id", any, function (req, res) {
   const d = req.body || {};
   const c = db.prepare("SELECT * FROM clients WHERE id=?").get(id);
   if (!c) return res.status(404).json({ ok: false });
+  const canEditPhone = canSeePhones(req.session);
   db.prepare("UPDATE clients SET name=?, phone=?, note=?, blacklisted=?, birthday=? WHERE id=?").run(
     d.name        !== undefined ? clean(d.name,  100)  : c.name,
-    d.phone       !== undefined ? clean(d.phone,  30)  : c.phone,
+    d.phone       !== undefined && canEditPhone ? clean(d.phone, 30) : c.phone,
     d.note        !== undefined ? clean(d.note, 1000)  : c.note,
     d.blacklisted !== undefined ? (d.blacklisted ? 1 : 0) : (c.blacklisted || 0),
     /* День народження: 'YYYY-MM-DD' або порожньо (null) — для SMS-привітання */

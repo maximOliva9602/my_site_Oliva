@@ -2937,7 +2937,9 @@
       if (e.key === "Escape") { $("mClientDrop").style.display = "none"; }
     });
 
-    if (prefill.clientName || prefill.clientPhone) {
+    if (prefill.client && prefill.client.id) {
+      showChip(prefill.client);
+    } else if (prefill.clientName || prefill.clientPhone) {
       showNewForm(prefill.clientName || "");
       if (prefill.clientPhone) $("mPhone").value = prefill.clientPhone;
     }
@@ -3806,9 +3808,11 @@
 
         document.getElementById("cc-edit").addEventListener("click", function() {
           closeCtx();
+          var phoneReadOnly = ME.can_see_phones ? '' : ' readonly aria-readonly="true"';
+          var phoneHelp = ME.can_see_phones ? '' : '<div style="font-size:.72rem;color:var(--text-dim);margin-top:4px;">Повний номер доступний лише з дозволу власника</div>';
           var html = '<h3>Редагувати клієнта</h3>' +
             '<label>Ім\'я</label><input type="text" id="ceN" value="' + (c.name||"").replace(/"/g,"&quot;") + '" maxlength="100">' +
-            '<label style="margin-top:10px;display:block;">Телефон</label><input type="tel" id="cePh" value="' + (c.phone||"") + '" maxlength="30">' +
+            '<label style="margin-top:10px;display:block;">Телефон</label><input type="text" id="cePh" value="' + (c.phone||"") + '" maxlength="30"' + phoneReadOnly + '>' + phoneHelp +
             '<label style="margin-top:10px;display:block;">День народження <span style="color:var(--text-dim);font-weight:400;">(для SMS-привітання)</span></label><input type="date" id="ceBd" value="' + (c.birthday||"") + '">' +
             '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="ceNote" maxlength="1000">' + (c.note||"") + '</textarea>' +
             '<div class="err" id="ceErr"></div>' +
@@ -3817,7 +3821,9 @@
           $("ceSave").addEventListener("click", function() {
             var name = $("ceN").value.trim(), phone = $("cePh").value.trim();
             if (!name) { $("ceErr").textContent = "Вкажи ім\'я"; return; }
-            api("PATCH", "/api/crm/clients/" + id, { name: name, phone: phone, note: $("ceNote").value.trim(), birthday: $("ceBd").value || "" }).then(function(r) {
+            var payload = { name: name, note: $("ceNote").value.trim(), birthday: $("ceBd").value || "" };
+            if (ME.can_see_phones) payload.phone = phone;
+            api("PATCH", "/api/crm/clients/" + id, payload).then(function(r) {
               if (!r.j.ok) { $("ceErr").textContent = "Помилка"; return; }
               closeModal(); renderClientCard(id);
             });
@@ -3912,26 +3918,27 @@
         phInfo.innerHTML = '<div style="font-size:.68rem;color:var(--text-dim);">Номер телефону</div><div style="font-size:.9rem;font-weight:500;color:var(--cream);">' + c.phone + '</div>';
         phCard.appendChild(phIcon);
         phCard.appendChild(phInfo);
-        // Copy
-        var copyBtn = document.createElement("button");
-        copyBtn.className = "btn btn-ghost btn-sm";
-        copyBtn.style.cssText = "padding:6px;font-size:.9rem;";
-        copyBtn.title = "Скопіювати";
-        copyBtn.textContent = "⎘";
-        copyBtn.addEventListener("click", function() {
-          navigator.clipboard.writeText(c.phone);
-          copyBtn.textContent = "✓";
-          setTimeout(function() { copyBtn.textContent = "⎘"; }, 1500);
-        });
-        // Call
-        var callBtn = document.createElement("a");
-        callBtn.className = "btn btn-ghost btn-sm";
-        callBtn.style.cssText = "padding:6px;font-size:.9rem;text-decoration:none;";
-        callBtn.title = "Зателефонувати";
-        callBtn.textContent = "📲";
-        callBtn.href = "tel:" + c.phone.replace(/\s/g, "");
-        phCard.appendChild(copyBtn);
-        phCard.appendChild(callBtn);
+        if (ME.can_see_phones) {
+          // Копіювання та дзвінок доступні лише коли номер справді повний.
+          var copyBtn = document.createElement("button");
+          copyBtn.className = "btn btn-ghost btn-sm";
+          copyBtn.style.cssText = "padding:6px;font-size:.9rem;";
+          copyBtn.title = "Скопіювати";
+          copyBtn.textContent = "⎘";
+          copyBtn.addEventListener("click", function() {
+            navigator.clipboard.writeText(c.phone);
+            copyBtn.textContent = "✓";
+            setTimeout(function() { copyBtn.textContent = "⎘"; }, 1500);
+          });
+          var callBtn = document.createElement("a");
+          callBtn.className = "btn btn-ghost btn-sm";
+          callBtn.style.cssText = "padding:6px;font-size:.9rem;text-decoration:none;";
+          callBtn.title = "Зателефонувати";
+          callBtn.textContent = "📲";
+          callBtn.href = "tel:" + c.phone.replace(/\s/g, "");
+          phCard.appendChild(copyBtn);
+          phCard.appendChild(callBtn);
+        }
         main.appendChild(phCard);
       }
 
@@ -3942,7 +3949,7 @@
       newAppt.addEventListener("click", function() {
         var lastCompleted = h.find(function(a) { return a.status === "completed"; });
         apptModal({ prefill: {
-          clientName: c.name, clientPhone: c.phone,
+          client: c,
           serviceId: lastCompleted ? lastCompleted.service_id : undefined,
           masterId: ME.role !== "owner" ? ME.masterId : (lastCompleted ? lastCompleted.master_id : undefined)
         }});
