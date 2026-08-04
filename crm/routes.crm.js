@@ -650,7 +650,7 @@ router.put("/masters/:id", owner, function (req, res) {
   if (d.level !== undefined && MASTER_LEVELS.indexOf(clean(d.level, 50)) === -1) {
     return res.status(400).json({ ok: false, error: "bad master level" });
   }
-  db.prepare("UPDATE masters SET name=?, last_name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=?, can_see_phones=? WHERE id=?").run(
+  db.prepare("UPDATE masters SET name=?, last_name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=?, can_see_phones=?, show_on_site=? WHERE id=?").run(
     d.name           !== undefined ? clean(d.name, 100)      : m.name,
     d.last_name      !== undefined ? clean(d.last_name, 100) : m.last_name,
     d.phone          !== undefined ? clean(d.phone, 30)      : m.phone,
@@ -660,6 +660,7 @@ router.put("/masters/:id", owner, function (req, res) {
     d.level          !== undefined ? clean(d.level, 50)      : m.level,
     d.mono_link      !== undefined ? clean(d.mono_link, 500) : m.mono_link,
     d.can_see_phones !== undefined ? (d.can_see_phones ? 1 : 0) : (m.can_see_phones || 0),
+    d.show_on_site   !== undefined ? (d.show_on_site ? 1 : 0) : (m.show_on_site != null ? m.show_on_site : 1),
     id
   );
   // Посада визначає прайс — міняється рівень, перерахувати список послуг.

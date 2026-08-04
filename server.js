@@ -528,7 +528,7 @@ app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
 /* ---- Публічний список майстрів (для сайту) ---- */
 app.get("/api/masters", function (req, res) {
   var rows = db.prepare(
-    "SELECT id, name, level, photo, mono_link FROM masters WHERE active=1 ORDER BY sort_order, id"
+    "SELECT id, name, level, photo, mono_link FROM masters WHERE active=1 AND show_on_site=1 ORDER BY sort_order, id"
   ).all();
   res.json({ ok: true, masters: rows });
 });

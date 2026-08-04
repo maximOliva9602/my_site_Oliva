@@ -4745,7 +4745,8 @@
           var item = el("div", "item"); var row = el("div", "row1");
           var info = el("div");
           var svcCount = (m.service_ids || []).length;
-          info.appendChild(el("div", "t", m.name + (m.last_name ? " " + m.last_name : "")));
+          var hidden = m.show_on_site != null && !m.show_on_site;
+          info.appendChild(el("div", "t", m.name + (m.last_name ? " " + m.last_name : "") + (hidden ? "  🚫 приховано з сайту" : "")));
           info.appendChild(el("div", "sub", (m.level || "Майстер") + " · " + (m.phone || "—") + " · " + svcCount + " послуг"));
           row.appendChild(info); row.appendChild(el("span", "sp"));
           var prof = el("button", "btn btn-sm btn-ghost", "Профіль"); prof.addEventListener("click", function () { masterModal(m); });
@@ -4995,9 +4996,19 @@
           '<span id="mmCspThumb" style="position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none;"></span>' +
         '</label>' +
       '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #f0f2ee;">' +
+        '<div><div style="font-size:.88rem;font-weight:600;color:#1a2016;">Показувати на сайті</div>' +
+        '<div style="font-size:.75rem;color:#6a7a60;">Вимкни, щоб прибрати з лендінгу й онлайн-запису — у CRM майстер і далі працює як завжди</div></div>' +
+        '<label style="position:relative;display:inline-flex;width:44px;height:24px;flex-shrink:0;">' +
+          '<input type="checkbox" id="mmShowOnSite" style="opacity:0;width:0;height:0;position:absolute;" />' +
+          '<span id="mmSosTrack" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"></span>' +
+          '<span id="mmSosThumb" style="position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none;"></span>' +
+        '</label>' +
+      '</div>' +
       '<div class="err" id="mmErr"></div>' +
       '<div class="modal-foot"><button class="btn btn-ghost" id="mmCancel">Скасувати</button><button class="btn btn-primary" id="mmSave">Зберегти</button></div>'
     );
+    var showOnSite = !m || m.show_on_site == null || !!m.show_on_site; // нові й старі без поля — за замовчуванням увімкнено
     if (m) {
       $("mmFirstName").value = m.name || "";
       $("mmLastName").value = m.last_name || "";
@@ -5007,9 +5018,15 @@
       $("mmCanSeePhones").checked = !!m.can_see_phones;
       if (m.can_see_phones) { $("mmCspTrack").style.background = "#3d5430"; $("mmCspThumb").style.left = "23px"; }
     }
+    $("mmShowOnSite").checked = showOnSite;
+    if (showOnSite) { $("mmSosTrack").style.background = "#3d5430"; $("mmSosThumb").style.left = "23px"; }
     $("mmCanSeePhones").addEventListener("change", function() {
       $("mmCspTrack").style.background = this.checked ? "#3d5430" : "#ccc";
       $("mmCspThumb").style.left = this.checked ? "23px" : "3px";
+    });
+    $("mmShowOnSite").addEventListener("change", function() {
+      $("mmSosTrack").style.background = this.checked ? "#3d5430" : "#ccc";
+      $("mmSosThumb").style.left = this.checked ? "23px" : "3px";
     });
     // Ім'я для додатку саме підтягується за ім'ям, поки його не зміняли вручну.
     var displayTouched = false;
@@ -5027,7 +5044,8 @@
         last_name: $("mmLastName").value.trim(),
         level: $("mmLevel").value,
         phone: $("mmPhone").value.trim(),
-        can_see_phones: $("mmCanSeePhones").checked ? 1 : 0
+        can_see_phones: $("mmCanSeePhones").checked ? 1 : 0,
+        show_on_site: $("mmShowOnSite").checked ? 1 : 0
       };
       var p = m ? api("PUT", "/api/crm/masters/" + m.id, body) : api("POST", "/api/crm/masters", body);
       p.then(function (res) {

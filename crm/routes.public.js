@@ -29,7 +29,7 @@ function attachStats(m) {
 /* Всі активні майстри з фото та рівнем */
 router.get("/all-masters", function (req, res) {
   const masters = db.prepare(
-    "SELECT id, name, photo, level, experience_years, branch_id FROM masters WHERE active = 1 ORDER BY sort_order, id"
+    "SELECT id, name, photo, level, experience_years, branch_id FROM masters WHERE active = 1 AND show_on_site = 1 ORDER BY sort_order, id"
   ).all();
   const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id = ?");
   const branchStmt = db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=? ORDER BY branch_id");
@@ -67,7 +67,7 @@ router.get("/available-masters", function (req, res) {
   if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
   const weekday = tz.weekdayOf(date);
   const masters = db.prepare(
-    "SELECT id, name, photo, level, experience_years FROM masters WHERE active=1 ORDER BY sort_order, id"
+    "SELECT id, name, photo, level, experience_years FROM masters WHERE active=1 AND show_on_site=1 ORDER BY sort_order, id"
   ).all();
   const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id=?");
   const ovStmt  = db.prepare("SELECT is_off FROM master_day_overrides WHERE master_id=? AND date=?");
@@ -91,7 +91,7 @@ router.get("/masters", function (req, res) {
   const rows = db.prepare(
     `SELECT m.id, m.name FROM masters m
        JOIN master_services ms ON ms.master_id = m.id
-      WHERE ms.service_id = ? AND m.active = 1
+      WHERE ms.service_id = ? AND m.active = 1 AND m.show_on_site = 1
       ORDER BY m.sort_order, m.id`
   ).all(serviceId);
   res.json({ ok: true, masters: rows });
@@ -142,7 +142,7 @@ router.get("/next-slots", function (req, res) {
   const vids = svcRows.map(function (s) { return s.id; });
   const vph = vids.map(function () { return "?"; }).join(",");
 
-  const provStmt = db.prepare("SELECT ms.master_id, ms.service_id FROM master_services ms JOIN masters m ON m.id=ms.master_id WHERE m.active=1 AND ms.service_id IN (" + vph + ")");
+  const provStmt = db.prepare("SELECT ms.master_id, ms.service_id FROM master_services ms JOIN masters m ON m.id=ms.master_id WHERE m.active=1 AND m.show_on_site=1 AND ms.service_id IN (" + vph + ")");
   const provRows = provStmt.all.apply(provStmt, vids);
   const masterDur = {};
   provRows.forEach(function (r) {
@@ -235,7 +235,7 @@ router.post("/book", function (req, res) {
     masterId = cand.masterIds[0];
   } else {
     masterId = parseInt(master, 10);
-    const m = db.prepare("SELECT id,branch_id FROM masters WHERE id = ? AND active = 1").get(masterId);
+    const m = db.prepare("SELECT id,branch_id FROM masters WHERE id = ? AND active = 1 AND show_on_site = 1").get(masterId);
     if (!m) return res.status(404).json({ ok: false, error: "master not found" });
     if (!branchId) branchId = m.branch_id || null;
   }

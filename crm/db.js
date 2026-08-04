@@ -358,6 +358,10 @@ try { db.exec("ALTER TABLE master_service_pay ADD COLUMN value_return REAL"); } 
    mode/value звичайної ставки — послуга може мати лише абонементський %,
    без окремого override для нового/повторного клієнта. */
 try { db.exec("ALTER TABLE masters ADD COLUMN pay_percent_subscription REAL"); } catch(e) {}
+/* Окремо від "active" — щоб можна було прибрати майстра з публічного
+   сайту (лендінг, онлайн-запис), лишивши його активним у CRM (записи,
+   графік, зарплата й далі працюють як завжди). */
+try { db.exec("ALTER TABLE masters ADD COLUMN show_on_site INTEGER NOT NULL DEFAULT 1"); } catch(e) {}
 db.exec(`CREATE TABLE IF NOT EXISTS master_subscription_pay (
   master_id  INTEGER NOT NULL,
   service_id INTEGER NOT NULL,
