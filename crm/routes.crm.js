@@ -894,13 +894,26 @@ router.post("/masters/:id/schedule-period", owner, function (req, res) {
   const upsert = db.prepare("INSERT OR REPLACE INTO master_day_overrides (master_id,date,is_off,work_start,work_end) VALUES (?,?,?,?,?)");
   const del    = db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=?");
   db.transaction(function () {
-    const end = new Date(date_to + "T00:00:00");
-    for (let d = new Date(date_from + "T00:00:00"); d <= end; d.setDate(d.getDate() + 1)) {
-      const ds = d.toISOString().slice(0, 10);
-      const jsDay = d.getDay();
+    /* Дати рахуємо через Date.UTC (не new Date(date+"T00:00:00")) — сервер
+       працює в Europe/Kyiv (UTC+3 влітку), тому локальний парсинг опівночі
+       й наступний toISOString() зсували весь діапазон на добу назад
+       (10–16 серпня насправді записувалось як 9–15). */
+    const [fy, fm, fd] = date_from.split("-").map(Number);
+    const [ty, tm, td] = date_to.split("-").map(Number);
+    const endUtc = Date.UTC(ty, tm - 1, td);
+    for (let dUtc = Date.UTC(fy, fm - 1, fd); dUtc <= endUtc; dUtc += 24 * 3600 * 1000) {
+      const dObj = new Date(dUtc);
+      const ds = dObj.getUTCFullYear() + "-" + String(dObj.getUTCMonth() + 1).padStart(2, "0") + "-" + String(dObj.getUTCDate()).padStart(2, "0");
+      const jsDay = dObj.getUTCDay();
       if (mode === "reset")       { del.run(id, ds); }
       else if (mode === "day_off"){ upsert.run(id, ds, 1, null, null); }
-      else if (mode === "by_weekday" && weekdays.indexOf(jsDay) !== -1) { upsert.run(id, ds, 0, work_start, work_end); }
+      else if (mode === "by_weekday") {
+        // Позначені пігулки — робочі дні; решта днів тижня в діапазоні —
+        // вихідні. Раніше невибрані дні просто пропускались (жодного
+        // запису в базу), тому зняття всіх позначок нічого не зберігало.
+        if (weekdays.indexOf(jsDay) !== -1) upsert.run(id, ds, 0, work_start, work_end);
+        else upsert.run(id, ds, 1, null, null);
+      }
       else if (mode === "all_days") { upsert.run(id, ds, 0, work_start, work_end); }
     }
   })();
