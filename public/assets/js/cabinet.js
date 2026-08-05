@@ -3752,11 +3752,102 @@
   /* ============================================================
      КЛІЄНТИ
      ============================================================ */
+  /* Мінімальний CSV-парсер (лапки, екрановані "" всередині лапок, коми
+     всередині полів — напр. посилання на Instagram у MyBusiness-експорті). */
+  function parseCsv(text) {
+    var rows = [], row = [], field = "", inQuotes = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (inQuotes) {
+        if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false; }
+        else field += c;
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ",") { row.push(field); field = ""; }
+        else if (c === "\n" || c === "\r") {
+          if (c === "\r" && text[i + 1] === "\n") i++;
+          row.push(field); field = "";
+          if (row.length > 1 || row[0] !== "") rows.push(row);
+          row = [];
+        } else field += c;
+      }
+    }
+    if (field !== "" || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+  function csvDateToMs(s) {
+    var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec((s || "").trim());
+    if (!m) return null;
+    return Date.UTC(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10), 12, 0, 0);
+  }
+
   function renderClients() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Клієнти"));
     var search = el("input"); search.type = "text"; search.placeholder = "Пошук за іменем/телефоном";
-    bar.appendChild(search); main.appendChild(bar);
+    bar.appendChild(search);
+    if (ME.role === "owner") {
+      var importBtn = el("button", "btn btn-ghost btn-sm", "⬆️ Імпорт CSV");
+      importBtn.style.cssText = "white-space:nowrap;";
+      var fileInp = document.createElement("input");
+      fileInp.type = "file"; fileInp.accept = ".csv"; fileInp.style.display = "none";
+      importBtn.addEventListener("click", function () { fileInp.click(); });
+      fileInp.addEventListener("change", function () {
+        var file = fileInp.files[0]; if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          importBtn.disabled = true; importBtn.textContent = "Імпортуємо…";
+          var text = String(reader.result || "").replace(/^﻿/, "");
+          var rows = parseCsv(text);
+          var header = rows[0] || [];
+          var idx = {
+            name: header.indexOf("Ім'я"), phone: header.indexOf("Телефон"),
+            visits: header.indexOf("Кількість візитів"),
+            lastVisit: header.indexOf("Дата останнього візиту"),
+            firstVisit: header.indexOf("Дата першого візиту"),
+          };
+          if (idx.name === -1 || idx.phone === -1) {
+            alert("Не знайдено колонки \"Ім'я\"/\"Телефон\" у файлі — перевір формат CSV.");
+            importBtn.disabled = false; importBtn.textContent = "⬆️ Імпорт CSV"; return;
+          }
+          var todayStr2 = new Date().toISOString().slice(0, 10);
+          var payload = rows.slice(1).filter(function (r) { return r.some(function (c) { return c !== ""; }); }).map(function (r) {
+            var digits = (r[idx.phone] || "").replace(/\D/g, "");
+            return {
+              name: (r[idx.name] || "").trim(),
+              phone: r[idx.phone] || "",
+              digits: digits,
+              visit_count: idx.visits > -1 ? (parseInt(r[idx.visits], 10) || 0) : 0,
+              last_visit_at: idx.lastVisit > -1 ? csvDateToMs(r[idx.lastVisit]) : null,
+              created_at: (idx.firstVisit > -1 ? csvDateToMs(r[idx.firstVisit]) : null) || Date.now(),
+              note: "Імпортовано з CSV " + todayStr2,
+            };
+          }).filter(function (r) {
+            // Відсіюємо явне сміття: короткі/однакові цифри, тестові записи.
+            if (!r.name || r.name.toLowerCase() === "тест") return false;
+            if (r.digits.length < 9) return false;
+            if (/^(\d)\1+$/.test(r.digits)) return false;
+            return true;
+          }).map(function (r) { delete r.digits; return r; });
+          if (!payload.length) {
+            alert("У файлі не знайдено валідних рядків для імпорту.");
+            importBtn.disabled = false; importBtn.textContent = "⬆️ Імпорт CSV"; return;
+          }
+          api("POST", "/api/crm/clients/import", { clients: payload }).then(function (res) {
+            importBtn.disabled = false; importBtn.textContent = "⬆️ Імпорт CSV"; fileInp.value = "";
+            if (res.j && res.j.ok) {
+              alert("Готово: додано нових клієнтів — " + res.j.inserted + " з " + res.j.total + " (пропущено як уже наявні — " + (res.j.skipped || 0) + ").");
+              load(search.value.trim());
+            } else {
+              alert("Помилка імпорту: " + (res.j && res.j.error || "невідома"));
+            }
+          });
+        };
+        reader.readAsText(file, "UTF-8");
+      });
+      bar.appendChild(importBtn); bar.appendChild(fileInp);
+    }
+    main.appendChild(bar);
     var listEl = el("div", "list"); main.appendChild(listEl);
 
     var t = null;

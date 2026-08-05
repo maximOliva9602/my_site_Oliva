@@ -1081,20 +1081,31 @@ router.delete("/clients/:id", owner, function (req, res) {
 router.post("/clients/import", owner, function (req, res) {
   const rows = Array.isArray(req.body) ? req.body : (req.body && Array.isArray(req.body.clients) ? req.body.clients : []);
   if (!rows.length) return res.status(400).json({ ok: false, error: "empty" });
-  const ins = db.prepare("INSERT OR IGNORE INTO clients (phone, name, note, visit_count, last_visit_at, created_at) VALUES (?,?,?,?,?,?)");
+  /* Порівнюємо за НОРМАЛІЗОВАНИМ номером (як createAppointment/by-phone) —
+     у базі трапляються обидва формати (097… і +380…), тож звичайний
+     INSERT OR IGNORE (точний збіг рядка) пропустив би дублі й наплодив би
+     other-format картки для вже наявних клієнтів. */
+  const existingPhones = new Set(
+    db.prepare("SELECT phone FROM clients WHERE phone IS NOT NULL").all()
+      .map(function (r) { return tz.normPhone(r.phone); })
+  );
+  const ins = db.prepare("INSERT INTO clients (phone, name, note, visit_count, last_visit_at, created_at) VALUES (?,?,?,?,?,?)");
   const txn = db.transaction(function () {
-    let inserted = 0;
+    let inserted = 0, skipped = 0;
     rows.forEach(function (r) {
-      const phone = String(r.phone || "").trim();
+      const rawPhone = String(r.phone || "").trim();
       const name = String(r.name || "").trim();
-      if (!phone || !name) return;
-      const result = ins.run(phone, name, r.note || null, r.visit_count || 0, r.last_visit_at || null, r.created_at || Date.now());
-      if (result.changes) inserted++;
+      if (!rawPhone || !name) return;
+      const phone = tz.normPhone(rawPhone) || rawPhone;
+      if (existingPhones.has(phone)) { skipped++; return; }
+      existingPhones.add(phone); // дублі всередині самого файлу теж не плодимо
+      ins.run(phone, name, r.note || null, r.visit_count || 0, r.last_visit_at || null, r.created_at || Date.now());
+      inserted++;
     });
-    return inserted;
+    return { inserted, skipped };
   });
-  const inserted = txn();
-  res.json({ ok: true, inserted, total: rows.length });
+  const result = txn();
+  res.json({ ok: true, inserted: result.inserted, skipped: result.skipped, total: rows.length });
 });
 
 /* ---- Користувачі (акаунти майстрів) ---- */
