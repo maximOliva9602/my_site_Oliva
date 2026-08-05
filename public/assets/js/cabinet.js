@@ -2453,6 +2453,9 @@
         '<input type="text" id="mClientQ" placeholder="Пошук за іменем або телефоном…" autocomplete="off">' +
         '<div id="mClientDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:220px;overflow-y:auto;margin-top:3px;"></div>' +
       '</div>' +
+      /* Швидкий блок без реального клієнта (як у Bookon) — майстер
+         бронює собі час без імені й телефону. */
+      '<button type="button" id="mGuestBtn" style="background:none;border:none;color:var(--olive-light);font-size:.8rem;padding:4px 0;cursor:pointer;text-align:left;">🚫 Без контактних даних (Гість)</button>' +
       '<div id="mClientChip" style="display:none;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;align-items:center;gap:10px;">' +
         '<div style="flex:1;min-width:0;">' +
           '<div id="mChipName" style="font-weight:600;font-size:.9rem;color:var(--cream);"></div>' +
@@ -2547,6 +2550,7 @@
 
     var chosen = { start_min: null, color_marker: null, subSessions: 0 };
     var selectedClient = null;
+    var isGuestBooking = false; // "Без контактних даних" — запис без реального клієнта
     var allServices = [];
     var appointmentMasters = [];
     var selectedServices = []; // [{id, name, duration_min, price}, ...]
@@ -2837,7 +2841,9 @@
     // ── Пошук клієнта ────────────────────────────────────────────────
     function showChip(c) {
       selectedClient = c;
+      isGuestBooking = false;
       $("mClientSearch").style.display = "none";
+      $("mGuestBtn").style.display = "none";
       $("mClientNew").style.display = "none";
       var chip = $("mClientChip");
       chip.style.display = "flex";
@@ -2848,7 +2854,9 @@
 
     function showNewForm(nameVal) {
       selectedClient = null;
+      isGuestBooking = false;
       $("mClientSearch").style.display = "none";
+      $("mGuestBtn").style.display = "none";
       $("mClientChip").style.display = "none";
       $("mClientNew").style.display = "block";
       if (nameVal) {
@@ -2862,15 +2870,32 @@
 
     function resetToSearch() {
       selectedClient = null;
+      isGuestBooking = false;
       $("mClientChip").style.display = "none";
       $("mClientNew").style.display = "none";
       $("mClientSearch").style.display = "block";
+      $("mGuestBtn").style.display = "block";
       $("mClientQ").value = "";
       $("mClientQ").focus();
       refreshSubSection();
     }
 
+    function selectGuest() {
+      selectedClient = null;
+      isGuestBooking = true;
+      $("mClientSearch").style.display = "none";
+      $("mGuestBtn").style.display = "none";
+      $("mClientNew").style.display = "none";
+      var chip = $("mClientChip");
+      chip.style.display = "flex";
+      $("mChipName").textContent = "Гість";
+      $("mChipPhone").textContent = "Без контактних даних";
+      // Абонемент прив'язаний до конкретного клієнта — гостю не пропонуємо.
+      var sub = $("mSubSection"); if (sub) sub.style.display = "none";
+    }
+
     $("mClientClear").addEventListener("click", resetToSearch);
+    $("mGuestBtn").addEventListener("click", selectGuest);
 
     /* Живa перевірка номера у формі нового клієнта: якщо він уже в базі,
        новий клієнт НЕ створиться — запис піде на наявну картку. Кажемо це
@@ -3112,7 +3137,9 @@
       var err = $("mErr"); err.textContent = "";
       if (chosen.start_min == null) { err.textContent = "Оберіть час"; return; }
       var name, phone;
-      if (selectedClient) {
+      if (isGuestBooking) {
+        name = "Гість"; phone = "";
+      } else if (selectedClient) {
         name = selectedClient.name; phone = selectedClient.phone;
       } else {
         var firstName = ($("mName") ? $("mName").value.trim() : "");
@@ -3128,6 +3155,7 @@
         service: $("mService").value, master: $("mMaster").value, date: $("mDate").value,
         start_min: chosen.start_min, name: name, phone: phone,
         client_id: selectedClient ? selectedClient.id : null,
+        guest: isGuestBooking || undefined,
         comment: $("mComment").value.trim(), color_marker: chosen.color_marker || null,
         extra_services: extras.length ? JSON.stringify(extras) : null
       }).then(function (res) {
@@ -3138,7 +3166,7 @@
         var clientId = res.j.appointment && res.j.appointment.client_id;
         var appointmentId = res.j.appointment && res.j.appointment.id;
         var subForm = $("mSubForm");
-        var subOpen = subForm && subForm.style.display !== "none";
+        var subOpen = !isGuestBooking && subForm && subForm.style.display !== "none";
 
         function done() { closeModal(); if (window.__reloadAppts) window.__reloadAppts(); }
 

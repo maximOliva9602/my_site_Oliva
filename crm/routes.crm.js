@@ -155,23 +155,38 @@ function recomputeClient(clientId) {
 }
 
 /* ---------- створення запису персоналом (owner або master) ---------- */
+/* Спільна картка-заглушка для записів "без контактних даних" (за
+   прикладом Bookon: майстер бронює собі час — під сервіс, ремонт,
+   особисту справу тощо — без реального клієнта). clients.phone
+   UNIQUE NOT NULL, тому не створюємо нову картку на кожен такий запис —
+   всі вони діляться однією "Гість". */
+function getOrCreateGuestClient() {
+  let c = db.prepare("SELECT id FROM clients WHERE phone='guest'").get();
+  if (!c) {
+    const info = db.prepare("INSERT INTO clients (phone,name,visit_count,created_at) VALUES ('guest','Гість',0,?)").run(Date.now());
+    c = { id: info.lastInsertRowid };
+  }
+  return c.id;
+}
+
 function createAppointment(d, session) {
   const serviceId = parseInt(d.service, 10);
   let masterId = parseInt(d.master, 10);
   const date = clean(d.date, 10);
   const startMin = parseInt(d.start_min, 10);
-  const name = clean(d.name, 100);
-  const phone = tz.normPhone(clean(d.phone, 30));
+  const isGuest = !!d.guest;
+  const name = isGuest ? "Гість" : clean(d.name, 100);
+  const phone = isGuest ? "" : tz.normPhone(clean(d.phone, 30));
   // Клієнт, обраний зі списку (пошук), може мати прихований телефон
   // (немає can_see_phones) — тоді d.phone порожній, але client_id є.
-  const clientId = parseInt(d.client_id, 10) || null;
+  const clientId = isGuest ? null : (parseInt(d.client_id, 10) || null);
   const comment = clean(d.comment, 500);
   const colorMarker = clean(d.color_marker, 20) || null;
 
   // майстер може створювати лише собі
   if (session.role !== "owner") masterId = session.masterId;
 
-  if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name || (!clientId && phone.length < 7)) {
+  if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name || (!isGuest && !clientId && phone.length < 7)) {
     return { status: 400, body: { ok: false, error: "missing fields" } };
   }
   const svc = db.prepare("SELECT name, duration_min, price FROM services WHERE id=? AND active=1").get(serviceId);
@@ -203,7 +218,8 @@ function createAppointment(d, session) {
   try {
     db.transaction(function () {
       let client = null;
-      if (clientId) client = db.prepare("SELECT id FROM clients WHERE id=?").get(clientId);
+      if (isGuest) client = { id: getOrCreateGuestClient() };
+      if (!client && clientId) client = db.prepare("SELECT id FROM clients WHERE id=?").get(clientId);
       if (!client && phone.length >= 7) {
         client = db.prepare("SELECT id FROM clients WHERE phone=?").get(phone);
         if (!client) {
