@@ -92,14 +92,14 @@ function freeSlots(masterId, date, durationMin, nowMs) {
   return computeSlots(workStart, workEnd, blocked, durationMin, earliest);
 }
 
-/* Майстри (активні), що надають послугу. */
+/* Майстри (активні), що надають послугу. show_on_site тут НЕ враховуємо —
+   він ховає майстра лише з лендінгу (команда на головній), а онлайн-запис
+   (у т.ч. "будь-який майстер") і далі має його пропонувати. */
 function mastersForService(serviceId) {
-  // show_on_site=0 — майстер прихований із сайту, тому не бере участі
-  // навіть у "будь-якому майстрі" публічного запису (лише CRM).
   return db.prepare(
     `SELECT m.id FROM masters m
        JOIN master_services ms ON ms.master_id = m.id
-      WHERE ms.service_id = ? AND m.active = 1 AND m.show_on_site = 1
+      WHERE ms.service_id = ? AND m.active = 1
       ORDER BY m.sort_order, m.id`
   ).all(serviceId).map(function (r) { return r.id; });
 }
