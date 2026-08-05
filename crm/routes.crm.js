@@ -95,6 +95,9 @@ function apptRow(id) {
 function viewAppt(a) {
   if (!a) return a;
   const out = Object.assign({}, a, { time: tz.fmtMin(a.start_min), end_time: tz.fmtMin(a.end_min) });
+  // "Новий клієнт" — ще жодного ЗАВЕРШЕНОГО візиту (visit_count рахує
+  // саме completed, див. recomputeClient) — для бейджа NEW у календарі.
+  if (a.client_visit_count != null) out.is_new_client = a.client_visit_count === 0;
   // Абонемент клієнта за цією послугою (для позначки «по абонементу» + лічильника в календарі)
   try {
     /* Завершений візит, для якого номер сеансу вже зафіксовано назавжди
@@ -405,7 +408,7 @@ router.get("/me/appointments", any, function (req, res) {
   const s = req.session;
   const from = clean(req.query.from, 10), to = clean(req.query.to, 10);
   const masterParam = clean(req.query.master, 20);
-  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, s.name service_name, m.name master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id WHERE 1=1";
+  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id WHERE 1=1";
   const args = [];
   // master=<id> — явний фільтр на конкретного майстра (доступно всім,
   // календар і так показує розклад усіх майстрів). master=all — явно
@@ -603,7 +606,7 @@ router.get("/appointments/month-counts", any, function (req, res) {
 router.get("/appointments", owner, function (req, res) {
   const date = clean(req.query.date, 10), from = clean(req.query.from, 10), to = clean(req.query.to, 10);
   const master = parseInt(req.query.master, 10);
-  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, s.name service_name, m.name master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id WHERE 1=1";
+  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id WHERE 1=1";
   const args = [];
   if (tz.isDate(date)) { sql += " AND a.date=?"; args.push(date); }
   if (tz.isDate(from)) { sql += " AND a.date>=?"; args.push(from); }
@@ -624,7 +627,7 @@ router.get("/schedule", any, function (req, res) {
   const date = clean(req.query.date, 10) || new Date().toISOString().slice(0, 10);
   const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.client_id, a.price, a.paid, a.color_marker, a.comment, " +
               "a.subscription_used, a.subscription_session_no, a.subscription_session_total, " +
-              "c.name client_name, c.phone client_phone, s.name service_name, m.name master_name, " +
+              "c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, " +
               "r.rating review_rating, r.comment review_comment " +
               "FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id " +
               "LEFT JOIN reviews r ON r.appointment_id=a.id " +

@@ -1561,6 +1561,7 @@
               html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:2px;margin-bottom:1px;">' +
                 '<span style="font-size:.64rem;font-weight:700;color:rgba(255,255,255,.95);white-space:nowrap;">' + timeStr + '</span>' +
                 '<span style="display:flex;gap:3px;align-items:center;flex-shrink:0;line-height:1;">' +
+                  (a.is_new_client ? '<span title="Новий клієнт — ще не було завершених візитів" style="font-size:.56rem;font-weight:800;color:#1a3d0f;background:#d9ff9f;border-radius:6px;padding:1px 4px;letter-spacing:.02em;">NEW</span>' : '') +
                   (a.status === "confirmed" ? '<span title="Підтверджено" style="font-size:.68rem;font-weight:800;color:#e5ffb9;">✓</span>' : '') +
                   (hasNote ? '<span style="font-size:.64rem;opacity:.85;">💬</span>' : '') +
                 '</span>' +
