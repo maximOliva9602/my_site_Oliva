@@ -3376,19 +3376,24 @@
 
           function masterRow(row) {
             var m = row.master;
+            // Редагувати може власник, або сам майстер — лише свій рядок і
+            // лише якщо власник надав право (can_edit_own_schedule).
+            var canEdit = ME.role === "owner" || (m.id === ME.masterId && !!m.can_edit_own_schedule);
             var schedMap = masterSchedMap[m.id] || {};
             var tr = document.createElement("tr");
             tr.style.cssText = "border-bottom:1px solid #e8ece4;";
             var tdAv = document.createElement("td");
-            tdAv.style.cssText = "padding:6px 4px;text-align:center;position:sticky;left:0;background:#fff;z-index:1;min-width:68px;cursor:pointer;";
+            tdAv.style.cssText = "padding:6px 4px;text-align:center;position:sticky;left:0;background:#fff;z-index:1;min-width:68px;" + (canEdit ? "cursor:pointer;" : "");
             var initials = (m.name||'?')[0].toUpperCase() + (m.last_name ? m.last_name[0].toUpperCase() : '');
             tdAv.innerHTML = (m.photo
               ? '<img src="' + m.photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1.5px solid #8aA462;" alt="">'
               : '<div style="width:32px;height:32px;border-radius:50%;background:#3d5430;color:#8aA462;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;margin:0 auto;">' + initials + '</div>') +
               '<div style="font-size:.62rem;color:#1a2016;font-weight:600;margin-top:2px;white-space:nowrap;">' + (m.name||'') + '</div>';
-            tdAv.addEventListener("click", (function(master) { return function() {
-              scheduleEditPage(master, todayStr(), "grafik");
-            }; })(m));
+            if (canEdit) {
+              tdAv.addEventListener("click", (function(master) { return function() {
+                scheduleEditPage(master, todayStr(), "grafik");
+              }; })(m));
+            }
             tr.appendChild(tdAv);
             days.forEach(function(day) {
               var ov = (overrideMap[m.id] || {})[day.dateStr];
@@ -3399,11 +3404,13 @@
                 s = schedMap[day.jsDay] || null;
               }
               var td = document.createElement("td");
-              td.style.cssText = "padding:3px;text-align:center;cursor:pointer;";
+              td.style.cssText = "padding:3px;text-align:center;" + (canEdit ? "cursor:pointer;" : "");
               td.innerHTML = schedCellHtml(s);
-              td.addEventListener("click", (function(master2, ds2) { return function() {
-                scheduleEditPage(master2, ds2, "grafik", "day");
-              }; })(m, day.dateStr));
+              if (canEdit) {
+                td.addEventListener("click", (function(master2, ds2) { return function() {
+                  scheduleEditPage(master2, ds2, "grafik", "day");
+                }; })(m, day.dateStr));
+              }
               tr.appendChild(td);
             });
             return tr;
@@ -5127,6 +5134,15 @@
           '<span id="mmSosThumb" style="position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none;"></span>' +
         '</label>' +
       '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #f0f2ee;">' +
+        '<div><div style="font-size:.88rem;font-weight:600;color:#1a2016;">Редагувати свій графік роботи</div>' +
+        '<div style="font-size:.75rem;color:#6a7a60;">Майстер зможе сам міняти графік, вихідні й перерви у вкладці «Графік роботи» — лише для себе</div></div>' +
+        '<label style="position:relative;display:inline-flex;width:44px;height:24px;flex-shrink:0;">' +
+          '<input type="checkbox" id="mmEditSchedule" style="opacity:0;width:0;height:0;position:absolute;" />' +
+          '<span id="mmEsTrack" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"></span>' +
+          '<span id="mmEsThumb" style="position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none;"></span>' +
+        '</label>' +
+      '</div>' +
       '<div class="err" id="mmErr"></div>' +
       '<div class="modal-foot"><button class="btn btn-ghost" id="mmCancel">Скасувати</button><button class="btn btn-primary" id="mmSave">Зберегти</button></div>'
     );
@@ -5139,6 +5155,8 @@
       $("mmPhone").value = m.phone || "";
       $("mmCanSeePhones").checked = !!m.can_see_phones;
       if (m.can_see_phones) { $("mmCspTrack").style.background = "#3d5430"; $("mmCspThumb").style.left = "23px"; }
+      $("mmEditSchedule").checked = !!m.can_edit_own_schedule;
+      if (m.can_edit_own_schedule) { $("mmEsTrack").style.background = "#3d5430"; $("mmEsThumb").style.left = "23px"; }
     }
     $("mmShowOnSite").checked = showOnSite;
     if (showOnSite) { $("mmSosTrack").style.background = "#3d5430"; $("mmSosThumb").style.left = "23px"; }
@@ -5149,6 +5167,10 @@
     $("mmShowOnSite").addEventListener("change", function() {
       $("mmSosTrack").style.background = this.checked ? "#3d5430" : "#ccc";
       $("mmSosThumb").style.left = this.checked ? "23px" : "3px";
+    });
+    $("mmEditSchedule").addEventListener("change", function() {
+      $("mmEsTrack").style.background = this.checked ? "#3d5430" : "#ccc";
+      $("mmEsThumb").style.left = this.checked ? "23px" : "3px";
     });
     // Ім'я для додатку саме підтягується за ім'ям, поки його не зміняли вручну.
     var displayTouched = false;
@@ -5167,7 +5189,8 @@
         level: $("mmLevel").value,
         phone: $("mmPhone").value.trim(),
         can_see_phones: $("mmCanSeePhones").checked ? 1 : 0,
-        show_on_site: $("mmShowOnSite").checked ? 1 : 0
+        show_on_site: $("mmShowOnSite").checked ? 1 : 0,
+        can_edit_own_schedule: $("mmEditSchedule").checked ? 1 : 0
       };
       var p = m ? api("PUT", "/api/crm/masters/" + m.id, body) : api("POST", "/api/crm/masters", body);
       p.then(function (res) {

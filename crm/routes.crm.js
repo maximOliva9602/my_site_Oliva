@@ -26,6 +26,16 @@ function canSeePhones(session) {
   const m = db.prepare("SELECT can_see_phones FROM masters WHERE id=?").get(session.masterId);
   return !!(m && m.can_see_phones);
 }
+/* Право редагувати графік роботи: власник — завжди; майстер — лише
+   СВІЙ графік (masterId у сесії = :id у роуті) і лише якщо власник
+   явно надав право у профілі майстра (can_edit_own_schedule). */
+function canEditSchedule(session, masterId) {
+  if (!session) return false;
+  if (session.role === "owner") return true;
+  if (session.masterId !== masterId) return false;
+  const m = db.prepare("SELECT can_edit_own_schedule FROM masters WHERE id=?").get(masterId);
+  return !!(m && m.can_edit_own_schedule);
+}
 function protectAppointmentPhone(a, sessionOrAccess) {
   if (!a) return a;
   const showFull = typeof sessionOrAccess === "boolean" ? sessionOrAccess : canSeePhones(sessionOrAccess);
@@ -668,7 +678,7 @@ router.put("/masters/:id", owner, function (req, res) {
   if (d.level !== undefined && MASTER_LEVELS.indexOf(clean(d.level, 50)) === -1) {
     return res.status(400).json({ ok: false, error: "bad master level" });
   }
-  db.prepare("UPDATE masters SET name=?, last_name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=?, can_see_phones=?, show_on_site=? WHERE id=?").run(
+  db.prepare("UPDATE masters SET name=?, last_name=?, phone=?, color=?, sort_order=?, photo=?, level=?, mono_link=?, can_see_phones=?, show_on_site=?, can_edit_own_schedule=? WHERE id=?").run(
     d.name           !== undefined ? clean(d.name, 100)      : m.name,
     d.last_name      !== undefined ? clean(d.last_name, 100) : m.last_name,
     d.phone          !== undefined ? clean(d.phone, 30)      : m.phone,
@@ -679,6 +689,7 @@ router.put("/masters/:id", owner, function (req, res) {
     d.mono_link      !== undefined ? clean(d.mono_link, 500) : m.mono_link,
     d.can_see_phones !== undefined ? (d.can_see_phones ? 1 : 0) : (m.can_see_phones || 0),
     d.show_on_site   !== undefined ? (d.show_on_site ? 1 : 0) : (m.show_on_site != null ? m.show_on_site : 1),
+    d.can_edit_own_schedule !== undefined ? (d.can_edit_own_schedule ? 1 : 0) : (m.can_edit_own_schedule || 0),
     id
   );
   // Посада визначає прайс — міняється рівень, перерахувати список послуг.
@@ -869,8 +880,9 @@ router.get("/masters/:id/day-override", any, function (req, res) {
   res.json({ ok: true, override: override || null, weekly: weekly || null });
 });
 
-router.put("/masters/:id/day-override", owner, function (req, res) {
+router.put("/masters/:id/day-override", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
+  if (!canEditSchedule(req.session, id)) return res.status(403).json({ ok: false, error: "forbidden" });
   const b = req.body || {};
   const date = b.date;
   if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
@@ -882,8 +894,9 @@ router.put("/masters/:id/day-override", owner, function (req, res) {
   res.json({ ok: true });
 });
 
-router.delete("/masters/:id/day-override", owner, function (req, res) {
+router.delete("/masters/:id/day-override", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
+  if (!canEditSchedule(req.session, id)) return res.status(403).json({ ok: false, error: "forbidden" });
   const date = req.query.date;
   if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
   db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=?").run(id, date);
@@ -902,8 +915,9 @@ router.get("/masters-overrides", any, function (req, res) {
 });
 
 /* bulk: POST {date_from,date_to,mode,weekdays[],work_start,work_end} */
-router.post("/masters/:id/schedule-period", owner, function (req, res) {
+router.post("/masters/:id/schedule-period", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
+  if (!canEditSchedule(req.session, id)) return res.status(403).json({ ok: false, error: "forbidden" });
   const b = req.body || {};
   const { date_from, date_to, mode } = b;
   const weekdays = Array.isArray(b.weekdays) ? b.weekdays.map(Number) : [];
@@ -939,8 +953,9 @@ router.post("/masters/:id/schedule-period", owner, function (req, res) {
   res.json({ ok: true });
 });
 
-router.put("/masters/:id/schedule", owner, function (req, res) {
+router.put("/masters/:id/schedule", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
+  if (!canEditSchedule(req.session, id)) return res.status(403).json({ ok: false, error: "forbidden" });
   const sched = (req.body && req.body.schedule) || []; // [{weekday,work_start,work_end}]
   const breaks = (req.body && req.body.breaks) || [];   // [{weekday,break_start,break_end}]
   const txn = db.transaction(function () {

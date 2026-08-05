@@ -314,6 +314,7 @@ try { db.exec("ALTER TABLE blog_posts ADD COLUMN service_key TEXT"); } catch(e) 
 try { db.exec("ALTER TABLE clients ADD COLUMN blacklisted INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN branch_id INTEGER REFERENCES branches(id)"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN can_see_phones INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE masters ADD COLUMN can_edit_own_schedule INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE masters ADD COLUMN experience_years INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 /* Відмова від масових розсилок. Нагадувань про запис не стосується —
    ті транзакційні й типово надсилаються всім. */
