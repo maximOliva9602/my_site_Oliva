@@ -101,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_timeoff_master ON master_time_off(master_id, date
 
 CREATE TABLE IF NOT EXISTS clients (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  phone         TEXT UNIQUE NOT NULL,
+  phone         TEXT UNIQUE,          -- NULL для записів без телефону (SQLite дозволяє кілька NULL в UNIQUE)
   name          TEXT NOT NULL,
   note          TEXT,
   visit_count   INTEGER NOT NULL DEFAULT 0,
@@ -1145,6 +1145,39 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
   var cnt = db.prepare("SELECT COUNT(*) n FROM services WHERE featured=1").get().n;
   console.log('[db] seedFeaturedServices: позначено ' + cnt + ' послуг як популярні.');
 })();
+
+/* clients.phone був TEXT UNIQUE NOT NULL — потрібно дозволити запис без
+   телефону (клієнт з іменем, але без номера). SQLite не вміє ALTER COLUMN
+   DROP NOT NULL, тому перебудовуємо таблицю разово, якщо стара схема ще
+   активна. FK вимкнено на час перебудови (PRAGMA не діє всередині
+   транзакції), бо appointments/subscriptions посилаються на clients(id). */
+try {
+  const phoneCol = db.prepare("PRAGMA table_info(clients)").all().find(function (c) { return c.name === "phone"; });
+  if (phoneCol && phoneCol.notnull) {
+    db.pragma("foreign_keys = OFF");
+    db.exec(`
+      CREATE TABLE clients_new (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        phone         TEXT UNIQUE,
+        name          TEXT NOT NULL,
+        note          TEXT,
+        visit_count   INTEGER NOT NULL DEFAULT 0,
+        last_visit_at INTEGER,
+        created_at    INTEGER NOT NULL,
+        blacklisted   INTEGER NOT NULL DEFAULT 0,
+        no_marketing  INTEGER NOT NULL DEFAULT 0,
+        no_reminders  INTEGER NOT NULL DEFAULT 0,
+        birthday      TEXT
+      );
+      INSERT INTO clients_new (id, phone, name, note, visit_count, last_visit_at, created_at, blacklisted, no_marketing, no_reminders, birthday)
+        SELECT id, phone, name, note, visit_count, last_visit_at, created_at, blacklisted, no_marketing, no_reminders, birthday FROM clients;
+      DROP TABLE clients;
+      ALTER TABLE clients_new RENAME TO clients;
+    `);
+    db.pragma("foreign_keys = ON");
+    console.log("[db] clients.phone: знято NOT NULL (перебудова таблиці)");
+  }
+} catch (e) { console.error("[db] migrate clients.phone nullable:", e.message); }
 
 /* ---------------- PWA Push підписки ---------------- */
 db.exec(`

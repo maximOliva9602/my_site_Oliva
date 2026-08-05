@@ -512,11 +512,11 @@
         { label: "Повторних",       val: cl.returning_total || 0 },
       ]);
       var topRows = (cl.top||[]).map(function(c,i) {
-        return ["#"+(i+1), c.name, c.phone, c.visit_count + " візитів"];
+        return ["#"+(i+1), c.name, c.phone || "—", c.visit_count + " візитів"];
       });
       var inactiveRows = (cl.inactive||[]).map(function(c) {
         var days = c.last_visit_at ? Math.round((Date.now()-c.last_visit_at)/86400000) : "?";
-        return [c.name, c.phone, days + " дн. тому"];
+        return [c.name, c.phone || "—", days + " дн. тому"];
       });
       var clCard = card("4. Клієнти", "");
       var clBox = clCard.querySelector("div:last-child");
@@ -2466,7 +2466,7 @@
       '<div id="mClientNew" style="display:none;">' +
         '<div class="grid2"><div><label>Ім\'я</label><input type="text" id="mName" placeholder="Олена" maxlength="60"/></div>' +
         '<div><label>Прізвище</label><input type="text" id="mSurname" placeholder="Коваленко" maxlength="60"/></div></div>' +
-        '<label style="margin-top:8px;display:block;">Телефон</label><input type="tel" id="mPhone" maxlength="30"/>' +
+        '<label style="margin-top:8px;display:block;">Телефон <span style="color:var(--text-dim);font-weight:400;">(необов\'язково)</span></label><input type="tel" id="mPhone" maxlength="30"/>' +
         /* Підказка «номер уже в базі»: без неї запис тихо чіпляється до
            старої картки, і здається, що новий клієнт не створився. */
         '<div id="mPhoneHint" style="display:none;font-size:.74rem;color:var(--warn);margin-top:5px;line-height:1.4;"></div>' +
@@ -3145,7 +3145,9 @@
         var firstName = ($("mName") ? $("mName").value.trim() : "");
         var lastName  = ($("mSurname") ? $("mSurname").value.trim() : "");
         phone = ($("mPhone") ? $("mPhone").value.trim() : "");
-        if (!firstName || phone.replace(/\D/g, "").length < 9) { err.textContent = "Вкажіть ім'я і телефон"; return; }
+        var phoneDigits = phone.replace(/\D/g, "");
+        if (!firstName) { err.textContent = "Вкажіть ім'я"; return; }
+        if (phoneDigits.length > 0 && phoneDigits.length < 9) { err.textContent = "Перевірте номер телефону"; return; }
         name = lastName ? firstName + " " + lastName : firstName;
       }
       if (!name) { err.textContent = "Оберіть або введіть клієнта"; return; }
@@ -3779,7 +3781,7 @@
           row.appendChild(ava);
           var info = el("div");
           info.appendChild(el("div", "t", c.name + (c.blacklisted ? " 🚫" : "")));
-          info.appendChild(el("div", "sub", c.phone + " · візитів: " + (c.visit_count || 0) +
+          info.appendChild(el("div", "sub", (c.phone || "без телефону") + " · візитів: " + (c.visit_count || 0) +
             (c.last_visit_at ? " · " + new Date(c.last_visit_at).toLocaleDateString("uk-UA") : "")));
           row.appendChild(info); row.appendChild(el("span", "sp"));
           row.appendChild(el("span", null, "›"));

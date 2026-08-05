@@ -186,7 +186,7 @@ function createAppointment(d, session) {
   // майстер може створювати лише собі
   if (session.role !== "owner") masterId = session.masterId;
 
-  if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name || (!isGuest && !clientId && phone.length < 7)) {
+  if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name) {
     return { status: 400, body: { ok: false, error: "missing fields" } };
   }
   const svc = db.prepare("SELECT name, duration_min, price FROM services WHERE id=? AND active=1").get(serviceId);
@@ -231,10 +231,9 @@ function createAppointment(d, session) {
         }
       }
       if (!client) {
-        if (phone.length < 7) {
-          const err = new Error("CLIENT_NOT_FOUND"); err.code = "CLIENT_NOT_FOUND"; throw err;
-        }
-        const info = db.prepare("INSERT INTO clients (phone,name,visit_count,created_at) VALUES (?,?,0,?)").run(phone, name, now);
+        // Без телефону (і без вибору картки зі списку) — заводимо нового
+        // клієнта лише з іменем; phone=NULL (дозволено, UNIQUE не заважає).
+        const info = db.prepare("INSERT INTO clients (phone,name,visit_count,created_at) VALUES (?,?,0,?)").run(phone.length ? phone : null, name, now);
         client = { id: info.lastInsertRowid };
       } else {
         db.prepare("UPDATE clients SET name=COALESCE(NULLIF(?,''),name) WHERE id=?").run(name, client.id);
@@ -1059,7 +1058,7 @@ router.patch("/clients/:id", any, function (req, res) {
   const canEditPhone = canSeePhones(req.session);
   db.prepare("UPDATE clients SET name=?, phone=?, note=?, blacklisted=?, birthday=? WHERE id=?").run(
     d.name        !== undefined ? clean(d.name,  100)  : c.name,
-    d.phone       !== undefined && canEditPhone ? clean(d.phone, 30) : c.phone,
+    d.phone       !== undefined && canEditPhone ? (clean(d.phone, 30) || null) : c.phone,
     d.note        !== undefined ? clean(d.note, 1000)  : c.note,
     d.blacklisted !== undefined ? (d.blacklisted ? 1 : 0) : (c.blacklisted || 0),
     /* День народження: 'YYYY-MM-DD' або порожньо (null) — для SMS-привітання */
