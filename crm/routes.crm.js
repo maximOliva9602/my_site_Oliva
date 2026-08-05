@@ -632,6 +632,62 @@ router.post("/appointments", owner, function (req, res) {
   res.status(r.status).json(r.body);
 });
 
+/* ---- Разовий масовий імпорт записів (напр. перенесення з іншої CRM) ----
+   На відміну від createAppointment: НЕ шле сповіщення власнику/майстрам
+   (Telegram+push) — при імпорті десятків історичних записів це був би
+   спам "Новий запис!" по кожному. SMS клієнту так само не йде, бо ми не
+   викликаємо setStatus() — просто пишемо status у базу напряму. */
+router.post("/appointments/bulk-import", owner, function (req, res) {
+  const items = Array.isArray(req.body && req.body.appointments) ? req.body.appointments : [];
+  if (!items.length) return res.status(400).json({ ok: false, error: "empty" });
+  const now = Date.now();
+  const results = [];
+  items.forEach(function (d, idx) {
+    try {
+      const serviceId = parseInt(d.service_id, 10);
+      const masterId = parseInt(d.master_id, 10);
+      const date = clean(d.date, 10);
+      const startMin = parseInt(d.start_min, 10);
+      const name = clean(d.name, 100);
+      const phone = tz.normPhone(clean(d.phone, 30));
+      const status = STATUSES.indexOf(d.status) !== -1 ? d.status : "pending";
+      const comment = clean(d.comment, 500);
+      if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name) {
+        results.push({ idx, ok: false, error: "missing fields" }); return;
+      }
+      const svc = db.prepare("SELECT duration_min, price FROM services WHERE id=? AND active=1").get(serviceId);
+      if (!svc) { results.push({ idx, ok: false, error: "service not found" }); return; }
+      const m = db.prepare("SELECT id, branch_id FROM masters WHERE id=? AND active=1").get(masterId);
+      if (!m) { results.push({ idx, ok: false, error: "master not found" }); return; }
+
+      let client = null;
+      if (phone.length >= 7) {
+        client = db.prepare("SELECT id FROM clients WHERE phone=?").get(phone);
+        if (!client) {
+          const hit = db.prepare("SELECT id, phone FROM clients").all()
+            .find(function (c) { return tz.normPhone(c.phone) === phone; });
+          if (hit) client = { id: hit.id };
+        }
+      }
+      if (!client) {
+        const info = db.prepare("INSERT INTO clients (phone,name,visit_count,created_at) VALUES (?,?,0,?)").run(phone.length ? phone : null, name, now);
+        client = { id: info.lastInsertRowid };
+      } else {
+        db.prepare("UPDATE clients SET name=COALESCE(NULLIF(?,''),name) WHERE id=?").run(name, client.id);
+      }
+      const publicId = crypto.randomBytes(8).toString("hex");
+      const info = db.prepare(
+        `INSERT INTO appointments (public_id,client_id,master_id,branch_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,created_at,updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'staff',?,?,?)`
+      ).run(publicId, client.id, masterId, m.branch_id || null, serviceId, date, startMin, startMin + svc.duration_min, svc.duration_min, svc.price, status, comment, now, now);
+      results.push({ idx, ok: true, id: info.lastInsertRowid, client_id: client.id });
+    } catch (e) {
+      results.push({ idx, ok: false, error: e.message });
+    }
+  });
+  res.json({ ok: true, results, created: results.filter(function (r) { return r.ok; }).length, total: items.length });
+});
+
 /* ---- Розклад (для майстрів — загальний вигляд) ---- */
 router.get("/schedule", any, function (req, res) {
   const date = clean(req.query.date, 10) || new Date().toISOString().slice(0, 10);
