@@ -742,7 +742,7 @@
           var totalSteps = ((CAL_HOUR_END - CAL_HOUR_START) * 60) / CAL_STEP;
           var fitH = Math.floor((scroller.clientHeight - CAL_HEADER_H) / totalSteps);
           calFitPrevH = calSlotH;
-          calSlotH = Math.max(4, Math.min(fitH, calFitPrevH));
+          calSlotH = Math.max(4, fitH);
           calFitBtn.textContent = "🔍 Звичайний розмір";
         }
         if (calBody) { calBody.style.transform = ""; calBody.style.transformOrigin = ""; }
