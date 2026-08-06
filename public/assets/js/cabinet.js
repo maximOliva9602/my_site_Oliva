@@ -45,6 +45,40 @@
   /* ---------- helpers ---------- */
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+  /* ---------- бейдж "непереглянуті" на вкладці "Події" ----------
+     Локально на пристрої (localStorage): позначка "коли востаннє
+     відкривали Події" — усе, що з'явилось (created_at) після неї,
+     рахується непереглянутим. Окремий ключ на власника й на кожного
+     майстра, щоб один спільний браузер (якщо таке буває) не плутав. */
+  function podiiSeenKey() {
+    return "oliva_podii_seen_" + (ME.role === "owner" ? "owner" : ("m" + ME.masterId));
+  }
+  function getPodiiSeenTs() {
+    return parseInt(localStorage.getItem(podiiSeenKey()), 10) || 0;
+  }
+  function setPodiiBadge(n) {
+    ["tabBadge-podii", "mobBadge-podii"].forEach(function (id) {
+      var b = $(id); if (!b) return;
+      if (n > 0) { b.textContent = n > 99 ? "99+" : String(n); b.style.display = "inline-flex"; }
+      else b.style.display = "none";
+    });
+  }
+  function markPodiiSeen() {
+    localStorage.setItem(podiiSeenKey(), String(Date.now()));
+    setPodiiBadge(0);
+  }
+  function refreshPodiiBadge() {
+    if (!ME.role) return;
+    var url = ME.role === "owner" ? "/api/crm/appointments?from=" + todayStr() : "/api/crm/me/appointments?from=" + todayStr();
+    var seenTs = getPodiiSeenTs();
+    api("GET", url).then(function (res) {
+      var n = (res.j.appointments || []).filter(function (a) {
+        return (a.status === "pending" || a.status === "confirmed") && (a.created_at || 0) > seenTs;
+      }).length;
+      setPodiiBadge(n);
+    });
+  }
   function money(kop) { return kop ? (kop / 100).toFixed(0) + " грн" : "—"; }
   // Знижка на абонемент залежно від к-ті сеансів: 5 → 5%, 10 → 10%, 15 → 13%.
   // Для проміжних значень береться найближчий нижній поріг.
@@ -279,17 +313,22 @@
     }
 
     /* Desktop вкладки */
+    var badgeHtml = '<span id="tabBadge-podii" style="display:none;margin-left:5px;background:#c0392b;color:#fff;font-size:.68rem;font-weight:700;border-radius:10px;padding:1px 6px;line-height:1.4;"></span>';
     TABS.forEach(function(t, i) {
-      var b = el("button", "tab" + (i === 0 ? " on" : ""), t.name);
+      var b = document.createElement("button");
+      b.className = "tab" + (i === 0 ? " on" : "");
+      b.innerHTML = t.name + (t.id === "podii" ? badgeHtml : "");
       b.addEventListener("click", function() { activateTab(i); });
       tabsEl.appendChild(b);
     });
 
     /* Мобільна нижня панель — перші BOTTOM_COUNT вкладок */
+    var mobBadgeHtml = '<span id="mobBadge-podii" style="display:none;position:absolute;top:2px;right:calc(50% - 22px);background:#c0392b;color:#fff;font-size:.62rem;font-weight:700;border-radius:9px;padding:1px 5px;line-height:1.4;"></span>';
     TABS.slice(0, BOTTOM_COUNT).forEach(function(t, i) {
       var b = document.createElement("button");
       b.className = "mob-tab" + (i === 0 ? " on" : "");
-      b.innerHTML = '<span class="mico">' + (TAB_ICOS[t.id] || "📋") + '</span><span>' + (TAB_SHORT[t.id] || t.name) + '</span>';
+      b.style.position = "relative";
+      b.innerHTML = '<span class="mico">' + (TAB_ICOS[t.id] || "📋") + '</span><span>' + (TAB_SHORT[t.id] || t.name) + '</span>' + (t.id === "podii" ? mobBadgeHtml : "");
       b.addEventListener("click", function() { activateTab(i); });
       mobNav.appendChild(b);
     });
@@ -337,10 +376,12 @@
     activateTab(rozkladIdx >= 0 ? rozkladIdx : 0);
     openAppointmentFromNotification();
     initPush();     // тост або тиха підписка
+    refreshPodiiBadge();
     // Авто-оновлення коли повертаємось у додаток (напр. із фону)
     document.addEventListener("visibilitychange", function() {
-      if (!document.hidden && window.__reloadAppts) {
-        try { window.__reloadAppts(); } catch(e) {}
+      if (!document.hidden) {
+        if (window.__reloadAppts) { try { window.__reloadAppts(); } catch(e) {} }
+        refreshPodiiBadge();
       }
     });
   }
@@ -580,6 +621,7 @@
   //    свої (через /me/appointments без явного master= — сервер сам
   //    підставляє session.masterId), власник — усіх, з фільтром.
   function renderEventsTab() {
+    markPodiiSeen();
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar");
     bar.appendChild(el("h2", null, "Події"));
