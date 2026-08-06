@@ -218,15 +218,13 @@
     $("roleTag").textContent = me.role === "owner" ? "Власник" : "Майстер";
 
     TABS = [];
-    if (me.role === "owner") {
-      TABS.push({ id: "dashboard", name: "📊 Дашборд", render: renderDashboard });
-    }
     TABS.push({ id: "podii",    name: "📌 Події",         render: renderEventsTab });
     TABS.push({ id: "zapysy",   name: "📋 Записи",        render: renderZapysyTab });
     TABS.push({ id: "rozklad",  name: "📅 Розклад",       render: renderRozkladTab });
     TABS.push({ id: "grafik",   name: "🗓 Графік роботи", render: renderScheduleTab });
     TABS.push({ id: "clients",  name: "Клієнти",          render: renderClients });
     if (me.role === "owner") {
+      TABS.push({ id: "dashboard", name: "📊 Дашборд",  render: renderDashboard });
       TABS.push({ id: "analytics", name: "📈 Аналітика", render: renderAnalytics });
       TABS.push({ id: "traffic",   name: "🌐 Трафік",   render: renderTraffic });
       TABS.push({ id: "reviews",   name: "⭐ Відгуки",  render: renderReviews });
