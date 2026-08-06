@@ -246,7 +246,10 @@
   }
 
   function boot(me) {
-    ME.role = me.role; ME.masterId = me.masterId; ME.can_see_phones = !!me.can_see_phones;
+    // Власник завжди бачить/редагує телефони, незалежно від того, що
+    // саме повернув сервер для can_see_phones (той прапорець призначений
+    // для майстрів; для owner-сесії довіряти лише йому — крихко).
+    ME.role = me.role; ME.masterId = me.masterId; ME.can_see_phones = me.role === "owner" || !!me.can_see_phones;
     $("login").style.display = "none";
     $("app").classList.add("on");
     $("roleTag").textContent = me.role === "owner" ? "Власник" : "Майстер";

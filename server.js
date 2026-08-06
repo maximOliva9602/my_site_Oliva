@@ -59,6 +59,15 @@ async function sendTelegram(text) {
 
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: false, limit: "15mb" }));
+/* API — завжди динамічний контент (сесія, права доступу, дані). Без
+   явного no-store браузер чи Cloudflare (тут "Cache Everything" на
+   весь домен) можуть кешувати відповідь і віддавати її наступному
+   користувачу/сесії — саме так власник міг раптом отримати застарілий
+   can_see_phones:false з чужої кешованої відповіді /api/admin/me. */
+app.use("/api", function (req, res, next) {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
 /* Старий домен ще може бути у закладках, Google або повідомленнях.
    Поки він підключений до сервісу, постійно переводимо весь трафік на
    новий домен зі збереженням шляху та параметрів. */
