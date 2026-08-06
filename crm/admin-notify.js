@@ -110,12 +110,18 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
   }
 }
 
+/* Повертає статистику доставки {total, sent, removed, failed}, щоб
+   "Надіслати тест" у CRM показував реальну картину, а не просто
+   кількість рядків у push_subscriptions (частина з яких може бути
+   давно мертвою — стара сесія, вимкнені сповіщення на телефоні тощо). */
 async function sendPushToAll(body, url, tag) {
-  if (!webpush) return;
+  const stats = { total: 0, sent: 0, removed: 0, failed: 0 };
+  if (!webpush) return stats;
   let subs;
   try {
     subs = db.prepare("SELECT * FROM push_subscriptions").all();
-  } catch (e) { return; }
+  } catch (e) { return stats; }
+  stats.total = subs.length;
 
   const payload = JSON.stringify({
     title: "Oliva CRM",
@@ -130,15 +136,19 @@ async function sendPushToAll(body, url, tag) {
     try {
       const subscription = JSON.parse(sub.subscription_json);
       await webpush.sendNotification(subscription, payload);
+      stats.sent++;
     } catch (e) {
       // 410 Gone — підписка прострочена, видаляємо
       if (e.statusCode === 410 || e.statusCode === 404) {
         try { db.prepare("DELETE FROM push_subscriptions WHERE id=?").run(sub.id); } catch (_) {}
+        stats.removed++;
       } else {
-        console.error("[admin-notify] push error:", e.message);
+        console.error("[admin-notify] push error:", e.statusCode, e.message);
+        stats.failed++;
       }
     }
   }
+  return stats;
 }
 
 module.exports = { notifyNewAppt, sendPushToAll, VAPID_PUBLIC };

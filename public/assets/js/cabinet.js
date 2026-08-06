@@ -6154,7 +6154,9 @@
       testBtn.disabled = true; testBtn.textContent = "Надсилаємо…";
       api("POST", "/api/push/test").then(function(r) {
         if (r.j.ok) {
-          pushStatus.textContent = "✅ Тест надіслано на " + r.j.count + " пристрій(ів) — перевір телефон";
+          pushStatus.textContent = "📊 Підписок у базі: " + r.j.count + " · доставлено: " + r.j.sent +
+            (r.j.removed ? " · видалено як неробочі: " + r.j.removed : "") +
+            (r.j.failed ? " · помилка доставки: " + r.j.failed : "");
         } else if (r.j.error === "no_subscriptions") {
           pushStatus.textContent = "❌ Немає підписок — спочатку натисни «Підписати цей пристрій»";
         } else {

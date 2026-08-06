@@ -190,7 +190,7 @@ app.post("/api/push/test", function (req, res) {
     return res.json({ ok: false, error: "no_subscriptions", count: 0 });
   }
   adminNotify.sendPushToAll("🔔 Тест сповіщення Oliva CRM — працює!")
-    .then(function() { res.json({ ok: true, count: subs.length }); })
+    .then(function(stats) { res.json({ ok: true, count: subs.length, sent: stats.sent, removed: stats.removed, failed: stats.failed }); })
     .catch(function(e) { res.status(500).json({ ok: false, error: e.message, count: subs.length }); });
 });
 
