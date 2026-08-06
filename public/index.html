@@ -908,10 +908,12 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="assets/js/chat.js"></script>
 
-<!-- ====== BOOKING DRAWER ====== -->
+<!-- ====== BOOKING DRAWER ======
+     Власної кнопки-хрестика немає навмисно: вона накладалась на кнопку
+     "назад" усередині booking.html (той самий верхній лівий кут). Закрити
+     й так можна — клік по затемненій області зліва (bookingOverlay) або Esc. -->
 <div id="bookingOverlay" class="booking-overlay" onclick="closeBookingDrawer()"></div>
 <div id="bookingDrawer" class="booking-drawer">
-  <button class="booking-drawer-close" onclick="closeBookingDrawer()" aria-label="Закрити">✕</button>
   <iframe id="bookingIframe" src="" title="Онлайн запис" loading="lazy" allow="payment"></iframe>
 </div>
 
@@ -945,25 +947,6 @@
 .booking-drawer.open {
   right: 0;
 }
-.booking-drawer-close {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: rgba(0,0,0,0.08);
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 1rem;
-  cursor: pointer;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  transition: background 0.2s;
-}
-.booking-drawer-close:hover { background: rgba(0,0,0,0.15); }
 .booking-drawer iframe {
   width: 100%;
   flex: 1;
@@ -1012,6 +995,10 @@
 
 <script>
 function openBookingDrawer(e) {
+  // На мобільному шторка з iframe тісна й незручна — просто переходимо на
+  // /booking.html як на звичайну сторінку (href уже на неї вказує, тож
+  // достатньо не викликати preventDefault і не чіпати drawer/iframe).
+  if (window.innerWidth <= 900) return;
   if (e) e.preventDefault();
   var iframe = document.getElementById('bookingIframe');
   if (!iframe.src || iframe.src === window.location.href || iframe.src === 'about:blank') {
