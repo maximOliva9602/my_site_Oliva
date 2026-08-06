@@ -221,6 +221,7 @@
     if (me.role === "owner") {
       TABS.push({ id: "dashboard", name: "📊 Дашборд", render: renderDashboard });
     }
+    TABS.push({ id: "podii",    name: "📌 Події",         render: renderEventsTab });
     TABS.push({ id: "zapysy",   name: "📋 Записи",        render: renderZapysyTab });
     TABS.push({ id: "rozklad",  name: "📅 Розклад",       render: renderRozkladTab });
     TABS.push({ id: "grafik",   name: "🗓 Графік роботи", render: renderScheduleTab });
@@ -237,8 +238,8 @@
       TABS.push({ id: "filiyi",    name: "🏢 Філії",    render: renderBranchesTab });
     }
     /* ── Іконки і короткі назви для мобільного nav ── */
-    var TAB_ICOS  = { dashboard:"📊", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", broadcast:"📣", filiyi:"🏢" };
-    var TAB_SHORT = { dashboard:"Дашборд", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії" };
+    var TAB_ICOS  = { dashboard:"📊", podii:"📌", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", broadcast:"📣", filiyi:"🏢" };
+    var TAB_SHORT = { dashboard:"Дашборд", podii:"Події", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії" };
     var BOTTOM_COUNT = Math.min(4, TABS.length);
     var hasDrawer    = TABS.length > BOTTOM_COUNT;
 
@@ -575,6 +576,86 @@
 
   var MONTH_UA = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
   var DOW_UA = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
+
+  // ── Вкладка "Події" — плоский список актуальних (pending/confirmed)
+  //    записів, без прив'язки до конкретного дня. Майстер бачить лише
+  //    свої (через /me/appointments без явного master= — сервер сам
+  //    підставляє session.masterId), власник — усіх, з фільтром.
+  function renderEventsTab() {
+    var main = $("main"); main.innerHTML = "";
+    var bar = el("div", "bar");
+    bar.appendChild(el("h2", null, "Події"));
+    main.appendChild(bar);
+
+    var filterWrap = el("div", "bar");
+    filterWrap.style.flexWrap = "nowrap";
+    var masterSel = null;
+    if (ME.role === "owner") {
+      masterSel = document.createElement("select");
+      masterSel.style.cssText = "flex:1;";
+      var optAll = document.createElement("option");
+      optAll.value = ""; optAll.textContent = "Усі майстри";
+      masterSel.appendChild(optAll);
+      api("GET", "/api/crm/masters").then(function (res) {
+        (res.j.masters || []).forEach(function (m) {
+          var o = document.createElement("option");
+          o.value = m.id; o.textContent = m.name;
+          masterSel.appendChild(o);
+        });
+      });
+      masterSel.addEventListener("change", load);
+      filterWrap.appendChild(masterSel);
+      main.appendChild(filterWrap);
+    }
+
+    var listEl = el("div", "list"); main.appendChild(listEl);
+    var M_UA = ["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"];
+
+    function load() {
+      listEl.innerHTML = '<div class="empty">Завантаження…</div>';
+      var url = ME.role === "owner"
+        ? "/api/crm/appointments?from=" + todayStr() + (masterSel && masterSel.value ? "&master=" + masterSel.value : "")
+        : "/api/crm/me/appointments?from=" + todayStr();
+      api("GET", url).then(function (res) {
+        var list = (res.j.appointments || []).filter(function (a) {
+          return a.status === "pending" || a.status === "confirmed";
+        }).sort(function (a, b) {
+          if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+          return a.start_min - b.start_min;
+        });
+        listEl.innerHTML = "";
+        if (!list.length) { listEl.appendChild(el("div", "empty", "Актуальних записів немає")); return; }
+        var curDate = null, today3 = todayStr();
+        list.forEach(function (a) {
+          if (a.date !== curDate) {
+            curDate = a.date;
+            var d = new Date(a.date + "T00:00:00");
+            var hdr = el("div", null, d.getDate() + " " + M_UA[d.getMonth()] + (a.date === today3 ? " · сьогодні" : ""));
+            hdr.style.cssText = "font-size:.72rem;font-weight:700;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px;";
+            listEl.appendChild(hdr);
+          }
+          var item = el("div", "item");
+          item.style.cursor = "pointer";
+          item.addEventListener("click", (function (appt) { return function () { window.apptDetailModal(appt); }; })(a));
+          var row = el("div", "row1");
+          row.style.cssText = "display:flex;align-items:center;gap:10px;";
+          var timeSpan = el("div", null, fmtMin(a.start_min));
+          timeSpan.style.cssText = "font-weight:700;color:var(--olive-light);min-width:44px;flex-shrink:0;";
+          row.appendChild(timeSpan);
+          var info = el("div");
+          info.appendChild(el("div", "t", a.client_name));
+          info.appendChild(el("div", "sub", a.service_name + (ME.role === "owner" ? " · " + a.master_name : "")));
+          row.appendChild(info); row.appendChild(el("span", "sp"));
+          row.appendChild(el("span", "badge b-" + a.status, STATUS_LABEL[a.status] || a.status));
+          item.appendChild(row);
+          listEl.appendChild(item);
+        });
+      });
+    }
+
+    window.__reloadAppts = load;
+    load();
+  }
 
   // ── Вкладка "Розклад" з перемикачем Записи / Календар ─────────
   function renderZapysyTab() {
