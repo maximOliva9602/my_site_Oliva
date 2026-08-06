@@ -691,7 +691,7 @@ router.post("/appointments/bulk-import", owner, function (req, res) {
 /* ---- Розклад (для майстрів — загальний вигляд) ---- */
 router.get("/schedule", any, function (req, res) {
   const date = clean(req.query.date, 10) || new Date().toISOString().slice(0, 10);
-  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.client_id, a.price, a.paid, a.color_marker, a.comment, " +
+  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.client_id, a.price, a.paid, a.color_marker, a.comment, a.extra_services, " +
               "a.subscription_used, a.subscription_session_no, a.subscription_session_total, " +
               "c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, " +
               "r.rating review_rating, r.comment review_comment " +
