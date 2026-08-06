@@ -180,7 +180,7 @@
       <span>/</span>
       <button type="button" data-lang="en">EN</button>
     </div>
-    <a href="https://bookon.ua/s/oliva_massage_studio" class="nav-cta" data-i18n="nav.book" onclick="openBookingDrawer(event)">Онлайн запис</a>
+    <a href="/booking.html" class="nav-cta" data-i18n="nav.book" onclick="openBookingDrawer(event)">Онлайн запис</a>
     <button class="burger" id="burger" aria-label="Меню"><span></span><span></span><span></span></button>
   </div>
 </nav>
@@ -206,7 +206,7 @@
       Місце, де ти можеш зупинитись, видихнути і відновити своє тіло. Працюємо з напругою глибоко — щоб ти відчув легкість вже після першого сеансу.
     </p>
     <div class="hero-btns">
-      <a href="https://bookon.ua/s/oliva_massage_studio" class="btn btn-primary btn-pulse" onclick="openBookingDrawer(event)"><span data-i18n="hero.cta1">Записатися онлайн</span> →</a>
+      <a href="/booking.html" class="btn btn-primary btn-pulse" onclick="openBookingDrawer(event)"><span data-i18n="hero.cta1">Записатися онлайн</span> →</a>
       <a href="#services" class="btn btn-outline" data-i18n="hero.cta2">Переглянути послуги</a>
       <a href="/certificate.html" class="btn btn-cert btn-pulse">🎁 Подарунковий сертифікат</a>
     </div>
@@ -728,7 +728,7 @@
 
 <!-- Sticky CTA (мобільне) -->
 <div class="sticky-cta">
-  <a href="https://bookon.ua/s/oliva_massage_studio" class="btn btn-primary" data-i18n="sticky.book" onclick="openBookingDrawer(event)">Записатися онлайн</a>
+  <a href="/booking.html" class="btn btn-primary" data-i18n="sticky.book" onclick="openBookingDrawer(event)">Записатися онлайн</a>
 </div>
 
 <script>
@@ -773,7 +773,7 @@
     var el = old.cloneNode(false);
     old.parentNode.replaceChild(el, old);
     el.innerHTML = groups.map(function(g){
-      return '<a class="srv-slide" href="https://bookon.ua/s/oliva_massage_studio" onclick="openBookingDrawer(event)">' +
+      return '<a class="srv-slide" href="/booking.html" onclick="openBookingDrawer(event)">' +
         '<img src="' + g.img + '" alt="' + g.name + ' Київ" loading="lazy">' +
         '<div class="srv-slide-overlay"></div>' +
         '<div class="srv-slide-content">' +
@@ -1015,7 +1015,7 @@ function openBookingDrawer(e) {
   if (e) e.preventDefault();
   var iframe = document.getElementById('bookingIframe');
   if (!iframe.src || iframe.src === window.location.href || iframe.src === 'about:blank') {
-    iframe.src = 'https://bookon.ua/s/oliva_massage_studio';
+    iframe.src = '/booking.html';
   }
   document.getElementById('bookingOverlay').classList.add('open');
   document.getElementById('bookingDrawer').classList.add('open');
@@ -1384,7 +1384,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
           '<span class="srv-multi-dur">' + fmtDur(v.duration_min) + '</span>' +
           '<div class="srv-multi-right">' +
             '<span class="srv-multi-price">' + fmtPrice(v.price) + '<span class="cur"> грн</span></span>' +
-            '<a href="https://bookon.ua/s/oliva_massage_studio" class="srv-card-btn" onclick="openBookingDrawer(event)">Записатися</a>' +
+            '<a href="/booking.html" class="srv-card-btn" onclick="openBookingDrawer(event)">Записатися</a>' +
           '</div>';
         rows.appendChild(row);
       });
@@ -1555,7 +1555,7 @@ function toggleRule(btn) {
 <script>
 /* ---- Динамічний блок майстрів ---- */
 (function () {
-  var BOOKING_URL = 'https://bookon.ua/s/oliva_massage_studio';
+  var BOOKING_URL = '/booking.html';
   var FALLBACK = [
     { name: 'Максим',  level: 'Топ Майстер', photo: 'assets/img/master-maksym.jpg' },
     { name: 'Людмила', level: 'Майстриня',   photo: 'assets/img/master-liudmyla.jpg' },
