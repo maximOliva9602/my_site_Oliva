@@ -35,7 +35,7 @@ function ddmm(d) { const p = d.split("-"); return p[2] + "." + p[1]; }
 async function notifyNewAppt(appointmentId, source) {
   try {
     const a = db.prepare(`
-      SELECT a.date, a.start_min, a.duration_min, a.comment, a.extra_services,
+      SELECT a.date, a.start_min, a.duration_min, a.comment, a.extra_services, a.master_id,
              c.name client_name, c.phone client_phone,
              s.name service_name,
              m.name master_name, b.name branch_name
@@ -83,11 +83,15 @@ async function notifyNewAppt(appointmentId, source) {
       (a.comment ? `\n💬 <b>Коментар:</b> ${a.comment}` : "");
 
     await sendTg(text);
+    // push без HTML тегів + пряме посилання на картку запису; лише
+    // власнику (бачить усе) і тому самому майстру, чий це запис —
+    // інші майстри більше не отримують чужі сповіщення.
     sendPushToAll(
       text.replace(/<[^>]+>/g, ""),
       `/cabinet?appointment=${appointmentId}`,
-      `new-appt-${appointmentId}`
-    ); // push без HTML тегів + пряме посилання на картку запису
+      `new-appt-${appointmentId}`,
+      a.master_id
+    );
   } catch (e) {
     console.error("[admin-notify] notifyNewAppt error:", e.message);
   }
@@ -114,12 +118,22 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
    "Надіслати тест" у CRM показував реальну картину, а не просто
    кількість рядків у push_subscriptions (частина з яких може бути
    давно мертвою — стара сесія, вимкнені сповіщення на телефоні тощо). */
-async function sendPushToAll(body, url, tag) {
+async function sendPushToAll(body, url, tag, masterId) {
   const stats = { total: 0, sent: 0, removed: 0, failed: 0 };
   if (!webpush) return stats;
   let subs;
   try {
-    subs = db.prepare("SELECT * FROM push_subscriptions").all();
+    if (masterId) {
+      // Власник (у т.ч. bootstrap-логін без users.id — user_id тоді NULL)
+      // бачить усе; майстер — лише сповіщення про СВІЙ запис.
+      subs = db.prepare(
+        `SELECT ps.* FROM push_subscriptions ps
+           LEFT JOIN users u ON u.id = ps.user_id
+          WHERE ps.user_id IS NULL OR u.role = 'owner' OR u.master_id = ?`
+      ).all(masterId);
+    } else {
+      subs = db.prepare("SELECT * FROM push_subscriptions").all();
+    }
   } catch (e) { return stats; }
   stats.total = subs.length;
 
