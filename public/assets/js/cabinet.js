@@ -740,7 +740,7 @@
           if (!scroller) return;
           var CAL_HOUR_START = 8, CAL_HOUR_END = 22, CAL_STEP = 10, CAL_HEADER_H = 48;
           var totalSteps = ((CAL_HOUR_END - CAL_HOUR_START) * 60) / CAL_STEP;
-          var fitH = Math.floor((scroller.clientHeight - CAL_HEADER_H) / totalSteps);
+          var fitH = (scroller.clientHeight - CAL_HEADER_H) / totalSteps;
           calFitPrevH = calSlotH;
           calSlotH = Math.max(4, fitH);
           calFitBtn.textContent = "🔍 Звичайний розмір";
