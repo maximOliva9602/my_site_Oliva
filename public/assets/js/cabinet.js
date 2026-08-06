@@ -1662,7 +1662,9 @@
             var pct = 100 / nLanes;
             var leftPct = aLane * pct;
 
-            var markerHex = a.color_marker || DEFAULT_MARKER;
+            // Завершений візит — завжди зелений, незалежно від маркера:
+            // так одразу видно, хто вже відпрацьований, серед іще майбутніх.
+            var markerHex = a.status === "completed" ? "#2f9e44" : (a.color_marker || DEFAULT_MARKER);
             var timeStr = fmtMin(a.start_min) + " – " + fmtMin(a.end_min || (a.start_min + a.duration_min));
             var svcName = (a.service_name||'').replace(/\s*\([^)]*\)\s*/g,'').trim();
             var hasNote = !!(a.comment && a.comment.trim());
