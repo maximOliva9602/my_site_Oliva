@@ -722,6 +722,34 @@
     newBtn.style.flexShrink = "0";
     newBtn.addEventListener("click", function () { apptModal(); });
 
+    // ── "Показати весь день" — стискає сітку так, щоб усі записи на
+    //    поточну дату влізли на екран без скролу (замість піпч-зуму,
+    //    якого на десктопі з мишкою просто немає). Повторний клік —
+    //    повернути звичайний масштаб. ──
+    var calFitBtn = null, calFitPrevH = null;
+    if (apptViewMode === "calendar") {
+      calFitBtn = el("button", "btn btn-ghost btn-sm", "🔍 Весь день");
+      calFitBtn.style.flexShrink = "0";
+      calFitBtn.addEventListener("click", function () {
+        if (calFitPrevH != null) {
+          // повернути як було
+          calSlotH = calFitPrevH; calFitPrevH = null;
+          calFitBtn.textContent = "🔍 Весь день";
+        } else {
+          var scroller = document.querySelector("#cal-overlay > div");
+          if (!scroller) return;
+          var CAL_HOUR_START = 8, CAL_HOUR_END = 22, CAL_STEP = 10, CAL_HEADER_H = 48;
+          var totalSteps = ((CAL_HOUR_END - CAL_HOUR_START) * 60) / CAL_STEP;
+          var fitH = Math.floor((scroller.clientHeight - CAL_HEADER_H) / totalSteps);
+          calFitPrevH = calSlotH;
+          calSlotH = Math.max(4, Math.min(fitH, calFitPrevH));
+          calFitBtn.textContent = "🔍 Звичайний розмір";
+        }
+        if (calBody) { calBody.style.transform = ""; calBody.style.transformOrigin = ""; }
+        loadCalendar(activeMasterFilter, { zoomOnly: true });
+      });
+    }
+
     // Перемикач Записи / Розклад (день)
     if (showToggle) {
       var toggleBar = document.createElement("div");
@@ -775,6 +803,7 @@
         mLbl.style.flexShrink = "0";
         masterFilterWrap.appendChild(mLbl);
         masterFilterWrap.appendChild(sel);
+        if (calFitBtn) masterFilterWrap.appendChild(calFitBtn);
         masterFilterWrap.appendChild(newBtn);
         reloadView();
       });
@@ -789,7 +818,8 @@
       mLbl2.style.flexShrink = "0";
       masterFilterWrap.appendChild(mLbl2);
       masterFilterWrap.appendChild(selM);
-      newBtn.style.marginLeft = "auto";
+      if (calFitBtn) { calFitBtn.style.marginLeft = "auto"; masterFilterWrap.appendChild(calFitBtn); }
+      else newBtn.style.marginLeft = "auto";
       masterFilterWrap.appendChild(newBtn);
       reloadView();
     }
