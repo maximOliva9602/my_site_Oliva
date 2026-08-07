@@ -199,9 +199,21 @@
       return;
     }
     if (Notification.permission === "denied") return;
-    // Показуємо тост один раз на сесію
-    if (sessionStorage.getItem("push_asked")) return;
+    /* Питаємо лише один раз на пристрій — назавжди. sessionStorage тут не
+       годиться: він живе до закриття вкладки, тож у PWA на телефоні банер
+       вилазив після кожного відкриття, навіть після «Пізніше».
+       Передумати можна у вкладці «Сповіщення» → «Підписати цей пристрій». */
+    if (pushAsked()) return;
     showPushToast();
+  }
+
+  /* Прапорець «вже питали» — localStorage переживає перезапуск застосунку.
+     try/catch: у приватному режимі запис може кинути виняток. */
+  function pushAsked() {
+    try { return !!localStorage.getItem("push_asked"); } catch (e) { return false; }
+  }
+  function markPushAsked() {
+    try { localStorage.setItem("push_asked", "1"); } catch (e) { /* приватний режим */ }
   }
 
   function showPushToast() {
@@ -218,12 +230,12 @@
     document.getElementById("pt-allow").addEventListener("click", function() {
       // Виклик тут — це жест користувача, iOS дозволяє requestPermission()
       Notification.requestPermission().then(function(p) {
-        t.remove(); sessionStorage.setItem("push_asked", "1");
+        t.remove(); markPushAsked();
         if (p === "granted") subscribePush();
-      }).catch(function() { t.remove(); });
+      }).catch(function() { t.remove(); markPushAsked(); });
     });
     document.getElementById("pt-later").addEventListener("click", function() {
-      t.remove(); sessionStorage.setItem("push_asked", "1");
+      t.remove(); markPushAsked();
     });
   }
 
