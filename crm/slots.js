@@ -10,7 +10,7 @@
 const db = require("./db");
 const tz = require("./tz");
 
-const STEP = 15;                                  // крок стартів, хв
+const STEP = parseInt(process.env.SLOT_STEP || "5", 10); // крок стартів, хв
 const LEAD_MIN   = parseInt(process.env.LEAD_MIN   || "30", 10); // мін. запас від «зараз», хв
 const BUFFER_MIN = parseInt(process.env.BUFFER_MIN || "10", 10); // буфер між записами, хв
 
