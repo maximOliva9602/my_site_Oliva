@@ -105,9 +105,24 @@ function apptRow(id) {
 function viewAppt(a) {
   if (!a) return a;
   const out = Object.assign({}, a, { time: tz.fmtMin(a.start_min), end_time: tz.fmtMin(a.end_min) });
-  // "Новий клієнт" — ще жодного ЗАВЕРШЕНОГО візиту (visit_count рахує
-  // саме completed, див. recomputeClient) — для бейджа NEW у календарі.
-  if (a.client_visit_count != null) out.is_new_client = a.client_visit_count === 0;
+  // "Новий клієнт" — бейдж NEW у календарі. Мало жодного ЗАВЕРШЕНОГО візиту
+  // (visit_count рахує саме completed, див. recomputeClient) — цього замало:
+  // клієнт може записатися вдруге ще до того, як перший візит позначили
+  // «виконано». Тому NEW лишається тільки на найпершому записі клієнта.
+  if (a.client_visit_count != null) {
+    let isNew = a.client_visit_count === 0;
+    if (isNew) {
+      try {
+        const prior = db.prepare(
+          `SELECT COUNT(*) c FROM appointments
+            WHERE client_id = ? AND id <> ? AND status <> 'cancelled'
+              AND (date < ? OR (date = ? AND start_min < ?))`
+        ).get(a.client_id, a.id, a.date, a.date, a.start_min).c;
+        isNew = prior === 0;
+      } catch (e) { /* не критично — лишаємо як є */ }
+    }
+    out.is_new_client = isNew;
+  }
   // Абонемент клієнта за цією послугою (для позначки «по абонементу» + лічильника в календарі)
   try {
     /* Завершений візит, для якого номер сеансу вже зафіксовано назавжди
