@@ -13,6 +13,9 @@ const adminNotify = require("./admin-notify");
 const router = express.Router();
 const SECRET = process.env.TURBOSMS_WEBHOOK_SECRET || "";
 const TG_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
+if (!TG_WEBHOOK_SECRET) {
+  console.warn("[webhook] TELEGRAM_WEBHOOK_SECRET не задано — /api/webhooks/telegram приймає запити без перевірки підпису.");
+}
 
 router.post("/turbosms", function (req, res) {
   if (SECRET) {

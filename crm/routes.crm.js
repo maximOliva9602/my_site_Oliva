@@ -1204,7 +1204,11 @@ router.post("/clients/import", owner, function (req, res) {
 
 /* ---- Telegram-сповіщення майстру ----
    Майстер керує лише своєю прив'язкою, власник — будь-чиєю (щоб міг
-   підключити майстра, який сам не впорався). */
+   підключити майстра, який сам не впорався).
+   Юзернейм бота — не секрет (він і так видимий у посиланні t.me/…), тому
+   тримаємо робоче значення тут: інакше фіча мовчки не працює, доки хтось
+   не додасть змінну на Railway. Змінною можна перевизначити. */
+const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || "oliva_massage_bot";
 function tgTargetMaster(req) {
   if (req.session.role === "owner") {
     const id = parseInt(req.query.master || req.body.master, 10);
@@ -1223,14 +1227,14 @@ router.get("/telegram/status", any, function (req, res) {
     master: m.name,
     linked: !!m.tg_chat_id,
     linked_at: m.tg_linked_at || null,
-    bot: process.env.TELEGRAM_BOT_USERNAME || "",
+    bot: TG_BOT_USERNAME,
   });
 });
 
 router.post("/telegram/link-code", any, function (req, res) {
   const id = tgTargetMaster(req);
   if (!id) return res.status(400).json({ ok: false, error: "no_master" });
-  const bot = process.env.TELEGRAM_BOT_USERNAME || "";
+  const bot = TG_BOT_USERNAME;
   if (!bot) return res.status(503).json({ ok: false, error: "bot_not_configured" });
   /* Код одноразовий і живе 15 хв — його видно на екрані й у посиланні,
      тож він не має лишатись дійсним назавжди. */
