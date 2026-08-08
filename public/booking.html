@@ -386,6 +386,18 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .addextra-ico svg { width: 26px; height: 26px; }
 .addextra-t { color: #F2EDE4; font-size: .92rem; font-weight: 500; }
 .addextra-d { color: rgba(212,207,198,0.55); font-size: .8rem; }
+/* Дозапис послуги на екрані підтвердження */
+.addsvc-list { margin: 8px 16px 0; display: flex; flex-direction: column; gap: 8px; }
+.addsvc-item { display: flex; align-items: center; gap: 12px; background: rgba(20,15,10,0.45); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+.addsvc-item.on { border-color: var(--gold); background: rgba(197,163,94,0.12); }
+.addsvc-item.off { opacity: .4; cursor: not-allowed; }
+.addsvc-name { color: #F2EDE4; font-size: .88rem; }
+.addsvc-meta { color: rgba(212,207,198,0.55); font-size: .78rem; margin-top: 2px; }
+.addsvc-box { width: 22px; height: 22px; flex-shrink: 0; border-radius: 6px; border: 1.5px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--black); }
+.addsvc-item.on .addsvc-box { background: var(--gold); border-color: var(--gold); }
+.addsvc-box svg { width: 14px; height: 14px; display: none; }
+.addsvc-item.on .addsvc-box svg { display: block; }
+.addsvc-empty { color: rgba(212,207,198,0.55); font-size: .82rem; padding: 4px 2px; }
 /* Крок 4b — додаткові послуги (add-on'и) */
 .addon-reco { display: flex; align-items: center; gap: 8px; padding: 6px 16px 2px; color: var(--gold); font-size: .95rem; font-weight: 600; }
 .addon-reco svg { width: 18px; height: 18px; }
@@ -565,6 +577,15 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <label class="fld">Телефон</label>
       <input type="tel" id="phoneInput" placeholder="+380667894576" maxlength="16" inputmode="tel" />
     </div>
+
+    <!-- Дозапис послуги прямо тут: раніше, щоб додати забуте, треба було
+         вертатись на початок і обирати все наново. -->
+    <div class="addextra" id="addSvcRow">
+      <span class="addextra-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>
+      <div style="flex:1;"><div class="addextra-t">Додати послугу</div><div class="addextra-d" id="addSvcHint">Забули щось? Додайте без повернення на початок</div></div>
+      <span class="mst-arrow" id="addSvcCaret">&#8250;</span>
+    </div>
+    <div class="addsvc-list hide" id="addSvcList"></div>
 
     <div class="addextra" id="addExtraRow">
       <span class="addextra-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>
@@ -1370,7 +1391,13 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   }
 
   var addonContinueBtn = $("addonContinue");
-  if (addonContinueBtn) addonContinueBtn.addEventListener("click", function() { renderSummary(); goStep(6); }); // додаткові → підтвердження
+  if (addonContinueBtn) addonContinueBtn.addEventListener("click", function() {
+    renderSummary();
+    // список дозапису — завжди згорнутий при вході на екран підтвердження
+    var asl = $("addSvcList"); if (asl) asl.classList.add("hide");
+    var asc = $("addSvcCaret"); if (asc) asc.innerHTML = "&#8250;";
+    goStep(6);
+  }); // додаткові → підтвердження
 
   // Крок 5: Дата (стрічка днів) + слоти
   var DOW_STRIP = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
@@ -1488,6 +1515,49 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         row(RICO.cost, "Вартість", money(totPrice)) +
       '</div>';
   }
+
+  /* «Додати послугу» на екрані підтвердження — той самий набір add-on'ів,
+     що й на кроці 4b, але без повернення на початок. Ті самі обмеження за
+     вільним часом майстра; підсумок і ціна оновлюються одразу. */
+  function renderAddSvcList() {
+    var box = $("addSvcList"); if (!box) return;
+    box.innerHTML = "";
+    var any = false;
+    ADDONS.forEach(function(a) {
+      if (addonVarIdx[a.key] == null) addonVarIdx[a.key] = 0;
+      var on = isAddonOn(a.key);
+      var v = a.variants[addonVarIdx[a.key]] || a.variants[0];
+      var fits = a.variants.some(function(vv){ return addonFits(a, vv.min); });
+      var disabled = !on && !fits;
+      if (!disabled) any = true;
+      var it = document.createElement("div");
+      it.className = "addsvc-item" + (on ? " on" : "") + (disabled ? " off" : "");
+      it.innerHTML =
+        '<span class="addsvc-box">' + ADDON_CHECK + '</span>' +
+        '<div style="flex:1;"><div class="addsvc-name">' + a.name + '</div>' +
+        '<div class="addsvc-meta">' + (v.min ? v.min + " хв · " : "") + "+" + money(v.price) +
+        (disabled ? " · не вміщується у вільний час" : "") + '</div></div>';
+      if (!disabled) {
+        it.addEventListener("click", function() {
+          setAddon(a, !isAddonOn(a.key));
+          renderAddSvcList();   // перерахувати, що ще вміщується
+          renderSummary();      // оновити тривалість і вартість зверху
+        });
+      }
+      box.appendChild(it);
+    });
+    if (!any && !state.extras.length) {
+      box.innerHTML = '<div class="addsvc-empty">Після цього сеансу у майстра немає вільного часу для додаткових послуг.</div>';
+    }
+  }
+
+  $("addSvcRow").addEventListener("click", function() {
+    var box = $("addSvcList");
+    var opening = box.classList.contains("hide");
+    if (opening) renderAddSvcList();
+    box.classList.toggle("hide", !opening);
+    $("addSvcCaret").innerHTML = opening ? "&#8249;" : "&#8250;";
+  });
 
   // «Додати побажання» — розкриває коментар
   $("addExtraRow").addEventListener("click", function() {
