@@ -294,6 +294,19 @@ section { padding: 100px 0; }
 .srv-card:hover::before { transform: scaleY(1); }
 .srv-card-info { flex: 1; }
 .srv-card-name { font-size: 0.82rem; color: var(--cream); font-weight: 500; margin-bottom: 4px; line-height: 1.4; }
+/* Назва послуги — зелена смуга на всю ширину картки, білий текст.
+   Раніше назва лежала просто поверх фонового фото й місцями губилась.
+   Колір трохи світліший за --olive (#2E3D22), яким залито активну кнопку
+   «Майстер». Від'ємні поля = падінги .srv-card (16px 18px), тож смуга
+   доходить до країв; overflow:hidden на картці її акуратно обрізає. */
+.srv-card--multi .srv-card-name {
+  background: #3F5630;
+  color: #fff;
+  font-weight: 600;
+  margin: -16px -18px 10px;
+  padding: 11px 18px;
+  border-bottom: 1px solid rgba(122,145,86,0.35);
+}
 .srv-card-dur { font-size: 0.78rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
 .srv-card-dur::before { content: '⏱'; font-size: 0.7rem; }
 .srv-card-right { text-align: right; flex-shrink: 0; }
