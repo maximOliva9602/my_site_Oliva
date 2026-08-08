@@ -278,7 +278,6 @@
         <button class="srv-tab" data-tab="spa2" data-i18n="srv.tab.spa2">SPA для двох</button>
         <button class="srv-tab" data-tab="spa1" data-i18n="srv.tab.spa1">SPA для одного</button>
         <button class="srv-tab" data-tab="body" data-i18n="srv.tab.body">Корекція фігури</button>
-        <button class="srv-tab" data-tab="complex" data-i18n="srv.tab.complex">Комплекси</button>
         <button class="srv-tab" data-tab="extra" data-i18n="srv.tab.extra">Додаткові послуги</button>
       </div>
 
@@ -308,13 +307,6 @@
     </div>
 
     <div class="srv-panel" id="tab-body">
-      <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
-    </div>
-
-    <!-- Комплекси — окрема вкладка сайту (в онлайн-записі вони входять у
-         «SPA для одного»), тому на сайті їх звідти виключаємо, щоб та сама
-         послуга не з'являлась у двох розділах одночасно. -->
-    <div class="srv-panel" id="tab-complex">
       <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
     </div>
 
@@ -919,7 +911,7 @@
     .catch(function(){});
 })();
 </script>
-<script src="assets/js/service-groups.js?v=1"></script>
+<script src="assets/js/service-groups.js?v=2"></script>
 <script src="assets/js/i18n.js?v=6"></script>
 <script src="assets/js/script.js?v=6"></script>
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
@@ -1538,13 +1530,11 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
     }
 
     /* Розкладаємо послуги по вкладках тими самими правилами, що й
-       онлайн-запис (spa2/spa1 тощо) — див. assets/js/service-groups.js.
-       «Комплекси» — окрема вкладка сайту: беремо їх за категорією з CRM і
-       прибираємо з інших розділів, щоб послуга не дублювалась. */
+       онлайн-запис — див. assets/js/service-groups.js. Обгортання й
+       моделювання тіла («Комплекси» в CRM) віднесено до «Корекції фігури»,
+       тож окремої вкладки для них більше немає. */
     var SG = window.OlivaServiceGroups;
-    function isComplex(s) { return (s.category || '').trim() === 'Комплекси'; }
     function tabOf(s) {
-      if (isComplex(s)) return 'tab-complex';
       return 'tab-' + SG.resolveGroup(s, SG.parseName(s.name).cat);
     }
 
@@ -1560,7 +1550,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
         buildTierPool(all);
 
         function renderAll() {
-          ['tab-general','tab-spa2','tab-spa1','tab-body','tab-complex','tab-extra'].forEach(function(tid) {
+          ['tab-general','tab-spa2','tab-spa1','tab-body','tab-extra'].forEach(function(tid) {
             renderTab(tid, all.filter(function(s) { return tabOf(s) === tid; }));
           });
         }
