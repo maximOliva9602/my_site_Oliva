@@ -73,19 +73,20 @@ body::before {
 /* ── GROUP LIST ─────────────────────────────────────── */
 .grp-list { display: flex; flex-direction: column; gap: 9px; padding: 0 16px; }
 
+/* Бежеві картки на темному тлі — за макетом замовника. */
 .grp-card {
   display: flex; align-items: center; gap: 14px;
   width: 100%; text-align: left;
-  background: rgba(18,12,7,0.72);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(217,185,120,0.20);
+  background: #EDE6D8;
+  border: 1px solid rgba(120,95,60,0.16);
   border-radius: 16px; padding: 12px 16px;
   cursor: pointer; color: inherit; font-family: inherit;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.28);
   transition: transform .15s, border-color .2s, background .2s;
 }
 .grp-card:active { transform: scale(.99); }
 @media (hover: hover) {
-  .grp-card:hover { border-color: rgba(217,185,120,0.42); background: rgba(34,22,12,0.82); transform: translateY(-1px); }
+  .grp-card:hover { background: #F5F0E6; border-color: rgba(120,95,60,0.34); transform: translateY(-1px); }
 }
 
 .grp-ico {
@@ -95,17 +96,19 @@ body::before {
 }
 .grp-ico svg { width: 26px; height: 26px; }
 
-/* Per-category icon color */
-.grp-1 .grp-ico { border-color: #D9B978; color: #D9B978; }
-.grp-2 .grp-ico { border-color: #E8A0B4; color: #E8A0B4; }
-.grp-3 .grp-ico { border-color: #7ECFBD; color: #7ECFBD; }
-.grp-4 .grp-ico { border-color: #E0B84A; color: #E0B84A; }
-.grp-5 .grp-ico { border-color: #B0A0D8; color: #B0A0D8; }
+/* Колір іконки за категорією. Пастельні відтінки, розраховані на темне
+   тло, на бежевому майже не читались — узяті глибші варіанти тих самих
+   кольорів, щоб категорії лишились упізнаваними. */
+.grp-1 .grp-ico { border-color: #A67C2E; color: #A67C2E; }
+.grp-2 .grp-ico { border-color: #B5637C; color: #B5637C; }
+.grp-3 .grp-ico { border-color: #3E8B79; color: #3E8B79; }
+.grp-4 .grp-ico { border-color: #9C7A1E; color: #9C7A1E; }
+.grp-5 .grp-ico { border-color: #6F5FA0; color: #6F5FA0; }
 
 .grp-body { flex: 1; min-width: 0; }
-.grp-title { font-family: 'Playfair Display', serif; color: #fff; font-size: 1.02rem; font-weight: 600; margin-bottom: 3px; }
-.grp-sub { font-size: .75rem; color: var(--text-dim); line-height: 1.42; }
-.grp-arrow { flex-shrink: 0; color: var(--gold); font-size: 1.4rem; opacity: .75; line-height: 1; }
+.grp-title { font-family: 'Playfair Display', serif; color: #2A1F14; font-size: 1.02rem; font-weight: 600; margin-bottom: 3px; }
+.grp-sub { font-size: .75rem; color: #6E5D49; line-height: 1.42; }
+.grp-arrow { flex-shrink: 0; color: #8A6E4B; font-size: 1.4rem; opacity: .85; line-height: 1; }
 
 /* На ПК .wrap лишається мобільною колонкою 480px, і картки вибору послуги
    виглядають загубленими посеред екрана. Розширюємо саме крок 1 за межі
