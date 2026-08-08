@@ -275,6 +275,17 @@
       </div>
     </div>
 
+    <!-- Рівень майстра: одна картка послуги замість двох (Майстер / Топ
+         Майстер) — ціни перемикаються тут. Ховається на вкладках, де це
+         не має сенсу (готові прайси, SPA-ритуали без поділу за рівнем). -->
+    <div class="srv-tier reveal" id="srvTier">
+      <span class="srv-tier-label" data-i18n="srv.tier.label">Рівень майстра:</span>
+      <div class="srv-tier-switch">
+        <button class="srv-tier-btn active" data-tier="master" data-i18n="srv.tier.master">Майстер</button>
+        <button class="srv-tier-btn" data-tier="top" data-i18n="srv.tier.top">Топ Майстер</button>
+      </div>
+    </div>
+
     <!-- Топ послуги -->
     <div class="srv-panel active" id="tab-top">
       <div class="services-grid">
@@ -1319,6 +1330,18 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
     function baseName(name) {
       return name.replace(/\s+\d+\s+хв\s*$/i, '').trim();
     }
+    /* Рівень майстра з назви послуги: 'top' | 'master' | null (без поділу). */
+    function tierOf(name) {
+      if (/\(\s*Топ\s+Майстер\s*\)/i.test(name)) return 'top';
+      if (/\(\s*Майстер\s*\)/i.test(name)) return 'master';
+      return null;
+    }
+    /* Назва без суфікса рівня — щоб «… (Майстер)» і «… (Топ Майстер)»
+       склеювались в ОДНУ картку, а рівень обирався перемикачем. */
+    function stripTier(name) {
+      return name.replace(/\s*\(\s*(?:Топ\s+)?Майстер\s*\)\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+    }
+    var curTier = 'master';   // за замовчуванням показуємо нижчу ціну
     /* Статті-описи послуг: мапа «назва послуги → slug статті» (заповнюється з /api/service-articles) */
     var svcArticles = {};
     function svcCleanKey(name) {
@@ -1414,6 +1437,21 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       return card;
     }
 
+    /* Готові прайси вже поділені за рівнем — там перемикач лише заплутав би,
+       тож на цих вкладках групуємо по-старому, з суфіксом у назві. */
+    var TIER_FIXED_TABS = { 'tab-master': 1, 'tab-topmaster': 1 };
+
+    /* Назва без рівня → усі її варіанти з обох прайсів. Заповнюється один
+       раз після завантаження, використовується для перемикача рівня. */
+    var tierPool = {};
+    function buildTierPool(all) {
+      tierPool = {};
+      all.forEach(function(s) {
+        var bn = stripTier(baseName(s.name));
+        (tierPool[bn] || (tierPool[bn] = [])).push(s);
+      });
+    }
+
     function renderTab(tabId, services) {
       var panel = document.getElementById(tabId);
       if (!panel) return;
@@ -1427,15 +1465,32 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
         grid.appendChild(msg);
         return;
       }
+      var mergeTiers = !TIER_FIXED_TABS[tabId];
       var groups = {};
       var order = [];
       services.forEach(function(s) {
         var bn = baseName(s.name);
+        if (mergeTiers) bn = stripTier(bn);
         if (!groups[bn]) { groups[bn] = { variants: [], desc: null, img: null }; order.push(bn); }
         groups[bn].variants.push(s);
         if (s.description && !groups[bn].desc) groups[bn].desc = s.description;
         if (s.image_url && !groups[bn].img) groups[bn].img = s.image_url;
       });
+      if (mergeTiers) {
+        /* Варіанти беремо з ПОВНОГО прайсу за тією ж назвою, а не лише з
+           переданого списку: «Популярними» позначені майже самі варіанти
+           Топ Майстра, тож інакше при виборі «Майстер» показувались би
+           ціни Топ Майстра під чужою назвою.
+           Якщо послуга взагалі не ділиться за рівнем (парний масаж, SPA) —
+           показуємо як є, щоб вона не зникала при перемиканні. */
+        order.forEach(function(bn) {
+          var pool = tierPool[bn] || groups[bn].variants;
+          var ofTier = pool.filter(function(s) { return tierOf(s.name) === curTier; });
+          var noTier = pool.filter(function(s) { return tierOf(s.name) === null; });
+          var picked = ofTier.length ? ofTier : noTier;
+          groups[bn].variants = picked.length ? picked : groups[bn].variants;
+        });
+      }
       order.forEach(function(bn) {
         var g = groups[bn];
         g.variants.sort(function(a, b) { return a.duration_min - b.duration_min; });
@@ -1460,10 +1515,56 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
         if (rs[1] && rs[1].ok && rs[1].map) svcArticles = rs[1].map; // мапа статей — ДО рендеру карток
         if (!data.ok) return;
         var all = data.services;
-        renderTab('tab-top', all.filter(function(s) { return s.featured; }));
-        Object.keys(TAB_CAT).forEach(function(tid) {
-          renderTab(tid, all.filter(function(s) { return s.category === TAB_CAT[tid]; }));
-        });
+        buildTierPool(all);
+
+        function renderAll() {
+          renderTab('tab-top', all.filter(function(s) { return s.featured; }));
+          Object.keys(TAB_CAT).forEach(function(tid) {
+            renderTab(tid, all.filter(function(s) { return s.category === TAB_CAT[tid]; }));
+          });
+        }
+        renderAll();
+
+        /* Перемикач рівня: перемальовуємо картки з цінами обраного рівня. */
+        var tierWrap = document.getElementById('srvTier');
+        if (tierWrap) {
+          tierWrap.querySelectorAll('.srv-tier-btn').forEach(function(b) {
+            b.addEventListener('click', function() {
+              if (curTier === b.dataset.tier) return;
+              curTier = b.dataset.tier;
+              tierWrap.querySelectorAll('.srv-tier-btn').forEach(function(x) {
+                x.classList.toggle('active', x === b);
+              });
+              renderAll();
+            });
+          });
+          /* Ховаємо перемикач там, де він нічого не змінює: готові прайси
+             вже поділені за рівнем, а Комплекси й SPA-ритуали поділу не
+             мають узагалі. Рахуємо за даними, а не за списком вкладок. */
+          function panelHasTiers(tabId) {
+            var panel = document.getElementById(tabId);
+            if (!panel || TIER_FIXED_TABS[tabId]) return false;
+            var names = Array.from(panel.querySelectorAll('.srv-card-name'))
+              .map(function(n) { return n.getAttribute('data-uk') || n.textContent; });
+            /* Потрібні саме ОБИДВА рівні: якщо послуга є лише в одному
+               прайсі (напр. Кінезіотейпування — тільки Майстер), перемикач
+               не змінював би нічого й лише збивав би з пантелику. */
+            return names.some(function(bn) {
+              var pool = tierPool[bn] || [];
+              return pool.some(function(s) { return tierOf(s.name) === 'master'; })
+                  && pool.some(function(s) { return tierOf(s.name) === 'top'; });
+            });
+          }
+          function syncTierVisibility() {
+            var active = document.querySelector('.srv-tab.active');
+            var tab = active ? active.dataset.tab : 'top';
+            tierWrap.classList.toggle('hide', !panelHasTiers('tab-' + tab));
+          }
+          syncTierVisibility();
+          document.querySelectorAll('.srv-tab').forEach(function(t) {
+            t.addEventListener('click', syncTierVisibility);
+          });
+        }
       })
       .catch(function(e) { console.error('[services] failed to load:', e); });
   })();

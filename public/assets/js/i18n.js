@@ -34,6 +34,7 @@
       "srv.tab.top": "Популярні",
       "srv.tab.complex": "Комплекси", "srv.tab.spa": "SPA-ритуали",
       "srv.tab.master": "Прайс Майстер", "srv.tab.topmaster": "Прайс Топ Майстер",
+      "srv.tier.label": "Рівень майстра:", "srv.tier.master": "Майстер", "srv.tier.top": "Топ Майстер",
 
       "dur.30": "30 хвилин", "dur.45": "45 хв.", "dur.60": "1 година",
       "dur.60s": "1 год.", "dur.90": "1 год. 30 хв.", "dur.120": "2 год.",
@@ -207,6 +208,7 @@
       "srv.tab.top": "Popular",
       "srv.tab.complex": "Packages", "srv.tab.spa": "SPA rituals",
       "srv.tab.master": "Price · Master", "srv.tab.topmaster": "Price · Top Master",
+      "srv.tier.label": "Specialist level:", "srv.tier.master": "Master", "srv.tier.top": "Top Master",
 
       "dur.30": "30 minutes", "dur.45": "45 min", "dur.60": "1 hour",
       "dur.60s": "1 hr", "dur.90": "1 hr 30 min", "dur.120": "2 hrs",
