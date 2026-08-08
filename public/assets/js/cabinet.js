@@ -2051,7 +2051,19 @@
         }).join(', ') + '</div>';
       }
     } catch (e) {}
+    /* Дата запису: у календарі картку відкривають з конкретного дня, але в
+       «Подіях» і пошуку — ні, і без дати не було зрозуміло, про який день
+       ідеться. Показуємо з днем тижня. */
+    var dateLine = "";
+    if (a.date) {
+      var DOW_FULL = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
+      var dObj = new Date(a.date + "T00:00:00");
+      dateLine = isNaN(dObj) ? a.date
+        : dObj.toLocaleDateString("uk-UA") + ", " + DOW_FULL[dObj.getDay()];
+    }
+
     var html = '<h3>' + a.client_name + '</h3>' +
+      (dateLine ? '<div class="sub" style="margin-bottom:4px;font-weight:600;color:var(--cream);">📅 ' + dateLine + '</div>' : '') +
       '<div class="sub" style="margin-bottom:12px;">' + a.service_name + ' · ' + fmtMin(a.start_min) + '–' + fmtMin(a.end_min || (a.start_min + a.duration_min)) + ' · ' + a.master_name + '</div>' +
       '<div class="sub">' + (a.client_phone || '<span style="color:#aaa;">🔒 телефон приховано</span>') + '</div>' +
       extrasHtml +
