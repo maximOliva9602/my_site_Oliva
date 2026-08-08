@@ -265,13 +265,18 @@ section { padding: 100px 0; }
 
 /* ── SERVICES ── */
 .services-section { background: var(--black); }
-.services-header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 56px; gap: 24px; }
+/* 24px замість 56px: вкладки переїхали звідси у .srv-sticky, тож відступ
+   до них тепер задає сам заголовок. Загальна картина не змінилась. */
+.services-header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 24px; gap: 24px; }
+/* Спільний блок керування (вкладки + рівень майстра). На мобільному —
+   липкий, тому обидві панелі лишаються під рукою, поки гортаєш ціни. */
+.srv-sticky { margin-bottom: 32px; }
 .srv-tabs { display: flex; gap: 4px; background: rgba(46,61,34,0.3); border: 1px solid var(--line); border-radius: 50px; padding: 5px; overflow-x: auto; scrollbar-width: none; }
 .srv-tabs::-webkit-scrollbar { display: none; }
 .srv-tab { padding: 8px 12px; border-radius: 50px; font-size: 0.72rem; color: var(--text-dim); transition: all .25s; white-space: nowrap; flex-shrink: 0; }
 .srv-tab.active { background: var(--olive); color: var(--cream); border: 1px solid var(--olive-light); }
 /* Перемикач рівня майстра (ціни Майстер / Топ Майстер) */
-.srv-tier { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -32px 0 32px; }
+.srv-tier { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 24px 0 0; }
 .srv-tier.hide { display: none; }
 .srv-tier-label { font-size: 0.78rem; color: var(--text-dim); letter-spacing: .04em; }
 .srv-tier-switch { display: inline-flex; gap: 4px; background: rgba(46,61,34,0.3); border: 1px solid var(--line); border-radius: 50px; padding: 5px; }
@@ -605,20 +610,22 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
     font-size: 0.65rem;
     padding: 6px 10px;
   }
-  /* Перемикач рівня тримається під шапкою, поки гортаєш ціни: інакше при
-     довгому списку не видно, чиї це ціни, і треба скролити вгору.
-     Відпускає сам, коли блок послуг закінчився (межа .container).
-     --srv-tier-top рахує JS за реальною висотою навігації. */
-  .srv-tier {
+  /* Вкладки + рівень майстра тримаються під шапкою, поки гортаєш ціни:
+     інакше при довгому списку не видно, який це розділ і чиї це ціни, і
+     треба скролити вгору. Відпускає сам, коли блок послуг закінчився
+     (межа .container). --srv-tier-top рахує JS за висотою навігації. */
+  .srv-sticky {
     position: sticky;
     top: var(--srv-tier-top, 60px);
     z-index: 60;
     /* на всю ширину екрана, щоб фон перекривав картки під ним */
-    margin: -32px -24px 24px;
+    margin: 0 -24px 24px;
     padding: 10px 24px;
     background: rgba(8,10,7,0.94);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
   }
+  /* Компактніше, бо тепер це одна закріплена панель, а не окремий блок */
+  .srv-tier { margin-top: 10px; }
 }

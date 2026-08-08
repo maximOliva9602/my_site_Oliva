@@ -92,6 +92,19 @@
       document.querySelectorAll(".srv-panel").forEach(function (p) {
         p.classList.toggle("active", p.id === "tab-" + id);
       });
+      /* Панель керування закріплена (мобільний). Нова вкладка може бути
+         коротшою за попередню — тоді блок послуг закінчується вище, панель
+         відліплюється й лишається ЗА межами екрана, хоч на неї щойно
+         натиснули. Підтягуємо сторінку так, щоб вона знову була на місці. */
+      var sticky = document.getElementById("srvSticky");
+      if (!sticky || getComputedStyle(sticky).position !== "sticky") return;
+      requestAnimationFrame(function () {
+        var offset = parseFloat(getComputedStyle(sticky).top) || 0;
+        var top = sticky.getBoundingClientRect().top;
+        if (top < offset - 1) {
+          window.scrollTo({ top: window.scrollY + top - offset, behavior: "instant" });
+        }
+      });
     });
   });
 
