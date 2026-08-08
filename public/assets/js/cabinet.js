@@ -2101,10 +2101,28 @@
         var box = $("dSubInfo"); if (!box) return;
         if (sub) {
           var used = sub.used_sessions, total = sub.total_sessions, rem = total - used;
-          box.innerHTML = '<div style="margin-top:10px;background:' + (rem>0?"#e8f5e9":"#fde8e8") + ';border:1px solid ' + (rem>0?"#a5d6a7":"#ef9a9a") + ';border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;">' +
+          /* Раніше тут показували used_sessions — глобальний лічильник
+             абонемента, тому КОЖЕН запис клієнта показував те саме число
+             («сеанс 3 з 10» і на 7-му, і на 9-му). Номер саме цього візиту
+             рахує сервер: sub_index (для завершених — зафіксований номер). */
+          /* Номер дає ЛИШЕ сервер. Якщо sub_index немає — цей візит абонемент
+             не покриває (вичерпано / скасовано / неявка), і вигадувати номер
+             не можна: саме так з'являлись «сеанс 4 з 10» на записах, що вже
+             поза абонементом. */
+          var idx = a.sub_index;
+          var covered = idx != null;
+          var head = covered
+            ? "Абонемент: сеанс " + idx + " з " + total
+            : (rem > 0 ? "Цей візит не за абонементом" : "Абонемент вичерпано");
+          var note = !covered
+            ? "Списано " + used + " з " + total + (rem > 0 ? " · залишилось " + rem : "")
+            : (a.status === "completed"
+                ? "Списано " + used + " з " + total + " · залишилось " + rem
+                : "Спишеться при завершенні візиту · зараз списано " + used + " з " + total);
+          box.innerHTML = '<div style="margin-top:10px;background:' + (covered?"#e8f5e9":"#fde8e8") + ';border:1px solid ' + (covered?"#a5d6a7":"#ef9a9a") + ';border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;">' +
             '<span>🎟</span>' +
-            '<div><div style="font-weight:600;color:' + (rem>0?"#2e7d32":"#c04040") + ';">Абонемент: сеанс ' + (used) + ' з ' + total + '</div>' +
-            '<div style="font-size:.72rem;color:#888;">Залишилось ' + rem + ' сеанс' + (rem===1?'':'ів') + '</div></div></div>';
+            '<div><div style="font-weight:600;color:' + (covered?"#2e7d32":"#c04040") + ';">' + head + '</div>' +
+            '<div style="font-size:.72rem;color:#888;">' + note + '</div></div></div>';
         }
       });
     }

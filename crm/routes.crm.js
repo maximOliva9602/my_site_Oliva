@@ -135,6 +135,9 @@ function viewAppt(a) {
       out.sub_index = a.subscription_session_no;
       return out;
     }
+    /* Скасований візит і неявка сеанс не займають — не даємо їм номера,
+       інакше поруч із наступним активним записом світився б той самий. */
+    if (a.status === "cancelled" || a.status === "no_show") return out;
     const svcIds = subServiceIds(a.service_id);
     const sub = db.prepare(
       `SELECT used_sessions, total_sessions, created_at FROM subscriptions
@@ -142,18 +145,20 @@ function viewAppt(a) {
         ORDER BY (used_sessions < total_sessions) DESC, id DESC LIMIT 1`
     ).get(a.client_id, ...svcIds);
     if (sub) {
-      /* Порядковий номер саме цього візиту в абонементі. Сам used_sessions
-         росте лише коли запис позначають «виконано», тому на картках усіх
-         майбутніх візитів світилося б однакове число — виглядало як «не
-         рахується». Рахуємо позицію запису серед візитів клієнта за цією
-         послугою (усіма тарифними варіантами), починаючи з дня купівлі
-         абонемента (минулі візити до покупки не враховуємо). */
-      const subDate = tz.nowKyiv(undefined, sub.created_at).date;
-      const subIndex = db.prepare(
+      /* Порядковий номер саме цього візиту в абонементі. used_sessions росте
+         лише коли запис позначають «виконано», тому номер майбутнього візиту
+         = вже списано + його черга серед ІНШИХ незавершених візитів клієнта
+         за цією послугою (усі тарифні варіанти). Рахувати позицію серед усіх
+         візитів підряд не можна: сеанси, списані до створення абонемента або
+         перенесені з попереднього (used_sessions на старті), випадали з
+         нумерації — і номер «відставав» від реального залишку. */
+      const pendingBefore = db.prepare(
         `SELECT COUNT(*) c FROM appointments
-          WHERE client_id=? AND service_id IN (${inList(svcIds.length)}) AND status<>'cancelled' AND date>=?
-            AND (date < ? OR (date = ? AND start_min <= ?))`
-      ).get(a.client_id, ...svcIds, subDate, a.date, a.date, a.start_min).c;
+          WHERE client_id=? AND service_id IN (${inList(svcIds.length)})
+            AND status IN ('pending','confirmed') AND id<>?
+            AND (date < ? OR (date = ? AND start_min < ?))`
+      ).get(a.client_id, ...svcIds, a.id, a.date, a.date, a.start_min).c;
+      const subIndex = sub.used_sessions + pendingBefore + 1;
       /* Після останнього сеансу (наприклад, 5/5) усі незавершені записи —
          звичайні. Не передаємо їм дані абонемента, навіть якщо запис було
          створено раніше й має малий номер у черзі. */
