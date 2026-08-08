@@ -93,7 +93,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=2" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=3" />
 </head>
 <body>
 
@@ -919,7 +919,7 @@
 })();
 </script>
 <script src="assets/js/i18n.js"></script>
-<script src="assets/js/script.js?v=2"></script>
+<script src="assets/js/script.js?v=3"></script>
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="assets/js/chat.js"></script>
@@ -988,13 +988,15 @@
 .srv-card-toggle:hover { color: var(--cream); }
 .srv-card-toggle .arr { display: inline-block; transition: transform .25s; }
 .srv-card-toggle.open .arr { transform: rotate(180deg); }
+/* Описи «Детальніше» — білим: картки мають фото на тлі, і приглушений
+   сірий/оливковий на ньому майже не читався. */
 .srv-card-body {
-  display: none; font-size: 13px; color: var(--text-dim);
+  display: none; font-size: 13px; color: var(--cream);
   line-height: 1.65; padding-top: 8px; margin-top: 4px;
   border-top: 1px solid rgba(122,145,86,0.18);
 }
 .cat-desc-body {
-  display: none; font-size: 13px; color: var(--text-dim);
+  display: none; font-size: 13px; color: var(--cream);
   line-height: 1.65; padding: 6px 0 10px;
 }
 .srv-category-label { user-select: none; }
@@ -1180,7 +1182,8 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
         d.style.paddingLeft = '4px';
       } else {
         d.style.fontWeight = '600';
-        d.style.color = 'var(--olive-light)';
+        /* Був оливковий — на тлі фото описи читались погано. Білий. */
+        d.style.color = 'var(--cream)';
         d.style.fontSize = '11px';
         d.style.letterSpacing = '0.05em';
         d.style.textTransform = 'uppercase';
