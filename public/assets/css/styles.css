@@ -294,6 +294,7 @@ section { padding: 100px 0; }
 .srv-card:hover::before { transform: scaleY(1); }
 .srv-card-info { flex: 1; }
 .srv-card-name { font-size: 0.82rem; color: var(--cream); font-weight: 500; margin-bottom: 4px; line-height: 1.4; }
+.srv-card--multi { border-radius: 14px 14px 0 0; }
 /* Назва послуги — зелена смуга на всю ширину картки, білий текст.
    Раніше назва лежала просто поверх фонового фото й місцями губилась.
    Колір трохи світліший за --olive (#2E3D22), яким залито активну кнопку
