@@ -363,6 +363,13 @@ try { db.exec("ALTER TABLE masters ADD COLUMN pay_percent_subscription REAL"); }
    сайту (лендінг, онлайн-запис), лишивши його активним у CRM (записи,
    графік, зарплата й далі працюють як завжди). */
 try { db.exec("ALTER TABLE masters ADD COLUMN show_on_site INTEGER NOT NULL DEFAULT 1"); } catch(e) {}
+/* Telegram-сповіщення майстру про ЙОГО записи. Бот не може написати
+   першим, тому прив'язка разова: CRM видає одноразовий код, майстер
+   тисне t.me/<bot>?start=<код>, вебхук зберігає сюди його chat_id. */
+try { db.exec("ALTER TABLE masters ADD COLUMN tg_chat_id TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE masters ADD COLUMN tg_link_code TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE masters ADD COLUMN tg_code_expires INTEGER"); } catch(e) {}
+try { db.exec("ALTER TABLE masters ADD COLUMN tg_linked_at INTEGER"); } catch(e) {}
 db.exec(`CREATE TABLE IF NOT EXISTS master_subscription_pay (
   master_id  INTEGER NOT NULL,
   service_id INTEGER NOT NULL,

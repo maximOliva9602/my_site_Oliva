@@ -9,20 +9,37 @@ const tz = require("./tz");
 const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN  || "";
 const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID    || "";
 
-async function sendTg(text) {
-  if (!TG_TOKEN || !TG_CHAT_ID) return;
+/* chatId не задано — шлемо власнику (TELEGRAM_CHAT_ID), як і раніше.
+   Повертає true/false, щоб викликач міг зреагувати на блокування бота. */
+async function sendTg(text, chatId) {
+  const to = chatId || TG_CHAT_ID;
+  if (!TG_TOKEN || !to) return false;
   try {
     const res = await fetch(
       `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: TG_CHAT_ID, text, parse_mode: "HTML" }),
+        body: JSON.stringify({ chat_id: to, text, parse_mode: "HTML" }),
       }
     );
-    if (!res.ok) console.error("[admin-notify] TG error:", await res.text());
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("[admin-notify] TG error:", body);
+      /* 403 — майстер заблокував бота або видалив чат. Гасимо прив'язку,
+         щоб у CRM було видно «не підключено», а не мовчазна тиша. */
+      if (res.status === 403 && chatId) {
+        try {
+          db.prepare("UPDATE masters SET tg_chat_id=NULL, tg_linked_at=NULL WHERE tg_chat_id=?").run(String(chatId));
+          console.warn("[admin-notify] TG: прив'язку знято, бота заблоковано, chat", chatId);
+        } catch (_) {}
+      }
+      return false;
+    }
+    return true;
   } catch (e) {
     console.error("[admin-notify] TG fetch error:", e.message);
+    return false;
   }
 }
 
@@ -38,7 +55,8 @@ async function notifyNewAppt(appointmentId, source) {
       SELECT a.date, a.start_min, a.duration_min, a.comment, a.extra_services, a.master_id,
              c.name client_name, c.phone client_phone,
              s.name service_name,
-             m.name master_name, b.name branch_name
+             m.name master_name, m.tg_chat_id master_tg, m.can_see_phones master_can_see_phones,
+             b.name branch_name
       FROM appointments a
       JOIN clients  c ON c.id = a.client_id
       JOIN services s ON s.id = a.service_id
@@ -71,18 +89,31 @@ async function notifyNewAppt(appointmentId, source) {
     } catch (_) {}
 
     const who   = source === "site" ? "🌐 Сайт" : "📋 CRM";
-    const text  =
+    /* Один шаблон на двох адресатів. Різниця лише в телефоні клієнта:
+       майстру без can_see_phones його не показуємо — інакше Telegram став
+       би обходом обмеження, яке вже діє в CRM (див. phone-privacy.js). */
+    const build = (showPhone, forMaster) =>
       `📅 <b>Новий запис!</b> ${who}\n\n` +
       `👤 <b>Клієнт:</b> ${a.client_name}\n` +
-      `📞 <b>Телефон:</b> ${a.client_phone}\n` +
+      (showPhone
+        ? `📞 <b>Телефон:</b> ${a.client_phone}\n`
+        : `📞 <b>Телефон:</b> прихований\n`) +
       `💆 <b>Послуга:</b> ${a.service_name}\n` +
-      `👩‍🔧 <b>Майстер:</b> ${a.master_name}` +
+      (forMaster ? "" : `👩‍🔧 <b>Майстер:</b> ${a.master_name}`) +
       branchLine + `\n` +
       `📆 <b>Дата:</b> ${ddmm(a.date)}, ${fmtMin(a.start_min)}–${fmtMin(a.start_min + a.duration_min)}` +
       extrasLine +
       (a.comment ? `\n💬 <b>Коментар:</b> ${a.comment}` : "");
 
+    const text = build(true, false);
+
     await sendTg(text);
+    /* Майстру — в його власний чат із тим самим ботом (окремий діалог,
+       чужих записів він там не побачить). Мовчки пропускаємо, якщо
+       Telegram не підключено — у нього лишається web-push. */
+    if (a.master_tg) {
+      await sendTg(build(!!a.master_can_see_phones, true), a.master_tg);
+    }
     // push без HTML тегів + пряме посилання на картку запису; лише
     // власнику (бачить усе) і тому самому майстру, чий це запис —
     // інші майстри більше не отримують чужі сповіщення.
@@ -165,4 +196,4 @@ async function sendPushToAll(body, url, tag, masterId) {
   return stats;
 }
 
-module.exports = { notifyNewAppt, sendPushToAll, VAPID_PUBLIC };
+module.exports = { notifyNewAppt, sendPushToAll, sendTg, VAPID_PUBLIC };

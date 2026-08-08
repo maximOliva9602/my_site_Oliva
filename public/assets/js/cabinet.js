@@ -272,6 +272,10 @@
     TABS.push({ id: "rozklad",  name: "📅 Розклад",       render: renderRozkladTab });
     TABS.push({ id: "grafik",   name: "🗓 Графік роботи", render: renderScheduleTab });
     TABS.push({ id: "clients",  name: "Клієнти",          render: renderClients });
+    // Майстру — власні канали сповіщень (у власника це частина вкладки нижче)
+    if (me.role !== "owner") {
+      TABS.push({ id: "mynotif", name: "🔔 Сповіщення",  render: renderMyNotif });
+    }
     if (me.role === "owner") {
       TABS.push({ id: "dashboard", name: "📊 Дашборд",  render: renderDashboard });
       TABS.push({ id: "analytics", name: "📈 Аналітика", render: renderAnalytics });
@@ -286,7 +290,7 @@
     }
     /* ── Іконки і короткі назви для мобільного nav ── */
     var TAB_ICOS  = { dashboard:"📊", podii:"📌", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", broadcast:"📣", filiyi:"🏢" };
-    var TAB_SHORT = { dashboard:"Дашборд", podii:"Події", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії" };
+    var TAB_SHORT = { dashboard:"Дашборд", podii:"Події", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", mynotif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії" };
     var BOTTOM_COUNT = Math.min(4, TABS.length);
     var hasDrawer    = TABS.length > BOTTOM_COUNT;
 
@@ -6178,6 +6182,96 @@
     loadHistory();
   }
 
+  /* Прив'язка Telegram: statusEl показує стан, btn перемикає підключити/
+     відключити. masterId=null — «свій» майстер (сесія майстра). */
+  function telegramCardBind(masterId, statusEl, btn) {
+    var q = masterId ? "?master=" + masterId : "";
+    function refresh() {
+      btn.disabled = true; btn.textContent = "…";
+      api("GET", "/api/crm/telegram/status" + q).then(function (r) {
+        btn.disabled = false;
+        if (!(r.j && r.j.ok)) { statusEl.textContent = "—"; btn.style.display = "none"; return; }
+        if (r.j.linked) {
+          statusEl.innerHTML = '<span style="color:var(--ok);">✅ підключено</span>';
+          btn.textContent = "Відключити";
+          btn.onclick = function () {
+            if (!confirm("Вимкнути Telegram-сповіщення?")) return;
+            btn.disabled = true;
+            api("POST", "/api/crm/telegram/unlink" + q, {}).then(refresh);
+          };
+        } else {
+          statusEl.innerHTML = '<span style="color:var(--text-dim);">не підключено</span>';
+          btn.textContent = "Підключити";
+          btn.onclick = function () {
+            btn.disabled = true; btn.textContent = "…";
+            api("POST", "/api/crm/telegram/link-code" + q, {}).then(function (r2) {
+              btn.disabled = false; btn.textContent = "Підключити";
+              if (!(r2.j && r2.j.ok)) {
+                alert(r2.j && r2.j.error === "bot_not_configured"
+                  ? "Бот не налаштований: не задано TELEGRAM_BOT_USERNAME на сервері."
+                  : "Не вдалось створити посилання.");
+                return;
+              }
+              openModal(
+                '<h3>Підключення Telegram</h3>' +
+                '<div class="sub">Відкрийте посилання з телефона, де встановлено Telegram, і натисніть <b>Start</b>. ' +
+                'Посилання дійсне 15 хвилин.</div>' +
+                '<div style="margin:14px 0;text-align:center;">' +
+                  '<a href="' + r2.j.url + '" target="_blank" rel="noopener" class="btn btn-primary" style="display:inline-block;text-decoration:none;">Відкрити Telegram</a>' +
+                '</div>' +
+                '<div class="sub" style="word-break:break-all;background:var(--panel-2);padding:8px 10px;border-radius:8px;">' + r2.j.url + '</div>' +
+                '<div class="modal-foot"><button class="btn btn-ghost" id="tgDone">Готово</button></div>'
+              );
+              $("tgDone").addEventListener("click", function () { closeModal(); refresh(); });
+            });
+          };
+        }
+      });
+    }
+    refresh();
+  }
+
+  /* Вкладка «Сповіщення» для МАЙСТРА — журнал і SMS-баланс це дані
+     власника, тож майстру показуємо лише його власні канали. */
+  function renderMyNotif() {
+    var main = $("main"); main.innerHTML = "";
+    var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Сповіщення"));
+    main.appendChild(bar);
+
+    var tgCard = el("div", "item"); tgCard.style.marginBottom = "16px";
+    tgCard.appendChild(el("div", "t", "✈️ Telegram"));
+    var tgSub = el("div", "sub"); tgSub.style.margin = "6px 0 10px";
+    tgSub.textContent = "Сповіщення про ваші записи приходитимуть у Telegram — надійніше за push на iPhone.";
+    tgCard.appendChild(tgSub);
+    var tgRow = el("div"); tgRow.style.cssText = "display:flex;align-items:center;gap:10px;";
+    var tgStatus = el("span", "sub"); tgStatus.style.flex = "1";
+    var tgBtn = el("button", "btn btn-primary btn-sm", "…");
+    tgRow.appendChild(tgStatus); tgRow.appendChild(tgBtn);
+    tgCard.appendChild(tgRow); main.appendChild(tgCard);
+    telegramCardBind(null, tgStatus, tgBtn);
+
+    var pushCard = el("div", "item");
+    pushCard.appendChild(el("div", "t", "🔔 Push на цей пристрій"));
+    var pStatus = el("div", "sub"); pStatus.style.margin = "6px 0 10px";
+    pStatus.textContent = "На iPhone працює лише якщо CRM додано на головний екран.";
+    pushCard.appendChild(pStatus);
+    var pActs = el("div", "acts");
+    var pBtn = el("button", "btn btn-ghost btn-sm", "Підписати цей пристрій");
+    pBtn.addEventListener("click", function () {
+      if (!("Notification" in window) || !("PushManager" in window)) {
+        pStatus.textContent = "❌ Цей браузер не підтримує push"; return;
+      }
+      pBtn.disabled = true;
+      Notification.requestPermission().then(function (p) {
+        pBtn.disabled = false;
+        if (p !== "granted") { pStatus.textContent = "❌ Дозвіл відхилено — увімкніть сповіщення в налаштуваннях телефона"; return; }
+        subscribePush();
+        pStatus.textContent = "✅ Підписано на цьому пристрої";
+      });
+    });
+    pActs.appendChild(pBtn); pushCard.appendChild(pActs); main.appendChild(pushCard);
+  }
+
   function renderNotif() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Журнал сповіщень"));
@@ -6366,6 +6460,28 @@
     pushActs.appendChild(testBtn);
     pushCard.appendChild(pushActs);
     main.appendChild(pushCard);
+
+    /* Telegram майстрів — власник бачить статус усіх і може підключити
+       того, хто сам не впорався. */
+    api("GET", "/api/crm/masters").then(function (r) {
+      var ms = (r.j && r.j.masters) || [];
+      if (!ms.length) return;
+      var tgCard = el("div", "item"); tgCard.style.marginBottom = "16px";
+      tgCard.appendChild(el("div", "t", "✈️ Telegram майстрів"));
+      var sub = el("div", "sub"); sub.style.margin = "6px 0 10px";
+      sub.textContent = "Майстер отримує в Telegram сповіщення лише про власні записи.";
+      tgCard.appendChild(sub);
+      ms.forEach(function (m) {
+        var row = el("div"); row.style.cssText = "display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line);";
+        var nm = el("div", null, m.name); nm.style.flex = "1";
+        var st = el("span", "sub"); st.style.marginRight = "6px";
+        row.appendChild(nm); row.appendChild(st);
+        var btn = el("button", "btn btn-ghost btn-sm", "…");
+        row.appendChild(btn); tgCard.appendChild(row);
+        telegramCardBind(m.id, st, btn);
+      });
+      main.insertBefore(tgCard, pushCard.nextSibling);
+    });
 
     var listEl = el("div", "list"); main.appendChild(listEl);
     var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 1", reminder_2h: "Нагадування 2", reschedule: "Перенесення", cancellation: "Скасування візиту" };

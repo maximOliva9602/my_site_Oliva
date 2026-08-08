@@ -1202,6 +1202,51 @@ router.post("/clients/import", owner, function (req, res) {
   res.json({ ok: true, inserted: result.inserted, skipped: result.skipped, total: rows.length });
 });
 
+/* ---- Telegram-сповіщення майстру ----
+   Майстер керує лише своєю прив'язкою, власник — будь-чиєю (щоб міг
+   підключити майстра, який сам не впорався). */
+function tgTargetMaster(req) {
+  if (req.session.role === "owner") {
+    const id = parseInt(req.query.master || req.body.master, 10);
+    return id || null;
+  }
+  return req.session.masterId || null;
+}
+
+router.get("/telegram/status", any, function (req, res) {
+  const id = tgTargetMaster(req);
+  if (!id) return res.status(400).json({ ok: false, error: "no_master" });
+  const m = db.prepare("SELECT name, tg_chat_id, tg_linked_at FROM masters WHERE id=?").get(id);
+  if (!m) return res.status(404).json({ ok: false, error: "not_found" });
+  res.json({
+    ok: true,
+    master: m.name,
+    linked: !!m.tg_chat_id,
+    linked_at: m.tg_linked_at || null,
+    bot: process.env.TELEGRAM_BOT_USERNAME || "",
+  });
+});
+
+router.post("/telegram/link-code", any, function (req, res) {
+  const id = tgTargetMaster(req);
+  if (!id) return res.status(400).json({ ok: false, error: "no_master" });
+  const bot = process.env.TELEGRAM_BOT_USERNAME || "";
+  if (!bot) return res.status(503).json({ ok: false, error: "bot_not_configured" });
+  /* Код одноразовий і живе 15 хв — його видно на екрані й у посиланні,
+     тож він не має лишатись дійсним назавжди. */
+  const code = crypto.randomBytes(6).toString("hex");
+  const expires = Date.now() + 15 * 60 * 1000;
+  db.prepare("UPDATE masters SET tg_link_code=?, tg_code_expires=? WHERE id=?").run(code, expires, id);
+  res.json({ ok: true, url: `https://t.me/${bot}?start=${code}`, expires_at: expires });
+});
+
+router.post("/telegram/unlink", any, function (req, res) {
+  const id = tgTargetMaster(req);
+  if (!id) return res.status(400).json({ ok: false, error: "no_master" });
+  db.prepare("UPDATE masters SET tg_chat_id=NULL, tg_link_code=NULL, tg_code_expires=NULL, tg_linked_at=NULL WHERE id=?").run(id);
+  res.json({ ok: true });
+});
+
 /* ---- Користувачі (акаунти майстрів) ---- */
 router.get("/users", owner, function (req, res) { res.json({ ok: true, users: auth.listUsers() }); });
 router.post("/users", owner, function (req, res) {
