@@ -93,7 +93,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=5" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=6" />
 </head>
 <body>
 
@@ -274,11 +274,12 @@
          закінчувався одразу після заголовка й відпускав панель миттєво. -->
     <div class="srv-sticky" id="srvSticky">
       <div class="srv-tabs reveal">
-        <button class="srv-tab active" data-tab="top" data-i18n="srv.tab.top">Популярні</button>
+        <button class="srv-tab active" data-tab="general" data-i18n="srv.tab.general">Масажі</button>
+        <button class="srv-tab" data-tab="spa2" data-i18n="srv.tab.spa2">SPA для двох</button>
+        <button class="srv-tab" data-tab="spa1" data-i18n="srv.tab.spa1">SPA для одного</button>
+        <button class="srv-tab" data-tab="body" data-i18n="srv.tab.body">Корекція фігури</button>
         <button class="srv-tab" data-tab="complex" data-i18n="srv.tab.complex">Комплекси</button>
-        <button class="srv-tab" data-tab="spa" data-i18n="srv.tab.spa">SPA-ритуали</button>
-        <button class="srv-tab" data-tab="master" data-i18n="srv.tab.master">Прайс Майстер</button>
-        <button class="srv-tab" data-tab="topmaster" data-i18n="srv.tab.topmaster">Прайс Топ Майстер</button>
+        <button class="srv-tab" data-tab="extra" data-i18n="srv.tab.extra">Додаткові послуги</button>
       </div>
 
       <!-- Рівень майстра: одна картка послуги замість двох (Майстер / Топ
@@ -293,39 +294,32 @@
       </div>
     </div>
 
-    <!-- Топ послуги -->
-    <div class="srv-panel active" id="tab-top">
-      <div class="services-grid">
-      <!-- Services rendered dynamically by JS -->
-    </div>
+    <!-- Розділи ті самі, що в онлайн-записі (див. service-groups.js) -->
+    <div class="srv-panel active" id="tab-general">
+      <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
     </div>
 
-    <!-- Комплекси -->
+    <div class="srv-panel" id="tab-spa2">
+      <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
+    </div>
+
+    <div class="srv-panel" id="tab-spa1">
+      <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
+    </div>
+
+    <div class="srv-panel" id="tab-body">
+      <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
+    </div>
+
+    <!-- Комплекси — окрема вкладка сайту (в онлайн-записі вони входять у
+         «SPA для одного»), тому на сайті їх звідти виключаємо, щоб та сама
+         послуга не з'являлась у двох розділах одночасно. -->
     <div class="srv-panel" id="tab-complex">
-      <div class="services-grid">
-      <!-- Services rendered dynamically by JS -->
-    </div>
+      <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
     </div>
 
-    <!-- SPA-ритуали -->
-    <div class="srv-panel" id="tab-spa">
-      <div class="services-grid">
-      <!-- Services rendered dynamically by JS -->
-    </div>
-    </div>
-
-    <!-- Прайс Майстер -->
-    <div class="srv-panel" id="tab-master">
-      <div class="services-grid">
-      <!-- Services rendered dynamically by JS -->
-    </div>
-    </div>
-
-    <!-- Прайс Топ Майстер -->
-    <div class="srv-panel" id="tab-topmaster">
-      <div class="services-grid">
-      <!-- Services rendered dynamically by JS -->
-    </div>
+    <div class="srv-panel" id="tab-extra">
+      <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
     </div>
 
   </div><!-- /.container -->
@@ -925,8 +919,9 @@
     .catch(function(){});
 })();
 </script>
-<script src="assets/js/i18n.js?v=5"></script>
-<script src="assets/js/script.js?v=5"></script>
+<script src="assets/js/service-groups.js?v=1"></script>
+<script src="assets/js/i18n.js?v=6"></script>
+<script src="assets/js/script.js?v=6"></script>
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="assets/js/chat.js"></script>
@@ -1484,17 +1479,15 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       return card;
     }
 
-    /* Готові прайси вже поділені за рівнем — там перемикач лише заплутав би,
-       тож на цих вкладках групуємо по-старому, з суфіксом у назві. */
-    var TIER_FIXED_TABS = { 'tab-master': 1, 'tab-topmaster': 1 };
-
     /* Назва без рівня → усі її варіанти з обох прайсів. Заповнюється один
-       раз після завантаження, використовується для перемикача рівня. */
+       раз після завантаження, використовується для перемикача рівня.
+       Ключ рахує SG.parseName — той самий, що групує картки, інакше пул і
+       картки розійшлися б на назвах із тривалістю в дужках. */
     var tierPool = {};
     function buildTierPool(all) {
       tierPool = {};
       all.forEach(function(s) {
-        var bn = stripTier(baseName(s.name));
+        var bn = SG.parseName(s.name).cat;
         (tierPool[bn] || (tierPool[bn] = [])).push(s);
       });
     }
@@ -1512,18 +1505,16 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
         grid.appendChild(msg);
         return;
       }
-      var mergeTiers = !TIER_FIXED_TABS[tabId];
       var groups = {};
       var order = [];
       services.forEach(function(s) {
-        var bn = baseName(s.name);
-        if (mergeTiers) bn = stripTier(bn);
+        var bn = SG.parseName(s.name).cat;
         if (!groups[bn]) { groups[bn] = { variants: [], desc: null, img: null }; order.push(bn); }
         groups[bn].variants.push(s);
         if (s.description && !groups[bn].desc) groups[bn].desc = s.description;
         if (s.image_url && !groups[bn].img) groups[bn].img = s.image_url;
       });
-      if (mergeTiers) {
+      {
         /* Варіанти беремо з ПОВНОГО прайсу за тією ж назвою, а не лише з
            переданого списку: «Популярними» позначені майже самі варіанти
            Топ Майстра, тож інакше при виборі «Майстер» показувались би
@@ -1546,12 +1537,16 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       if (typeof applyTranslations === 'function') applyTranslations();
     }
 
-    var TAB_CAT = {
-      'tab-complex':   'Комплекси',
-      'tab-spa':       'SPA-ритуали',
-      'tab-master':    'Прайс Майстер',
-      'tab-topmaster': 'Прайс Топ Майстер'
-    };
+    /* Розкладаємо послуги по вкладках тими самими правилами, що й
+       онлайн-запис (spa2/spa1 тощо) — див. assets/js/service-groups.js.
+       «Комплекси» — окрема вкладка сайту: беремо їх за категорією з CRM і
+       прибираємо з інших розділів, щоб послуга не дублювалась. */
+    var SG = window.OlivaServiceGroups;
+    function isComplex(s) { return (s.category || '').trim() === 'Комплекси'; }
+    function tabOf(s) {
+      if (isComplex(s)) return 'tab-complex';
+      return 'tab-' + SG.resolveGroup(s, SG.parseName(s.name).cat);
+    }
 
     Promise.all([
       fetch('/api/services').then(function(r) { return r.json(); }),
@@ -1565,9 +1560,8 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
         buildTierPool(all);
 
         function renderAll() {
-          renderTab('tab-top', all.filter(function(s) { return s.featured; }));
-          Object.keys(TAB_CAT).forEach(function(tid) {
-            renderTab(tid, all.filter(function(s) { return s.category === TAB_CAT[tid]; }));
+          ['tab-general','tab-spa2','tab-spa1','tab-body','tab-complex','tab-extra'].forEach(function(tid) {
+            renderTab(tid, all.filter(function(s) { return tabOf(s) === tid; }));
           });
         }
         renderAll();
@@ -1590,7 +1584,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
              мають узагалі. Рахуємо за даними, а не за списком вкладок. */
           function panelHasTiers(tabId) {
             var panel = document.getElementById(tabId);
-            if (!panel || TIER_FIXED_TABS[tabId]) return false;
+            if (!panel) return false;
             var names = Array.from(panel.querySelectorAll('.srv-card-name'))
               .map(function(n) { return n.getAttribute('data-uk') || n.textContent; });
             /* Потрібні саме ОБИДВА рівні: якщо послуга є лише в одному

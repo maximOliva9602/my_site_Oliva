@@ -832,6 +832,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   </div>
 </div>
 
+<script src="/assets/js/service-groups.js?v=1"></script>
 <script>
 (function () {
   var state = { group: null, category: null, master: null, service: null, date: "", start_min: null, extras: [], branch: null };
@@ -858,79 +859,11 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     body: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.3" r="1.9"/><path d="M8.9 7.9c.75-.5 1.9-.75 3.1-.75s2.35.25 3.1.75"/><path d="M9 7.9c-.55 1.4-.95 2.6-.45 3.95M15 7.9c.55 1.4.95 2.6.45 3.95"/><path d="M8.55 11.85c1.05.7 1.5 1.75 1.05 3.2M15.45 11.85c-1.05.7-1.5 1.75-1.05 3.2"/><path d="M9.6 15.05c-.3 1.55-.4 3-.15 4.45M14.4 15.05c.3 1.55.4 3 .15 4.45"/><path d="M9.45 19.5h5.1"/><path d="M5.6 12v2M4.6 13h2"/><path d="M18.4 12v2M17.4 13h2"/></svg>',
     extra: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.3c.75 3.25 1.75 4.25 5 5-3.25.75-4.25 1.75-5 5-.75-3.25-1.75-4.25-5-5 3.25-.75 4.25-1.75 5-5z"/><path d="M18.2 13.8c.32 1.45.82 1.95 2.3 2.3-1.48.35-1.98.85-2.3 2.3-.32-1.45-.82-1.95-2.3-2.3 1.48-.35 1.98-.85 2.3-2.3z"/><path d="M6.4 15c.22 1 .62 1.4 1.6 1.62-.98.22-1.38.62-1.6 1.6-.22-.98-.62-1.38-1.6-1.6.98-.22 1.38-.62 1.6-1.62z"/></svg>',
   };
-  var GROUPS = [
-    { key: "general", name: "Масажі",           sub: "Оздоровлення та відновлення для тіла і обличчя" },
-    { key: "spa2",    name: "SPA для двох",      sub: "Парні масажі та SPA для вас і ваших близьких" },
-    { key: "spa1",    name: "SPA для одного",    sub: "Індивідуальний релакс та глибоке розслаблення" },
-    { key: "body",    name: "Корекція фігури",   sub: "Моделювання та покращення контурів тіла" },
-    { key: "extra",   name: "Додаткові послуги", sub: "Додатковий догляд для краси та гармонії" },
-  ];
-  /* Категорія послуги (parseName().cat) → група. Керується тут; якщо власник
-     додасть нову послугу з новою назвою, її категорія без пари в цьому
-     словнику потрапить у "Додаткові послуги" (див. дефолт у groupOf). */
-  var GROUP_MAP = {
-    "Загально-оздоровчий масаж": "general", "Антистресовий масаж": "general",
-    "Масаж спини": "general", "Масаж шийно-комірцевої зони": "general",
-    "Спортивний масаж": "general", "Міофасціальний масаж": "general",
-    "Relax масаж": "general", "Медовий масаж": "general",
-    "Масаж для вагітних": "general", "Масаж голови": "general",
-    "Масаж стоп": "general", "Вісцеральний масаж": "general",
-    "Дитячий масаж": "general",
-    // Масажі обличчя (перенесено зі «SPA для одного» до «Масажі»)
-    "Класичний масаж обличчя": "general", "Антивіковий масаж обличчя": "general",
-    "Пластичний масаж обличчя": "general", "Скульптуруючий масаж обличчя": "general",
-    "Лімфодренажний масаж обличчя": "general", "Relax масаж обличчя": "general",
-    "Моделюючий масаж обличчя": "general", "Гуа-ша обличчя": "general",
-    "Кобідо": "general", "Букальний масаж": "general",
-
-    "Парний масаж": "spa2",
-    'Тепловий SPA-ритуал "Глибоке прогрівання для двох"': "spa2",
-    "Масаж в чотири руки": "spa2",
-    'Масаж гарячим камінням для двох "Stone therapy"': "spa2",
-
-    "Паріння у фітобочці": "spa1", 'SPA Ритуал "Фіто-оновлення тіла"': "spa1",
-    "Масаж гарячим камінням": "spa1",
-
-    "Антицелюлітний масаж": "body", "Моделюючий масаж": "body",
-    "Лімфодренажний масаж": "body", "Вакуумно-баночний масаж": "body",
-    "Апаратно-вакуумний масаж": "body",
-    "Обгортання Amore Shemen (гаряче)": "body",
-    "Обгортання Amore Shemen (холодне)": "body",
-    "Обгортання Bruno Vassari Detox": "body",
-    "Гаряче обгортання SPA Seaweed": "body",
-    "Гаряча експрес-трансформація тіла": "body",
-    "Гаряче моделювання тіла": "body", "Холодне моделювання тіла": "body",
-    "Сольове обгортання": "body",
-
-    "Кінезіотейпування": "extra",
-  };
-  function groupOf(cat) { return GROUP_MAP[cat] || "extra"; }
-  /* services.category (редагується в /admin) може перекрити автоматичне
-     групування за назвою — досить записати туди одну з 5 назв групи.
-     Порожнє/незнайоме значення — як і раніше, групуємо за GROUP_MAP. */
-  /* Категорії, якими власник реально користується в CRM. Вони не збігаються
-     з назвами 5 груп, тому без цієї мапи КОЖНА нова послуга падала в
-     «Додаткові послуги», доки хтось не допише її назву в GROUP_MAP вручну. */
-  var CATEGORY_MAP = {
-    "SPA-масажі для двох": "spa2",
-    "SPA-ритуали": "spa1",
-    "Комплекси": "spa1",
-    "Прайс Майстер": "general",
-    "Прайс Топ Майстер": "general",
-  };
-  function resolveGroup(s, parsedCat) {
-    var raw = (s.category || "").trim();
-    // 1) категорія дослівно дорівнює назві групи — найявніше побажання власника
-    var g = GROUPS.filter(function (x) { return x.name === raw; })[0];
-    if (g) return g.key;
-    // 2) точна назва послуги
-    if (GROUP_MAP[parsedCat]) return GROUP_MAP[parsedCat];
-    // 3) «для двох» / «парний» у назві — це завжди SPA для двох
-    if (/для двох|парн/i.test(parsedCat)) return "spa2";
-    // 4) категорія з CRM
-    if (CATEGORY_MAP[raw]) return CATEGORY_MAP[raw];
-    return "extra";
-  }
+  /* Правила групування — у спільному service-groups.js, щоб сайт і
+     онлайн-запис розкладали послуги однаково. */
+  var SG = window.OlivaServiceGroups;
+  var GROUPS = SG.GROUPS, GROUP_MAP = SG.GROUP_MAP, CATEGORY_MAP = SG.CATEGORY_MAP;
+  var groupOf = SG.groupOf, resolveGroup = SG.resolveGroup;
 
   function $(id) { return document.getElementById(id); }
   function money(kop) { return kop ? Math.round(kop / 100).toLocaleString("uk-UA") + " грн" : ""; }
@@ -985,23 +918,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     if (btn) { var b = btn.dataset.back; goStep(/^\d+$/.test(b) ? parseInt(b, 10) : b); }
   });
 
-  function parseName(name) {
-    var lm = name.match(/\((Топ Майстер|Майстер)\)/);
-    var level = lm ? lm[1] : null;
-    var dm = name.match(/(\d+)\s*хв/);
-    var dur = dm ? parseInt(dm[1]) : null;
-    if (!dur) { var gm = name.match(/(\d+)\s*год/); if (gm) dur = parseInt(gm[1]) * 60; }
-    var cat = name
-      .replace(/\s*\(Топ Майстер\)/, "").replace(/\s*\(Майстер\)/, "")
-      /* Тривалість у дужках в кінці — «Фіто-оновлення тіла для двох (130 хв)».
-         Без цього вона лишалась у назві категорії: картка показувала «(130 хв)»,
-         а варіанти тієї самої послуги на 90 і 130 хв не склеювались в одну
-         картку з вибором тривалості. Дужки не в кінці (Amore Shemen (гаряче))
-         не чіпаємо — це частина назви. */
-      .replace(/\s*\(\s*\d+\s*(?:хв|год)\s*\)\s*$/, "")
-      .replace(/\s+\d+\s*хв$/, "").replace(/\s+\d+\s*год.*$/, "").trim();
-    return { cat: cat, level: level, dur: dur };
-  }
+  var parseName = SG.parseName;
 
   function goStep(n) {
     // Hero і панель довіри — лише на кроці 1

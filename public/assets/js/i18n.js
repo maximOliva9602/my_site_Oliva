@@ -33,7 +33,8 @@
       "srv.label": "Наші послуги", "srv.title1": "Оберіть свій", "srv.title2": "сеанс відновлення",
       "srv.tab.top": "Популярні",
       "srv.tab.complex": "Комплекси", "srv.tab.spa": "SPA-ритуали",
-      "srv.tab.master": "Прайс Майстер", "srv.tab.topmaster": "Прайс Топ Майстер",
+      "srv.tab.general": "Масажі", "srv.tab.spa2": "SPA для двох", "srv.tab.spa1": "SPA для одного",
+      "srv.tab.body": "Корекція фігури", "srv.tab.extra": "Додаткові послуги",
       "srv.tier.label": "Рівень майстра:", "srv.tier.master": "Майстер", "srv.tier.top": "Топ Майстер",
 
       "dur.30": "30 хвилин", "dur.45": "45 хв.", "dur.60": "1 година",
@@ -207,7 +208,8 @@
       "srv.label": "Our services", "srv.title1": "Choose your", "srv.title2": "recovery session",
       "srv.tab.top": "Popular",
       "srv.tab.complex": "Packages", "srv.tab.spa": "SPA rituals",
-      "srv.tab.master": "Price · Master", "srv.tab.topmaster": "Price · Top Master",
+      "srv.tab.general": "Massages", "srv.tab.spa2": "SPA for two", "srv.tab.spa1": "SPA for one",
+      "srv.tab.body": "Body shaping", "srv.tab.extra": "Add-on services",
       "srv.tier.label": "Specialist level:", "srv.tier.master": "Master", "srv.tier.top": "Top Master",
 
       "dur.30": "30 minutes", "dur.45": "45 min", "dur.60": "1 hour",
