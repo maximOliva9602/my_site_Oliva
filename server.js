@@ -179,8 +179,14 @@ app.post("/api/push/subscribe", function (req, res) {
   if (!sub) return res.status(400).json({ ok: false, error: "no subscription" });
   try {
     var json = JSON.stringify(sub);
+    /* UPSERT, а не INSERT OR IGNORE: subscription_json — UNIQUE, і той самий
+       endpoint лишається за пристроєм. Якщо на пристрої раніше логінився
+       інший акаунт, рядок зберігав ЙОГО user_id, а нова підписка мовчки
+       ігнорувалась — і майстер не отримував сповіщень про власні записи.
+       Тепер підписка завжди належить тому, хто залогінений зараз. */
     db.prepare(
-      "INSERT OR IGNORE INTO push_subscriptions (subscription_json, user_id, created_at) VALUES (?,?,?)"
+      "INSERT INTO push_subscriptions (subscription_json, user_id, created_at) VALUES (?,?,?) " +
+      "ON CONFLICT(subscription_json) DO UPDATE SET user_id=excluded.user_id"
     ).run(json, session.userId || null, Date.now());
     res.json({ ok: true });
   } catch (e) {

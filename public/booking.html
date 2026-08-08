@@ -301,9 +301,6 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .svc-photo { width: 100%; aspect-ratio: 1 / 0.8; object-fit: cover; display: block; }
 .svc-photo-ph { width: 100%; aspect-ratio: 1 / 0.8; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: rgba(46,61,34,0.25); }
 .svc-hit { position: absolute; top: 10px; left: 10px; background: rgba(217,185,120,0.92); color: #2b2113; font-size: .66rem; font-weight: 700; padding: 3px 10px; border-radius: 9px; }
-.svc-fav { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; background: rgba(10,7,4,0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; }
-.svc-fav svg { width: 18px; height: 18px; }
-.svc-fav.on svg { fill: var(--gold); stroke: var(--gold); }
 .svc-info { padding: 12px 12px 14px; }
 .svc-name { font-family: 'Playfair Display', serif; color: #F2EDE4; font-size: 1rem; line-height: 1.25; margin-bottom: 8px; }
 .svc-meta { color: rgba(212,207,198,0.58); font-size: .8rem; }
@@ -1045,16 +1042,6 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     });
   }
 
-  /* Улюблені послуги — локально (без акаунта), лише візуально */
-  function favSet() { try { return JSON.parse(localStorage.getItem("oliva_fav") || "[]"); } catch(e) { return []; } }
-  function favToggle(cat) {
-    var f = favSet(), i = f.indexOf(cat);
-    if (i > -1) f.splice(i, 1); else f.push(cat);
-    try { localStorage.setItem("oliva_fav", JSON.stringify(f)); } catch(e) {}
-    return i < 0;
-  }
-  var HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.35-9.3-8.5C1.2 9 2.3 5.8 5.3 5.3 7.3 5 9 6 12 8.5 15 6 16.7 5 18.7 5.3c3 .5 4.1 3.7 2.6 6.2C19 15.65 12 20 12 20z"/></svg>';
-
   // Посилання «Детальніше» на опис послуги. ПОКИ всі ведуть на розділ послуг
   // головного сайту; згодом сюди можна додати конкретні якорі/сторінки per-категорія.
   var SERVICE_INFO_LINKS = {};
@@ -1079,7 +1066,6 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     });
     var names = Object.keys(cats);
     if (!names.length) { box.innerHTML = '<div class="empty">У цій категорії поки немає послуг.</div>'; return; }
-    var favs = favSet();
     names.forEach(function(cat, idx) {
       var c = cats[cat];
       var durTxt = c.dur ? (c.dur + " хв · ") : "";
@@ -1088,13 +1074,9 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       card.innerHTML =
         (c.img ? '<img class="svc-photo" src="' + c.img + '" alt="" />' : '<div class="svc-photo-ph">' + (ICONS[cat] || "🌿") + '</div>') +
         (c.hit ? '<span class="svc-hit">Хіт</span>' : '') +
-        '<button class="svc-fav' + (favs.indexOf(cat) > -1 ? ' on' : '') + '" aria-label="В обране">' + HEART + '</button>' +
         '<div class="svc-info"><div class="svc-name">' + cat + '</div>' +
           '<a class="svc-more" href="' + serviceInfoUrl(cat) + '" target="_blank" rel="noopener noreferrer">Детальніше →</a>' +
         '</div>';
-      card.querySelector(".svc-fav").addEventListener("click", function(e) {
-        e.stopPropagation(); this.classList.toggle("on", favToggle(cat));
-      });
       var moreLink = card.querySelector(".svc-more");
       if (moreLink) moreLink.addEventListener("click", function(e) { e.stopPropagation(); }); // відкрити опис, не обираючи послугу
       card.addEventListener("click", function() {
