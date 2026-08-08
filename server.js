@@ -709,10 +709,43 @@ app.get("*", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+/* Реєстрація Telegram-вебхука при старті.
+   Раніше це була ручна curl-команда, і поки її не виконали, Telegram
+   складав апдейти в чергу й прив'язка майстрів мовчки не працювала.
+   Виклик ідемпотентний, тож просто робимо його на кожному старті.
+   ЛИШЕ в проді: інакше локальний сервер перевів би вебхук бойового бота
+   на localhost, і сповіщення зникли б у всіх. */
+async function registerTelegramWebhook() {
+  if (!IS_PROD || !TG_TOKEN) return;
+  const base = String(process.env.SITE_URL || PRIMARY_SITE_URL).replace(/\/+$/, "");
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
+  if (!secret) {
+    console.warn("[telegram] TELEGRAM_WEBHOOK_SECRET не задано — вебхук реєструється без підпису.");
+  }
+  const body = {
+    url: base + "/api/webhooks/telegram",
+    allowed_updates: ["message"],
+  };
+  if (secret) body.secret_token = secret;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/setWebhook`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const j = await res.json().catch(function () { return {}; });
+    if (j && j.ok) console.log("[telegram] вебхук зареєстровано:", body.url);
+    else console.error("[telegram] не вдалось зареєструвати вебхук:", JSON.stringify(j));
+  } catch (e) {
+    console.error("[telegram] setWebhook error:", e.message);
+  }
+}
+
 server.listen(PORT, function () {
   console.log("Oliva site running on http://localhost:" + PORT);
   console.log("Адмін-чат:  http://localhost:" + PORT + "/admin");
   console.log("Кабінет CRM: http://localhost:" + PORT + "/cabinet");
   console.log("Онлайн-запис: http://localhost:" + PORT + "/booking");
   scheduler.start(); // нагадування Viber/SMS
+  registerTelegramWebhook();
 });
