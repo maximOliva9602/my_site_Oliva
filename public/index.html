@@ -93,7 +93,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=2" />
 </head>
 <body>
 
@@ -320,6 +320,11 @@
       <!-- Services rendered dynamically by JS -->
     </div>
     </div>
+
+  </div><!-- /.container -->
+</section><!-- /.services-section — не були закриті, через це ВЕСЬ решта
+     сайту (акції, галерея, футер) опинявся всередині блоку послуг, а
+     липкий перемикач рівня не відпускав до самого низу сторінки. -->
 
 <!-- ============ АКЦІЇ / ЗНИЖКИ ============ -->
 <section class="promo-section" id="акції">
@@ -914,7 +919,7 @@
 })();
 </script>
 <script src="assets/js/i18n.js"></script>
-<script src="assets/js/script.js"></script>
+<script src="assets/js/script.js?v=2"></script>
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="assets/js/chat.js"></script>

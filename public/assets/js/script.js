@@ -8,8 +8,21 @@
 
   /* ---------- Nav scroll ---------- */
   var nav = document.getElementById("nav");
-  function onScroll() { nav.classList.toggle("scrolled", window.scrollY > 60); }
+  /* Липкий перемикач рівня майстра має спинятись рівно під навігацією.
+     Висота nav змінюється (scrolled зменшує падінги, ще й topbar зникає),
+     тому не хардкодимо число, а міряємо фактичне положення. */
+  function syncTierOffset() {
+    if (!nav) return;
+    var r = nav.getBoundingClientRect();
+    var h = Math.max(0, Math.ceil(r.bottom));
+    document.documentElement.style.setProperty("--srv-tier-top", h + "px");
+  }
+  function onScroll() {
+    nav.classList.toggle("scrolled", window.scrollY > 60);
+    syncTierOffset();
+  }
   window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", syncTierOffset);
   onScroll();
 
   /* ---------- Mobile burger menu ---------- */

@@ -23,12 +23,18 @@
   --container: 1200px;
 }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+/* overflow-x: clip замість hidden — hidden робить html/body контейнером
+   прокрутки й ЛАМАЄ position:sticky всередині сторінки (перемикач рівня
+   майстра просто їхав угору). clip так само обрізає горизонтальний виліз,
+   але контейнера прокрутки не створює. Рядок з hidden лишаємо першим —
+   для старих браузерів без підтримки clip (Safari < 16). */
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: hidden; overflow-x: clip; }
 body {
   font-family: 'Inter', sans-serif;
   background: var(--black);
   color: var(--text);
   overflow-x: hidden;
+  overflow-x: clip;
   line-height: 1.6;
 }
 img { max-width: 100%; display: block; }
@@ -598,5 +604,21 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
   .srv-tab {
     font-size: 0.65rem;
     padding: 6px 10px;
+  }
+  /* Перемикач рівня тримається під шапкою, поки гортаєш ціни: інакше при
+     довгому списку не видно, чиї це ціни, і треба скролити вгору.
+     Відпускає сам, коли блок послуг закінчився (межа .container).
+     --srv-tier-top рахує JS за реальною висотою навігації. */
+  .srv-tier {
+    position: sticky;
+    top: var(--srv-tier-top, 60px);
+    z-index: 60;
+    /* на всю ширину екрана, щоб фон перекривав картки під ним */
+    margin: -32px -24px 24px;
+    padding: 10px 24px;
+    background: rgba(8,10,7,0.94);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
   }
 }
