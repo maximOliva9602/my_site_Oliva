@@ -93,7 +93,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=3" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=4" />
 </head>
 <body>
 
@@ -918,8 +918,8 @@
     .catch(function(){});
 })();
 </script>
-<script src="assets/js/i18n.js"></script>
-<script src="assets/js/script.js?v=3"></script>
+<script src="assets/js/i18n.js?v=4"></script>
+<script src="assets/js/script.js?v=4"></script>
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="assets/js/chat.js"></script>
@@ -999,6 +999,25 @@
   display: none; font-size: 13px; color: var(--cream);
   line-height: 1.65; padding: 6px 0 10px;
 }
+/* Посилання на статтю про послугу — емблема студії + підпис */
+.srv-full-link {
+  display: inline-flex; align-items: center; gap: 12px;
+  text-decoration: none; color: var(--olive-light);
+}
+.srv-full-link__ico {
+  width: 44px; height: 44px; flex-shrink: 0;
+  border: 1px solid rgba(122,145,86,0.55); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .2s;
+}
+.srv-full-link__ico img { width: 30px; height: 30px; object-fit: contain; }
+.srv-full-link__txt {
+  font-weight: 600; font-size: 0.92rem; letter-spacing: 0.01em;
+  border-bottom: 1px dashed rgba(122,145,86,0.6); padding-bottom: 3px;
+  transition: color .2s, border-color .2s;
+}
+.srv-full-link:hover .srv-full-link__txt { color: var(--cream); border-bottom-color: var(--cream); }
+.srv-full-link:hover .srv-full-link__ico { border-color: var(--cream); }
 .srv-category-label { user-select: none; }
 .srv-item-toggle {
   font-size: 11px; color: var(--olive-light); cursor: pointer;
@@ -1355,14 +1374,27 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
     function svcCleanKey(name) {
       return String(name).replace(/\s*\((?:Топ\s+)?Майстер\)\s*/gi, ' ').replace(/\s+\d+\s*хв\s*$/i, '').replace(/\s{2,}/g, ' ').trim();
     }
+    function articleLabel() {
+      return (curLang() === 'en' ? 'About this massage' : 'Про цей масаж') + ' →';
+    }
     function appendArticleLink(container, groupName, standalone) {
       var slug = svcArticles[svcCleanKey(groupName)];
-      if (!slug || container.querySelector('.srv-full-link')) return;
+      if (!slug) return;
+      /* Посилання вже є (напр. картка без опису, яку не перемальовують) —
+         не виходимо мовчки, а оновлюємо підпис під поточну мову. */
+      var exist = container.querySelector('.srv-full-link');
+      if (exist) {
+        var t = exist.querySelector('.srv-full-link__txt');
+        if (t) t.textContent = articleLabel();
+        return;
+      }
       var a = document.createElement('a');
       a.className = 'srv-full-link';
       a.href = '/blog/' + slug;
-      a.textContent = 'Читати повний опис послуги →';
-      a.style.cssText = 'display:inline-block;margin-top:' + (standalone ? '12px' : '10px') + ';color:#caa45a;font-weight:600;font-size:0.85rem;text-decoration:none;border-bottom:1px solid rgba(202,164,90,.45);padding-bottom:2px;';
+      a.style.marginTop = standalone ? '14px' : '12px';
+      a.innerHTML =
+        '<span class="srv-full-link__ico"><img src="/assets/img/logo.png" alt="" /></span>' +
+        '<span class="srv-full-link__txt">' + articleLabel() + '</span>';
       container.appendChild(a);
     }
     function fmtDur(min) {
