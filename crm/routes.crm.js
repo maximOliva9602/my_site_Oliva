@@ -281,8 +281,11 @@ function createAppointment(d, session) {
       }
       publicId = crypto.randomBytes(8).toString("hex");
       const info = db.prepare(
+        /* Запис із CRM створює власник або сам майстер — підтверджувати
+           нема кого й нема чого, тож одразу 'confirmed'. Онлайн-запис із
+           сайту лишається 'pending': його підтверджують вручну. */
         `INSERT INTO appointments (public_id,client_id,master_id,branch_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,extra_services,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?, 'pending','staff',?,?,?,?,?)`
+         VALUES (?,?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?,?)`
       ).run(publicId, client.id, masterId, m.branch_id || null, serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
       appointmentId = info.lastInsertRowid;
     })();
@@ -297,9 +300,21 @@ function createAppointment(d, session) {
     adminNotify.notifyNewAppt(appointmentId, "crm");
   } catch (e) { console.error("[routes.crm] adminNotify error:", e.message); }
 
-  /* Запис із CRM також лишається pending. Відкриття push нічого не
-     підтверджує: SMS клієнту ставиться в чергу лише в setStatus(), коли
-     майстер явно натисне «Підтвердити». */
+  /* Запис одразу підтверджений, тож клієнту йде те саме SMS «запис
+     підтверджено», що й при ручному натисканні «Підтвердити» — інакше при
+     записі через CRM клієнт не отримав би підтвердження взагалі.
+     Той самий прапорець notif_confirm вимикає це, якщо не потрібно. */
+  if (settingOn("notif_confirm", true)) {
+    try {
+      const notify = require("./notify");
+      const q = notify.queueNotification(appointmentId, "confirmation");
+      if (q && q.ok && !q.duplicate) {
+        setImmediate(function () {
+          notify.flushQueued().catch(function (e) { console.error("[create] flush:", e.message); });
+        });
+      }
+    } catch (e) { console.error("[create] queue confirmation:", e.message); }
+  }
 
   return { status: 200, body: { ok: true, public_id: publicId, appointment: viewAppt(protectAppointmentPhone(apptRow(appointmentId), session)) } };
 }
