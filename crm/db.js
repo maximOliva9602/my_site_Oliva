@@ -1196,6 +1196,24 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at       INTEGER NOT NULL
 );
 `);
+/* Роль і майстер пишуться прямо в підписку. Раніше адресат визначався за
+   user_id: NULL означав «власник» (bootstrap-логін без рядка в users).
+   Але той самий NULL лишався й на телефоні МАЙСТРА, якщо на ньому колись
+   логінився власник — і майстер отримував push про чужі записи.
+   Явні поля прибирають цю двозначність. */
+try { db.exec("ALTER TABLE push_subscriptions ADD COLUMN role TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE push_subscriptions ADD COLUMN master_id INTEGER"); } catch(e) {}
+/* Backfill для вже наявних рядків: майстрів беремо з users, решту (NULL)
+   лишаємо власником — це історичне значення. Пристрої, підписані заново,
+   оновлять роль самі (UPSERT у /api/push/subscribe). */
+try {
+  db.exec(`
+    UPDATE push_subscriptions SET
+      role = COALESCE((SELECT u.role FROM users u WHERE u.id = push_subscriptions.user_id), 'owner'),
+      master_id = (SELECT u.master_id FROM users u WHERE u.id = push_subscriptions.user_id)
+    WHERE role IS NULL;
+  `);
+} catch (e) { console.error("[db] backfill push_subscriptions.role:", e.message); }
 
 module.exports = db;
 module.exports.DB_FILE = DB_FILE;

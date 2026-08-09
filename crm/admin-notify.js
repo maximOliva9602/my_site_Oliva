@@ -155,12 +155,15 @@ async function sendPushToAll(body, url, tag, masterId) {
   let subs;
   try {
     if (masterId) {
-      // Власник (у т.ч. bootstrap-логін без users.id — user_id тоді NULL)
-      // бачить усе; майстер — лише сповіщення про СВІЙ запис.
+      /* Власник бачить усе; майстер — ЛИШЕ свій запис. Орієнтуємось на
+         явні role/master_id підписки, а не на user_id: раніше умова
+         `user_id IS NULL` вважала власником будь-який пристрій, де колись
+         логінився власник, і майстер на такому телефоні отримував push
+         про чужі записи. */
       subs = db.prepare(
         `SELECT ps.* FROM push_subscriptions ps
-           LEFT JOIN users u ON u.id = ps.user_id
-          WHERE ps.user_id IS NULL OR u.role = 'owner' OR u.master_id = ?`
+          WHERE ps.role = 'owner'
+             OR (ps.master_id IS NOT NULL AND ps.master_id = ?)`
       ).all(masterId);
     } else {
       subs = db.prepare("SELECT * FROM push_subscriptions").all();

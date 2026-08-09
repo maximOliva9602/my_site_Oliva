@@ -184,10 +184,14 @@ app.post("/api/push/subscribe", function (req, res) {
        інший акаунт, рядок зберігав ЙОГО user_id, а нова підписка мовчки
        ігнорувалась — і майстер не отримував сповіщень про власні записи.
        Тепер підписка завжди належить тому, хто залогінений зараз. */
+    /* Роль і майстра пишемо явно: за user_id відрізнити власника від
+       майстра не можна (у bootstrap-власника він NULL, і такий самий NULL
+       лишався на телефоні майстра після чужого логіну). */
     db.prepare(
-      "INSERT INTO push_subscriptions (subscription_json, user_id, created_at) VALUES (?,?,?) " +
-      "ON CONFLICT(subscription_json) DO UPDATE SET user_id=excluded.user_id"
-    ).run(json, session.userId || null, Date.now());
+      "INSERT INTO push_subscriptions (subscription_json, user_id, role, master_id, created_at) VALUES (?,?,?,?,?) " +
+      "ON CONFLICT(subscription_json) DO UPDATE SET " +
+      "user_id=excluded.user_id, role=excluded.role, master_id=excluded.master_id"
+    ).run(json, session.userId || null, session.role || "worker", session.masterId || null, Date.now());
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
