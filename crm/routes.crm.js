@@ -1117,9 +1117,26 @@ router.get("/clients", any, function (req, res) {
   let rows;
   if (q) {
     const like = "%" + q + "%";
-    // LOWERU (не вбудований LOWER) — щоб пошук по імені не залежав від
-    // регістру й для кириличних імен теж (LOWER() в SQLite опускає лише ASCII).
-    rows = db.prepare("SELECT * FROM clients WHERE LOWERU(name) LIKE LOWERU(?) OR phone LIKE ? ORDER BY last_visit_at DESC NULLS LAST LIMIT 200").all(like, like);
+    const prefix = q + "%";
+    /* LOWERU (не вбудований LOWER) — щоб пошук по імені не залежав від
+       регістру й для кириличних імен теж (LOWER() в SQLite опускає лише ASCII).
+
+       Сортуємо за релевантністю, а не лише за датою останнього візиту:
+       точний збіг → початок імені → решта. Раніше все впорядковувалось за
+       last_visit_at, тож НОВИЙ клієнт (візитів ще немає → NULL) опинявся в
+       самому кінці. Клієнтку на ім'я просто «Валерія» серед дев'яти
+       «…Валерія» відкидало на 9-те місце, а список у формі запису показує
+       лише 8 — і за іменем її було не знайти, лише за телефоном. */
+    rows = db.prepare(
+      `SELECT * FROM clients
+        WHERE LOWERU(name) LIKE LOWERU(?) OR phone LIKE ?
+        ORDER BY
+          CASE WHEN LOWERU(name) = LOWERU(?) THEN 0
+               WHEN LOWERU(name) LIKE LOWERU(?) THEN 1
+               ELSE 2 END,
+          last_visit_at DESC NULLS LAST
+        LIMIT 200`
+    ).all(like, like, q, prefix);
   } else {
     rows = db.prepare("SELECT * FROM clients ORDER BY last_visit_at DESC NULLS LAST, id DESC LIMIT 200").all();
   }

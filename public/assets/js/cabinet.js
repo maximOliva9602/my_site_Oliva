@@ -3127,7 +3127,10 @@
       if (!q) { drop.style.display = "none"; return; }
       searchTimer = setTimeout(function() {
         api("GET", "/api/crm/clients?q=" + encodeURIComponent(q)).then(function(res) {
-          var list = (res.j.clients || []).slice(0, 8);
+          /* 8 було замало: у студії до десятка клієнток з однаковим іменем,
+             і потрібна відсікалась. Сервер уже сортує за релевантністю,
+             але запас не завадить. */
+          var list = (res.j.clients || []).slice(0, 15);
           drop.innerHTML = "";
           list.forEach(function(c) {
             var row = document.createElement("div");
