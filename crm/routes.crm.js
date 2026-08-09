@@ -1140,6 +1140,21 @@ router.get("/clients", any, function (req, res) {
   } else {
     rows = db.prepare("SELECT * FROM clients ORDER BY last_visit_at DESC NULLS LAST, id DESC LIMIT 200").all();
   }
+  /* visit_count рахує лише ЗАВЕРШЕНІ візити, тому в клієнта з активним
+     записом там чесний 0 — і це збивало з пантелику («запис же є, а
+     візитів 0»). Додаємо кількість актуальних записів, щоб у списку було
+     видно, що клієнт не «порожній». */
+  if (rows.length) {
+    const cnt = db.prepare(
+      `SELECT COUNT(*) c FROM appointments
+        WHERE client_id=? AND status IN ('pending','confirmed')`
+    );
+    rows = rows.map(function (c) {
+      let n = 0;
+      try { n = cnt.get(c.id).c; } catch (e) {}
+      return Object.assign({}, c, { active_appointments: n });
+    });
+  }
   const showPhone = canSeePhones(req.session);
   rows = rows.map(function(c) { return protectClientPhone(c, showPhone); });
   res.json({ ok: true, clients: rows });

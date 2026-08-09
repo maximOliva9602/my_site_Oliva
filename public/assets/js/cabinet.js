@@ -99,6 +99,14 @@
   function fmtMin(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
   function ddmm(d) { var p = d.split("-"); return p[2] + "." + p[1]; }
   function todayStr() { return new Date().toISOString().slice(0, 10); }
+  /* Підпис клієнта в списках. visit_count — це ЗАВЕРШЕНІ візити, тож у
+     клієнта з активним записом там 0, і саме по собі це виглядало як
+     помилка. Дописуємо кількість актуальних записів. */
+  function clientSubtitle(c) {
+    var parts = ["візитів: " + (c.visit_count || 0)];
+    if (c.active_appointments) parts.push("активних записів: " + c.active_appointments);
+    return parts.join(" · ");
+  }
   function dowOf(d) { return DOW[new Date(d + "T00:00:00").getDay()]; }
   function serviceMatchesMasterLevel(service, master) {
     var name = String((service && service.name) || "");
@@ -3140,7 +3148,7 @@
               '<div style="width:32px;height:32px;border-radius:50%;background:var(--olive-light);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;">' + (initials||"?") + '</div>' +
               '<div style="flex:1;min-width:0;">' +
                 '<div style="font-size:.88rem;font-weight:600;color:var(--cream);">' + c.name + '</div>' +
-                '<div style="font-size:.75rem;color:var(--text-dim);">' + (c.phone ? c.phone : (ME.can_see_phones ? "" : '<span style="color:#aaa;">🔒 приховано</span>')) + ' · візитів: ' + (c.visit_count||0) + '</div>' +
+                '<div style="font-size:.75rem;color:var(--text-dim);">' + (c.phone ? c.phone : (ME.can_see_phones ? "" : '<span style="color:#aaa;">🔒 приховано</span>')) + ' · ' + clientSubtitle(c) + '</div>' +
               '</div>';
             row.addEventListener("mousedown", function(e) { e.preventDefault(); showChip(c); drop.style.display = "none"; });
             drop.appendChild(row);
@@ -4079,7 +4087,7 @@
           row.appendChild(ava);
           var info = el("div");
           info.appendChild(el("div", "t", c.name + (c.blacklisted ? " 🚫" : "")));
-          info.appendChild(el("div", "sub", (c.phone || "без телефону") + " · візитів: " + (c.visit_count || 0) +
+          info.appendChild(el("div", "sub", (c.phone || "без телефону") + " · " + clientSubtitle(c) +
             (c.last_visit_at ? " · " + new Date(c.last_visit_at).toLocaleDateString("uk-UA") : "")));
           row.appendChild(info); row.appendChild(el("span", "sp"));
           row.appendChild(el("span", null, "›"));
