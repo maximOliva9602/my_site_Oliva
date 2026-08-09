@@ -1136,7 +1136,8 @@ router.get("/clients/:id", any, function (req, res) {
   let client = db.prepare("SELECT * FROM clients WHERE id=?").get(id);
   if (!client) return res.status(404).json({ ok: false });
   const history = db.prepare(
-    `SELECT a.id, a.date, a.start_min, a.status, a.service_id, a.master_id,
+    `SELECT a.id, a.date, a.start_min, a.end_min, a.status, a.service_id, a.master_id,
+            a.duration_min, a.price, a.extra_services,
             s.name service_name, m.name master_name
        FROM appointments a JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id
       WHERE a.client_id=? ORDER BY a.date DESC, a.start_min DESC`

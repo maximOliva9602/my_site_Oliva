@@ -4315,28 +4315,66 @@
         '<span style="margin-left:auto;color:var(--text-dim);font-size:.8rem;">' + h.length + '</span>' +
         '<span style="color:var(--text-dim);">›</span>';
       var histBody = document.createElement("div");
-      var histOpen = false;
+      /* Розгорнуто одразу: власник відкриває картку клієнта саме заради
+         історії, а згорнутий блок її фактично ховав. */
+      var histOpen = true;
       histHead.addEventListener("click", function() {
         histOpen = !histOpen;
         histBody.style.display = histOpen ? "block" : "none";
         histHead.querySelector("span:last-child").textContent = histOpen ? "∨" : "›";
       });
+
+      function histRow(a) {
+        var it = document.createElement("div");
+        it.style.cssText = "padding:10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:10px;";
+        var dur = a.duration_min ? a.duration_min + " хв" : "";
+        var price = a.price ? money(a.price) : "";
+        var meta = [dur, price].filter(Boolean).join(" · ");
+        it.innerHTML =
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:.82rem;font-weight:600;color:var(--cream);">' + ddmm(a.date) + ' ' + a.time + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-dim);margin-top:1px;">' + a.service_name + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-dim);">👤 ' + a.master_name +
+              (meta ? ' · ' + meta : '') + '</div>' +
+          '</div>' +
+          '<span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status] || a.status) + '</span>';
+        /* Клік — відкрити картку запису, щоб не шукати його в календарі. */
+        it.style.cursor = "pointer";
+        it.addEventListener("click", function() {
+          api("GET", "/api/crm/appointments/" + a.id).then(function(r) {
+            if (r.j && r.j.ok && r.j.appointment) window.apptDetailModal(r.j.appointment);
+          });
+        });
+        return it;
+      }
+      function histGroupTitle(txt) {
+        var d = document.createElement("div");
+        d.style.cssText = "padding:8px 16px;background:var(--panel-2);font-size:.7rem;font-weight:700;color:var(--text-dim);letter-spacing:.05em;text-transform:uppercase;";
+        d.textContent = txt;
+        return d;
+      }
+
       if (!h.length) {
         histBody.appendChild(el("div", "empty", "Записів поки немає"));
       } else {
-        h.forEach(function (a) {
-          var it = document.createElement("div");
-          it.style.cssText = "padding:10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;";
-          it.innerHTML =
-            '<div style="flex:1;min-width:0;">' +
-              '<div style="font-size:.82rem;font-weight:600;color:var(--cream);">' + ddmm(a.date) + ' ' + a.time + '</div>' +
-              '<div style="font-size:.75rem;color:var(--text-dim);">' + a.service_name + ' · ' + a.master_name + '</div>' +
-            '</div>' +
-            '<span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status] || a.status) + '</span>';
-          histBody.appendChild(it);
+        /* Майбутні записи окремо зверху: інакше вони йшли впереміш і
+           «коли клієнт приходив» доводилось вишукувати очима. */
+        var today = todayStr();
+        var upcoming = h.filter(function(a) {
+          return a.date >= today && a.status !== "completed" && a.status !== "cancelled" && a.status !== "no_show";
         });
+        var past = h.filter(function(a) { return upcoming.indexOf(a) === -1; });
+        if (upcoming.length) {
+          histBody.appendChild(histGroupTitle("Заплановані · " + upcoming.length));
+          upcoming.slice().reverse().forEach(function(a) { histBody.appendChild(histRow(a)); });
+        }
+        if (past.length) {
+          histBody.appendChild(histGroupTitle("Історія візитів · " + past.length));
+          past.forEach(function(a) { histBody.appendChild(histRow(a)); });
+        }
       }
-      histBody.style.display = "none";
+      histBody.style.display = "block";
+      histHead.querySelector("span:last-child").textContent = "∨";
       histSection.appendChild(histHead);
       histSection.appendChild(histBody);
       main.appendChild(histSection);
