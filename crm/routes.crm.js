@@ -125,19 +125,22 @@ function viewAppt(a) {
   }
   // Абонемент клієнта за цією послугою (для позначки «по абонементу» + лічильника в календарі)
   try {
-    /* Завершений візит, для якого номер сеансу вже зафіксовано назавжди
-       (setStatus) — показуємо саме його, а не поточний підсумок
-       абонементу: інакше картки різних дат "їхали" б услід за подальшими
-       візитами того ж клієнта й усі показували б однакове число. */
-    if (a.status === "completed" && a.subscription_session_no != null && a.subscription_session_total != null) {
+    /* Скасований візит і неявка сеанс не займають — не даємо їм номера,
+       інакше поруч із наступним активним записом світився б той самий. */
+    if (a.status === "cancelled" || a.status === "no_show") return out;
+    /* Номер сеансу вже зафіксовано за цим записом — показуємо саме його.
+       Фіксується у двох випадках: при «Завершено» (setStatus) і коли
+       абонемент оформили прямо на цьому візиті (POST /subscriptions з
+       appointment_id: перший сеанс уже враховано в used_sessions).
+       Раніше умова вимагала status='completed', тож щойно оформлений
+       абонемент рахувався загальною формулою — used_sessions(1) + 1 = 2,
+       і перший же візит показувало як 2/10. */
+    if (a.subscription_session_no != null && a.subscription_session_total != null) {
       out.sub_used = a.subscription_session_no;
       out.sub_total = a.subscription_session_total;
       out.sub_index = a.subscription_session_no;
       return out;
     }
-    /* Скасований візит і неявка сеанс не займають — не даємо їм номера,
-       інакше поруч із наступним активним записом світився б той самий. */
-    if (a.status === "cancelled" || a.status === "no_show") return out;
     const svcIds = subServiceIds(a.service_id);
     const sub = db.prepare(
       `SELECT used_sessions, total_sessions, created_at FROM subscriptions
@@ -152,10 +155,15 @@ function viewAppt(a) {
          візитів підряд не можна: сеанси, списані до створення абонемента або
          перенесені з попереднього (used_sessions на старті), випадали з
          нумерації — і номер «відставав» від реального залишку. */
+      /* subscription_session_no IS NULL — виключаємо візити, за якими номер
+         уже зафіксовано: вони враховані в used_sessions. Без цього візит, на
+         якому оформили абонемент, рахувався двічі (і в used_sessions, і в
+         черзі), і наступний запис показувало на одиницю більше. */
       const pendingBefore = db.prepare(
         `SELECT COUNT(*) c FROM appointments
           WHERE client_id=? AND service_id IN (${inList(svcIds.length)})
             AND status IN ('pending','confirmed') AND id<>?
+            AND subscription_session_no IS NULL
             AND (date < ? OR (date = ? AND start_min < ?))`
       ).get(a.client_id, ...svcIds, a.id, a.date, a.date, a.start_min).c;
       const subIndex = sub.used_sessions + pendingBefore + 1;
