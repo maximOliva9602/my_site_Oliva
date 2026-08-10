@@ -128,6 +128,54 @@ async function notifyNewAppt(appointmentId, source) {
   }
 }
 
+/* Скасування візиту — Telegram + push. Адресація та сама, що й у новому
+   записі: власнику завжди, майстру — лише коли скасували ЙОГО візит
+   (інакше він прийде на роботу до запису, якого вже немає).
+   byRole/byName — хто скасував, щоб було видно, це адміністратор чи сам
+   майстер. */
+async function notifyCancelled(appointmentId, cancelledBy) {
+  try {
+    const a = db.prepare(`
+      SELECT a.date, a.start_min, a.duration_min, a.master_id,
+             c.name client_name, c.phone client_phone,
+             s.name service_name,
+             m.name master_name, m.tg_chat_id master_tg, m.can_see_phones master_can_see_phones
+      FROM appointments a
+      JOIN clients  c ON c.id = a.client_id
+      JOIN services s ON s.id = a.service_id
+      JOIN masters  m ON m.id = a.master_id
+      WHERE a.id = ?
+    `).get(appointmentId);
+    if (!a) return;
+
+    const build = (showPhone, forMaster) =>
+      `❌ <b>Візит скасовано</b>\n\n` +
+      `👤 <b>Клієнт:</b> ${a.client_name}\n` +
+      (showPhone
+        ? `📞 <b>Телефон:</b> ${a.client_phone}\n`
+        : `📞 <b>Телефон:</b> прихований\n`) +
+      `💆 <b>Послуга:</b> ${a.service_name}\n` +
+      (forMaster ? "" : `👩‍🔧 <b>Майстер:</b> ${a.master_name}\n`) +
+      `📆 <b>Дата:</b> ${ddmm(a.date)}, ${fmtMin(a.start_min)}–${fmtMin(a.start_min + a.duration_min)}` +
+      (cancelledBy ? `\n\n🙋 <b>Скасував:</b> ${cancelledBy}` : "") +
+      `\n\n🕓 Час звільнився — можна пропонувати іншим.`;
+
+    const text = build(true, false);
+    await sendTg(text);
+    if (a.master_tg) {
+      await sendTg(build(!!a.master_can_see_phones, true), a.master_tg);
+    }
+    sendPushToAll(
+      text.replace(/<[^>]+>/g, ""),
+      `/cabinet?appointment=${appointmentId}`,
+      `cancel-appt-${appointmentId}`,
+      a.master_id
+    );
+  } catch (e) {
+    console.error("[admin-notify] notifyCancelled error:", e.message);
+  }
+}
+
 /* ---- Web Push ---- */
 let webpush;
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY  || "";
@@ -199,4 +247,4 @@ async function sendPushToAll(body, url, tag, masterId) {
   return stats;
 }
 
-module.exports = { notifyNewAppt, sendPushToAll, sendTg, VAPID_PUBLIC };
+module.exports = { notifyNewAppt, notifyCancelled, sendPushToAll, sendTg, VAPID_PUBLIC };

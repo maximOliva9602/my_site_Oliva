@@ -431,6 +431,20 @@ function setStatus(id, status, session) {
       }
     } catch (e) { console.error("[cancel-sms] queue:", e.message); }
   }
+  /* Сповіщення про скасування власнику й майстру (Telegram + push).
+     Окремо від SMS клієнту вище: та керується notif_cancel і типово
+     вимкнена, а студія має знати про скасування завжди — час звільнився,
+     і його ще можна комусь запропонувати.
+     Не шлемо, якщо запис і так уже був скасований: setStatus викликають
+     повторно (напр. подвійний клік), і летіли б дублі. */
+  if (status === "cancelled" && a.status !== "cancelled") {
+    try {
+      const who = session && session.role === "owner"
+        ? "власник"
+        : (db.prepare("SELECT name FROM masters WHERE id=?").get(session && session.masterId) || {}).name || "майстер";
+      require("./admin-notify").notifyCancelled(id, who);
+    } catch (e) { console.error("[cancel-notify]", e.message); }
+  }
   if (status === "completed") {
     // Автоматично списуємо сеанс абонементу (якщо ще не списали)
     if (!a.subscription_used && a.client_id && a.service_id) {
