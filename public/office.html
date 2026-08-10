@@ -30,7 +30,11 @@
 .of-hero__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
 .of-hero__veil { position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(90deg, rgba(8,10,7,.94) 0%, rgba(8,10,7,.82) 45%, rgba(8,10,7,.45) 100%); }
-.of-hero__inner { position: relative; z-index: 2; max-width: 720px; }
+/* .of-hero — flex, тож .container усередині поводиться як flex-елемент і
+   за замовчуванням не стискається вужче за свій вміст (min-width:auto).
+   На вузьких екранах це розпирало його за межі viewport. */
+.of-hero > .container { width: 100%; min-width: 0; }
+.of-hero__inner { position: relative; z-index: 2; max-width: 720px; min-width: 0; }
 .of-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: .72rem; letter-spacing: .16em;
   text-transform: uppercase; color: var(--olive-light); margin-bottom: 18px; }
 .of-eyebrow::before { content: ''; width: 34px; height: 1px; background: var(--olive-light); }
@@ -144,17 +148,46 @@
 .of-contact-line__val { font-size: 1.02rem; color: var(--cream); }
 .of-err { color: #E0816B; font-size: .82rem; min-height: 20px; margin-bottom: 6px; }
 
+/* Нижня кнопка — лише на мобільному (вмикається в медіазапиті нижче) */
+.of-sticky-cta { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 99; display: none;
+  transition: opacity .25s, transform .25s; }
+.of-sticky-cta .btn { width: 100%; justify-content: center; box-shadow: 0 6px 24px rgba(122,145,86,.4); }
+/* Коли видно саму форму — кнопка зайва й лише перекриває поля */
+.of-sticky-cta.hide { opacity: 0; transform: translateY(120%); pointer-events: none; }
+
 @media (max-width: 1000px) {
   .of-grid--4 { grid-template-columns: repeat(2, 1fr); }
   .of-form-wrap { grid-template-columns: 1fr; gap: 30px; }
 }
+@media (max-width: 900px) {
+  /* .nav-cta у шапці ховається на мобільному (styles.css), тож головна
+     кнопка має бути внизу екрана — інакше з телефона до неї не дотягнутись
+     без прокрутки в кінець сторінки. */
+  .of-sticky-cta { display: block; }
+  /* щоб кінець сторінки не ховався під фіксованою кнопкою */
+  body { padding-bottom: 84px; }
+  /* Поля ≥16px: на iOS Safari менший шрифт змушує браузер зумити сторінку
+     при фокусі, і верстка «стрибає». */
+  .of-form input, .of-form select, .of-form textarea { font-size: 16px; }
+}
 @media (max-width: 760px) {
+  /* Довгі слова («перезавантаження», «Шийно-комірцева») на вузьких
+     екранах розпирали контейнер і обрізались по правому краю. */
+  .of-hero h1, .of-head h2, .of-card h3, .of-mode h3, .of-fmt li, .of-swap li { overflow-wrap: break-word; }
   .of-hero { min-height: auto; padding: 120px 0 64px; }
   .of-hero__veil { background: linear-gradient(180deg, rgba(8,10,7,.9) 0%, rgba(8,10,7,.86) 100%); }
   .of-section { padding: 64px 0; }
   .of-grid--3, .of-grid--4, .of-grid--2, .of-swap { grid-template-columns: 1fr; }
   .of-hero__facts { gap: 20px; }
   .of-mode { flex-direction: column; gap: 14px; }
+}
+@media (max-width: 360px) {
+  /* iPhone SE та подібні: кегль такий, щоб «перезавантаження» вміщалось
+     цілим словом — інакше break-word рвав його посеред. */
+  .of-hero h1 { font-size: 1.6rem; }
+  .of-hero__facts { gap: 16px; }
+  .of-fact__num { font-size: 1.4rem; }
+  .of-lead { font-size: .95rem; }
 }
 </style>
 </head>
@@ -167,6 +200,9 @@
     <span class="nav-logo__text">Oliva<span class="dot">.</span></span>
   </a>
   <ul class="nav-links" id="navLinks">
+    <!-- .nav-close і підкладка потрібні саме на мобільному: без них
+         висувне меню закривалось лише повторним тапом по бургеру. -->
+    <button class="nav-close" id="navClose" aria-label="Закрити меню">&times;</button>
     <li><a href="/">Головна</a></li>
     <li><a href="#formats">Формати</a></li>
     <li><a href="#how">Як це працює</a></li>
@@ -608,6 +644,11 @@
   </div>
 </section>
 
+<!-- Кнопка на мобільному: у шапці .nav-cta схована, тож дублюємо тут -->
+<div class="of-sticky-cta">
+  <a href="#request" class="btn btn-primary">Замовити прорахунок</a>
+</div>
+
 <!-- ============ FOOTER ============ -->
 <footer style="background:var(--black);border-top:1px solid var(--line);padding:40px 0;">
   <div class="container" style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;">
@@ -645,15 +686,28 @@
     });
   });
 
-  /* Бургер: на цій сторінці меню коротке, тому просто показуємо/ховаємо */
+  /* Мобільне меню: бургер, кнопка «×» і затемнення. Без двох останніх
+     панель закривалась лише повторним тапом по бургеру — на телефоні це
+     неочевидно. */
   var burger = document.getElementById("burger");
   var links = document.getElementById("navLinks");
-  if (burger && links) {
-    burger.addEventListener("click", function () {
-      burger.classList.toggle("open");
-      links.classList.toggle("open");
-    });
+  var navClose = document.getElementById("navClose");
+  var backdrop = document.createElement("div");
+  backdrop.className = "nav-backdrop";
+  document.body.appendChild(backdrop);
+
+  function setMenu(open) {
+    burger.classList.toggle("open", open);
+    links.classList.toggle("open", open);
+    backdrop.classList.toggle("open", open);
+    document.body.style.overflow = open ? "hidden" : "";
   }
+  if (burger) burger.addEventListener("click", function () { setMenu(!links.classList.contains("open")); });
+  if (navClose) navClose.addEventListener("click", function () { setMenu(false); });
+  backdrop.addEventListener("click", function () { setMenu(false); });
+  links.querySelectorAll("a").forEach(function (a) {
+    a.addEventListener("click", function () { setMenu(false); });
+  });
 
   /* Телефон: підставляємо +380, але не тримаємо силою — можна стерти
      й ввести міжнародний номер. Та сама поведінка, що в онлайн-записі. */
@@ -666,6 +720,16 @@
     var s = String(v || "").replace(/[^\d+]/g, "");
     if (/^\+380\d{9}$/.test(s)) return true;
     return /^\+\d{8,15}$/.test(s);
+  }
+
+  /* Нижню кнопку ховаємо, коли на екрані сама форма: там уже є своя
+     кнопка, а фіксована перекривала поля. */
+  var stickyCta = document.querySelector(".of-sticky-cta");
+  var requestSec = document.getElementById("request");
+  if (stickyCta && requestSec && "IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      stickyCta.classList.toggle("hide", entries[0].isIntersecting);
+    }, { threshold: 0.12 }).observe(requestSec);
   }
 
   var form = document.getElementById("ofForm");
