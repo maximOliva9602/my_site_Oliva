@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Масаж в офіс — корпоративний масаж у Києві | Студія Oliva</title>
+  <meta name="description" content="Виїзний масаж в офіс у Києві від студії Oliva. Сеанси 15/20/30 хвилин на кріслі, без переодягання. Разова акція для команди або регулярна програма. Замовити прорахунок: 097 434 01 12." />
+  <meta name="keywords" content="масаж в офіс Київ, корпоративний масаж Київ, офісний масаж, виїзний масаж Київ, масаж для співробітників, масаж на івент Київ" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://massage-oliva.com/office.html" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://massage-oliva.com/office.html" />
+  <meta property="og:title" content="Масаж в офіс — корпоративний масаж у Києві | Студія Oliva" />
+  <meta property="og:description" content="Виїзний масаж для вашої команди. 15–30 хвилин на співробітника, без переодягання, у вашому офісі." />
+  <meta property="og:image" content="https://massage-oliva.com/assets/img/og-image.jpg" />
+
+  <link rel="icon" href="assets/img/logo.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=7" />
+
+<style>
+/* ── Сторінка «Масаж в офіс». Базові стилі й палітра — зі styles.css,
+   тут лише те, чого немає на головній. ─────────────────────────── */
+.of-hero {
+  position: relative; min-height: 78vh; display: flex; align-items: center;
+  padding: 140px 0 80px; overflow: hidden;
+}
+.of-hero__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.of-hero__veil { position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(90deg, rgba(8,10,7,.94) 0%, rgba(8,10,7,.82) 45%, rgba(8,10,7,.45) 100%); }
+.of-hero__inner { position: relative; z-index: 2; max-width: 720px; }
+.of-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: .72rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--olive-light); margin-bottom: 18px; }
+.of-eyebrow::before { content: ''; width: 34px; height: 1px; background: var(--olive-light); }
+.of-hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.1rem, 5.2vw, 3.6rem);
+  line-height: 1.1; color: var(--cream); font-weight: 500; margin-bottom: 20px; }
+.of-hero h1 em { font-style: italic; color: var(--olive-light); }
+.of-lead { font-size: 1.02rem; color: var(--text); line-height: 1.75; margin-bottom: 30px; max-width: 560px; }
+.of-hero__cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.of-hero__facts { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 38px; }
+.of-fact__num { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--cream); }
+.of-fact__lbl { font-size: .74rem; color: var(--text-dim); letter-spacing: .03em; }
+
+.of-section { padding: 92px 0; }
+.of-section--alt { background: var(--black-2); }
+.of-head { max-width: 720px; margin-bottom: 46px; }
+.of-head h2 { font-family: 'Playfair Display', serif; font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+  color: var(--cream); font-weight: 500; line-height: 1.2; margin-bottom: 14px; }
+.of-head p { color: var(--text-dim); font-size: .95rem; line-height: 1.7; }
+
+.of-grid { display: grid; gap: 16px; }
+.of-grid--3 { grid-template-columns: repeat(3, 1fr); }
+.of-grid--4 { grid-template-columns: repeat(4, 1fr); }
+.of-grid--2 { grid-template-columns: repeat(2, 1fr); }
+
+.of-card { background: rgba(46,61,34,.16); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 26px 24px; transition: border-color .25s, transform .25s, background .25s; }
+.of-card:hover { border-color: rgba(122,145,86,.42); transform: translateY(-2px); background: rgba(46,61,34,.26); }
+.of-card__ico { width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(122,145,86,.5);
+  display: flex; align-items: center; justify-content: center; color: var(--olive-light);
+  font-size: 1.15rem; margin-bottom: 16px; }
+.of-card h3 { font-size: 1rem; color: var(--cream); font-weight: 600; margin-bottom: 8px; }
+.of-card p { font-size: .88rem; color: var(--text-dim); line-height: 1.65; }
+
+/* Кроки «як це працює» */
+.of-step { position: relative; padding-left: 58px; }
+.of-step__n { position: absolute; left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--olive); border: 1px solid var(--olive-light); color: var(--cream);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-size: 1.05rem; }
+.of-step h3 { font-size: .98rem; color: var(--cream); margin-bottom: 6px; font-weight: 600; }
+.of-step p { font-size: .87rem; color: var(--text-dim); line-height: 1.65; }
+
+/* Формати */
+.of-fmt { background: rgba(46,61,34,.18); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 30px 26px; display: flex; flex-direction: column; transition: border-color .25s, transform .25s; }
+.of-fmt:hover { border-color: var(--olive-light); transform: translateY(-3px); }
+.of-fmt--pick { border-color: rgba(122,145,86,.55); background: rgba(46,61,34,.3); }
+.of-fmt__tag { align-self: flex-start; font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--black); background: var(--olive-light); padding: 4px 11px; border-radius: 50px; margin-bottom: 14px; }
+.of-fmt__time { font-family: 'Playfair Display', serif; font-size: 2.3rem; color: var(--cream); line-height: 1; }
+.of-fmt__time span { font-size: .95rem; color: var(--text-dim); font-family: 'Inter', sans-serif; margin-left: 6px; }
+.of-fmt__desc { font-size: .87rem; color: var(--text-dim); line-height: 1.65; margin: 14px 0 18px; }
+.of-fmt ul { display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px; }
+.of-fmt li { font-size: .85rem; color: var(--text); display: flex; gap: 9px; align-items: flex-start; }
+.of-fmt li::before { content: '—'; color: var(--olive-light); flex-shrink: 0; }
+.of-fmt .btn { margin-top: auto; justify-content: center; }
+
+/* Кому підходить / формати співпраці */
+.of-mode { display: flex; gap: 20px; align-items: flex-start; background: rgba(46,61,34,.16);
+  border: 1px solid var(--line); border-radius: var(--r); padding: 28px 26px; }
+.of-mode__ico { flex-shrink: 0; width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(122,145,86,.14); border: 1px solid rgba(122,145,86,.42);
+  display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+.of-mode h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); margin-bottom: 8px; }
+.of-mode p { font-size: .89rem; color: var(--text-dim); line-height: 1.7; }
+
+/* Проблема → результат */
+.of-swap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.of-swap__col { border-radius: var(--r); padding: 28px 26px; border: 1px solid var(--line); }
+.of-swap__col--bad { background: rgba(224,129,107,.07); border-color: rgba(224,129,107,.22); }
+.of-swap__col--good { background: rgba(122,145,86,.09); border-color: rgba(122,145,86,.32); }
+.of-swap h3 { font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 16px; }
+.of-swap__col--bad h3 { color: #E0816B; }
+.of-swap__col--good h3 { color: var(--olive-light); }
+.of-swap li { font-size: .89rem; color: var(--text); line-height: 1.6; padding: 8px 0 8px 24px; position: relative; }
+.of-swap li::before { position: absolute; left: 0; top: 8px; }
+.of-swap__col--bad li::before { content: '✕'; color: #E0816B; font-size: .8rem; }
+.of-swap__col--good li::before { content: '✓'; color: var(--olive-light); font-size: .85rem; }
+
+/* FAQ */
+.of-faq { border-top: 1px solid var(--line); }
+.of-faq__item { border-bottom: 1px solid var(--line); }
+.of-faq__q { width: 100%; text-align: left; padding: 22px 44px 22px 0; position: relative;
+  font-size: 1rem; color: var(--cream); font-weight: 500; background: none; border: none;
+  cursor: pointer; font-family: inherit; transition: color .2s; }
+.of-faq__q:hover { color: var(--olive-light); }
+.of-faq__q::after { content: '+'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font-size: 1.4rem; color: var(--olive-light); transition: transform .25s; }
+.of-faq__item.open .of-faq__q::after { transform: translateY(-50%) rotate(45deg); }
+.of-faq__a { display: none; padding: 0 0 24px; color: var(--text-dim); font-size: .92rem; line-height: 1.75; max-width: 780px; }
+.of-faq__item.open .of-faq__a { display: block; }
+
+/* Форма заявки */
+.of-form-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: start; }
+.of-form { background: rgba(46,61,34,.2); border: 1px solid var(--line); border-radius: var(--r); padding: 32px 30px; }
+.of-form label { display: block; font-size: .78rem; color: var(--text-dim); margin: 0 0 7px; letter-spacing: .03em; }
+.of-form input, .of-form textarea, .of-form select {
+  width: 100%; background: rgba(8,10,7,.55); border: 1px solid var(--line); border-radius: 10px;
+  padding: 13px 15px; color: var(--cream); font-size: .93rem; font-family: inherit;
+  margin-bottom: 16px; outline: none; transition: border-color .2s;
+}
+.of-form input:focus, .of-form textarea:focus, .of-form select:focus { border-color: var(--olive-light); }
+.of-form textarea { min-height: 90px; resize: vertical; }
+.of-form .btn { width: 100%; justify-content: center; }
+.of-form__note { font-size: .76rem; color: var(--text-dim); margin-top: 14px; text-align: center; line-height: 1.6; }
+.of-form__ok { display: none; text-align: center; padding: 26px 10px; }
+.of-form__ok h3 { font-family: 'Playfair Display', serif; color: var(--cream); font-size: 1.3rem; margin-bottom: 10px; }
+.of-form__ok p { color: var(--text-dim); font-size: .9rem; line-height: 1.7; }
+.of-contact-line { display: flex; align-items: center; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.of-contact-line__lbl { font-size: .72rem; color: var(--text-dim); letter-spacing: .06em; text-transform: uppercase; }
+.of-contact-line__val { font-size: 1.02rem; color: var(--cream); }
+.of-err { color: #E0816B; font-size: .82rem; min-height: 20px; margin-bottom: 6px; }
+
+@media (max-width: 1000px) {
+  .of-grid--4 { grid-template-columns: repeat(2, 1fr); }
+  .of-form-wrap { grid-template-columns: 1fr; gap: 30px; }
+}
+@media (max-width: 760px) {
+  .of-hero { min-height: auto; padding: 120px 0 64px; }
+  .of-hero__veil { background: linear-gradient(180deg, rgba(8,10,7,.9) 0%, rgba(8,10,7,.86) 100%); }
+  .of-section { padding: 64px 0; }
+  .of-grid--3, .of-grid--4, .of-grid--2, .of-swap { grid-template-columns: 1fr; }
+  .of-hero__facts { gap: 20px; }
+  .of-mode { flex-direction: column; gap: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav id="nav" class="scrolled">
+  <a href="/" class="nav-logo" aria-label="Oliva — головна">
+    <img src="assets/img/logo.png" alt="Логотип студії масажу Oliva" class="nav-logo__img" />
+    <span class="nav-logo__text">Oliva<span class="dot">.</span></span>
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="/">Головна</a></li>
+    <li><a href="#formats">Формати</a></li>
+    <li><a href="#how">Як це працює</a></li>
+    <li><a href="#faq">Питання</a></li>
+    <li><a href="/#services">Послуги студії</a></li>
+    <li class="nav-phone-item"><a href="tel:+380974340112" class="nav-phone-link">📞 097 434 01 12</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#request" class="nav-cta">Замовити прорахунок</a>
+    <button class="burger" id="burger" aria-label="Меню"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="of-hero">
+  <img class="of-hero__bg" src="assets/img/main_photo.jpg" alt="Масаж в офіс — студія Oliva, Київ" />
+  <div class="of-hero__veil"></div>
+  <div class="container">
+    <div class="of-hero__inner">
+      <div class="of-eyebrow">Корпоративні програми</div>
+      <h1>Масаж в офіс —<br><em>перезавантаження</em> для вашої команди</h1>
+      <p class="of-lead">
+        Наші майстри приїжджають до вас із професійним масажним кріслом.
+        15–30 хвилин на людину, просто в одязі, без переодягання й душу.
+        Співробітник повертається до роботи за пів години — з рівною спиною
+        і без «каменю» в шиї.
+      </p>
+      <div class="of-hero__cta">
+        <a href="#request" class="btn btn-primary">Розрахувати вартість →</a>
+        <a href="tel:+380974340112" class="btn btn-outline">097 434 01 12</a>
+      </div>
+      <div class="of-hero__facts">
+        <div class="of-fact">
+          <div class="of-fact__num">15–30 хв</div>
+          <div class="of-fact__lbl">на одного співробітника</div>
+        </div>
+        <div class="of-fact">
+          <div class="of-fact__num">2 м²</div>
+          <div class="of-fact__lbl">достатньо для крісла</div>
+        </div>
+        <div class="of-fact">
+          <div class="of-fact__num">Київ</div>
+          <div class="of-fact__lbl">виїзд по місту</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ПРОБЛЕМА → РЕЗУЛЬТАТ ============ -->
+<section class="of-section">
+  <div class="container">
+    <div class="of-head">
+      <h2>Вісім годин за монітором даються взнаки</h2>
+      <p>Сидяча робота — це статичне навантаження на шию й поперек, затиснуті
+         плечі та головний біль під кінець дня. Люди не хворіють «офіційно»,
+         але працюють упівсили.</p>
+    </div>
+    <div class="of-swap">
+      <div class="of-swap__col of-swap__col--bad">
+        <h3>Без розвантаження</h3>
+        <ul>
+          <li>Напруга в шиї та плечах, головний біль</li>
+          <li>Біль у попереку від сидіння</li>
+          <li>Втома й розсіяна увага після обіду</li>
+          <li>Дратівливість, вигорання в команді</li>
+          <li>Лікарняні через спину, що «прострелила»</li>
+        </ul>
+      </div>
+      <div class="of-swap__col of-swap__col--good">
+        <h3>Після сеансу</h3>
+        <ul>
+          <li>Знімається м'язовий спазм, шия рухається вільно</li>
+          <li>Покращується кровообіг і постачання кисню</li>
+          <li>Повертається концентрація на другу половину дня</li>
+          <li>Менше стресу — команда спокійніша</li>
+          <li>Профілактика замість лікування</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ФОРМАТИ ============ -->
+<section class="of-section of-section--alt" id="formats">
+  <div class="container">
+    <div class="of-head">
+      <h2>Формати сеансів</h2>
+      <p>Обираєте тривалість — ми рахуємо, скільки майстрів і годин потрібно
+         під вашу кількість людей. Працюємо на масажному кріслі: людина сидить
+         одягнена, обличчям в упор.</p>
+    </div>
+    <div class="of-grid of-grid--3">
+
+      <div class="of-fmt">
+        <div class="of-fmt__time">15<span>хвилин</span></div>
+        <div class="of-fmt__desc">Швидка розминка в розпал робочого дня. Встигаємо
+          зняти найгостріше напруження.</div>
+        <ul>
+          <li>Шийно-комірцева зона</li>
+          <li>Плечі та верх спини</li>
+          <li>Голова</li>
+        </ul>
+        <a href="#request" class="btn btn-outline">Обрати формат</a>
+      </div>
+
+      <div class="of-fmt of-fmt--pick">
+        <div class="of-fmt__tag">Найпопулярніший</div>
+        <div class="of-fmt__time">20<span>хвилин</span></div>
+        <div class="of-fmt__desc">Оптимальний баланс: людина встигає розслабитися,
+          робочий процес майже не зачіпається.</div>
+        <ul>
+          <li>Шия, комірцева зона, плечі</li>
+          <li>Спина повністю</li>
+          <li>Голова</li>
+          <li>Руки й кисті</li>
+        </ul>
+        <a href="#request" class="btn btn-primary">Обрати формат</a>
+      </div>
+
+      <div class="of-fmt">
+        <div class="of-fmt__time">30<span>хвилин</span></div>
+        <div class="of-fmt__desc">Глибша робота з тілом. Для команд, де сидяча
+          робота поєднується з дедлайнами й перевтомою.</div>
+        <ul>
+          <li>Шия, комірцева зона, плечі</li>
+          <li>Спина й поперек</li>
+          <li>Голова</li>
+          <li>Руки, кисті</li>
+          <li>Робота з тригерними точками</li>
+        </ul>
+        <a href="#request" class="btn btn-outline">Обрати формат</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ ЯК ЦЕ ПРАЦЮЄ ============ -->
+<section class="of-section" id="how">
+  <div class="container">
+    <div class="of-head">
+      <h2>Як усе відбувається</h2>
+      <p>Від заявки до сеансу — без організаційного клопоту з вашого боку.</p>
+    </div>
+    <div class="of-grid of-grid--2" style="gap:30px 44px;">
+      <div class="of-step">
+        <div class="of-step__n">1</div>
+        <h3>Залишаєте заявку</h3>
+        <p>Пишете кількість співробітників і бажану дату. Ми зв'язуємось,
+           уточнюємо деталі й рахуємо вартість під ваш формат.</p>
+      </div>
+      <div class="of-step">
+        <div class="of-step__n">2</div>
+        <h3>Складаємо графік</h3>
+        <p>Розписуємо сеанси по часу, щоб люди йшли по черзі й робота не
+           зупинялась. Надсилаємо готовий розклад — вам лишається його поширити.</p>
+      </div>
+      <div class="of-step">
+        <div class="of-step__n">3</div>
+        <h3>Приїжджаємо зі своїм обладнанням</h3>
+        <p>Масажне крісло, одноразові матеріали, антисептик. Купувати чи
+           орендувати нічого не треба. Потрібно близько 2 м² і розетка поруч.</p>
+      </div>
+      <div class="of-step">
+        <div class="of-step__n">4</div>
+        <h3>Проводимо сеанси</h3>
+        <p>Людина сідає в крісло в своєму одязі — без переодягання, олій і душу.
+           Після сеансу одразу повертається до роботи.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ФОРМАТИ СПІВПРАЦІ ============ -->
+<section class="of-section of-section--alt">
+  <div class="container">
+    <div class="of-head">
+      <h2>Разова акція чи регулярна програма</h2>
+      <p>Можна почати з одного дня й подивитись на реакцію команди.</p>
+    </div>
+    <div class="of-grid of-grid--2">
+      <div class="of-mode">
+        <div class="of-mode__ico">🎁</div>
+        <div>
+          <h3>Разовий захід</h3>
+          <p>До свята, дня народження компанії, після великого релізу або
+             закриття кварталу. Гарний спосіб подякувати команді — і перевірити
+             формат, перш ніж робити його постійним.</p>
+        </div>
+      </div>
+      <div class="of-mode">
+        <div class="of-mode__ico">📅</div>
+        <div>
+          <h3>Регулярна програма</h3>
+          <p>Наприклад, раз на тиждень або двічі на місяць у фіксований день.
+             Саме регулярність дає ефект: спина не встигає «забиватися»,
+             а співробітники чекають на цей день.</p>
+        </div>
+      </div>
+      <div class="of-mode">
+        <div class="of-mode__ico">🤝</div>
+        <div>
+          <h3>Івенти та конференції</h3>
+          <p>Масаж-зона на корпоративі, тімбілдингу чи виставці. Працює як
+             активність, до якої стоїть черга, — і як турбота про гостей.</p>
+        </div>
+      </div>
+      <div class="of-mode">
+        <div class="of-mode__ico">💳</div>
+        <div>
+          <h3>Оплата для юросіб</h3>
+          <p>Працюємо як з готівкою й карткою, так і за безготівковим
+             розрахунком з рахунком на компанію.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ЩО ОТРИМУЄ БІЗНЕС ============ -->
+<section class="of-section">
+  <div class="container">
+    <div class="of-head">
+      <h2>Що це дає компанії</h2>
+      <p>Масаж в офісі — це не «приємний бонус заради бонусу», а робочий
+         інструмент турботи про людей, який видно неозброєним оком.</p>
+    </div>
+    <div class="of-grid of-grid--4">
+      <div class="of-card">
+        <div class="of-card__ico">⚡</div>
+        <h3>Продуктивність</h3>
+        <p>Знята напруга й відновлена концентрація там, де раніше був спад після обіду.</p>
+      </div>
+      <div class="of-card">
+        <div class="of-card__ico">💚</div>
+        <h3>Менше лікарняних</h3>
+        <p>Профілактика проблем зі спиною й шиєю — дешевша за їх лікування.</p>
+      </div>
+      <div class="of-card">
+        <div class="of-card__ico">🤍</div>
+        <h3>Лояльність команди</h3>
+        <p>Турбота, яку відчуваєш тілом, а не читаєш у презентації про цінності.</p>
+      </div>
+      <div class="of-card">
+        <div class="of-card__ico">✨</div>
+        <h3>HR-бренд</h3>
+        <p>Помітна перевага на співбесіді й привід для контенту в соцмережах компанії.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ЧОМУ OLIVA ============ -->
+<section class="of-section of-section--alt">
+  <div class="container">
+    <div class="of-head">
+      <h2>Чому Oliva</h2>
+      <p>Ми не агрегатор і не платформа — ми діюча студія масажу в Києві
+         на Борщагівській, 145. В офіс приїжджають ті самі майстри, що
+         працюють у нас щодня.</p>
+    </div>
+    <div class="of-grid of-grid--3">
+      <div class="of-card">
+        <div class="of-card__ico">🎓</div>
+        <h3>Сертифіковані майстри</h3>
+        <p>Команда студії з профільною освітою та підтвердженою кваліфікацією —
+           не студенти й не підрядники з біржі.</p>
+      </div>
+      <div class="of-card">
+        <div class="of-card__ico">🧴</div>
+        <h3>Гігієна та обладнання</h3>
+        <p>Професійне масажне крісло, одноразові підголівники, антисептик.
+           Усе своє — від вас потрібне лише місце.</p>
+      </div>
+      <div class="of-card">
+        <div class="of-card__ico">🗓</div>
+        <h3>Чіткий графік</h3>
+        <p>Складаємо розклад по хвилинах, щоб черга не збиралась і робочий
+           день не зупинявся.</p>
+      </div>
+      <div class="of-card">
+        <div class="of-card__ico">🎯</div>
+        <h3>Техніка під людину</h3>
+        <p>Хтось приходить із «кам'яною» шиєю, хтось із попереком. Тиск і
+           акценти майстер підбирає індивідуально.</p>
+      </div>
+      <div class="of-card">
+        <div class="of-card__ico">🏠</div>
+        <h3>Є куди прийти далі</h3>
+        <p>Співробітникам, яким 20 хвилин мало, є повноцінна студія поруч
+           з метро Шулявська.</p>
+      </div>
+      <div class="of-card">
+        <div class="of-card__ico">🤝</div>
+        <h3>Домовляємось по-людськи</h3>
+        <p>Підлаштовуємось під ваш графік і бюджет. Скажіть, скільки людей і
+           який бюджет — запропонуємо формат.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="of-section" id="faq">
+  <div class="container">
+    <div class="of-head">
+      <h2>Часті питання</h2>
+    </div>
+    <div class="of-faq">
+      <div class="of-faq__item">
+        <button class="of-faq__q" type="button">Скільки місця потрібно в офісі?</button>
+        <div class="of-faq__a">Близько 2 м² на одне масажне крісло та розетка поруч.
+          Підійде вільний куточок, переговорна або зона відпочинку. Окреме
+          приміщення бажане, але не обов'язкове — головне, щоб людину не смикали
+          під час сеансу.</div>
+      </div>
+      <div class="of-faq__item">
+        <button class="of-faq__q" type="button">Чи треба роздягатися?</button>
+        <div class="of-faq__a">Ні. Масаж на кріслі проводиться прямо в одязі, без олій
+          і без душу. Саме тому формат і працює в робочий час — після сеансу людина
+          одразу повертається за стіл.</div>
+      </div>
+      <div class="of-faq__item">
+        <button class="of-faq__q" type="button">Скільки людей встигаєте за день?</button>
+        <div class="of-faq__a">Один майстер за годину проводить приблизно 3 сеанси по
+          20 хвилин з урахуванням пересадки. Для великої команди виводимо кількох
+          майстрів одночасно — точну кількість порахуємо під вашу чисельність
+          і бажаний час.</div>
+      </div>
+      <div class="of-faq__item">
+        <button class="of-faq__q" type="button">Скільки це коштує?</button>
+        <div class="of-faq__a">Вартість залежить від кількості співробітників, тривалості
+          сеансів і того, разовий це захід чи регулярна програма. Залиште заявку —
+          ми порахуємо кілька варіантів під ваш бюджет і надішлемо кошторис.</div>
+      </div>
+      <div class="of-faq__item">
+        <button class="of-faq__q" type="button">Чи можна оплатити від компанії?</button>
+        <div class="of-faq__a">Так, працюємо за безготівковим розрахунком і надаємо рахунок
+          на юридичну особу. Готівка й оплата карткою теж доступні.</div>
+      </div>
+      <div class="of-faq__item">
+        <button class="of-faq__q" type="button">Кому масаж протипоказаний?</button>
+        <div class="of-faq__a">Гострі запальні процеси, підвищена температура, загострення
+          хронічних захворювань, деякі проблеми з судинами та шкірою. Перед сеансом
+          майстер коротко запитує про самопочуття, і за потреби ми просто пропускаємо
+          цю людину. За наявності діагнозу варто порадитися з лікарем.</div>
+      </div>
+      <div class="of-faq__item">
+        <button class="of-faq__q" type="button">Як часто це має сенс робити?</button>
+        <div class="of-faq__a">Разовий захід дає гарний ефект «тут і зараз», але накопичувальний
+          результат з'являється при регулярності — орієнтовно раз на тиждень або
+          що два тижні. Тоді м'язи не встигають повертатися в затиснутий стан.</div>
+      </div>
+      <div class="of-faq__item">
+        <button class="of-faq__q" type="button">Ви виїжджаєте за межі Києва?</button>
+        <div class="of-faq__a">Основна зона роботи — Київ. Виїзд у передмістя обговорюємо
+          окремо: залежить від адреси, кількості людей і дати.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ЗАЯВКА ============ -->
+<section class="of-section of-section--alt" id="request">
+  <div class="container">
+    <div class="of-form-wrap">
+      <div>
+        <div class="of-head" style="margin-bottom:26px;">
+          <h2>Розрахуємо вартість під вашу команду</h2>
+          <p>Залиште контакти — зв'яжемось у робочий час, уточнимо деталі
+             й надішлемо кілька варіантів на вибір. Заявка ні до чого не зобов'язує.</p>
+        </div>
+        <div class="of-contact-line">
+          <div>
+            <div class="of-contact-line__lbl">Телефон</div>
+            <a href="tel:+380974340112" class="of-contact-line__val">+38 097 434 01 12</a>
+          </div>
+        </div>
+        <div class="of-contact-line">
+          <div>
+            <div class="of-contact-line__lbl">Пошта</div>
+            <a href="mailto:olivastudio96@gmail.com" class="of-contact-line__val">olivastudio96@gmail.com</a>
+          </div>
+        </div>
+        <div class="of-contact-line">
+          <div>
+            <div class="of-contact-line__lbl">Студія</div>
+            <div class="of-contact-line__val">Київ, вул. Борщагівська, 145</div>
+          </div>
+        </div>
+        <div class="of-contact-line" style="border-bottom:none;">
+          <div>
+            <div class="of-contact-line__lbl">Графік</div>
+            <div class="of-contact-line__val">Щодня 09:00 — 21:30</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="of-form" id="ofFormBox">
+        <form id="ofForm" novalidate>
+          <label for="ofName">Ваше ім'я *</label>
+          <input type="text" id="ofName" maxlength="80" placeholder="Як до вас звертатися" />
+
+          <label for="ofPhone">Телефон *</label>
+          <input type="tel" id="ofPhone" maxlength="20" placeholder="+380" inputmode="tel" />
+
+          <label for="ofCompany">Компанія</label>
+          <input type="text" id="ofCompany" maxlength="100" placeholder="Назва компанії" />
+
+          <label for="ofPeople">Скільки співробітників</label>
+          <input type="number" id="ofPeople" min="1" max="2000" placeholder="Наприклад, 25" />
+
+          <label for="ofFormat">Формат</label>
+          <select id="ofFormat">
+            <option value="Ще не визначились">Ще не визначились</option>
+            <option value="15 хвилин">Сеанси по 15 хвилин</option>
+            <option value="20 хвилин">Сеанси по 20 хвилин</option>
+            <option value="30 хвилин">Сеанси по 30 хвилин</option>
+            <option value="Разовий захід">Разовий захід / івент</option>
+            <option value="Регулярна програма">Регулярна програма</option>
+          </select>
+
+          <label for="ofComment">Коментар</label>
+          <textarea id="ofComment" maxlength="500" placeholder="Бажана дата, адреса офісу, побажання"></textarea>
+
+          <div class="of-err" id="ofErr"></div>
+          <button type="submit" class="btn btn-primary" id="ofSend">Надіслати заявку</button>
+          <div class="of-form__note">Натискаючи кнопку, ви погоджуєтесь на обробку
+            контактних даних для зв'язку щодо цієї заявки.</div>
+        </form>
+        <div class="of-form__ok" id="ofOk">
+          <h3>Дякуємо!</h3>
+          <p>Ми отримали вашу заявку й зв'яжемось найближчим часом.<br>
+             Якщо питання термінове — телефонуйте: <a href="tel:+380974340112" style="color:var(--olive-light);">097 434 01 12</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer style="background:var(--black);border-top:1px solid var(--line);padding:40px 0;">
+  <div class="container" style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;">
+    <a href="/" style="display:flex;align-items:center;gap:10px;">
+      <img src="assets/img/logo.png" alt="" style="width:34px;height:34px;object-fit:contain;" />
+      <span style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--cream);">Oliva<span style="color:var(--olive-light)">.</span></span>
+    </a>
+    <div style="font-size:.8rem;color:var(--text-dim);">
+      © 2026 Студія масажу Oliva · Київ, Солом'янський район
+    </div>
+    <a href="/" style="font-size:.82rem;color:var(--olive-light);">← На головну</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* FAQ-акордеон */
+  document.querySelectorAll(".of-faq__q").forEach(function (q) {
+    q.addEventListener("click", function () {
+      q.parentNode.classList.toggle("open");
+    });
+  });
+
+  /* Плавний скрол по якорях сторінки */
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      var id = a.getAttribute("href");
+      if (id.length < 2) return;
+      var t = document.querySelector(id);
+      if (!t) return;
+      e.preventDefault();
+      window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - 70, behavior: "smooth" });
+    });
+  });
+
+  /* Бургер: на цій сторінці меню коротке, тому просто показуємо/ховаємо */
+  var burger = document.getElementById("burger");
+  var links = document.getElementById("navLinks");
+  if (burger && links) {
+    burger.addEventListener("click", function () {
+      burger.classList.toggle("open");
+      links.classList.toggle("open");
+    });
+  }
+
+  /* Телефон: підставляємо +380, але не тримаємо силою — можна стерти
+     й ввести міжнародний номер. Та сама поведінка, що в онлайн-записі. */
+  var phone = document.getElementById("ofPhone");
+  phone.addEventListener("focus", function () {
+    if (!phone.value) phone.value = "+380";
+  });
+
+  function validPhone(v) {
+    var s = String(v || "").replace(/[^\d+]/g, "");
+    if (/^\+380\d{9}$/.test(s)) return true;
+    return /^\+\d{8,15}$/.test(s);
+  }
+
+  var form = document.getElementById("ofForm");
+  var err = document.getElementById("ofErr");
+  var btn = document.getElementById("ofSend");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    err.textContent = "";
+    var name = document.getElementById("ofName").value.trim();
+    var ph = phone.value.trim();
+    if (!name) { err.textContent = "Вкажіть, будь ласка, ім'я"; return; }
+    if (!validPhone(ph)) { err.textContent = "Перевірте номер телефону"; return; }
+
+    btn.disabled = true;
+    btn.textContent = "Надсилаємо…";
+
+    fetch("/api/office-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name,
+        phone: ph,
+        company: document.getElementById("ofCompany").value.trim(),
+        people: document.getElementById("ofPeople").value.trim(),
+        format: document.getElementById("ofFormat").value,
+        comment: document.getElementById("ofComment").value.trim()
+      })
+    })
+      .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (j) {
+        if (!j.ok) throw new Error(j.error || "fail");
+        form.style.display = "none";
+        document.getElementById("ofOk").style.display = "block";
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.textContent = "Надіслати заявку";
+        err.textContent = "Не вдалось надіслати. Спробуйте ще раз або зателефонуйте нам.";
+      });
+  });
+})();
+</script>
+
+</body>
+</html>

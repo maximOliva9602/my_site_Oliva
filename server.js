@@ -708,6 +708,38 @@ app.post("/api/callback", async function (req, res) {
   res.json({ ok: true });
 });
 
+/* ---------------- Заявка на масаж в офіс (B2B) ----------------
+   Окремо від /api/callback: тут є компанія, кількість людей і формат,
+   і власнику зручніше бачити це одним повідомленням, а не передзвонювати
+   по голому номеру. Іде тільки власнику, як і решта сповіщень із сайту. */
+app.post("/api/office-request", async function (req, res) {
+  var d = req.body || {};
+  var name    = String(d.name    || "").trim().slice(0, 80);
+  var phone   = String(d.phone   || "").trim().slice(0, 30);
+  var company = String(d.company || "").trim().slice(0, 100);
+  var people  = String(d.people  || "").trim().slice(0, 10);
+  var format  = String(d.format  || "").trim().slice(0, 60);
+  var comment = String(d.comment || "").trim().slice(0, 500);
+  if (!name || !phone) return res.status(400).json({ ok: false, error: "missing fields" });
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  var text =
+    "🏢 <b>Заявка: масаж в офіс</b>\n\n" +
+    "👤 <b>Контакт:</b> " + esc(name) + "\n" +
+    "📞 <b>Телефон:</b> " + esc(phone) + "\n" +
+    (company ? "🏛 <b>Компанія:</b> " + esc(company) + "\n" : "") +
+    (people  ? "👥 <b>Співробітників:</b> " + esc(people) + "\n" : "") +
+    (format  ? "⏱ <b>Формат:</b> " + esc(format) + "\n" : "") +
+    (comment ? "\n📝 <b>Коментар:</b> " + esc(comment) : "");
+  try {
+    await sendTelegram(text);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("[office-request]", e.message);
+    res.status(500).json({ ok: false });
+  }
+});
+
 /* ---------------- Fallback ---------------- */
 app.get("*", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "index.html"));
