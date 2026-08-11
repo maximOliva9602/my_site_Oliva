@@ -293,12 +293,13 @@
       TABS.push({ id: "masters",   name: "Майстри",     render: renderMasters });
       TABS.push({ id: "users",     name: "Доступи",     render: renderUsers });
       TABS.push({ id: "notif",     name: "Сповіщення",  render: renderNotif });
+      TABS.push({ id: "hero",      name: "🖼 Головний екран", render: renderHeroMedia });
       TABS.push({ id: "broadcast", name: "📣 Розсилка", render: renderBroadcast });
       TABS.push({ id: "filiyi",    name: "🏢 Філії",    render: renderBranchesTab });
     }
     /* ── Іконки і короткі назви для мобільного nav ── */
-    var TAB_ICOS  = { dashboard:"📊", podii:"📌", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", broadcast:"📣", filiyi:"🏢" };
-    var TAB_SHORT = { dashboard:"Дашборд", podii:"Події", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", mynotif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії" };
+    var TAB_ICOS  = { dashboard:"📊", podii:"📌", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", broadcast:"📣", filiyi:"🏢", hero:"🖼" };
+    var TAB_SHORT = { dashboard:"Дашборд", podii:"Події", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", mynotif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії", hero:"Головний екран" };
     var BOTTOM_COUNT = Math.min(4, TABS.length);
     var hasDrawer    = TABS.length > BOTTOM_COUNT;
 
@@ -3704,6 +3705,126 @@
     }
 
     renderMonth();
+  }
+
+  /* ============================================================
+     ГОЛОВНИЙ ЕКРАН САЙТУ — фото-заставка (ПК) і відео (телефон)
+     ============================================================ */
+  var HERO_DEFAULTS = { photo: "/assets/img/main_photo.jpg", video: "/assets/video/certificate.mp4" };
+
+  function renderHeroMedia() {
+    var main = $("main"); main.innerHTML = "";
+    var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Головний екран сайту"));
+    main.appendChild(bar);
+
+    var hint = el("div", "sub");
+    hint.style.cssText = "margin-bottom:14px;line-height:1.5;";
+    hint.innerHTML = "На комп'ютері у шапці сайту показується <b>фото</b>, на телефоні — <b>відео</b>. " +
+      "Тут можна замінити будь-яке з них; зміни зʼявляться на сайті одразу після оновлення сторінки.";
+    main.appendChild(hint);
+
+    var box = el("div", "list"); main.appendChild(box);
+    box.innerHTML = '<div class="empty">Завантаження…</div>';
+
+    api("GET", "/api/crm/hero-media").then(function (res) {
+      var cur = (res.j && res.j.ok) ? res.j : { photo: "", video: "" };
+      box.innerHTML = "";
+      box.appendChild(heroCard("photo", "Фото-заставка (комп'ютер)", "image/*", "JPG, PNG або WebP, до 12 МБ. Рекомендовано широке фото від 1920 px.", cur.photo));
+      box.appendChild(heroCard("video", "Відео (телефон)", "video/*", "MP4 або WebM, до 60 МБ. Відео програється без звуку по колу — коротке (10–20 с) вантажиться швидше.", cur.video));
+    });
+
+    function heroCard(kind, title, accept, note, current) {
+      var card = el("div", "item");
+      card.style.marginBottom = "14px";
+      card.appendChild(el("div", null, title)).style.cssText = "font-weight:600;color:var(--cream);margin-bottom:4px;";
+      var noteEl = el("div", "sub", note); noteEl.style.marginBottom = "10px"; card.appendChild(noteEl);
+
+      /* Прев'ю — те саме, що побачить клієнт. Порожнє значення означає
+         типовий файл із репозиторію, тож показуємо саме його. */
+      var prevWrap = el("div", null);
+      prevWrap.style.cssText = "border-radius:10px;overflow:hidden;background:#000;margin-bottom:10px;max-width:420px;aspect-ratio:16/9;";
+      card.appendChild(prevWrap);
+
+      var stateEl = el("div", "sub"); stateEl.style.marginBottom = "8px"; card.appendChild(stateEl);
+      var msg = el("div", "sub"); msg.style.marginTop = "8px";
+
+      var row = el("div", null);
+      row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center;";
+      var pick = el("button", "btn btn-sm btn-primary", "Завантажити нове");
+      var reset = el("button", "btn btn-sm btn-ghost", "Повернути типове");
+      var file = document.createElement("input");
+      file.type = "file"; file.accept = accept; file.style.display = "none";
+      row.appendChild(pick); row.appendChild(reset); row.appendChild(file);
+      card.appendChild(row); card.appendChild(msg);
+
+      function paint(url) {
+        current = url || "";
+        var show = current || HERO_DEFAULTS[kind];
+        prevWrap.innerHTML = "";
+        if (kind === "photo") {
+          var img = document.createElement("img");
+          img.src = show + (current ? "" : "?t=" + Date.now());
+          img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+          prevWrap.appendChild(img);
+        } else {
+          var v = document.createElement("video");
+          v.src = show; v.muted = true; v.loop = true; v.autoplay = true;
+          v.setAttribute("playsinline", "");
+          v.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+          prevWrap.appendChild(v);
+        }
+        stateEl.textContent = current ? "Зараз: завантажений файл" : "Зараз: типовий файл із сайту";
+        reset.style.display = current ? "" : "none";
+      }
+      paint(current);
+
+      pick.addEventListener("click", function () { file.click(); });
+      file.addEventListener("change", function () {
+        var f = file.files && file.files[0];
+        if (!f) return;
+        var ext = (f.name.split(".").pop() || "").toLowerCase();
+        msg.style.color = "var(--text-dim)";
+        msg.textContent = "Завантаження… " + Math.round(f.size / 104857.6) / 10 + " МБ";
+        pick.disabled = reset.disabled = true;
+        /* Бінарно, без base64 — інакше 40-мегабайтне відео роздулось би
+           на третину і не пролізло б у ліміт тіла запиту. */
+        fetch("/api/crm/hero-media/" + kind + "?ext=" + encodeURIComponent(ext), {
+          method: "POST",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: f,
+        }).then(function (r) {
+          return r.json().catch(function () { return {}; });
+        }).then(function (j) {
+          pick.disabled = reset.disabled = false;
+          file.value = "";
+          if (j && j.ok) {
+            paint(j.url);
+            msg.style.color = "var(--ok)"; msg.textContent = "✓ Збережено — оновіть сайт, щоб побачити";
+          } else {
+            msg.style.color = "var(--err)"; msg.textContent = "✗ " + ((j && j.error) || "Не вдалося завантажити");
+          }
+        }).catch(function (e) {
+          pick.disabled = reset.disabled = false;
+          msg.style.color = "var(--err)"; msg.textContent = "✗ " + e.message;
+        });
+      });
+
+      reset.addEventListener("click", function () {
+        if (!confirm("Повернути типове " + (kind === "photo" ? "фото" : "відео") + "? Завантажений файл буде видалено.")) return;
+        pick.disabled = reset.disabled = true;
+        api("DELETE", "/api/crm/hero-media/" + kind).then(function (res) {
+          pick.disabled = reset.disabled = false;
+          if (res.j && res.j.ok) {
+            paint("");
+            msg.style.color = "var(--ok)"; msg.textContent = "✓ Повернуто типове";
+          } else {
+            msg.style.color = "var(--err)"; msg.textContent = "✗ Помилка";
+          }
+        });
+      });
+
+      return card;
+    }
   }
 
   /* ============================================================

@@ -574,6 +574,31 @@ app.get("/api/master-img/:file", function (req, res) {
   res.sendFile(fp);
 });
 
+/* ---- Медіа головного екрану сайту (фото-заставка + відео) ----
+   Файли лежать поруч із SQLite на Railway Volume: усе в public/ зникає
+   при кожному деплої, а том — ні. Порожнє значення в app_settings
+   означає «типовий файл із public/assets», щоб можна було відкотитись. */
+var SITE_MEDIA_DIR = path.join(path.dirname(process.env.DB_FILE || path.join(__dirname, "data", "oliva.db")), "media", "site");
+
+app.get("/api/site-media/:file", function (req, res) {
+  var f = path.basename(req.params.file);
+  var fp = path.join(SITE_MEDIA_DIR, f);
+  if (!fs.existsSync(fp)) return res.status(404).end();
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  res.sendFile(fp);
+});
+
+/* Публічно: що саме показувати на головному екрані. */
+app.get("/api/hero-media", function (req, res) {
+  function get(k) {
+    try {
+      var r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(k);
+      return r && r.value ? r.value : "";
+    } catch (e) { return ""; }
+  }
+  res.json({ ok: true, photo: get("hero_photo_url"), video: get("hero_video_url") });
+});
+
 /* ---- Публічний список активних послуг (для сайту) ---- */
 app.get("/api/services", function (req, res) {
   var rows = db.prepare(

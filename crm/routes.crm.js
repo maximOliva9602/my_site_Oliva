@@ -2224,5 +2224,83 @@ router.get("/notifications", owner, function (req, res) {
   res.json({ ok: true, notifications: rows });
 });
 
+/* ---- Медіа головного екрану сайту (фото-заставка + відео) ----
+   Файли пишемо на Railway Volume (поруч із базою), бо public/ живе лише
+   до наступного деплою. У app_settings зберігаємо готовий URL; порожній
+   рядок = повернутись до типового файлу з репозиторію. */
+const fsMedia = require("fs");
+const pathMedia = require("path");
+const SITE_MEDIA_DIR = pathMedia.join(
+  pathMedia.dirname(process.env.DB_FILE || pathMedia.join(__dirname, "..", "data", "oliva.db")),
+  "media", "site"
+);
+const HERO_KEYS = { photo: "hero_photo_url", video: "hero_video_url" };
+const HERO_EXT = {
+  photo: { jpg: 1, jpeg: 1, png: 1, webp: 1 },
+  video: { mp4: 1, webm: 1, mov: 1 },
+};
+const HERO_MAX = { photo: 12 * 1024 * 1024, video: 60 * 1024 * 1024 };
+
+function heroGet(key) {
+  const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(key);
+  return r && r.value ? r.value : "";
+}
+function heroSet(key, value) {
+  db.prepare("INSERT INTO app_settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+    .run(key, value || "");
+}
+/* Старий файл прибираємо одразу — інакше том поступово забʼється
+   відеофайлами, які вже ніде не показуються. Видаляємо лише те, що
+   лежить у нашій теці (типові файли з /assets не чіпаємо). */
+function heroDropOld(url) {
+  if (!url || url.indexOf("/api/site-media/") !== 0) return;
+  try { fsMedia.unlinkSync(pathMedia.join(SITE_MEDIA_DIR, pathMedia.basename(url))); } catch (_) {}
+}
+
+router.get("/hero-media", owner, function (req, res) {
+  res.json({ ok: true, photo: heroGet(HERO_KEYS.photo), video: heroGet(HERO_KEYS.video) });
+});
+
+/* Тіло приходить бінарно (application/octet-stream), а не base64: відео
+   на 40 МБ у dataURL роздулось би до ~54 МБ і не пролізло б у ліміт JSON. */
+router.post(
+  "/hero-media/:kind",
+  owner,
+  express.raw({ type: "*/*", limit: "64mb" }),
+  function (req, res) {
+    const kind = req.params.kind === "video" ? "video" : "photo";
+    const ext = String(req.query.ext || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5);
+    if (!HERO_EXT[kind][ext]) {
+      return res.status(400).json({ ok: false, error: "Формат не підтримується" });
+    }
+    const buf = req.body;
+    if (!buf || !buf.length) return res.status(400).json({ ok: false, error: "Порожній файл" });
+    if (buf.length > HERO_MAX[kind]) {
+      return res.status(413).json({ ok: false, error: "Файл завеликий (макс " + Math.round(HERO_MAX[kind] / 1048576) + " МБ)" });
+    }
+    const filename = "hero-" + kind + "-" + crypto.randomBytes(8).toString("hex") + "." + ext;
+    try {
+      fsMedia.mkdirSync(SITE_MEDIA_DIR, { recursive: true });
+      fsMedia.writeFileSync(pathMedia.join(SITE_MEDIA_DIR, filename), buf);
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: e.message });
+    }
+    const prev = heroGet(HERO_KEYS[kind]);
+    const url = "/api/site-media/" + filename;
+    heroSet(HERO_KEYS[kind], url);
+    heroDropOld(prev);
+    res.json({ ok: true, kind: kind, url: url });
+  }
+);
+
+/* Повернути типове (те, що в репозиторії) */
+router.delete("/hero-media/:kind", owner, function (req, res) {
+  const kind = req.params.kind === "video" ? "video" : "photo";
+  const prev = heroGet(HERO_KEYS[kind]);
+  heroSet(HERO_KEYS[kind], "");
+  heroDropOld(prev);
+  res.json({ ok: true, kind: kind, url: "" });
+});
+
 module.exports = router;
 module.exports.setStatus = setStatus;

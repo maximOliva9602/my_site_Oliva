@@ -192,6 +192,40 @@
     <source src="assets/video/certificate.mp4" type="video/mp4" />
   </video>
   <div class="hero-bg-overlay"></div>
+  <script>
+  /* Фото/відео головного екрану можна змінити з CRM (Ще → Головний екран).
+     Поки налаштування не завантажилось — показуємо файли з репозиторію,
+     тож заставка є завжди, навіть якщо API недоступне. */
+  (function () {
+    fetch("/api/hero-media").then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.ok) return;
+      var img = document.querySelector(".hero-bg-photo");
+      if (d.photo && img) img.src = d.photo;
+      var vid = document.querySelector(".hero-bg-video");
+      if (d.video && vid) {
+        var src = vid.querySelector("source");
+        if (src) {
+          src.src = d.video;
+          src.type = /\.webm$/i.test(d.video) ? "video/webm" : "video/mp4";
+        }
+        vid.load();
+        /* play() одразу після load() браузер може відхилити (вкладка ще
+           у фоні, економія енергії). Тому пробуємо ще раз, коли відео
+           готове і коли вкладка стала активною — інакше на телефоні
+           лишався б чорний нерухомий кадр. */
+        var tryPlay = function () {
+          var p = vid.play();
+          if (p && p.catch) p.catch(function () {});
+        };
+        tryPlay();
+        vid.addEventListener("canplay", tryPlay);
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden && vid.paused) tryPlay();
+        });
+      }
+    }).catch(function () {});
+  })();
+  </script>
 
   <div class="hero-center">
     <div class="hero-brand">
