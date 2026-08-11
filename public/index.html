@@ -958,7 +958,9 @@
      й так можна — клік по затемненій області зліва (bookingOverlay) або Esc. -->
 <div id="bookingOverlay" class="booking-overlay" onclick="closeBookingDrawer()"></div>
 <div id="bookingDrawer" class="booking-drawer">
-  <iframe id="bookingIframe" src="" title="Онлайн запис" loading="lazy" allow="payment"></iframe>
+  <!-- Без атрибута src: порожній src="" браузер трактує як адресу самої
+       сторінки і вантажить у шторку головну замість онлайн-запису. -->
+  <iframe id="bookingIframe" title="Онлайн запис" loading="lazy" allow="payment"></iframe>
 </div>
 
 <style>
@@ -1066,7 +1068,11 @@ function openBookingDrawer(e) {
   if (window.innerWidth <= 900) return;
   if (e) e.preventDefault();
   var iframe = document.getElementById('bookingIframe');
-  if (!iframe.src || iframe.src === window.location.href || iframe.src === 'about:blank') {
+  /* Порівнювати iframe.src із location.href не можна: у адресі сторінки
+     майже завжди є якір (#services тощо), а src його не має — умова
+     хибно спрацьовувала, запис не підвантажувався і шторка була біла.
+     Дивимось на сам атрибут: він або вже '/booking.html', або порожній. */
+  if (iframe.getAttribute('src') !== '/booking.html') {
     iframe.src = '/booking.html';
   }
   document.getElementById('bookingOverlay').classList.add('open');
