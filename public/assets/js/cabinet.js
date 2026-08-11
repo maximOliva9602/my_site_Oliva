@@ -314,6 +314,12 @@
       document.body.style.overflow = "";
       document.body.style.overscrollBehavior = "";
       var ae = $("app"); if (ae) ae.style.cssText = "";
+      /* Скидаємо перезавантажувач попередньої вкладки. Інакше він лишався
+         прив'язаним до календаря: варто було згорнути й розгорнути додаток
+         (visibilitychange), як календар перемальовувався поверх поточного
+         екрана — напр. поверх щойно відкритої картки клієнта.
+         Кожна вкладка призначає свій __reloadAppts під час рендеру. */
+      window.__reloadAppts = null;
     }
     function closeMobSheet() { mobBackdrop.classList.remove("open"); mobSheet.classList.remove("open"); }
     function openMobSheet()  { mobBackdrop.classList.add("open");    mobSheet.classList.add("open"); }
@@ -338,6 +344,18 @@
       closeMobSheet();
       TABS[i].render();
     }
+
+    /* Відкрити картку клієнта з будь-якого місця (напр. з картки запису).
+       Живе тут, бо activateTab/TABS доступні лише в цій області: спершу
+       перемикаємось на вкладку «Клієнти» — це прибирає накладку календаря
+       й лишає коректно підсвічену вкладку, а вже потім малюємо картку. */
+    window.__openClientCard = function (clientId) {
+      if (!clientId) return;
+      var idx = -1;
+      TABS.forEach(function (t, i) { if (t.id === "clients") idx = i; });
+      if (idx > -1) activateTab(idx); else clearOverlay();
+      renderClientCard(clientId);
+    };
 
     /* Desktop вкладки */
     var badgeHtml = '<span id="tabBadge-podii" style="display:none;margin-left:5px;background:#c0392b;color:#fff;font-size:.68rem;font-weight:700;border-radius:10px;padding:1px 6px;line-height:1.4;"></span>';
@@ -2104,6 +2122,12 @@
       html += '<button class="btn btn-ghost btn-sm" id="dCancel">Скасувати</button>';
     }
     html += '<button class="btn btn-ghost btn-sm" id="dEdit">✏️ Редагувати</button>';
+    /* Перехід до картки клієнта — там уся історія візитів. «Гість» це
+       спільна службова картка без історії конкретної людини, тож для неї
+       кнопку не показуємо. */
+    if (a.client_id && a.client_phone !== "guest" && a.client_name !== "Гість") {
+      html += '<button class="btn btn-ghost btn-sm" id="dClient">👤 Картка клієнта</button>';
+    }
     html += '<button class="btn btn-ghost" id="dClose">Закрити</button></div>';
 
     openModal(html);
@@ -2209,6 +2233,15 @@
     if ($("dUncomplete")) $("dUncomplete").addEventListener("click", function() { setStatus("confirmed"); });
     if ($("dNoShow")) $("dNoShow").addEventListener("click", function() { setStatus("no_show"); });
     if ($("dCancel")) $("dCancel").addEventListener("click", function() { setStatus("cancelled"); });
+    if ($("dClient")) $("dClient").addEventListener("click", function() {
+      /* Оплату зберігаємо так само, як при «Закрити» — інакше галочка,
+         поставлена перед переходом, губилась би. */
+      var paid = $("dPaid") && $("dPaid").checked ? 1 : 0;
+      var method = $("dPayMethod") ? $("dPayMethod").value : "";
+      api("PATCH", "/api/crm/appointments/" + a.id + "/payment", { paid: paid, pay_method: method });
+      closeModal();
+      if (window.__openClientCard) window.__openClientCard(a.client_id);
+    });
     $("dClose").addEventListener("click", function() {
       // Зберегти оплату без зміни статусу
       var paid = $("dPaid") && $("dPaid").checked ? 1 : 0;
