@@ -313,11 +313,16 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 
 /* Крок 3 — майстри */
 .mst-list { display: flex; flex-direction: column; gap: 12px; padding: 8px 16px 0; }
-.mst-card { display: flex; align-items: flex-start; gap: 14px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: border-color .2s, transform .15s; }
+.mst-card { display: flex; align-items: stretch; gap: 14px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: border-color .2s, transform .15s; }
 .mst-card:active { transform: scale(.995); }
 @media (hover:hover){ .mst-card:hover { border-color: rgba(217,185,120,0.42); } }
-.mst-photo { width: 96px; height: 96px; border-radius: 14px; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(217,185,120,0.5); }
-.mst-photo-ph { width: 96px; height: 96px; border-radius: 14px; flex-shrink: 0; border: 2px solid rgba(217,185,120,0.5); display: flex; align-items: center; justify-content: center; font-size: 2.1rem; background: rgba(46,61,34,0.25); }
+/* Портретне фото на весь зріст, а не обличчя-квадратик — картка
+   витягується під нього по висоті (align-items: stretch вище). */
+.mst-photo { width: 120px; height: auto; min-height: 190px; align-self: stretch; border-radius: 14px; object-fit: cover; object-position: top; flex-shrink: 0; border: 2px solid rgba(217,185,120,0.5); }
+.mst-photo-ph { width: 120px; min-height: 190px; align-self: stretch; border-radius: 14px; flex-shrink: 0; border: 2px solid rgba(217,185,120,0.5); display: flex; align-items: center; justify-content: center; font-size: 2.6rem; background: rgba(46,61,34,0.25); }
+@media (max-width: 420px) {
+  .mst-photo, .mst-photo-ph { width: 100px; min-height: 160px; }
+}
 .mst-body { flex: 1; min-width: 0; }
 .mst-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .mst-name { font-family: 'Playfair Display', serif; color: #F2EDE4; font-size: 1.28rem; line-height: 1.1; }
