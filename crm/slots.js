@@ -56,6 +56,14 @@ function blockedIntervals(masterId, date) {
   ).all(masterId, date);
   for (const a of appts) blocked.push([a.start_min, a.end_min + BUFFER_MIN]);
 
+  /* Разові перерви на конкретну дату (кнопка "⏸ Перерва" в календарі
+     CRM) — окрема таблиця day_blocks, її досі ніхто тут не враховував,
+     тож онлайн-запис пропонував час, заблокований у CRM. */
+  const dayBlocks = db.prepare(
+    "SELECT start_min, end_min FROM day_blocks WHERE master_id = ? AND date = ?"
+  ).all(masterId, date);
+  for (const b of dayBlocks) blocked.push([b.start_min, b.end_min]);
+
   return blocked;
 }
 
