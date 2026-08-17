@@ -94,11 +94,13 @@ function serviceMatchesMasterLevel(serviceName, masterLevel) {
 function apptRow(id) {
   return db.prepare(
     `SELECT a.*, c.name AS client_name, c.phone AS client_phone,
-            s.name AS service_name, m.name AS master_name
+            s.name AS service_name, m.name AS master_name,
+            m2.name AS second_master_name
        FROM appointments a
        JOIN clients c  ON c.id = a.client_id
        JOIN services s ON s.id = a.service_id
        JOIN masters  m ON m.id = a.master_id
+       LEFT JOIN masters m2 ON m2.id = a.second_master_id
       WHERE a.id = ?`
   ).get(id);
 }
@@ -475,7 +477,7 @@ router.get("/me/appointments", any, function (req, res) {
   const s = req.session;
   const from = clean(req.query.from, 10), to = clean(req.query.to, 10);
   const masterParam = clean(req.query.master, 20);
-  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id WHERE 1=1";
+  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id LEFT JOIN masters m2 ON m2.id=a.second_master_id WHERE 1=1";
   const args = [];
   // master=<id> — явний фільтр на конкретного майстра (доступно всім,
   // календар і так показує розклад усіх майстрів). master=all — явно
@@ -651,6 +653,37 @@ router.patch("/appointments/:id/color-marker", any, function (req, res) {
   res.json({ ok: true });
 });
 
+/* Другий майстер на парну процедуру ("SPA для двох" тощо) — запис і
+   оплата лишаються одним, але клієнта фактично обслуговують два майстри.
+   Клієнт при онлайн-записі обирає лише "свого", другого власник додає
+   тут вручну; будь-якого активного майстра, навіть якщо той раніше цю
+   послугу не надавав — у такому разі його одразу прив'язуємо до послуги,
+   щоб надалі він теж траплявся в переліку виконавців. */
+router.patch("/appointments/:id/second-master", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = db.prepare("SELECT id, service_id, master_id, date, start_min, end_min, second_master_id FROM appointments WHERE id=?").get(id);
+  if (!a) return res.status(404).json({ ok: false });
+
+  const raw = (req.body || {}).master_id;
+  let masterId = null;
+  if (raw !== null && raw !== undefined && raw !== "") {
+    masterId = parseInt(raw, 10);
+    if (!masterId) return res.status(400).json({ ok: false, error: "bad master_id" });
+    if (masterId === a.master_id) return res.status(400).json({ ok: false, error: "same as primary master" });
+    const m = db.prepare("SELECT id FROM masters WHERE id=? AND active=1").get(masterId);
+    if (!m) return res.status(404).json({ ok: false, error: "master not found" });
+    db.prepare("INSERT OR IGNORE INTO master_services (master_id,service_id) VALUES (?,?)").run(masterId, a.service_id);
+  }
+
+  db.prepare("UPDATE appointments SET second_master_id=?, updated_at=? WHERE id=?").run(masterId, Date.now(), id);
+
+  if (masterId && masterId !== a.second_master_id) {
+    try { require("./admin-notify").notifySecondMaster(id); } catch (e) { console.error("[second-master-notify]", e.message); }
+  }
+
+  res.json({ ok: true, appointment: viewAppt(apptRow(id)) });
+});
+
 /* ============================================================
    ВЛАСНИК: записи (усі), майстри, послуги, клієнти, користувачі
    ============================================================ */
@@ -673,7 +706,7 @@ router.get("/appointments/month-counts", any, function (req, res) {
 router.get("/appointments", owner, function (req, res) {
   const date = clean(req.query.date, 10), from = clean(req.query.from, 10), to = clean(req.query.to, 10);
   const master = parseInt(req.query.master, 10);
-  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id WHERE 1=1";
+  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id LEFT JOIN masters m2 ON m2.id=a.second_master_id WHERE 1=1";
   const args = [];
   if (tz.isDate(date)) { sql += " AND a.date=?"; args.push(date); }
   if (tz.isDate(from)) { sql += " AND a.date>=?"; args.push(from); }

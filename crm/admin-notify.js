@@ -176,6 +176,47 @@ async function notifyCancelled(appointmentId, cancelledBy) {
   }
 }
 
+/* Власник додав майстра як ДРУГОГО на парну процедуру (SPA для двох
+   тощо) — сповіщаємо лише цього майстра: власник сам це щойно зробив
+   у CRM, йому вдруге про те саме сповіщати не треба. */
+async function notifySecondMaster(appointmentId) {
+  try {
+    const a = db.prepare(`
+      SELECT a.date, a.start_min, a.duration_min, a.second_master_id,
+             c.name client_name, c.phone client_phone,
+             s.name service_name, m.name master_name,
+             m2.name second_master_name, m2.tg_chat_id second_master_tg, m2.can_see_phones second_master_can_see_phones
+      FROM appointments a
+      JOIN clients  c  ON c.id = a.client_id
+      JOIN services s  ON s.id = a.service_id
+      JOIN masters  m  ON m.id = a.master_id
+      JOIN masters  m2 ON m2.id = a.second_master_id
+      WHERE a.id = ?
+    `).get(appointmentId);
+    if (!a) return;
+
+    const text =
+      `👥 <b>Вас додано другим майстром на парну процедуру</b>\n\n` +
+      `👤 <b>Клієнт:</b> ${a.client_name}\n` +
+      (a.second_master_can_see_phones
+        ? `📞 <b>Телефон:</b> ${a.client_phone}\n`
+        : `📞 <b>Телефон:</b> прихований\n`) +
+      `💆 <b>Послуга:</b> ${a.service_name}\n` +
+      `🤝 <b>Разом з:</b> ${a.master_name}\n` +
+      `📆 <b>Дата:</b> ${ddmm(a.date)}, ${fmtMin(a.start_min)}–${fmtMin(a.start_min + a.duration_min)}`;
+
+    if (a.second_master_tg) await sendTg(text, a.second_master_tg);
+    sendPushToAll(
+      text.replace(/<[^>]+>/g, ""),
+      `/cabinet?appointment=${appointmentId}`,
+      `second-master-${appointmentId}`,
+      a.second_master_id
+    );
+  } catch (e) {
+    console.error("[admin-notify] notifySecondMaster error:", e.message);
+  }
+}
+
 /* ---- Web Push ---- */
 let webpush;
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY  || "";
@@ -247,4 +288,4 @@ async function sendPushToAll(body, url, tag, masterId) {
   return stats;
 }
 
-module.exports = { notifyNewAppt, notifyCancelled, sendPushToAll, sendTg, VAPID_PUBLIC };
+module.exports = { notifyNewAppt, notifyCancelled, notifySecondMaster, sendPushToAll, sendTg, VAPID_PUBLIC };

@@ -2090,6 +2090,17 @@
         : dObj.toLocaleDateString("uk-UA") + ", " + DOW_FULL[dObj.getDay()];
     }
 
+    // "SPA для двох" тощо — послуга розрахована на двох людей, одного
+    // майстра клієнт обирає сам при онлайн-записі, другого власник
+    // призначає тут вручну (див. секцію нижче).
+    var isPair = false;
+    try {
+      if (window.OlivaServiceGroups) {
+        var _pairCat = window.OlivaServiceGroups.parseName(a.service_name || "").cat;
+        isPair = window.OlivaServiceGroups.GROUP_MAP[_pairCat] === "spa2" || /для двох|парн/i.test(_pairCat);
+      }
+    } catch (e) {}
+
     var html = '<h3>' + a.client_name + '</h3>' +
       (dateLine ? '<div class="sub" style="margin-bottom:4px;font-weight:600;color:var(--cream);">📅 ' + dateLine + '</div>' : '') +
       '<div class="sub" style="margin-bottom:12px;">' + a.service_name + ' · ' + fmtMin(a.start_min) + '–' + fmtMin(a.end_min || (a.start_min + a.duration_min)) + ' · ' + a.master_name + '</div>' +
@@ -2097,6 +2108,10 @@
       extrasHtml +
       (a.comment ? '<div class="sub" style="margin-top:8px;">💬 ' + a.comment + '</div>' : '') +
       '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
+      (isPair ? '<div style="margin-top:14px;padding:10px 12px;background:rgba(217,185,120,0.08);border:1px solid rgba(217,185,120,0.25);border-radius:10px;">' +
+        '<div style="font-size:.82rem;font-weight:600;color:var(--cream);margin-bottom:6px;">👥 Другий майстер (парна процедура)</div>' +
+        '<div id="dSecondMasterInner"><span class="sub">Завантаження…</span></div>' +
+      '</div>' : '') +
       '<label style="margin-top:14px;display:block;">Колір маркеру</label><div id="dMarkerWrap"></div>';
 
     // Оцінка (лише для завершених)
@@ -2132,6 +2147,44 @@
     html += '<button class="btn btn-ghost" id="dClose">Закрити</button></div>';
 
     openModal(html);
+
+    // Другий майстер на парну процедуру — список усіх активних майстрів,
+    // не лише тих, кого вже прив'язано до цієї послуги: обрати можна
+    // будь-кого, а сервер сам додасть його до виконавців послуги.
+    if (isPair) {
+      api("GET", "/api/crm/masters").then(function(res) {
+        var inner = $("dSecondMasterInner"); if (!inner) return;
+        var masters = (res.j && res.j.masters) || [];
+        var opts = masters.filter(function(m){ return m.id !== a.master_id; })
+          .map(function(m){ return '<option value="' + m.id + '"' + (a.second_master_id === m.id ? ' selected' : '') + '>' + m.name + '</option>'; }).join("");
+        inner.innerHTML =
+          (a.second_master_name ? '<div class="sub" style="margin-bottom:6px;">Зараз: <b style="color:var(--cream);">' + a.second_master_name + '</b></div>' : '<div class="sub" style="margin-bottom:6px;">Не призначено</div>') +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' +
+            '<select id="dSecondMasterSel" style="flex:1;min-width:140px;"><option value="">— обрати —</option>' + opts + '</select>' +
+            '<button class="btn btn-sm btn-primary" id="dSecondMasterSave">Зберегти</button>' +
+            (a.second_master_id ? '<button class="btn btn-sm btn-ghost" id="dSecondMasterClear">Прибрати</button>' : '') +
+          '</div>' +
+          '<div class="sub" style="margin-top:6px;font-size:.72rem;opacity:.75;">Потрібного майстра немає у списку? Додайте нового у вкладці «Майстри», потім поверніться сюди.</div>' +
+          '<div class="err" id="dSecondMasterErr" style="margin-top:4px;"></div>';
+        function submitSecond(masterIdOrNull) {
+          $("dSecondMasterErr").textContent = "";
+          api("PATCH", "/api/crm/appointments/" + a.id + "/second-master", { master_id: masterIdOrNull }).then(function(r2) {
+            if (!r2.j || !r2.j.ok) { $("dSecondMasterErr").textContent = (r2.j && r2.j.error) || "Помилка збереження"; return; }
+            a.second_master_id = r2.j.appointment.second_master_id;
+            a.second_master_name = r2.j.appointment.second_master_name;
+            if (window.__reloadAppts) window.__reloadAppts();
+            closeModal();
+            apptDetailModal(a);
+          });
+        }
+        if ($("dSecondMasterSave")) $("dSecondMasterSave").addEventListener("click", function() {
+          var val = $("dSecondMasterSel").value;
+          if (!val) { $("dSecondMasterErr").textContent = "Оберіть майстра"; return; }
+          submitSecond(parseInt(val, 10));
+        });
+        if ($("dSecondMasterClear")) $("dSecondMasterClear").addEventListener("click", function() { submitSecond(null); });
+      });
+    }
 
     $("dMarkerWrap").appendChild(markerPicker(a.color_marker || null, function(c) {
       api("PATCH", "/api/crm/appointments/" + a.id + "/color-marker", { color_marker: c });

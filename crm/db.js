@@ -550,6 +550,12 @@ CREATE INDEX IF NOT EXISTS idx_branch_masters_master ON branch_masters(master_id
    філію, яку обрав клієнт. Старі записи залишаються сумісними (NULL). */
 try { db.exec("ALTER TABLE appointments ADD COLUMN branch_id INTEGER REFERENCES branches(id)"); } catch(e) {}
 
+/* Парні процедури ("SPA для двох") обслуговують два майстри одночасно,
+   але запис/оплата — один. Другого майстра власник додає вручну в CRM
+   (клієнт при онлайн-записі обирає лише "свого"). NULL — для всіх
+   звичайних записів і для старих парних записів до цієї міграції. */
+try { db.exec("ALTER TABLE appointments ADD COLUMN second_master_id INTEGER REFERENCES masters(id)"); } catch(e) {}
+
 /* Одноразово та безпечно переносимо старі прив'язки до нової таблиці.
    INSERT OR IGNORE дозволяє запускати міграцію на кожному старті. */
 db.exec(`
