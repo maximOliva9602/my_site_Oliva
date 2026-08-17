@@ -111,9 +111,11 @@
   function serviceMatchesMasterLevel(service, master) {
     var name = String((service && service.name) || "");
     var level = String((master && master.level) || "");
-    var isTop = name.indexOf("(Топ Майстер)") !== -1;
-    var isMaster = name.indexOf("(Майстер)") !== -1 && !isTop;
-    if (!isTop && !isMaster) return true; // послуга без прив'язки до рівня
+    var isExpert = name.indexOf("(Експерт)") !== -1;
+    var isTop = !isExpert && name.indexOf("(Топ Майстер)") !== -1;
+    var isMaster = !isExpert && !isTop && name.indexOf("(Майстер)") !== -1;
+    if (!isExpert && !isTop && !isMaster) return true; // послуга без прив'язки до рівня
+    if (isExpert) return level === "Експерт";
     return isTop ? level === "Топ Майстер" : level === "Майстер";
   }
 
@@ -5566,7 +5568,7 @@
       '<label>Ім\'я</label><input type="text" id="mmFirstName" maxlength="60" placeholder="Максим" />' +
       '<label>Прізвище</label><input type="text" id="mmLastName" maxlength="60" placeholder="необов\'язково" />' +
       '<label>Ім\'я для додатку</label><input type="text" id="mmDisplayName" maxlength="100" placeholder="Як бачитимуть клієнти" />' +
-      '<label>Посада</label><select id="mmLevel"><option value="Майстер">Майстер</option><option value="Топ Майстер">Топ Майстер</option></select>' +
+      '<label>Посада</label><select id="mmLevel"><option value="Майстер">Майстер</option><option value="Топ Майстер">Топ Майстер</option><option value="Експерт">Експерт</option></select>' +
       '<label>Телефон</label><input type="text" id="mmPhone" maxlength="30" />' +
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #f0f2ee;margin-top:8px;">' +
         '<div><div style="font-size:.88rem;font-weight:600;color:#1a2016;">Бачити номери телефонів клієнтів</div>' +

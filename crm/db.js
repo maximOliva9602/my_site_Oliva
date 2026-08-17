@@ -1110,15 +1110,18 @@ CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
       var lvl = (m.level || "").trim();
       var isTop = lvl === "Топ Майстер";
       var isMaster = lvl === "Майстер";
+      var isExpert = lvl === "Експерт";
 
       allSvcs.forEach(function(s) {
-        var hasTop    = s.name.indexOf("(Топ Майстер)") !== -1;
-        var hasMaster = s.name.indexOf("(Майстер)")     !== -1 && !hasTop;
-        var shared    = !hasTop && !hasMaster;
+        var hasExpert = s.name.indexOf("(Експерт)")     !== -1;
+        var hasTop    = !hasExpert && s.name.indexOf("(Топ Майстер)") !== -1;
+        var hasMaster = !hasExpert && !hasTop && s.name.indexOf("(Майстер)") !== -1;
+        var shared    = !hasExpert && !hasTop && !hasMaster;
 
         var fits = shared ||
                    (isTop    && hasTop)    ||
-                   (isMaster && hasMaster);
+                   (isMaster && hasMaster) ||
+                   (isExpert && hasExpert);
 
         if (fits) {
           var r = ins.run(m.id, s.id);

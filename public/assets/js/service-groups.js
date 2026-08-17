@@ -69,6 +69,7 @@
     "Комплекси": "body",   /* обгортання й моделювання тіла */
     "Прайс Майстер": "general",
     "Прайс Топ Майстер": "general",
+    "Прайс Експерт": "general",
   };
   function resolveGroup(s, parsedCat) {
     var raw = (s.category || "").trim();
@@ -85,13 +86,13 @@
   }
 
   function parseName(name) {
-    var lm = name.match(/\((Топ Майстер|Майстер)\)/);
+    var lm = name.match(/\((Топ Майстер|Майстер|Експерт)\)/);
     var level = lm ? lm[1] : null;
     var dm = name.match(/(\d+)\s*хв/);
     var dur = dm ? parseInt(dm[1]) : null;
     if (!dur) { var gm = name.match(/(\d+)\s*год/); if (gm) dur = parseInt(gm[1]) * 60; }
     var cat = name
-      .replace(/\s*\(Топ Майстер\)/, "").replace(/\s*\(Майстер\)/, "")
+      .replace(/\s*\(Топ Майстер\)/, "").replace(/\s*\(Майстер\)/, "").replace(/\s*\(Експерт\)/, "")
       /* Тривалість у дужках в кінці — «Фіто-оновлення тіла для двох (130 хв)».
          Без цього вона лишалась у назві категорії: картка показувала «(130 хв)»,
          а варіанти тієї самої послуги на 90 і 130 хв не склеювались в одну

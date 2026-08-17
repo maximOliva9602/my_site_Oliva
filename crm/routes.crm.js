@@ -51,19 +51,20 @@ function protectClientPhone(client, sessionOrAccess) {
   });
 }
 const STATUSES = ["pending", "confirmed", "cancelled", "completed", "no_show"];
-const MASTER_LEVELS = ["Майстер", "Топ Майстер"];
+const MASTER_LEVELS = ["Майстер", "Топ Майстер", "Експерт"];
 
-/* Кожна послуга існує у двох тарифних варіантах — окремий service_id для
-   "(Майстер)" і "(Топ Майстер)" (та сама процедура й тривалість, різна
-   ціна залежно від рівня майстра). Абонемент купують під один тариф, але
-   клієнта далі міг обслуговувати майстер іншого рівня — тоді service_id
-   візиту вже інший, хоча послуга фізично та сама, і списання по точному
-   service_id мовчки не спрацьовувало (лічильник абонементу не зменшувався).
-   Тому підбір/списання абонементу йде по "групі" тарифів однієї послуги
-   (та сама назва без рівня й тривалості), а не по точному service_id. */
+/* Кожна послуга існує у кількох тарифних варіантах — окремий service_id
+   для "(Майстер)", "(Топ Майстер)" і "(Експерт)" (та сама процедура й
+   тривалість, різна ціна залежно від рівня майстра). Абонемент купують
+   під один тариф, але клієнта далі міг обслуговувати майстер іншого
+   рівня — тоді service_id візиту вже інший, хоча послуга фізично та сама,
+   і списання по точному service_id мовчки не спрацьовувало (лічильник
+   абонементу не зменшувався). Тому підбір/списання абонементу йде по
+   "групі" тарифів однієї послуги (та сама назва без рівня й тривалості),
+   а не по точному service_id. */
 function baseServiceKey(name) {
   const cat = String(name || "")
-    .replace(/\s*\((Топ Майстер|Майстер)\)/, "")
+    .replace(/\s*\((Топ Майстер|Майстер|Експерт)\)/, "")
     .replace(/\s+\d+\s*хв$/, "")
     .replace(/\s+\d+\s*год.*$/, "")
     .trim().toLowerCase();
@@ -83,9 +84,11 @@ function subServiceIds(serviceId) {
 function inList(n) { return new Array(n).fill("?").join(","); }
 function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const name = String(serviceName || "");
-  const isTop = name.includes("(Топ Майстер)");
-  const isMaster = name.includes("(Майстер)") && !isTop;
-  if (!isTop && !isMaster) return true; // спільна послуга без рівня
+  const isExpert = name.includes("(Експерт)");
+  const isTop = !isExpert && name.includes("(Топ Майстер)");
+  const isMaster = !isExpert && !isTop && name.includes("(Майстер)");
+  if (!isExpert && !isTop && !isMaster) return true; // спільна послуга без рівня
+  if (isExpert) return masterLevel === "Експерт";
   if (isTop) return masterLevel === "Топ Майстер";
   return masterLevel === "Майстер";
 }
@@ -977,12 +980,10 @@ function setMasterServices(masterId, ids) {
    Викликається при створенні майстра і при зміні його посади — вручну
    послуги більше не обираються. */
 function autoAssignServicesByLevel(masterId, level) {
-  const isTop = level === "Топ Майстер";
-  const tagged = db.prepare(
-    "SELECT id FROM services WHERE active=1 AND name LIKE ?" + (isTop ? "" : " AND name NOT LIKE '%(Топ Майстер)%'")
-  ).all(isTop ? "%(Топ Майстер)%" : "%(Майстер)%");
+  const tag = level === "Топ Майстер" ? "(Топ Майстер)" : level === "Експерт" ? "(Експерт)" : "(Майстер)";
+  const tagged = db.prepare("SELECT id FROM services WHERE active=1 AND name LIKE ?").all("%" + tag + "%");
   const shared = db.prepare(
-    "SELECT id FROM services WHERE active=1 AND name NOT LIKE '%(Майстер)%' AND name NOT LIKE '%(Топ Майстер)%'"
+    "SELECT id FROM services WHERE active=1 AND name NOT LIKE '%(Майстер)%' AND name NOT LIKE '%(Топ Майстер)%' AND name NOT LIKE '%(Експерт)%'"
   ).all();
   setMasterServices(masterId, tagged.concat(shared).map(function (r) { return r.id; }));
 }
