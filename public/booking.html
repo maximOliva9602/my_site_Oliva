@@ -335,9 +335,14 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .mst-arrow { color: var(--gold); font-size: 1.5rem; opacity: .7; flex-shrink: 0; line-height: 1; align-self: center; }
 /* Найближчі вільні віконця майстра */
 .mst-slots { margin-top: 9px; }
+.mst-slots-label { color: var(--text-dim); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
 .mst-slots-day { color: var(--gold); font-weight: 600; font-size: .8rem; }
 .mst-slot-chip { display: inline-block; margin: 3px 5px 0 0; padding: 3px 9px; border: 1px solid rgba(217,185,120,0.35); border-radius: 7px; color: var(--cream); font-size: .78rem; background: rgba(46,61,34,0.18); }
 .mst-slots-load, .mst-slots-none { color: var(--text-dim); font-size: .78rem; }
+.mst-slots-more { display: inline-flex; align-items: center; gap: 3px; margin: 4px 0 0 2px; padding: 0; background: none; border: none; color: var(--gold); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.mst-slots-more .arr { display: inline-block; font-size: .68rem; transition: transform .2s; }
+.mst-slots-more.open .arr { transform: rotate(180deg); }
+.mst-slots-rest.hide { display: none; }
 
 /* Крок 4 — тривалість */
 .dur-list2 { display: flex; flex-direction: column; gap: 10px; padding: 8px 16px 0; }
@@ -1159,8 +1164,31 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
           }
           var d = info.date.split("-");
           var label = info.today ? "Сьогодні" : (DOW_SHORT[weekdayIdx(info.date)] + ", " + d[2] + "." + d[1]);
-          el.innerHTML = '<span class="mst-slots-day">' + label + ':</span> ' +
-            info.times.map(function(t){ return '<span class="mst-slot-chip">' + t + '</span>'; }).join("");
+          var VISIBLE = 6;
+          var head = info.times.slice(0, VISIBLE);
+          var rest = info.times.slice(VISIBLE);
+          var chip = function(t) { return '<span class="mst-slot-chip">' + t + '</span>'; };
+          var html = '<div class="mst-slots-label">Найближчі вільні віконця</div>' +
+            '<span class="mst-slots-day">' + label + ':</span> ' +
+            head.map(chip).join("");
+          if (rest.length) {
+            html += '<span class="mst-slots-rest hide">' + rest.map(chip).join("") + '</span>' +
+              '<button type="button" class="mst-slots-more"><span class="lbl">Дивитись ще (' + rest.length + ')</span><span class="arr">▾</span></button>';
+          }
+          el.innerHTML = html;
+          // stopPropagation — уся картка клікабельна (обирає майстра),
+          // без цього розкриття списку одразу перекидало б на крок 4.
+          var moreBtn = el.querySelector(".mst-slots-more");
+          if (moreBtn) {
+            moreBtn.addEventListener("click", function(e) {
+              e.stopPropagation();
+              var restEl = el.querySelector(".mst-slots-rest");
+              var willOpen = restEl.classList.contains("hide");
+              restEl.classList.toggle("hide", !willOpen);
+              moreBtn.classList.toggle("open", willOpen);
+              moreBtn.querySelector(".lbl").textContent = willOpen ? "Сховати" : "Дивитись ще (" + rest.length + ")";
+            });
+          }
         });
       })
       .catch(function(){

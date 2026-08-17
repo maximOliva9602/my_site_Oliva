@@ -167,7 +167,7 @@ router.get("/next-slots", function (req, res) {
       const date = addDays(today, i);
       const free = slots.freeSlots(mid, date, dur);
       if (free.length) {
-        out[mid] = { date: date, today: i === 0, times: free.slice(0, 12).map(function (m) { return tz.fmtMin(m); }) };
+        out[mid] = { date: date, today: i === 0, times: free.slice(0, 30).map(function (m) { return tz.fmtMin(m); }) };
         break;
       }
     }
