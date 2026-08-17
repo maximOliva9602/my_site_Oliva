@@ -210,13 +210,15 @@
     .success-divider span { flex: 1; height: 1px; background: rgba(46,61,34,0.25); }
     .success-divider em { font-style: normal; color: var(--olive); font-size: 13px; }
     .success-sub { font-size: 14px; color: rgba(46,61,34,0.65); line-height: 1.7; max-width: 380px; margin: 0 auto 28px; }
-    .success-share { background: #fff; border-radius: 16px; padding: 26px 22px; max-width: 380px; margin: 0 auto 24px; }
+    .success-share { display: block; background: #fff; border-radius: 16px; padding: 26px 22px; max-width: 380px; margin: 0 auto 24px; text-decoration: none; border: 1px solid transparent; transition: border-color .2s, transform .15s; }
+    .success-share:hover { border-color: rgba(122,145,86,0.4); transform: translateY(-1px); }
     .success-share-ico { width: 44px; height: 44px; border-radius: 50%; background: var(--cream); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 20px; color: var(--olive-mid); }
     .success-share-title { font-size: 14px; font-weight: 600; color: var(--olive-mid); margin-bottom: 12px; }
     .success-share-title b { color: var(--olive); font-weight: 700; }
     .success-share-line { height: 1px; background: rgba(46,61,34,0.15); max-width: 140px; margin: 0 auto 12px; }
     .success-share-text { font-size: 13px; line-height: 1.7; color: rgba(46,61,34,0.7); }
     .success-share-text b { color: var(--olive); font-weight: 700; }
+    .success-share-cta { margin-top: 16px; font-size: 13px; font-weight: 700; color: var(--olive); }
     .btn-back { display: inline-block; padding: 14px 32px; border: 1px solid var(--olive); border-radius: 50px; color: var(--olive-mid); text-decoration: none; font-size: 14px; transition: all .2s; }
     .btn-back:hover { background: var(--olive); color: #fff; border-color: var(--olive); }
 
@@ -555,12 +557,13 @@
     <div class="success-title" data-i18n="cert.successTitle">Замовлення отримано!</div>
     <div class="success-divider"><span></span><em>♡</em><span></span></div>
     <p class="success-sub" data-i18n="cert.successSub">Дякуємо! Скоро з вами зв'яжемося.</p>
-    <div class="success-share">
+    <a class="success-share" href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener">
       <div class="success-share-ico">📷</div>
       <div class="success-share-title"><span data-i18n="cert.successShareTitle1">Даруйте емоції — </span><b data-i18n="cert.successShareTitleAccent">діліться ними ✨</b></div>
       <div class="success-share-line"></div>
       <p class="success-share-text"><span data-i18n="cert.successShareText1">Відмітьте Oliva в Instagram під час вручення або отримання сертифіката і ми підготуємо для вас </span><b data-i18n="cert.successShareBonus">приємний бонус 🎁</b></p>
-    </div>
+      <div class="success-share-cta" data-i18n="cert.successShareCta">Відкрити Instagram Oliva ↗</div>
+    </a>
     <a href="/" class="btn-back" data-i18n="cert.successBack">← Повернутись на головну</a>
   </div>
 </div><!-- /form-section -->
