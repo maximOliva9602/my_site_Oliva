@@ -2346,6 +2346,15 @@ router.delete("/hero-media/:kind", owner, function (req, res) {
    вручну вписує порядковий номер із самого паперового сертифіката —
    просто щоб власник бачив, скільки сертифікатів відпрацьовано.
    Жодної перевірки дійсності — номер лише фіксується в журналі. */
+/* Перевірка "чи вже занесено такий номер" — і для майстра теж (він сам
+   вписує номер), тому лише true/false, без деталей чужого запису. */
+router.get("/certificates/exists", any, function (req, res) {
+  const code = clean(req.query.code, 50);
+  if (!code) return res.json({ ok: true, exists: false });
+  const row = db.prepare("SELECT 1 FROM certificates WHERE code=?").get(code);
+  res.json({ ok: true, exists: !!row });
+});
+
 router.get("/certificates", owner, function (req, res) {
   const q = clean(req.query.q, 100);
   let sql = "SELECT * FROM certificates WHERE 1=1";

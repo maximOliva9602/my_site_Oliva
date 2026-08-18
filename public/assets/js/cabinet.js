@@ -2110,9 +2110,12 @@
       (a.comment ? '<div class="sub" style="margin-top:8px;">💬 ' + a.comment + '</div>' : '') +
       (a.cert_code
         ? '<div class="sub" style="margin-top:6px;">🎁 Оплачено сертифікатом № ' + a.cert_code + '</div>'
-        : '<div style="margin-top:10px;display:flex;gap:6px;">' +
-            '<input type="text" id="dCertCode" placeholder="№ сертифіката (якщо оплата сертифікатом)" style="flex:1;font-size:.82rem;">' +
-            '<button class="btn btn-ghost btn-sm" id="dCertSave" style="white-space:nowrap;">Зберегти</button>' +
+        : '<div style="margin-top:10px;">' +
+            '<div style="display:flex;gap:6px;">' +
+              '<input type="text" id="dCertCode" placeholder="№ сертифіката (якщо оплата сертифікатом)" style="flex:1;font-size:.82rem;">' +
+              '<button class="btn btn-ghost btn-sm" id="dCertSave" style="white-space:nowrap;">Зберегти</button>' +
+            '</div>' +
+            '<div id="dCertWarn" style="display:none;color:var(--err);font-size:.78rem;margin-top:4px;">⚠ Такий номер уже занесено в журнал</div>' +
           '</div>') +
       '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
       (isPair ? '<div style="margin-top:14px;padding:10px 12px;background:rgba(217,185,120,0.08);border:1px solid rgba(217,185,120,0.25);border-radius:10px;">' +
@@ -2287,6 +2290,22 @@
           api("PATCH", "/api/crm/appointments/" + a.id + "/payment", { paid: paid, pay_method: method });
         }
         closeModal(); if (window.__reloadAppts) window.__reloadAppts();
+      });
+    }
+    if ($("dCertCode")) {
+      var dCertCheckT = null;
+      $("dCertCode").addEventListener("input", function() {
+        var code = this.value.trim();
+        clearTimeout(dCertCheckT);
+        $("dCertWarn").style.display = "none";
+        if (!code) return;
+        dCertCheckT = setTimeout(function() {
+          api("GET", "/api/crm/certificates/exists?code=" + encodeURIComponent(code)).then(function(res) {
+            if ($("dCertCode") && $("dCertCode").value.trim() === code) {
+              $("dCertWarn").style.display = (res.j && res.j.exists) ? "block" : "none";
+            }
+          });
+        }, 400);
       });
     }
     if ($("dCertSave")) $("dCertSave").addEventListener("click", function() {
@@ -2860,6 +2879,7 @@
 
       '<label style="margin-top:10px;display:block;">№ подарункового сертифіката <span style="color:var(--text-dim);font-weight:400;">(якщо клієнт платить сертифікатом)</span></label>' +
       '<input type="text" id="mCertCode" placeholder="Порядковий номер із сертифіката" maxlength="50">' +
+      '<div id="mCertWarn" style="display:none;color:var(--err);font-size:.78rem;margin-top:4px;">⚠ Такий номер уже занесено в журнал — перевірте, чи це не той самий сертифікат</div>' +
 
       '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
@@ -2959,6 +2979,24 @@
       var addWrap = $("mAddSvcWrap");
       if (addWrap) addWrap.style.display = selectedServices.length > 0 ? "block" : "none";
     }
+
+    // Попередження про дублікат номера сертифіката — поки друкує, а не
+    // лише після спроби зберегти: майстер вписує номер із паперового
+    // сертифіката, і легко переплутати цифру чи ввести вже використаний.
+    var mCertCheckT = null;
+    $("mCertCode").addEventListener("input", function() {
+      var code = this.value.trim();
+      clearTimeout(mCertCheckT);
+      $("mCertWarn").style.display = "none";
+      if (!code) return;
+      mCertCheckT = setTimeout(function() {
+        api("GET", "/api/crm/certificates/exists?code=" + encodeURIComponent(code)).then(function(res) {
+          if ($("mCertCode").value.trim() === code) {
+            $("mCertWarn").style.display = (res.j && res.j.exists) ? "block" : "none";
+          }
+        });
+      }, 400);
+    });
 
     $("mCancel").addEventListener("click", closeModal);
     $("mMarkerWrap").appendChild(markerPicker(null, function(c) { chosen.color_marker = c; }));
@@ -3496,11 +3534,18 @@
 
         function afterDone() { closeModal(); if (window.__reloadAppts) window.__reloadAppts(); }
         // Номер сертифіката — лише запис у журнал після успішного
-        // створення запису, без жодної перевірки дійсності.
+        // створення запису. Запис уже створено на цей момент, тому
+        // дублікат номера не скасовує запис — просто попереджаємо, щоб
+        // майстер зайшов у картку й виправив номер вручну.
         function done() {
           if (certCode && appointmentId) {
             api("POST", "/api/crm/certificates/log", { code: certCode, appointment_id: appointmentId })
-              .then(afterDone).catch(afterDone);
+              .then(function(res) {
+                if (res.code === 409) {
+                  alert("Запис створено, але номер сертифіката № " + certCode + " уже занесено раніше — перевірте номер і за потреби виправте його в картці запису.");
+                }
+                afterDone();
+              }).catch(afterDone);
           } else {
             afterDone();
           }
