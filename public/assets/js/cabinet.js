@@ -2066,8 +2066,6 @@
       if (apptViewMode === "calendar") loadCalendar(activeMasterFilter);
       else { restoreMain(); loadAppts(activeMasterFilter); }
     };
-    // початкове завантаження (без фільтру майстра) для майстра
-    if (ME.role !== "owner") reloadView();
   }
 
   /* ---- Детальна картка запису (для календаря) ---- */
@@ -2110,7 +2108,12 @@
       '<div class="sub">' + (a.client_phone || '<span style="color:#aaa;">🔒 телефон приховано</span>') + '</div>' +
       extrasHtml +
       (a.comment ? '<div class="sub" style="margin-top:8px;">💬 ' + a.comment + '</div>' : '') +
-      (a.cert_code ? '<div class="sub" style="margin-top:6px;">🎁 Оплачено сертифікатом ' + a.cert_code + '</div>' : '') +
+      (a.cert_code
+        ? '<div class="sub" style="margin-top:6px;">🎁 Оплачено сертифікатом № ' + a.cert_code + '</div>'
+        : '<div style="margin-top:10px;display:flex;gap:6px;">' +
+            '<input type="text" id="dCertCode" placeholder="№ сертифіката (якщо оплата сертифікатом)" style="flex:1;font-size:.82rem;">' +
+            '<button class="btn btn-ghost btn-sm" id="dCertSave" style="white-space:nowrap;">Зберегти</button>' +
+          '</div>') +
       '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
       (isPair ? '<div style="margin-top:14px;padding:10px 12px;background:rgba(217,185,120,0.08);border:1px solid rgba(217,185,120,0.25);border-radius:10px;">' +
         '<div style="font-size:.82rem;font-weight:600;color:var(--cream);margin-bottom:6px;">👥 Другий майстер (парна процедура)</div>' +
@@ -2286,6 +2289,24 @@
         closeModal(); if (window.__reloadAppts) window.__reloadAppts();
       });
     }
+    if ($("dCertSave")) $("dCertSave").addEventListener("click", function() {
+      var code = $("dCertCode").value.trim();
+      if (!code) return;
+      $("dCertSave").disabled = true;
+      api("POST", "/api/crm/certificates/log", { code: code, appointment_id: a.id }).then(function(res) {
+        $("dCertSave").disabled = false;
+        if (res.j && res.j.ok) {
+          a.cert_code = code;
+          closeModal();
+          apptDetailModal(a);
+          if (window.__reloadAppts) window.__reloadAppts();
+        } else if (res.code === 409) {
+          alert("Такий номер уже занесено в журнал раніше.");
+        } else {
+          alert("Не вдалося зберегти номер сертифіката.");
+        }
+      });
+    });
     if ($("dConfirm")) $("dConfirm").addEventListener("click", function() { setStatus("confirmed"); });
     if ($("dComplete")) $("dComplete").addEventListener("click", function() { setStatus("completed"); });
     if ($("dUncomplete")) $("dUncomplete").addEventListener("click", function() { setStatus("confirmed"); });
