@@ -2348,11 +2348,19 @@ router.delete("/hero-media/:kind", owner, function (req, res) {
    й перекладаємо у канонічний формат. */
 function normalizeCertCode(raw) {
   const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
-  if (digits.length !== 8) return digits; // явно неповний код — не знайдеться, і добре
+  if (digits.length !== 8) return null; // явно неповний код — шукати нема сенсу
   return digits.slice(0, 4) + "-" + digits.slice(4);
 }
+/* Спершу пробуємо код як є (сумісність зі старим форматом OL-XXXXXX,
+   виданим до переходу на цифровий номер), потім — нормалізований
+   цифровий формат. Без цього старі видані сертифікати неможливо було
+   б ані перевірити, ані погасити. */
 function certRow(code) {
-  return db.prepare("SELECT * FROM certificates WHERE code=?").get(normalizeCertCode(code));
+  const raw = String(code || "").trim().toUpperCase();
+  let row = db.prepare("SELECT * FROM certificates WHERE code=?").get(raw);
+  if (row) return row;
+  const normalized = normalizeCertCode(raw);
+  return normalized ? db.prepare("SELECT * FROM certificates WHERE code=?").get(normalized) : undefined;
 }
 function certStatusInfo(cert) {
   if (!cert) return { valid: false, reason: "not_found" };
