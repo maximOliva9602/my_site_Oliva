@@ -98,12 +98,14 @@ function apptRow(id) {
   return db.prepare(
     `SELECT a.*, c.name AS client_name, c.phone AS client_phone,
             s.name AS service_name, m.name AS master_name,
-            m2.name AS second_master_name
+            m2.name AS second_master_name,
+            cert.code AS cert_code
        FROM appointments a
        JOIN clients c  ON c.id = a.client_id
        JOIN services s ON s.id = a.service_id
        JOIN masters  m ON m.id = a.master_id
        LEFT JOIN masters m2 ON m2.id = a.second_master_id
+       LEFT JOIN certificates cert ON cert.used_by_appointment_id = a.id
       WHERE a.id = ?`
   ).get(id);
 }
@@ -480,7 +482,7 @@ router.get("/me/appointments", any, function (req, res) {
   const s = req.session;
   const from = clean(req.query.from, 10), to = clean(req.query.to, 10);
   const masterParam = clean(req.query.master, 20);
-  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id LEFT JOIN masters m2 ON m2.id=a.second_master_id WHERE 1=1";
+  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name, cert.code cert_code FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id LEFT JOIN masters m2 ON m2.id=a.second_master_id LEFT JOIN certificates cert ON cert.used_by_appointment_id=a.id WHERE 1=1";
   const args = [];
   // master=<id> — явний фільтр на конкретного майстра (доступно всім,
   // календар і так показує розклад усіх майстрів). master=all — явно
@@ -709,7 +711,7 @@ router.get("/appointments/month-counts", any, function (req, res) {
 router.get("/appointments", owner, function (req, res) {
   const date = clean(req.query.date, 10), from = clean(req.query.from, 10), to = clean(req.query.to, 10);
   const master = parseInt(req.query.master, 10);
-  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id LEFT JOIN masters m2 ON m2.id=a.second_master_id WHERE 1=1";
+  let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name, cert.code cert_code FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id LEFT JOIN masters m2 ON m2.id=a.second_master_id LEFT JOIN certificates cert ON cert.used_by_appointment_id=a.id WHERE 1=1";
   const args = [];
   if (tz.isDate(date)) { sql += " AND a.date=?"; args.push(date); }
   if (tz.isDate(from)) { sql += " AND a.date>=?"; args.push(from); }
@@ -2334,6 +2336,97 @@ router.delete("/hero-media/:kind", owner, function (req, res) {
   heroSet(HERO_KEYS[kind], "");
   heroDropOld(prev);
   res.json({ ok: true, kind: kind, url: "" });
+});
+
+/* ============================================================
+   Подарункові сертифікати — куплені через сайт (public/certificate.html,
+   POST /api/certificate у server.js генерує code і зберігає рядок).
+   Тут: пошук/перевірка коду адміністратором і погашення при записі.
+   ============================================================ */
+function normalizeCertCode(raw) {
+  let s = String(raw || "").toUpperCase().replace(/\s+/g, "").replace(/[^A-Z0-9-]/g, "");
+  if (s.indexOf("OL-") !== 0) s = "OL-" + s.replace(/^OL-?/, "");
+  // Найчастіші описки/непорозуміння на слух — 0/O і 1/I самі виключені
+  // з алфавіту коду, тож безпечно приводимо їх до літер.
+  const tail = s.slice(3).replace(/0/g, "O").replace(/1/g, "I");
+  return "OL-" + tail;
+}
+function certRow(code) {
+  return db.prepare("SELECT * FROM certificates WHERE code=?").get(normalizeCertCode(code));
+}
+function certStatusInfo(cert) {
+  if (!cert) return { valid: false, reason: "not_found" };
+  if (cert.status === "used") return { valid: false, reason: "used" };
+  if (cert.status === "cancelled") return { valid: false, reason: "cancelled" };
+  if (cert.expires_at < Date.now()) return { valid: false, reason: "expired" };
+  return { valid: true, reason: null };
+}
+
+router.get("/certificates", owner, function (req, res) {
+  const q = clean(req.query.q, 100);
+  const status = clean(req.query.status, 20);
+  let sql = "SELECT * FROM certificates WHERE 1=1";
+  const args = [];
+  if (q) {
+    sql += " AND (code LIKE ? OR buyer_phone LIKE ? OR buyer_name LIKE ? OR recipient LIKE ?)";
+    const like = "%" + q + "%";
+    args.push(like, like, like, like);
+  }
+  if (status) { sql += " AND status=?"; args.push(status); }
+  sql += " ORDER BY created_at DESC LIMIT 300";
+  const stmt = db.prepare(sql);
+  const rows = stmt.all.apply(stmt, args);
+  const now = Date.now();
+  res.json({
+    ok: true,
+    certificates: rows.map(function (c) {
+      return Object.assign({}, c, { expired: c.status === "active" && c.expires_at < now });
+    }),
+  });
+});
+
+/* Перевірка коду — без побічних ефектів, можна викликати скільки завгодно
+   (наприклад, при кожному натисканні клавіші в полі коду). */
+router.get("/certificates/check", any, function (req, res) {
+  const cert = certRow(req.query.code);
+  const info = certStatusInfo(cert);
+  res.json({ ok: true, valid: info.valid, reason: info.reason, certificate: cert || null });
+});
+
+/* Погашення — власник або майстер, що записує клієнта. appointment_id
+   необов'язковий (можна помітити використаним і без прив'язки до
+   конкретного запису), але коли він є — саме там видно, хто скористався. */
+router.post("/certificates/:code/redeem", any, function (req, res) {
+  const cert = certRow(req.params.code);
+  const info = certStatusInfo(cert);
+  if (!info.valid) return res.status(409).json({ ok: false, error: info.reason });
+  const b = req.body || {};
+  const appointmentId = parseInt(b.appointment_id, 10) || null;
+  const who = req.session.role === "owner" ? "власник"
+    : (db.prepare("SELECT name FROM masters WHERE id=?").get(req.session.masterId) || {}).name || "майстер";
+  const note = clean(b.note, 200) || who;
+  db.prepare(
+    "UPDATE certificates SET status='used', used_at=?, used_by_appointment_id=?, used_note=? WHERE id=?"
+  ).run(Date.now(), appointmentId, note, cert.id);
+  res.json({ ok: true, certificate: certRow(cert.code) });
+});
+
+/* Ручне скасування/відновлення — власник. Знадобиться, якщо погасили
+   не той сертифікат помилково, або клієнт повернув гроші за нього. */
+router.patch("/certificates/:code", owner, function (req, res) {
+  const cert = certRow(req.params.code);
+  if (!cert) return res.status(404).json({ ok: false });
+  const b = req.body || {};
+  const status = clean(b.status, 20);
+  if (["active", "used", "cancelled"].indexOf(status) === -1) {
+    return res.status(400).json({ ok: false, error: "bad status" });
+  }
+  if (status === "active") {
+    db.prepare("UPDATE certificates SET status='active', used_at=NULL, used_by_appointment_id=NULL, used_note=NULL WHERE id=?").run(cert.id);
+  } else {
+    db.prepare("UPDATE certificates SET status=? WHERE id=?").run(status, cert.id);
+  }
+  res.json({ ok: true, certificate: certRow(cert.code) });
 });
 
 module.exports = router;

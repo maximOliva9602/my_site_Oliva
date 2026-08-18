@@ -210,6 +210,10 @@
     .success-divider span { flex: 1; height: 1px; background: rgba(46,61,34,0.25); }
     .success-divider em { font-style: normal; color: var(--olive); font-size: 13px; }
     .success-sub { font-size: 14px; color: rgba(46,61,34,0.65); line-height: 1.7; max-width: 380px; margin: 0 auto 28px; }
+    .success-code-box { background: var(--olive-mid); border-radius: 16px; padding: 18px 22px; max-width: 380px; margin: 0 auto 24px; }
+    .success-code-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgba(242,237,228,0.65); margin-bottom: 6px; }
+    .success-code { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; letter-spacing: .06em; color: var(--cream); user-select: all; }
+    .success-code-hint { font-size: 12px; color: rgba(242,237,228,0.6); line-height: 1.5; margin-top: 8px; }
     .success-share { display: block; background: #fff; border-radius: 16px; padding: 26px 22px; max-width: 380px; margin: 0 auto 24px; text-decoration: none; border: 1px solid transparent; transition: border-color .2s, transform .15s; }
     .success-share:hover { border-color: rgba(122,145,86,0.4); transform: translateY(-1px); }
     .success-share-ico { width: 44px; height: 44px; border-radius: 50%; background: var(--cream); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 20px; color: var(--olive-mid); }
@@ -557,6 +561,11 @@
     <div class="success-title" data-i18n="cert.successTitle">Замовлення отримано!</div>
     <div class="success-divider"><span></span><em>♡</em><span></span></div>
     <p class="success-sub" data-i18n="cert.successSub">Дякуємо! Скоро з вами зв'яжемося.</p>
+    <div class="success-code-box">
+      <div class="success-code-label" data-i18n="cert.successCodeLabel">Номер вашого сертифіката</div>
+      <div class="success-code" id="successCode">—</div>
+      <div class="success-code-hint" data-i18n="cert.successCodeHint">Збережіть цей номер — назвіть його адміністратору, коли прийдете в студію</div>
+    </div>
     <a class="success-share" href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener">
       <div class="success-share-ico">📷</div>
       <div class="success-share-title"><span data-i18n="cert.successShareTitle1">Даруйте емоції — </span><b data-i18n="cert.successShareTitleAccent">діліться ними ✨</b></div>
@@ -1261,7 +1270,12 @@
     })
     .then(function(r){ return r.json(); })
     .then(function(res){
-      if (res.ok) { form.style.display='none'; successState.classList.add('show'); }
+      if (res.ok) {
+        form.style.display='none';
+        successState.classList.add('show');
+        var codeEl = document.getElementById('successCode');
+        if (codeEl && res.code) codeEl.textContent = res.code;
+      }
       else { reset(); alert('Помилка. Зателефонуйте: 097 434 01 12'); }
     })
     .catch(function(){ reset(); alert('Помилка. Зателефонуйте: 097 434 01 12'); });

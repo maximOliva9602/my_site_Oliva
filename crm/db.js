@@ -600,6 +600,36 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE INDEX IF NOT EXISTS idx_reviews_master ON reviews(master_id);
 `);
 
+/* Подарункові сертифікати, куплені через сайт. Клієнт називає code
+   адміністратору при візиті — той перевіряє валідність у CRM
+   (не використаний, не прострочений) і одразу записує на послугу.
+   amount — у копійках, як і всі ціни в базі. expires_at — created_at +
+   2 місяці, відповідно до умов на самій сторінці сертифіката. */
+db.exec(`
+CREATE TABLE IF NOT EXISTS certificates (
+  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+  code                  TEXT NOT NULL UNIQUE,
+  buyer_name            TEXT NOT NULL,
+  buyer_phone           TEXT NOT NULL,
+  recipient             TEXT,
+  service_label         TEXT,
+  amount                INTEGER NOT NULL DEFAULT 0,
+  cert_type             TEXT,
+  delivery              TEXT,
+  address               TEXT,
+  wishes                TEXT,
+  status                TEXT NOT NULL DEFAULT 'active', -- active|used|cancelled
+  used_at               INTEGER,
+  used_by_appointment_id INTEGER,
+  used_note             TEXT,
+  created_at            INTEGER NOT NULL,
+  expires_at            INTEGER NOT NULL,
+  FOREIGN KEY (used_by_appointment_id) REFERENCES appointments(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_certificates_phone ON certificates(buyer_phone);
+CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
+`);
+
 /* ---------------- Seed початкових даних ---------------- */
 (function seed() {
   const now = Date.now();
