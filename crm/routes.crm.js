@@ -2339,102 +2339,72 @@ router.delete("/hero-media/:kind", owner, function (req, res) {
 });
 
 /* ============================================================
-   Подарункові сертифікати — куплені через сайт (public/certificate.html,
-   POST /api/certificate у server.js генерує code і зберігає рядок).
-   Тут: пошук/перевірка коду адміністратором і погашення при записі.
-   ============================================================ */
-/* Номер — 8 цифр (XXXX-XXXX). Приймаємо ввід як завгодно набраний
-   (з пробілами, без дефіса, зайві символи) — беремо тільки цифри
-   й перекладаємо у канонічний формат. */
-function normalizeCertCode(raw) {
-  const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
-  if (digits.length !== 8) return null; // явно неповний код — шукати нема сенсу
-  return digits.slice(0, 4) + "-" + digits.slice(4);
-}
-/* Спершу пробуємо код як є (сумісність зі старим форматом OL-XXXXXX,
-   виданим до переходу на цифровий номер), потім — нормалізований
-   цифровий формат. Без цього старі видані сертифікати неможливо було
-   б ані перевірити, ані погасити. */
-function certRow(code) {
-  const raw = String(code || "").trim().toUpperCase();
-  let row = db.prepare("SELECT * FROM certificates WHERE code=?").get(raw);
-  if (row) return row;
-  const normalized = normalizeCertCode(raw);
-  return normalized ? db.prepare("SELECT * FROM certificates WHERE code=?").get(normalized) : undefined;
-}
-function certStatusInfo(cert) {
-  if (!cert) return { valid: false, reason: "not_found" };
-  if (cert.status === "used") return { valid: false, reason: "used" };
-  if (cert.status === "cancelled") return { valid: false, reason: "cancelled" };
-  if (cert.expires_at < Date.now()) return { valid: false, reason: "expired" };
-  return { valid: true, reason: null };
-}
-
+   Подарункові сертифікати — паперові, продані офлайн. Онлайн-купівлі
+   на сайті (public/certificate.html) до цього журналу не мають
+   стосунку — то лише заявка в Telegram, ніякої перевірки чи номера.
+   Тут майстер/власник при записі клієнта, що платить сертифікатом,
+   вручну вписує порядковий номер із самого паперового сертифіката —
+   просто щоб власник бачив, скільки сертифікатів відпрацьовано.
+   Жодної перевірки дійсності — номер лише фіксується в журналі. */
 router.get("/certificates", owner, function (req, res) {
   const q = clean(req.query.q, 100);
-  const status = clean(req.query.status, 20);
   let sql = "SELECT * FROM certificates WHERE 1=1";
   const args = [];
   if (q) {
-    sql += " AND (code LIKE ? OR buyer_phone LIKE ? OR buyer_name LIKE ? OR recipient LIKE ?)";
+    sql += " AND (code LIKE ? OR buyer_phone LIKE ? OR buyer_name LIKE ?)";
     const like = "%" + q + "%";
-    args.push(like, like, like, like);
+    args.push(like, like, like);
   }
-  if (status) { sql += " AND status=?"; args.push(status); }
   sql += " ORDER BY created_at DESC LIMIT 300";
   const stmt = db.prepare(sql);
-  const rows = stmt.all.apply(stmt, args);
-  const now = Date.now();
-  res.json({
-    ok: true,
-    certificates: rows.map(function (c) {
-      return Object.assign({}, c, { expired: c.status === "active" && c.expires_at < now });
-    }),
-  });
+  res.json({ ok: true, certificates: stmt.all.apply(stmt, args) });
 });
 
-/* Перевірка коду — без побічних ефектів, можна викликати скільки завгодно
-   (наприклад, при кожному натисканні клавіші в полі коду). */
-router.get("/certificates/check", any, function (req, res) {
-  const cert = certRow(req.query.code);
-  const info = certStatusInfo(cert);
-  res.json({ ok: true, valid: info.valid, reason: info.reason, certificate: cert || null });
-});
-
-/* Погашення — власник або майстер, що записує клієнта. appointment_id
-   необов'язковий (можна помітити використаним і без прив'язки до
-   конкретного запису), але коли він є — саме там видно, хто скористався. */
-router.post("/certificates/:code/redeem", any, function (req, res) {
-  const cert = certRow(req.params.code);
-  const info = certStatusInfo(cert);
-  if (!info.valid) return res.status(409).json({ ok: false, error: info.reason });
+/* Записати в журнал номер сертифіката, яким клієнт розрахувався за
+   appointment_id. Дані клієнта/послуги підтягуємо із самого запису —
+   майстру не треба нічого вводити, крім номера. */
+router.post("/certificates/log", any, function (req, res) {
   const b = req.body || {};
+  const code = clean(b.code, 50);
   const appointmentId = parseInt(b.appointment_id, 10) || null;
+  if (!code) return res.status(400).json({ ok: false, error: "code required" });
+
+  const a = appointmentId ? db.prepare(
+    `SELECT a.price, c.name client_name, c.phone client_phone, s.name service_name
+       FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id
+      WHERE a.id=?`
+  ).get(appointmentId) : null;
+
   const who = req.session.role === "owner" ? "власник"
     : (db.prepare("SELECT name FROM masters WHERE id=?").get(req.session.masterId) || {}).name || "майстер";
-  const note = clean(b.note, 200) || who;
-  db.prepare(
-    "UPDATE certificates SET status='used', used_at=?, used_by_appointment_id=?, used_note=? WHERE id=?"
-  ).run(Date.now(), appointmentId, note, cert.id);
-  res.json({ ok: true, certificate: certRow(cert.code) });
+  const now = Date.now();
+  try {
+    const info = db.prepare(
+      `INSERT INTO certificates
+         (code, buyer_name, buyer_phone, service_label, amount, status, used_at, used_by_appointment_id, used_note, created_at, expires_at)
+       VALUES (?,?,?,?,?, 'used', ?, ?, ?, ?, ?)`
+    ).run(
+      code,
+      a ? a.client_name : "—",
+      a ? a.client_phone : "",
+      a ? a.service_name : null,
+      a ? a.price : 0,
+      now, appointmentId, who, now, now
+    );
+    res.json({ ok: true, id: info.lastInsertRowid });
+  } catch (e) {
+    if (String(e.message).indexOf("UNIQUE") !== -1) {
+      return res.status(409).json({ ok: false, error: "duplicate" });
+    }
+    console.error("[certificates/log]", e.message);
+    res.status(500).json({ ok: false });
+  }
 });
 
-/* Ручне скасування/відновлення — власник. Знадобиться, якщо погасили
-   не той сертифікат помилково, або клієнт повернув гроші за нього. */
-router.patch("/certificates/:code", owner, function (req, res) {
-  const cert = certRow(req.params.code);
-  if (!cert) return res.status(404).json({ ok: false });
-  const b = req.body || {};
-  const status = clean(b.status, 20);
-  if (["active", "used", "cancelled"].indexOf(status) === -1) {
-    return res.status(400).json({ ok: false, error: "bad status" });
-  }
-  if (status === "active") {
-    db.prepare("UPDATE certificates SET status='active', used_at=NULL, used_by_appointment_id=NULL, used_note=NULL WHERE id=?").run(cert.id);
-  } else {
-    db.prepare("UPDATE certificates SET status=? WHERE id=?").run(status, cert.id);
-  }
-  res.json({ ok: true, certificate: certRow(cert.code) });
+/* Прибрати помилковий запис у журналі — власник. */
+router.delete("/certificates/:id", owner, function (req, res) {
+  db.prepare("DELETE FROM certificates WHERE id=?").run(parseInt(req.params.id, 10));
+  res.json({ ok: true });
 });
 
 module.exports = router;

@@ -2837,12 +2837,8 @@
         '<div style="font-size:.68rem;color:var(--text-dim);margin-top:4px;">Для запису в перерву або поза графіком майстра</div>' +
       '</details>' +
 
-      '<label style="margin-top:10px;display:block;">Подарунковий сертифікат <span style="color:var(--text-dim);font-weight:400;">(необов\'язково)</span></label>' +
-      '<div style="display:flex;gap:6px;">' +
-        '<input type="text" inputmode="numeric" id="mCertCode" placeholder="0000-0000" maxlength="12" style="flex:1;">' +
-        '<button type="button" class="btn btn-ghost btn-sm" id="mCertCheck" style="white-space:nowrap;">Перевірити</button>' +
-      '</div>' +
-      '<div id="mCertResult" style="margin-top:6px;"></div>' +
+      '<label style="margin-top:10px;display:block;">№ подарункового сертифіката <span style="color:var(--text-dim);font-weight:400;">(якщо клієнт платить сертифікатом)</span></label>' +
+      '<input type="text" id="mCertCode" placeholder="Порядковий номер із сертифіката" maxlength="50">' +
 
       '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
@@ -2945,47 +2941,6 @@
 
     $("mCancel").addEventListener("click", closeModal);
     $("mMarkerWrap").appendChild(markerPicker(null, function(c) { chosen.color_marker = c; }));
-
-    // ── Сертифікат ──────────────────────────────────────────────────
-    // validatedCertCode фіксуємо лише після успішної перевірки саме
-    // цього коду — щоб редагування поля після перевірки не залишило
-    // застарілий "валідний" стан, з якого погасився б не той сертифікат.
-    var validatedCertCode = null; // канонічний code для погашення
-    var validatedCertRaw = null;  // сирий текст поля на момент успішної перевірки
-    var CERT_REASON = {
-      not_found: "Сертифікат з таким номером не знайдено",
-      used: "Цей сертифікат вже використано",
-      cancelled: "Цей сертифікат скасовано",
-      expired: "Термін дії сертифіката закінчився",
-    };
-    function certResultBox() { return $("mCertResult"); }
-    $("mCertCode").addEventListener("input", function() {
-      validatedCertCode = null; validatedCertRaw = null;
-      certResultBox().innerHTML = "";
-    });
-    function checkCert() {
-      var raw = $("mCertCode").value.trim();
-      var box = certResultBox();
-      if (!raw) { box.innerHTML = ""; return Promise.resolve(); }
-      box.innerHTML = '<span class="sub">Перевірка…</span>';
-      return api("GET", "/api/crm/certificates/check?code=" + encodeURIComponent(raw)).then(function(res) {
-        if (!res.j || !res.j.ok) { box.innerHTML = '<span style="color:var(--err);font-size:.82rem;">Помилка перевірки</span>'; return; }
-        var c = res.j.certificate;
-        if (res.j.valid) {
-          validatedCertCode = c.code; validatedCertRaw = raw;
-          box.innerHTML =
-            '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#2e7d32;">' +
-              '✓ Дійсний · ' + c.code + ' · ' + (c.service_label || "") + ' · ' + money(c.amount) +
-              (c.recipient ? ' · для ' + c.recipient : '') +
-            '</div>';
-        } else {
-          validatedCertCode = null; validatedCertRaw = null;
-          box.innerHTML = '<div style="background:#fde8e8;border:1px solid #ef9a9a;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#c04040;">✗ ' +
-            (CERT_REASON[res.j.reason] || "Сертифікат недійсний") + '</div>';
-        }
-      });
-    }
-    $("mCertCheck").addEventListener("click", checkCert);
 
     var M_UA = ["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"];
     var DOW_UA_G = ["нд","пн","вт","ср","чт","пт","сб"];
@@ -3498,11 +3453,7 @@
         name = lastName ? firstName + " " + lastName : firstName;
       }
       if (!name) { err.textContent = "Оберіть або введіть клієнта"; return; }
-      var certRaw = $("mCertCode").value.trim();
-      if (certRaw && (certRaw !== validatedCertRaw || !validatedCertCode)) {
-        err.textContent = "Спочатку перевірте сертифікат (кнопка «Перевірити»)";
-        return;
-      }
+      var certCode = $("mCertCode").value.trim();
       var url = ME.role === "owner" ? "/api/crm/appointments" : "/api/crm/me/appointments";
       var extras = selectedServices.slice(1);
       api("POST", url, {
@@ -3523,12 +3474,11 @@
         var subOpen = !isGuestBooking && subForm && subForm.style.display !== "none";
 
         function afterDone() { closeModal(); if (window.__reloadAppts) window.__reloadAppts(); }
-        // Погашаємо сертифікат лише після успішного створення запису —
-        // якщо запис не вдалося створити (409/помилка), сертифікат
-        // лишається дійсним і клієнт не втрачає його даремно.
+        // Номер сертифіката — лише запис у журнал після успішного
+        // створення запису, без жодної перевірки дійсності.
         function done() {
-          if (validatedCertCode && appointmentId) {
-            api("POST", "/api/crm/certificates/" + encodeURIComponent(validatedCertCode) + "/redeem", { appointment_id: appointmentId })
+          if (certCode && appointmentId) {
+            api("POST", "/api/crm/certificates/log", { code: certCode, appointment_id: appointmentId })
               .then(afterDone).catch(afterDone);
           } else {
             afterDone();
@@ -3829,45 +3779,39 @@
   }
 
   /* ============================================================
-     СЕРТИФІКАТИ — куплені через сайт (public/certificate.html).
-     Код клієнт називає в студії, тут його перевіряють і за потреби
-     погашають вручну (основний шлях погашення — поле "Сертифікат" у
-     модалці "Новий запис", див. apptModal).
+     СЕРТИФІКАТИ — журнал паперових сертифікатів, якими клієнти
+     розраховувались за візит. Майстер вписує порядковий номер у полі
+     "№ подарункового сертифіката" при створенні запису (apptModal) —
+     жодної перевірки дійсності, це просто підрахунок для власника.
      ============================================================ */
-  var CERT_STATUS_LABEL = { active: "Дійсний", used: "Використаний", cancelled: "Скасований" };
-  var CERT_STATUS_CLASS = { active: "b-confirmed", used: "b-completed", cancelled: "b-cancelled" };
-
   function renderCertificates() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Сертифікати"));
     main.appendChild(bar);
 
-    var filterRow = el("div", null);
-    filterRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;";
+    var hint = el("div", "sub");
+    hint.style.marginBottom = "14px";
+    hint.textContent = "Журнал сертифікатів, якими клієнти розрахувались за візит — номер вписує майстер при записі клієнта.";
+    main.appendChild(hint);
+
     var q = document.createElement("input");
     q.type = "text"; q.placeholder = "Пошук за номером, іменем, телефоном…";
-    q.style.cssText = "flex:1;min-width:200px;";
-    var statusSel = document.createElement("select");
-    statusSel.style.cssText = "min-width:150px;";
-    statusSel.innerHTML =
-      '<option value="">Усі статуси</option>' +
-      '<option value="active">Дійсні</option>' +
-      '<option value="used">Використані</option>' +
-      '<option value="cancelled">Скасовані</option>';
-    filterRow.appendChild(q); filterRow.appendChild(statusSel);
-    main.appendChild(filterRow);
+    q.style.cssText = "width:100%;margin-bottom:14px;";
+    main.appendChild(q);
+
+    var countEl = el("div", "sub"); countEl.style.marginBottom = "10px";
+    main.appendChild(countEl);
 
     var listEl = el("div", "list"); main.appendChild(listEl);
 
     function load() {
       listEl.innerHTML = '<div class="empty">Завантаження…</div>';
-      var url = "/api/crm/certificates?";
-      if (q.value.trim()) url += "q=" + encodeURIComponent(q.value.trim()) + "&";
-      if (statusSel.value) url += "status=" + encodeURIComponent(statusSel.value);
+      var url = "/api/crm/certificates" + (q.value.trim() ? "?q=" + encodeURIComponent(q.value.trim()) : "");
       api("GET", url).then(function(res) {
         var certs = (res.j && res.j.certificates) || [];
+        countEl.textContent = "Усього відпрацьовано: " + certs.length;
         listEl.innerHTML = "";
-        if (!certs.length) { listEl.appendChild(el("div", "empty", "Сертифікатів не знайдено")); return; }
+        if (!certs.length) { listEl.appendChild(el("div", "empty", "Ще немає жодного запису")); return; }
         certs.forEach(function(c) { listEl.appendChild(certCard(c)); });
       });
     }
@@ -3876,50 +3820,28 @@
       var item = el("div", "item");
       var row = el("div", "row1");
       var info = el("div"); info.style.flex = "1";
-      var badgeCls = c.expired ? "b-cancelled" : (CERT_STATUS_CLASS[c.status] || "");
-      var badgeTxt = c.expired ? "Прострочений" : (CERT_STATUS_LABEL[c.status] || c.status);
-      var titleRow = el("div", null);
-      titleRow.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
-      var codeEl = el("span", "t", c.code); codeEl.style.fontFamily = "monospace";
-      titleRow.appendChild(codeEl);
-      var badge = el("span", "badge " + badgeCls, badgeTxt);
-      titleRow.appendChild(badge);
-      info.appendChild(titleRow);
+      var codeEl = el("div", "t", "№ " + c.code); codeEl.style.fontFamily = "monospace";
+      info.appendChild(codeEl);
       var subLines = [];
-      subLines.push(c.buyer_name + " · " + c.buyer_phone);
-      if (c.recipient) subLines.push("Для: " + c.recipient);
+      if (c.buyer_name && c.buyer_name !== "—") subLines.push(c.buyer_name + (c.buyer_phone ? " · " + c.buyer_phone : ""));
       if (c.service_label) subLines.push(c.service_label);
-      subLines.push(money(c.amount));
-      subLines.push("Куплено: " + ddmm(new Date(c.created_at).toISOString().slice(0,10)) + " · Дійсний до: " + ddmm(new Date(c.expires_at).toISOString().slice(0,10)));
-      if (c.status === "used" && c.used_at) {
-        subLines.push("Погашено: " + ddmm(new Date(c.used_at).toISOString().slice(0,10)) + (c.used_note ? " · " + c.used_note : ""));
-      }
+      subLines.push("Відпрацьовано: " + ddmm(new Date(c.used_at || c.created_at).toISOString().slice(0,10)) + (c.used_note ? " · " + c.used_note : ""));
       subLines.forEach(function(line) { info.appendChild(el("div", "sub", line)); });
       row.appendChild(info); row.appendChild(el("span", "sp"));
 
       var acts = el("div", "acts");
-      if (c.status === "active") {
-        var cancelBtn = el("button", "btn btn-sm btn-ghost", "Скасувати");
-        cancelBtn.addEventListener("click", function() {
-          if (!confirm("Скасувати сертифікат " + c.code + "? Клієнт більше не зможе ним скористатись.")) return;
-          api("PATCH", "/api/crm/certificates/" + encodeURIComponent(c.code), { status: "cancelled" }).then(load);
-        });
-        acts.appendChild(cancelBtn);
-      } else {
-        var restoreBtn = el("button", "btn btn-sm btn-ghost", "↩️ Повернути дійсним");
-        restoreBtn.addEventListener("click", function() {
-          api("PATCH", "/api/crm/certificates/" + encodeURIComponent(c.code), { status: "active" }).then(load);
-        });
-        acts.appendChild(restoreBtn);
-      }
-      item.appendChild(row);
-      if (acts.children.length) item.appendChild(acts);
+      var delBtn = el("button", "btn btn-sm btn-ghost", "Видалити");
+      delBtn.addEventListener("click", function() {
+        if (!confirm("Прибрати запис №" + c.code + " з журналу?")) return;
+        api("DELETE", "/api/crm/certificates/" + c.id).then(load);
+      });
+      acts.appendChild(delBtn);
+      item.appendChild(row); item.appendChild(acts);
       return item;
     }
 
     var debounceT = null;
     q.addEventListener("input", function() { clearTimeout(debounceT); debounceT = setTimeout(load, 300); });
-    statusSel.addEventListener("change", load);
     load();
   }
 

@@ -389,52 +389,9 @@ app.post("/api/certificate", async function (req, res) {
     ? `💆 <b>Послуга 1:</b> ${service} — ${price} грн\n💆 <b>Послуга 2:</b> ${service2} — ${price2} грн`
     : `💆 <b>Послуга:</b> ${service}`;
 
-  var totalPriceNum = parseFloat(d.totalPrice) || parseFloat(price) || 0;
-  var totalPrice = `${totalPriceNum || price} грн`;
-
-  /* Унікальний номер сертифіката — саме його клієнт називає в студії,
-     а адміністратор перевіряє через /api/crm/certificates/check.
-     Замовник хотів цифровий номер (без літер) — 8 цифр, для читабельності
-     розбиті дефісом навпіл: 4821-7093. 10^8 варіантів — достатньо, щоб
-     не підбирався навмання. */
-  function genCertCode() {
-    var bytes = crypto.randomBytes(4);
-    var n = bytes.readUInt32BE(0) % 100000000; // 0..99999999
-    var s = String(n).padStart(8, "0");
-    return s.slice(0, 4) + "-" + s.slice(4);
-  }
-  var code = genCertCode();
-  var now = Date.now();
-  var TWO_MONTHS_MS = 61 * 24 * 60 * 60 * 1000;
-  try {
-    var insCert = db.prepare(
-      `INSERT INTO certificates
-         (code, buyer_name, buyer_phone, recipient, service_label, amount, cert_type, delivery, address, wishes, status, created_at, expires_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)`
-    );
-    // Колізія коду статистично майже неможлива (32^6), але на всяк випадок — кілька спроб.
-    for (var attempt = 0; attempt < 5; attempt++) {
-      try {
-        insCert.run(
-          code, name, phone, recipient,
-          service2 ? `${service} + ${service2}` : service,
-          Math.round(totalPriceNum * 100), certType, delivery, address || null, wishes || null,
-          now, now + TWO_MONTHS_MS
-        );
-        break;
-      } catch (e) {
-        if (String(e.message).indexOf("UNIQUE") === -1) throw e;
-        code = genCertCode();
-        if (attempt === 4) throw e;
-      }
-    }
-  } catch (e) {
-    console.error("[certificate] db insert error:", e.message);
-    return res.status(500).json({ ok: false });
-  }
+  var totalPrice = d.totalPrice ? `${d.totalPrice} грн` : `${price} грн`;
 
   var text = `🎁 <b>Нове замовлення сертифіката!</b>\n\n` +
-    `🔖 <b>Номер:</b> ${code}\n` +
     `👤 <b>Замовник:</b> ${name}\n` +
     `📞 <b>Телефон:</b> ${phone}\n` +
     `🎀 <b>Сертифікат для:</b> ${recipient}\n` +
@@ -446,12 +403,11 @@ app.post("/api/certificate", async function (req, res) {
 
   try {
     await sendTelegram(text);
+    res.json({ ok: true });
   } catch (e) {
-    console.error("[certificate] telegram error:", e.message);
-    // Сертифікат вже збережено в базі — відсутність Telegram-сповіщення
-    // не має ламати клієнту весь процес купівлі.
+    console.error("[certificate]", e.message);
+    res.status(500).json({ ok: false });
   }
-  res.json({ ok: true, code: code });
 });
 
 /* ---------------- API: Анонімний відгук ---------------- */
