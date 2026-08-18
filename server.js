@@ -394,13 +394,14 @@ app.post("/api/certificate", async function (req, res) {
 
   /* Унікальний номер сертифіката — саме його клієнт називає в студії,
      а адміністратор перевіряє через /api/crm/certificates/check.
-     Символи без 0/O/1/I/L — на слух і з паперу такі легко переплутати. */
-  var CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+     Замовник хотів цифровий номер (без літер) — 8 цифр, для читабельності
+     розбиті дефісом навпіл: 4821-7093. 10^8 варіантів — достатньо, щоб
+     не підбирався навмання. */
   function genCertCode() {
-    var s = "";
-    var bytes = crypto.randomBytes(6);
-    for (var i = 0; i < 6; i++) s += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
-    return "OL-" + s;
+    var bytes = crypto.randomBytes(4);
+    var n = bytes.readUInt32BE(0) % 100000000; // 0..99999999
+    var s = String(n).padStart(8, "0");
+    return s.slice(0, 4) + "-" + s.slice(4);
   }
   var code = genCertCode();
   var now = Date.now();

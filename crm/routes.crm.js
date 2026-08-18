@@ -2343,13 +2343,13 @@ router.delete("/hero-media/:kind", owner, function (req, res) {
    POST /api/certificate у server.js генерує code і зберігає рядок).
    Тут: пошук/перевірка коду адміністратором і погашення при записі.
    ============================================================ */
+/* Номер — 8 цифр (XXXX-XXXX). Приймаємо ввід як завгодно набраний
+   (з пробілами, без дефіса, зайві символи) — беремо тільки цифри
+   й перекладаємо у канонічний формат. */
 function normalizeCertCode(raw) {
-  let s = String(raw || "").toUpperCase().replace(/\s+/g, "").replace(/[^A-Z0-9-]/g, "");
-  if (s.indexOf("OL-") !== 0) s = "OL-" + s.replace(/^OL-?/, "");
-  // Найчастіші описки/непорозуміння на слух — 0/O і 1/I самі виключені
-  // з алфавіту коду, тож безпечно приводимо їх до літер.
-  const tail = s.slice(3).replace(/0/g, "O").replace(/1/g, "I");
-  return "OL-" + tail;
+  const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
+  if (digits.length !== 8) return digits; // явно неповний код — не знайдеться, і добре
+  return digits.slice(0, 4) + "-" + digits.slice(4);
 }
 function certRow(code) {
   return db.prepare("SELECT * FROM certificates WHERE code=?").get(normalizeCertCode(code));

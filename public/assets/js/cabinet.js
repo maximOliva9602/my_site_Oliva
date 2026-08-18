@@ -2839,7 +2839,7 @@
 
       '<label style="margin-top:10px;display:block;">Подарунковий сертифікат <span style="color:var(--text-dim);font-weight:400;">(необов\'язково)</span></label>' +
       '<div style="display:flex;gap:6px;">' +
-        '<input type="text" id="mCertCode" placeholder="OL-XXXXXX" maxlength="20" style="flex:1;text-transform:uppercase;">' +
+        '<input type="text" inputmode="numeric" id="mCertCode" placeholder="0000-0000" maxlength="12" style="flex:1;">' +
         '<button type="button" class="btn btn-ghost btn-sm" id="mCertCheck" style="white-space:nowrap;">Перевірити</button>' +
       '</div>' +
       '<div id="mCertResult" style="margin-top:6px;"></div>' +
