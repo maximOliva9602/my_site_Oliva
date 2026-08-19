@@ -254,6 +254,14 @@
      ============================================================ */
   var TABS = [];
   var topbarResizeObserver = null;
+  /* "Ще" — мобільна панель вкладок. У Telegram-браузері (та й у Safari
+     з жестом "назад") кнопка "назад" не закриває оверлеї — вона просто
+     веде історію назад, а сторінки нема куди йти. Прив'язуємо оверлей
+     до history.pushState, щоб "назад" викликав popstate і закривав
+     панель, а не лишав її висіти. mobSheetPopstateBound — щоб не
+     навісити той самий слухач вдруге, якщо boot() запуститься повторно. */
+  var mobSheetPopstateBound = false;
+  var mobSheetHistoryOpen = false;
 
   function syncPinnedTopbar() {
     var topbar = document.querySelector(".topbar");
@@ -325,8 +333,25 @@
          Кожна вкладка призначає свій __reloadAppts під час рендеру. */
       window.__reloadAppts = null;
     }
-    function closeMobSheet() { mobBackdrop.classList.remove("open"); mobSheet.classList.remove("open"); }
-    function openMobSheet()  { mobBackdrop.classList.add("open");    mobSheet.classList.add("open"); }
+    /* fromPopstate=true — панель закрилась через кнопку "назад" (історію
+       вже прибрав сам браузер), тому history.back() тут викликати не
+       можна: це відкинуло б користувача ще на один крок назад. */
+    function closeMobSheet(fromPopstate) {
+      mobBackdrop.classList.remove("open"); mobSheet.classList.remove("open");
+      if (mobSheetHistoryOpen && !fromPopstate) { mobSheetHistoryOpen = false; history.back(); }
+      else { mobSheetHistoryOpen = false; }
+    }
+    function openMobSheet() {
+      mobBackdrop.classList.add("open"); mobSheet.classList.add("open");
+      mobSheetHistoryOpen = true;
+      history.pushState({ mobSheet: true }, "");
+    }
+    if (!mobSheetPopstateBound) {
+      mobSheetPopstateBound = true;
+      window.addEventListener("popstate", function() {
+        if (mobSheetHistoryOpen) { mobSheetHistoryOpen = false; closeMobSheet(true); }
+      });
+    }
 
     function activateTab(i) {
       clearOverlay();
