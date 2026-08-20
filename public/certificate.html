@@ -195,6 +195,8 @@
     .btn-submit:hover { background: var(--olive-light); transform: translateY(-1px); }
     .btn-submit:active { transform: translateY(0); }
     .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .submit-error { display: none; margin-top: 10px; padding: 10px 14px; background: rgba(224,112,112,0.12); border: 1px solid rgba(224,112,112,0.35); border-radius: 10px; color: #e07070; font-size: 13px; line-height: 1.5; text-align: center; }
+    .submit-error.show { display: block; }
 
     /* СТАН УСПІХУ — світла брендована картка (як подарунковий сертифікат),
        навмисно світліша за темну сторінку навколо, щоб виглядало як
@@ -547,6 +549,7 @@
     </div>
 
     <button type="submit" class="btn-submit" id="submitBtn" data-i18n="cert.submit">🎁 Замовити сертифікат</button>
+    <div class="submit-error" id="submitError"></div>
 
   </form>
 
@@ -1199,30 +1202,37 @@
   });
 
   /* ── ВАЛІДАЦІЯ ── */
-  function validateField(id, check){
+  var submitError = document.getElementById('submitError');
+
+  function validateField(id, check, label, missing){
     var fg = document.getElementById('fg-' + id);
     if (!fg) return true;
     var ok = check();
     fg.classList.toggle('invalid', !ok);
+    if (!ok && label) missing.push(label);
     return ok;
   }
 
+  /* Повертає масив назв незаповнених полів — показуємо їх одним
+     реченням під кнопкою, бо поле з помилкою могло прокрутитись за
+     екран і людина просто не бачить, чому форма не надсилається. */
   function validate(){
     var ok = true;
-    ok = validateField('name',      function(){ return document.getElementById('inp-name').value.trim().length > 1; }) && ok;
-    ok = validateField('phone',     function(){ return document.getElementById('inp-phone').value.trim().length >= 9; }) && ok;
-    ok = validateField('recipient', function(){ return document.getElementById('inp-recipient').value.trim().length > 1; }) && ok;
+    var missing = [];
+    ok = validateField('name',      function(){ return document.getElementById('inp-name').value.trim().length > 1; }, "Ваше ім'я", missing) && ok;
+    ok = validateField('phone',     function(){ return document.getElementById('inp-phone').value.trim().length >= 9; }, 'Номер телефону', missing) && ok;
+    ok = validateField('recipient', function(){ return document.getElementById('inp-recipient').value.trim().length > 1; }, "Ім'я отримувача", missing) && ok;
     // тип сертифіката
     var certTypeOk = !!inpCertType.value;
     document.getElementById('fg-cert-type').classList.toggle('invalid', !certTypeOk);
-    if (!certTypeOk) ok = false;
+    if (!certTypeOk) { ok = false; missing.push('Тип сертифіката'); }
     // доставка
     var deliveryOk = !!inpDelivery.value;
     document.getElementById('fg-delivery').classList.toggle('invalid', !deliveryOk);
-    if (!deliveryOk) ok = false;
+    if (!deliveryOk) { ok = false; missing.push('Спосіб отримання'); }
     // адреса — тільки якщо НП або Таксі
     if (inpDelivery.value === 'Нова Пошта' || inpDelivery.value === 'Таксі') {
-      ok = validateField('address', function(){ return inpAddress.value.trim().length > 3; }) && ok;
+      ok = validateField('address', function(){ return inpAddress.value.trim().length > 3; }, 'Адреса доставки', missing) && ok;
     }
 
     var serviceOk = !!inpService.value;
@@ -1230,14 +1240,21 @@
       serviceError.style.display = 'block';
       document.getElementById('fg-service').classList.add('invalid');
       ok = false;
+      missing.push('Послуга');
     }
-    return ok;
+    return missing;
   }
 
   /* ── САБМІТ ── */
   form.addEventListener('submit', function(e){
     e.preventDefault();
-    if (!validate()) return;
+    var missing = validate();
+    if (missing.length) {
+      submitError.textContent = 'Заповніть, будь ласка: ' + missing.join(', ');
+      submitError.classList.add('show');
+      return;
+    }
+    submitError.classList.remove('show');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Надсилається…';
 
