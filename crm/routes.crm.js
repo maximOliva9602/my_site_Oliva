@@ -2348,11 +2348,19 @@ router.delete("/hero-media/:kind", owner, function (req, res) {
    Жодної перевірки дійсності — номер лише фіксується в журналі. */
 /* Перевірка "чи вже занесено такий номер" — і для майстра теж (він сам
    вписує номер), тому лише true/false, без деталей чужого запису. */
+/* Статус номера сертифіката — без деталей чужого запису (лише для
+   майстра, що вводить номер, чи можна ним розрахуватись):
+     free      — такого номера ще немає, можна занести як новий
+     available — є замовлення з сайту на цей номер, ще не використане — можна прийняти
+     used      — уже використаний раніше, прийняти не можна
+     cancelled — скасований, прийняти не можна */
 router.get("/certificates/exists", any, function (req, res) {
   const code = clean(req.query.code, 50);
-  if (!code) return res.json({ ok: true, exists: false });
-  const row = db.prepare("SELECT 1 FROM certificates WHERE code=?").get(code);
-  res.json({ ok: true, exists: !!row });
+  if (!code) return res.json({ ok: true, exists: false, state: "free" });
+  const row = db.prepare("SELECT status FROM certificates WHERE code=?").get(code);
+  let state = "free";
+  if (row) state = row.status === "ordered" ? "available" : row.status;
+  res.json({ ok: true, exists: !!row, state: state });
 });
 
 router.get("/certificates", owner, function (req, res) {
@@ -2388,6 +2396,18 @@ router.post("/certificates/log", any, function (req, res) {
     : (db.prepare("SELECT name FROM masters WHERE id=?").get(req.session.masterId) || {}).name || "майстер";
   const now = Date.now();
   try {
+    const existing = db.prepare("SELECT id, status FROM certificates WHERE code=?").get(code);
+    if (existing) {
+      // Замовлення з сайту (ще не використане) — позначаємо використаним
+      // саме цей рядок, а не заводимо дублікат номера.
+      if (existing.status !== "ordered") {
+        return res.status(409).json({ ok: false, error: existing.status === "used" ? "used" : "cancelled" });
+      }
+      db.prepare(
+        "UPDATE certificates SET status='used', used_at=?, used_by_appointment_id=?, used_note=? WHERE id=?"
+      ).run(now, appointmentId, who, existing.id);
+      return res.json({ ok: true, id: existing.id });
+    }
     const info = db.prepare(
       `INSERT INTO certificates
          (code, buyer_name, buyer_phone, service_label, amount, status, used_at, used_by_appointment_id, used_note, created_at, expires_at)

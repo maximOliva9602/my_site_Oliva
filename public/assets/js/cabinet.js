@@ -98,6 +98,16 @@
   function uahGroup(n) { return String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
   function fmtMin(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
   function ddmm(d) { var p = d.split("-"); return p[2] + "." + p[1]; }
+  /* Статус номера сертифіката при вводі: free — ще ніде не зʼявлявся,
+     нема попередження; available — замовлення з сайту на цей номер,
+     ще не використане, можна прийняти (зелена галочка); used/cancelled
+     — прийняти не можна (червоне попередження). */
+  function certStateHtml(state) {
+    if (state === "available") return { css: "color:#2e7d32;", text: "✓ Сертифікат знайдено — ще не використаний, можна прийняти" };
+    if (state === "used") return { css: "color:var(--err);", text: "⚠ Цей сертифікат уже використано раніше" };
+    if (state === "cancelled") return { css: "color:var(--err);", text: "⚠ Цей сертифікат скасовано" };
+    return null;
+  }
   function todayStr() { return new Date().toISOString().slice(0, 10); }
   /* Підпис клієнта в списках. visit_count — це ЗАВЕРШЕНІ візити, тож у
      клієнта з активним записом там 0, і саме по собі це виглядало як
@@ -2140,7 +2150,7 @@
               '<input type="text" id="dCertCode" placeholder="№ сертифіката (якщо оплата сертифікатом)" style="flex:1;font-size:.82rem;">' +
               '<button class="btn btn-ghost btn-sm" id="dCertSave" style="white-space:nowrap;">Зберегти</button>' +
             '</div>' +
-            '<div id="dCertWarn" style="display:none;color:var(--err);font-size:.78rem;margin-top:4px;">⚠ Такий номер уже занесено в журнал</div>' +
+            '<div id="dCertWarn" style="display:none;font-size:.78rem;margin-top:4px;"></div>' +
           '</div>') +
       '<div style="margin-top:14px;"><span class="badge b-' + a.status + '">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
       (isPair ? '<div style="margin-top:14px;padding:10px 12px;background:rgba(217,185,120,0.08);border:1px solid rgba(217,185,120,0.25);border-radius:10px;">' +
@@ -2326,9 +2336,11 @@
         if (!code) return;
         dCertCheckT = setTimeout(function() {
           api("GET", "/api/crm/certificates/exists?code=" + encodeURIComponent(code)).then(function(res) {
-            if ($("dCertCode") && $("dCertCode").value.trim() === code) {
-              $("dCertWarn").style.display = (res.j && res.j.exists) ? "block" : "none";
-            }
+            if (!$("dCertCode") || $("dCertCode").value.trim() !== code) return;
+            var info = res.j && certStateHtml(res.j.state);
+            var warn = $("dCertWarn");
+            if (info) { warn.style.cssText = "display:block;font-size:.78rem;margin-top:4px;" + info.css; warn.textContent = info.text; }
+            else { warn.style.display = "none"; }
           });
         }, 400);
       });
@@ -2345,7 +2357,7 @@
           apptDetailModal(a);
           if (window.__reloadAppts) window.__reloadAppts();
         } else if (res.code === 409) {
-          alert("Такий номер уже занесено в журнал раніше.");
+          alert(res.j && res.j.error === "cancelled" ? "Цей сертифікат скасовано — прийняти не можна." : "Цей сертифікат уже використано раніше.");
         } else {
           alert("Не вдалося зберегти номер сертифіката.");
         }
@@ -2904,7 +2916,7 @@
 
       '<label style="margin-top:10px;display:block;">№ подарункового сертифіката <span style="color:var(--text-dim);font-weight:400;">(якщо клієнт платить сертифікатом)</span></label>' +
       '<input type="text" id="mCertCode" placeholder="Порядковий номер із сертифіката" maxlength="50">' +
-      '<div id="mCertWarn" style="display:none;color:var(--err);font-size:.78rem;margin-top:4px;">⚠ Такий номер уже занесено в журнал — перевірте, чи це не той самий сертифікат</div>' +
+      '<div id="mCertWarn" style="display:none;font-size:.78rem;margin-top:4px;"></div>' +
 
       '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="mComment" maxlength="500"></textarea>' +
       '<label>Колір маркеру</label><div id="mMarkerWrap"></div>' +
@@ -3016,9 +3028,11 @@
       if (!code) return;
       mCertCheckT = setTimeout(function() {
         api("GET", "/api/crm/certificates/exists?code=" + encodeURIComponent(code)).then(function(res) {
-          if ($("mCertCode").value.trim() === code) {
-            $("mCertWarn").style.display = (res.j && res.j.exists) ? "block" : "none";
-          }
+          if ($("mCertCode").value.trim() !== code) return;
+          var info = res.j && certStateHtml(res.j.state);
+          var warn = $("mCertWarn");
+          if (info) { warn.style.cssText = "display:block;font-size:.78rem;margin-top:4px;" + info.css; warn.textContent = info.text; }
+          else { warn.style.display = "none"; }
         });
       }, 400);
     });
@@ -3567,7 +3581,8 @@
             api("POST", "/api/crm/certificates/log", { code: certCode, appointment_id: appointmentId })
               .then(function(res) {
                 if (res.code === 409) {
-                  alert("Запис створено, але номер сертифіката № " + certCode + " уже занесено раніше — перевірте номер і за потреби виправте його в картці запису.");
+                  var reason = res.j && res.j.error === "cancelled" ? "скасований" : "уже використаний раніше";
+                  alert("Запис створено, але сертифікат № " + certCode + " — " + reason + ". Перевірте номер і за потреби виправте його в картці запису.");
                 }
                 afterDone();
               }).catch(afterDone);
