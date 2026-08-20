@@ -3972,15 +3972,35 @@
 
     var listEl = el("div", "list"); main.appendChild(listEl);
 
+    function statTile(label, value, color) {
+      var t = el("div", null);
+      t.style.cssText = "flex:1;min-width:100px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;";
+      var v = el("div", null, String(value));
+      v.style.cssText = "font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:600;color:" + (color || "var(--cream)") + ";";
+      var l = el("div", "sub", label);
+      t.appendChild(v); t.appendChild(l);
+      return t;
+    }
+
     function load() {
       listEl.innerHTML = '<div class="empty">Завантаження…</div>';
       var url = "/api/crm/certificates" + (q.value.trim() ? "?q=" + encodeURIComponent(q.value.trim()) : "");
       api("GET", url).then(function(res) {
-        var certs = (res.j && res.j.certificates) || [];
-        if (statusSel.value) certs = certs.filter(function(c) { return c.status === statusSel.value; });
-        var ordered = certs.filter(function(c) { return c.status === "ordered"; }).length;
-        var used = certs.filter(function(c) { return c.status === "used"; }).length;
-        countEl.textContent = "Замовлено: " + ordered + " · Відпрацьовано: " + used;
+        var all = (res.j && res.j.certificates) || [];
+        // Аналітика — завжди по всіх (без фільтра статусу), щоб цифри
+        // лишались осмисленими, навіть коли список нижче відфільтровано.
+        var total = all.length;
+        var used = all.filter(function(c) { return c.status === "used"; }).length;
+        var pending = all.filter(function(c) { return c.status === "ordered"; }).length;
+        var cancelled = all.filter(function(c) { return c.status === "cancelled"; }).length;
+        countEl.innerHTML = "";
+        countEl.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;";
+        countEl.appendChild(statTile("Куплено всього", total));
+        countEl.appendChild(statTile("Використано", used, "var(--olive-light)"));
+        countEl.appendChild(statTile("Ще не використано", pending, "var(--warn)"));
+        if (cancelled) countEl.appendChild(statTile("Скасовано", cancelled, "var(--err)"));
+
+        var certs = statusSel.value ? all.filter(function(c) { return c.status === statusSel.value; }) : all;
         listEl.innerHTML = "";
         if (!certs.length) { listEl.appendChild(el("div", "empty", "Ще немає жодного запису")); return; }
         certs.forEach(function(c) { listEl.appendChild(certCard(c)); });

@@ -451,6 +451,14 @@ function setStatus(id, status, session) {
         : (db.prepare("SELECT name FROM masters WHERE id=?").get(session && session.masterId) || {}).name || "майстер";
       require("./admin-notify").notifyCancelled(id, who);
     } catch (e) { console.error("[cancel-notify]", e.message); }
+    /* Клієнт не скористався послугою — сертифікат, яким платили за цей
+       запис, повертаємо в стан "не використаний", щоб можна було
+       прийняти його ще раз (наприклад, на перенесений запис). */
+    try {
+      db.prepare(
+        "UPDATE certificates SET status='ordered', used_at=NULL, used_by_appointment_id=NULL, used_note=NULL WHERE used_by_appointment_id=? AND status='used'"
+      ).run(id);
+    } catch (e) { console.error("[cancel-cert-revert]", e.message); }
   }
   if (status === "completed") {
     // Автоматично списуємо сеанс абонементу (якщо ще не списали)
