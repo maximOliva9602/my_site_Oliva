@@ -2371,25 +2371,16 @@ router.get("/certificates/exists", any, function (req, res) {
   res.json({ ok: true, exists: !!row, state: state });
 });
 
-/* Наступний вільний номер із того самого лічильника, яким нумерує
-   /api/certificate у server.js (замовлення з сайту) — щоб нумерація
-   лишалась суцільною незалежно від того, звідки з'явився сертифікат. */
-function nextCertOrderCode() {
-  const row = db.prepare("SELECT value FROM app_settings WHERE key='cert_order_seq'").get();
-  const next = (row ? parseInt(row.value, 10) : 999) + 1;
-  db.prepare("INSERT INTO app_settings (key,value) VALUES ('cert_order_seq',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
-    .run(String(next));
-  return String(next);
-}
-
-/* Ручне додавання сертифіката власником — напр. продали офлайн,
-   не через форму на сайті. Номер можна вказати самому (для паперового
-   бланка з уже надрукованим номером) або лишити порожнім — тоді
-   візьметься наступний за чергою, як і при замовленні на сайті. */
+/* Ручне додавання сертифіката — напр. продали офлайн, не через форму
+   на сайті, або майстер заносить номер із паперового бланка. Номер
+   обов'язковий (це і є сертифікат — без нього нема що заносити);
+   решта полів (покупець, отримувач, послуга, сума) необов'язкові —
+   майстер міг просто не мати цієї інформації. */
 router.post("/certificates", owner, function (req, res) {
   const b = req.body || {};
-  const buyerName = clean(b.buyer_name, 100);
-  if (!buyerName) return res.status(400).json({ ok: false, error: "buyer_name required" });
+  const code = clean(b.code, 50);
+  if (!code) return res.status(400).json({ ok: false, error: "code required" });
+  const buyerName = clean(b.buyer_name, 100) || "—";
   const buyerPhone = clean(b.buyer_phone, 30);
   const recipient = clean(b.recipient, 100) || null;
   const serviceLabel = clean(b.service_label, 200) || null;
@@ -2398,12 +2389,10 @@ router.post("/certificates", owner, function (req, res) {
   const delivery = clean(b.delivery, 50) || null;
   const address = clean(b.address, 200) || null;
   const wishes = clean(b.wishes, 500) || null;
-  let code = clean(b.code, 50);
   const now = Date.now();
   const TWO_MONTHS_MS = 61 * 24 * 60 * 60 * 1000;
   try {
     const txn = db.transaction(function () {
-      if (!code) code = nextCertOrderCode();
       db.prepare(
         `INSERT INTO certificates
            (code, buyer_name, buyer_phone, recipient, service_label, amount, cert_type, delivery, address, wishes, status, created_at, expires_at)

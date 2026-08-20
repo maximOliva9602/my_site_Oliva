@@ -3896,9 +3896,9 @@
   function certAddModal(onDone) {
     openModal(
       '<h3>Додати сертифікат</h3>' +
-      '<label>Номер <span style="color:var(--text-dim);font-weight:400;">(необов\'язково — якщо не вказати, візьметься наступний за чергою)</span></label>' +
-      '<input type="text" id="caCode" placeholder="Напр. 1005">' +
-      '<label>Ім\'я покупця *</label><input type="text" id="caBuyerName" maxlength="100">' +
+      '<label>Номер сертифіката *</label>' +
+      '<input type="text" id="caCode" placeholder="Номер із сертифіката">' +
+      '<label>Ім\'я покупця <span style="color:var(--text-dim);font-weight:400;">(необов\'язково)</span></label><input type="text" id="caBuyerName" maxlength="100">' +
       '<label>Телефон покупця</label><input type="tel" id="caBuyerPhone" maxlength="30">' +
       '<label>Для кого (отримувач)</label><input type="text" id="caRecipient" maxlength="100">' +
       '<label>Послуга</label><input type="text" id="caService" placeholder="Напр. Загально-оздоровчий масаж 60 хв" maxlength="200">' +
@@ -3917,12 +3917,12 @@
     $("caDelivery").addEventListener("change", syncAddr); syncAddr();
     $("caCancel").addEventListener("click", closeModal);
     $("caSave").addEventListener("click", function() {
-      var buyerName = $("caBuyerName").value.trim();
-      if (!buyerName) { $("caErr").textContent = "Вкажіть ім'я покупця"; return; }
+      var code = $("caCode").value.trim();
+      if (!code) { $("caErr").textContent = "Вкажіть номер сертифіката"; return; }
       $("caSave").disabled = true;
       api("POST", "/api/crm/certificates", {
-        code: $("caCode").value.trim(),
-        buyer_name: buyerName,
+        code: code,
+        buyer_name: $("caBuyerName").value.trim(),
         buyer_phone: $("caBuyerPhone").value.trim(),
         recipient: $("caRecipient").value.trim(),
         service_label: $("caService").value.trim(),
