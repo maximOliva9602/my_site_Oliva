@@ -3893,9 +3893,58 @@
   var CERT_STATUS_LABEL = { ordered: "Замовлено на сайті", used: "Відпрацьовано", cancelled: "Скасовано" };
   var CERT_STATUS_CLASS = { ordered: "b-pending", used: "b-completed", cancelled: "b-cancelled" };
 
+  function certAddModal(onDone) {
+    openModal(
+      '<h3>Додати сертифікат</h3>' +
+      '<label>Номер <span style="color:var(--text-dim);font-weight:400;">(необов\'язково — якщо не вказати, візьметься наступний за чергою)</span></label>' +
+      '<input type="text" id="caCode" placeholder="Напр. 1005">' +
+      '<label>Ім\'я покупця *</label><input type="text" id="caBuyerName" maxlength="100">' +
+      '<label>Телефон покупця</label><input type="tel" id="caBuyerPhone" maxlength="30">' +
+      '<label>Для кого (отримувач)</label><input type="text" id="caRecipient" maxlength="100">' +
+      '<label>Послуга</label><input type="text" id="caService" placeholder="Напр. Загально-оздоровчий масаж 60 хв" maxlength="200">' +
+      '<div class="grid2">' +
+        '<div><label>Сума (грн)</label><input type="number" id="caAmount" min="0" step="10"></div>' +
+        '<div><label>Тип</label><select id="caType"><option value="Паперовий">Паперовий</option><option value="Електронний">Електронний</option></select></div>' +
+      '</div>' +
+      '<label>Спосіб отримання</label>' +
+      '<select id="caDelivery"><option value="Отримаю у студії">Отримаю у студії</option><option value="Нова Пошта">Нова Пошта</option><option value="Таксі">Таксі</option></select>' +
+      '<div id="caAddressWrap" style="display:none;"><label>Адреса</label><input type="text" id="caAddress" maxlength="200"></div>' +
+      '<label>Побажання</label><textarea id="caWishes" maxlength="500"></textarea>' +
+      '<div class="err" id="caErr"></div>' +
+      '<div class="modal-foot"><button class="btn btn-ghost" id="caCancel">Скасувати</button><button class="btn btn-primary" id="caSave">Додати</button></div>'
+    );
+    function syncAddr() { $("caAddressWrap").style.display = $("caDelivery").value === "Отримаю у студії" ? "none" : "block"; }
+    $("caDelivery").addEventListener("change", syncAddr); syncAddr();
+    $("caCancel").addEventListener("click", closeModal);
+    $("caSave").addEventListener("click", function() {
+      var buyerName = $("caBuyerName").value.trim();
+      if (!buyerName) { $("caErr").textContent = "Вкажіть ім'я покупця"; return; }
+      $("caSave").disabled = true;
+      api("POST", "/api/crm/certificates", {
+        code: $("caCode").value.trim(),
+        buyer_name: buyerName,
+        buyer_phone: $("caBuyerPhone").value.trim(),
+        recipient: $("caRecipient").value.trim(),
+        service_label: $("caService").value.trim(),
+        amount: $("caAmount").value,
+        cert_type: $("caType").value,
+        delivery: $("caDelivery").value,
+        address: $("caAddress") ? $("caAddress").value.trim() : "",
+        wishes: $("caWishes").value.trim(),
+      }).then(function(res) {
+        $("caSave").disabled = false;
+        if (res.j && res.j.ok) { closeModal(); onDone(); }
+        else if (res.code === 409) { $("caErr").textContent = "Такий номер уже є в журналі"; }
+        else { $("caErr").textContent = "Помилка: " + ((res.j && res.j.error) || ""); }
+      });
+    });
+  }
+
   function renderCertificates() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Сертифікати"));
+    var addBtn = el("button", "btn btn-primary btn-sm", "+ Додати сертифікат");
+    bar.appendChild(addBtn);
     main.appendChild(bar);
 
     var hint = el("div", "sub");
@@ -3937,6 +3986,7 @@
         certs.forEach(function(c) { listEl.appendChild(certCard(c)); });
       });
     }
+    addBtn.addEventListener("click", function() { certAddModal(load); });
 
     function certCard(c) {
       var item = el("div", "item");
