@@ -2360,9 +2360,9 @@ router.get("/certificates", owner, function (req, res) {
   let sql = "SELECT * FROM certificates WHERE 1=1";
   const args = [];
   if (q) {
-    sql += " AND (code LIKE ? OR buyer_phone LIKE ? OR buyer_name LIKE ?)";
+    sql += " AND (code LIKE ? OR buyer_phone LIKE ? OR buyer_name LIKE ? OR recipient LIKE ?)";
     const like = "%" + q + "%";
-    args.push(like, like, like);
+    args.push(like, like, like, like);
   }
   sql += " ORDER BY created_at DESC LIMIT 300";
   const stmt = db.prepare(sql);

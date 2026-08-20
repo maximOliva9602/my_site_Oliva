@@ -389,9 +389,45 @@ app.post("/api/certificate", async function (req, res) {
     ? `💆 <b>Послуга 1:</b> ${service} — ${price} грн\n💆 <b>Послуга 2:</b> ${service2} — ${price2} грн`
     : `💆 <b>Послуга:</b> ${service}`;
 
-  var totalPrice = d.totalPrice ? `${d.totalPrice} грн` : `${price} грн`;
+  var totalPriceNum = parseFloat(d.totalPrice) || parseFloat(price) || 0;
+  var totalPrice = `${totalPriceNum || price} грн`;
+
+  /* Порядковий номер замовлення — щоб власник бачив його і в CRM
+     (вкладка "Сертифікати"), і в Telegram, і щоб самому написати той
+     самий номер на сертифікаті. Зберігаємо як наступне число після
+     останнього виданого (лічильник у app_settings, старт з 1000 —
+     виглядає як реальний номер бланка, а не порядковий індекс 1,2,3).
+     Записуємо синхронно (better-sqlite3), без await між читанням і
+     інкрементом — паралельні запити не можуть отримати той самий номер. */
+  var certCode;
+  var now = Date.now();
+  var TWO_MONTHS_MS = 61 * 24 * 60 * 60 * 1000;
+  try {
+    var txn = db.transaction(function () {
+      var row = db.prepare("SELECT value FROM app_settings WHERE key='cert_order_seq'").get();
+      var next = (row ? parseInt(row.value, 10) : 999) + 1;
+      db.prepare("INSERT INTO app_settings (key,value) VALUES ('cert_order_seq',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+        .run(String(next));
+      certCode = String(next);
+      db.prepare(
+        `INSERT INTO certificates
+           (code, buyer_name, buyer_phone, recipient, service_label, amount, cert_type, delivery, address, wishes, status, created_at, expires_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?, 'ordered', ?, ?)`
+      ).run(
+        certCode, name, phone, recipient,
+        service2 ? `${service} + ${service2}` : service,
+        Math.round(totalPriceNum * 100), certType, delivery, address || null, wishes || null,
+        now, now + TWO_MONTHS_MS
+      );
+    });
+    txn();
+  } catch (e) {
+    console.error("[certificate] db insert error:", e.message);
+    return res.status(500).json({ ok: false });
+  }
 
   var text = `🎁 <b>Нове замовлення сертифіката!</b>\n\n` +
+    `🔖 <b>№:</b> ${certCode}\n` +
     `👤 <b>Замовник:</b> ${name}\n` +
     `📞 <b>Телефон:</b> ${phone}\n` +
     `🎀 <b>Сертифікат для:</b> ${recipient}\n` +
@@ -403,11 +439,12 @@ app.post("/api/certificate", async function (req, res) {
 
   try {
     await sendTelegram(text);
-    res.json({ ok: true });
   } catch (e) {
-    console.error("[certificate]", e.message);
-    res.status(500).json({ ok: false });
+    console.error("[certificate] telegram error:", e.message);
+    // Замовлення вже в базі — відсутність Telegram-сповіщення не має
+    // ламати клієнту сам процес оформлення.
   }
+  res.json({ ok: true });
 });
 
 /* ---------------- API: Анонімний відгук ---------------- */

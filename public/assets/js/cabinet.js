@@ -3875,6 +3875,9 @@
      "№ подарункового сертифіката" при створенні запису (apptModal) —
      жодної перевірки дійсності, це просто підрахунок для власника.
      ============================================================ */
+  var CERT_STATUS_LABEL = { ordered: "Замовлено на сайті", used: "Відпрацьовано", cancelled: "Скасовано" };
+  var CERT_STATUS_CLASS = { ordered: "b-pending", used: "b-completed", cancelled: "b-cancelled" };
+
   function renderCertificates() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Сертифікати"));
@@ -3882,13 +3885,23 @@
 
     var hint = el("div", "sub");
     hint.style.marginBottom = "14px";
-    hint.textContent = "Журнал сертифікатів, якими клієнти розрахувались за візит — номер вписує майстер при записі клієнта.";
+    hint.textContent = "Замовлення з сайту потрапляють сюди самі, з номером. Коли клієнт розраховується сертифікатом за візит, майстер вписує його номер при записі — так само з'являється тут.";
     main.appendChild(hint);
 
+    var filterRow = el("div", null);
+    filterRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;";
     var q = document.createElement("input");
     q.type = "text"; q.placeholder = "Пошук за номером, іменем, телефоном…";
-    q.style.cssText = "width:100%;margin-bottom:14px;";
-    main.appendChild(q);
+    q.style.cssText = "flex:1;min-width:200px;";
+    var statusSel = document.createElement("select");
+    statusSel.style.cssText = "min-width:170px;";
+    statusSel.innerHTML =
+      '<option value="">Усі</option>' +
+      '<option value="ordered">Замовлені на сайті</option>' +
+      '<option value="used">Відпрацьовані</option>' +
+      '<option value="cancelled">Скасовані</option>';
+    filterRow.appendChild(q); filterRow.appendChild(statusSel);
+    main.appendChild(filterRow);
 
     var countEl = el("div", "sub"); countEl.style.marginBottom = "10px";
     main.appendChild(countEl);
@@ -3900,7 +3913,10 @@
       var url = "/api/crm/certificates" + (q.value.trim() ? "?q=" + encodeURIComponent(q.value.trim()) : "");
       api("GET", url).then(function(res) {
         var certs = (res.j && res.j.certificates) || [];
-        countEl.textContent = "Усього відпрацьовано: " + certs.length;
+        if (statusSel.value) certs = certs.filter(function(c) { return c.status === statusSel.value; });
+        var ordered = certs.filter(function(c) { return c.status === "ordered"; }).length;
+        var used = certs.filter(function(c) { return c.status === "used"; }).length;
+        countEl.textContent = "Замовлено: " + ordered + " · Відпрацьовано: " + used;
         listEl.innerHTML = "";
         if (!certs.length) { listEl.appendChild(el("div", "empty", "Ще немає жодного запису")); return; }
         certs.forEach(function(c) { listEl.appendChild(certCard(c)); });
@@ -3911,12 +3927,28 @@
       var item = el("div", "item");
       var row = el("div", "row1");
       var info = el("div"); info.style.flex = "1";
-      var codeEl = el("div", "t", "№ " + c.code); codeEl.style.fontFamily = "monospace";
-      info.appendChild(codeEl);
+      var titleRow = el("div", null);
+      titleRow.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
+      var codeEl = el("span", "t", "№ " + c.code); codeEl.style.fontFamily = "monospace";
+      titleRow.appendChild(codeEl);
+      titleRow.appendChild(el("span", "badge " + (CERT_STATUS_CLASS[c.status] || ""), CERT_STATUS_LABEL[c.status] || c.status));
+      info.appendChild(titleRow);
+
       var subLines = [];
-      if (c.buyer_name && c.buyer_name !== "—") subLines.push(c.buyer_name + (c.buyer_phone ? " · " + c.buyer_phone : ""));
-      if (c.service_label) subLines.push(c.service_label);
-      subLines.push("Відпрацьовано: " + ddmm(new Date(c.used_at || c.created_at).toISOString().slice(0,10)) + (c.used_note ? " · " + c.used_note : ""));
+      if (c.status === "ordered") {
+        subLines.push(c.buyer_name + (c.buyer_phone ? " · " + c.buyer_phone : ""));
+        if (c.recipient) subLines.push("Для: " + c.recipient);
+        if (c.service_label) subLines.push(c.service_label);
+        if (c.amount) subLines.push(money(c.amount));
+        var typeLine = [c.cert_type, c.delivery].filter(Boolean).join(" · ") + (c.address ? " — " + c.address : "");
+        if (typeLine) subLines.push(typeLine);
+        if (c.wishes) subLines.push("💬 " + c.wishes);
+        subLines.push("Замовлено: " + ddmm(new Date(c.created_at).toISOString().slice(0,10)));
+      } else {
+        if (c.buyer_name && c.buyer_name !== "—") subLines.push(c.buyer_name + (c.buyer_phone ? " · " + c.buyer_phone : ""));
+        if (c.service_label) subLines.push(c.service_label);
+        subLines.push((c.status === "used" ? "Відпрацьовано: " : "Створено: ") + ddmm(new Date(c.used_at || c.created_at).toISOString().slice(0,10)) + (c.used_note ? " · " + c.used_note : ""));
+      }
       subLines.forEach(function(line) { info.appendChild(el("div", "sub", line)); });
       row.appendChild(info); row.appendChild(el("span", "sp"));
 
@@ -3933,6 +3965,7 @@
 
     var debounceT = null;
     q.addEventListener("input", function() { clearTimeout(debounceT); debounceT = setTimeout(load, 300); });
+    statusSel.addEventListener("change", load);
     load();
   }
 
