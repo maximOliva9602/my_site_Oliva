@@ -1261,7 +1261,12 @@
     })
     .then(function(r){ return r.json(); })
     .then(function(res){
-      if (res.ok) { form.style.display='none'; successState.classList.add('show'); }
+      if (res.ok) {
+        form.style.display='none';
+        var formTitle = document.querySelector('.form-title');
+        if (formTitle) formTitle.style.display = 'none';
+        successState.classList.add('show');
+      }
       else { reset(); alert('Помилка. Зателефонуйте: 097 434 01 12'); }
     })
     .catch(function(){ reset(); alert('Помилка. Зателефонуйте: 097 434 01 12'); });
