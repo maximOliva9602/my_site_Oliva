@@ -2376,7 +2376,7 @@ router.get("/certificates/exists", any, function (req, res) {
    обов'язковий (це і є сертифікат — без нього нема що заносити);
    решта полів (покупець, отримувач, послуга, сума) необов'язкові —
    майстер міг просто не мати цієї інформації. */
-router.post("/certificates", owner, function (req, res) {
+router.post("/certificates", any, function (req, res) {
   const b = req.body || {};
   const code = clean(b.code, 50);
   if (!code) return res.status(400).json({ ok: false, error: "code required" });
@@ -2408,7 +2408,7 @@ router.post("/certificates", owner, function (req, res) {
   }
 });
 
-router.get("/certificates", owner, function (req, res) {
+router.get("/certificates", any, function (req, res) {
   const q = clean(req.query.q, 100);
   let sql = "SELECT * FROM certificates WHERE 1=1";
   const args = [];

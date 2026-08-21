@@ -304,6 +304,9 @@
     if (me.role !== "owner") {
       TABS.push({ id: "mynotif", name: "🔔 Сповіщення",  render: renderMyNotif });
     }
+    // Сертифікати — доступно й майстру (бачити журнал, додавати записи),
+    // але без плиток аналітики: statistic лише для власника, див. renderCertificates.
+    TABS.push({ id: "certs",     name: "🎁 Сертифікати", render: renderCertificates });
     if (me.role === "owner") {
       TABS.push({ id: "dashboard", name: "📊 Дашборд",  render: renderDashboard });
       TABS.push({ id: "analytics", name: "📈 Аналітика", render: renderAnalytics });
@@ -313,7 +316,6 @@
       TABS.push({ id: "masters",   name: "Майстри",     render: renderMasters });
       TABS.push({ id: "users",     name: "Доступи",     render: renderUsers });
       TABS.push({ id: "notif",     name: "Сповіщення",  render: renderNotif });
-      TABS.push({ id: "certs",     name: "🎁 Сертифікати", render: renderCertificates });
       TABS.push({ id: "hero",      name: "🖼 Головний екран", render: renderHeroMedia });
       TABS.push({ id: "broadcast", name: "📣 Розсилка", render: renderBroadcast });
       TABS.push({ id: "filiyi",    name: "🏢 Філії",    render: renderBranchesTab });
@@ -3987,18 +3989,20 @@
       var url = "/api/crm/certificates" + (q.value.trim() ? "?q=" + encodeURIComponent(q.value.trim()) : "");
       api("GET", url).then(function(res) {
         var all = (res.j && res.j.certificates) || [];
-        // Аналітика — завжди по всіх (без фільтра статусу), щоб цифри
-        // лишались осмисленими, навіть коли список нижче відфільтровано.
-        var total = all.length;
-        var used = all.filter(function(c) { return c.status === "used"; }).length;
-        var pending = all.filter(function(c) { return c.status === "ordered"; }).length;
-        var cancelled = all.filter(function(c) { return c.status === "cancelled"; }).length;
-        countEl.innerHTML = "";
-        countEl.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;";
-        countEl.appendChild(statTile("Куплено всього", total));
-        countEl.appendChild(statTile("Використано", used, "var(--olive-light)"));
-        countEl.appendChild(statTile("Ще не використано", pending, "var(--warn)"));
-        if (cancelled) countEl.appendChild(statTile("Скасовано", cancelled, "var(--err)"));
+        // Аналітика — лише власнику: майстру число "скільки всього продано"
+        // на кожній студії/зміні не потрібне, а власнику важливе для обліку.
+        if (ME.role === "owner") {
+          var total = all.length;
+          var used = all.filter(function(c) { return c.status === "used"; }).length;
+          var pending = all.filter(function(c) { return c.status === "ordered"; }).length;
+          var cancelled = all.filter(function(c) { return c.status === "cancelled"; }).length;
+          countEl.innerHTML = "";
+          countEl.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;";
+          countEl.appendChild(statTile("Куплено всього", total));
+          countEl.appendChild(statTile("Використано", used, "var(--olive-light)"));
+          countEl.appendChild(statTile("Ще не використано", pending, "var(--warn)"));
+          if (cancelled) countEl.appendChild(statTile("Скасовано", cancelled, "var(--err)"));
+        }
 
         var certs = statusSel.value ? all.filter(function(c) { return c.status === statusSel.value; }) : all;
         listEl.innerHTML = "";
@@ -4037,14 +4041,20 @@
       subLines.forEach(function(line) { info.appendChild(el("div", "sub", line)); });
       row.appendChild(info); row.appendChild(el("span", "sp"));
 
-      var acts = el("div", "acts");
-      var delBtn = el("button", "btn btn-sm btn-ghost", "Видалити");
-      delBtn.addEventListener("click", function() {
-        if (!confirm("Прибрати запис №" + c.code + " з журналу?")) return;
-        api("DELETE", "/api/crm/certificates/" + c.id).then(load);
-      });
-      acts.appendChild(delBtn);
-      item.appendChild(row); item.appendChild(acts);
+      // Видалення — лише власнику (бекенд і так це вимагає); майстру
+      // кнопка, що завжди відповість 403, лише плутала б.
+      if (ME.role === "owner") {
+        var acts = el("div", "acts");
+        var delBtn = el("button", "btn btn-sm btn-ghost", "Видалити");
+        delBtn.addEventListener("click", function() {
+          if (!confirm("Прибрати запис №" + c.code + " з журналу?")) return;
+          api("DELETE", "/api/crm/certificates/" + c.id).then(load);
+        });
+        acts.appendChild(delBtn);
+        item.appendChild(row); item.appendChild(acts);
+      } else {
+        item.appendChild(row);
+      }
       return item;
     }
 
