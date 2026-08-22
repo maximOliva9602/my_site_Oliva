@@ -1403,7 +1403,8 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       return name.replace(/\s*\(\s*(?:Топ\s+)?Майстер\s*\)\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim();
     }
     var curTier = 'master';   // за замовчуванням показуємо нижчу ціну
-    /* Статті-описи послуг: мапа «назва послуги → slug статті» (заповнюється з /api/service-articles) */
+    /* Сторінки послуг ("Про цей масаж"): множина назв послуг, для яких
+       є опублікована сторінка (заповнюється з /api/service-pages/keys). */
     var svcArticles = {};
     function svcCleanKey(name) {
       return String(name).replace(/\s*\((?:Топ\s+)?Майстер\)\s*/gi, ' ').replace(/\s+\d+\s*хв\s*$/i, '').replace(/\s{2,}/g, ' ').trim();
@@ -1412,8 +1413,8 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       return (curLang() === 'en' ? 'About this massage' : 'Про цей масаж') + ' →';
     }
     function appendArticleLink(container, groupName, standalone) {
-      var slug = svcArticles[svcCleanKey(groupName)];
-      if (!slug) return;
+      var key = svcCleanKey(groupName);
+      if (!svcArticles[key]) return;
       /* Посилання вже є (напр. картка без опису, яку не перемальовують) —
          не виходимо мовчки, а оновлюємо підпис під поточну мову. */
       var exist = container.querySelector('.srv-full-link');
@@ -1424,7 +1425,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       }
       var a = document.createElement('a');
       a.className = 'srv-full-link';
-      a.href = '/blog/' + slug;
+      a.href = '/service/' + encodeURIComponent(key);
       a.style.marginTop = standalone ? '14px' : '12px';
       a.innerHTML =
         '<span class="srv-full-link__ico"><img src="/assets/img/logo.png" alt="" /></span>' +
@@ -1580,11 +1581,13 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
 
     Promise.all([
       fetch('/api/services').then(function(r) { return r.json(); }),
-      fetch('/api/service-articles').then(function(r) { return r.json(); }).catch(function() { return { ok: false }; })
+      fetch('/api/service-pages/keys').then(function(r) { return r.json(); }).catch(function() { return { ok: false }; })
     ])
       .then(function(rs) {
         var data = rs[0];
-        if (rs[1] && rs[1].ok && rs[1].map) svcArticles = rs[1].map; // мапа статей — ДО рендеру карток
+        if (rs[1] && rs[1].ok && rs[1].keys) {
+          rs[1].keys.forEach(function(k) { svcArticles[k] = true; }); // ДО рендеру карток
+        }
         if (!data.ok) return;
         var all = data.services;
         buildTierPool(all);

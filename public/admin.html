@@ -298,6 +298,7 @@
       <button class="blog-btn" id="masterMgrBtn">👥 Майстри</button>
       <button class="blog-btn" id="blogMgrBtn">✍️ Блог</button>
       <button class="blog-btn" id="svcArtMgrBtn">📄 Статті послуг</button>
+      <button class="blog-btn" id="svcPageMgrBtn">🎨 Сторінки послуг</button>
       <button id="logoutBtn">Вийти</button>
     </div>
   </aside>
@@ -500,6 +501,119 @@
       </div>
       <!-- List -->
       <div class="blog-list" id="blogList"></div>
+    </div>
+  </div>
+
+  <!-- SERVICE PAGES OVERLAY ("Про цей масаж") -->
+  <div class="blog-overlay" id="svcPageOverlay">
+    <div class="blog-top">
+      <h2>🎨 Сторінки послуг</h2>
+      <button id="svcPageNewBtn" class="btn-new">+ Нова сторінка</button>
+      <button id="svcPageCloseBtn">✕ Закрити</button>
+    </div>
+    <div class="blog-body" id="svcPageBody">
+      <!-- Editor -->
+      <div class="blog-editor" id="svcPageEditor">
+        <div>
+          <label>Послуга * <span style="color:var(--text-dim);font-weight:400;">(на цю послугу вестиме кнопка «Про цей масаж →»)</span></label>
+          <div style="position:relative;">
+            <input type="text" id="spKey" placeholder="🔍 Почніть вводити назву послуги…" autocomplete="off"
+                   style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--cream);font-size:.9rem;font-family:inherit;" />
+            <div id="spKeyDrop" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#12160f;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:60;max-height:220px;overflow-y:auto;"></div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Шапка сторінки</div>
+        <div>
+          <label>Заголовок <span style="color:var(--text-dim);font-weight:400;">(порожньо — візьметься назва послуги)</span></label>
+          <input type="text" id="spHeroTitle" placeholder="Напр. Антистресовий масаж у Києві" />
+        </div>
+        <div>
+          <label>Підзаголовок (курсивом)</label>
+          <input type="text" id="spHeroTagline" placeholder="Напр. Коли хочеться вимкнути голову і нарешті розслабити тіло" />
+        </div>
+        <div>
+          <label>Короткий опис</label>
+          <input type="text" id="spHeroDesc" placeholder="1-2 речення під підзаголовком" />
+        </div>
+        <div>
+          <label>Фото шапки</label>
+          <div class="cover-upload-btn">
+            <button type="button" id="spHeroPhotoBtn">📷 Завантажити фото</button>
+            <img id="spHeroPhotoPreview" class="cover-thumb" src="" alt="" />
+            <span class="cover-name" id="spHeroPhotoName"></span>
+          </div>
+          <input type="file" id="spHeroPhotoInput" class="upload-input" accept="image/*" />
+          <input type="hidden" id="spHeroPhoto" />
+        </div>
+
+        <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Розділ «Знайоме відчуття?» <span style="color:var(--text-dim);text-transform:none;letter-spacing:0;">— порожньо, якщо не заповнити пункти</span></div>
+        <div>
+          <label>Заголовок розділу <span style="color:var(--text-dim);font-weight:400;">(типово «Знайоме відчуття?»)</span></label>
+          <input type="text" id="spSymptomsTitle" placeholder="Знайоме відчуття?" />
+        </div>
+        <div>
+          <label>Пункти — по одному в рядку</label>
+          <textarea id="spSymptomsItems" rows="4" placeholder="Плечі постійно напружені, а шия «дерев'яна»&#10;Навіть після сну немає відчуття відпочинку" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        </div>
+        <div>
+          <label>Фото цього розділу <span style="color:var(--text-dim);font-weight:400;">(порожньо — візьметься фото шапки)</span></label>
+          <div class="cover-upload-btn">
+            <button type="button" id="spSymptomsPhotoBtn">📷 Завантажити фото</button>
+            <img id="spSymptomsPhotoPreview" class="cover-thumb" src="" alt="" />
+            <span class="cover-name" id="spSymptomsPhotoName"></span>
+          </div>
+          <input type="file" id="spSymptomsPhotoInput" class="upload-input" accept="image/*" />
+          <input type="hidden" id="spSymptomsPhoto" />
+        </div>
+        <div>
+          <label>Виділена цитата-висновок</label>
+          <input type="text" id="spSymptomsQuote" placeholder="Напр. Саме для таких станів ми створили антистресовий масаж в Oliva." />
+        </div>
+
+        <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Розділ «Що ви відчуєте після масажу»</div>
+        <div>
+          <label>Заголовок розділу <span style="color:var(--text-dim);font-weight:400;">(типово «Що ви відчуєте після масажу»)</span></label>
+          <input type="text" id="spBenefitsTitle" placeholder="Що ви відчуєте після масажу" />
+        </div>
+        <div>
+          <label>Пункти — формат «Заголовок :: текст», один пункт у рядку</label>
+          <textarea id="spBenefitsItems" rows="4" placeholder="Легкість у тілі :: Менше напруги, скутості та втоми&#10;Розслаблені плечі :: Особливо після роботи за компʼютером" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        </div>
+
+        <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Розділ «Як проходить ваш сеанс»</div>
+        <div>
+          <label>Заголовок розділу <span style="color:var(--text-dim);font-weight:400;">(типово «Як проходить ваш сеанс»)</span></label>
+          <input type="text" id="spStepsTitle" placeholder="Як проходить ваш сеанс" />
+        </div>
+        <div>
+          <label>Кроки — формат «Заголовок :: текст», один крок у рядку (нумеруються автоматично)</label>
+          <textarea id="spStepsItems" rows="4" placeholder="Знайомство :: Майстер уточнює самопочуття та побажання&#10;Налаштовуємо інтенсивність :: Масаж не повинен бути однаковим для всіх" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        </div>
+
+        <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Блок послуги внизу сторінки</div>
+        <div>
+          <label>Опис <span style="color:var(--text-dim);font-weight:400;">(порожньо — візьметься короткий опис із шапки)</span></label>
+          <textarea id="spDetailDesc" rows="3" placeholder="Докладніший опис послуги" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        </div>
+        <div>
+          <label>«Вам підійде цей масаж, якщо…» — по одному пункту в рядку</label>
+          <textarea id="spSuitableItems" rows="4" placeholder="Багато працюєте за компʼютером&#10;Відчуваєте напруження шиї та плечей" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-dim);">Тривалість і ціни підтягуються з «Послуги» автоматично — вписувати їх окремо не треба.</div>
+
+        <div class="publish-row">
+          <input type="checkbox" id="spPublished" />
+          <span>Опублікувати (буде видно на сайті)</span>
+        </div>
+        <div class="editor-actions">
+          <button class="btn-save" id="spSaveBtn">💾 Зберегти</button>
+          <a href="#" target="_blank" id="spPreviewLink" style="display:none;align-self:center;color:var(--olive-light);font-size:13px;">👁 Переглянути на сайті</a>
+          <button class="btn-cancel-ed" id="spCancelBtn">Скасувати</button>
+        </div>
+      </div>
+      <!-- List -->
+      <div class="blog-list" id="svcPageList"></div>
     </div>
   </div>
 
@@ -1366,6 +1480,173 @@
     fetch('/api/admin/posts/' + id, { method: 'DELETE' }).then(loadPosts);
   }
   /* ========== END BLOG ========== */
+
+  /* ========== SERVICE PAGES MANAGER ("Про цей масаж") ========== */
+  var svcPageOverlay  = document.getElementById('svcPageOverlay');
+  var svcPageEditor   = document.getElementById('svcPageEditor');
+  var svcPageList     = document.getElementById('svcPageList');
+  var spKey           = document.getElementById('spKey');
+  var spKeyDrop       = document.getElementById('spKeyDrop');
+  var spPreviewLink   = document.getElementById('spPreviewLink');
+  var editingSpKey    = null; // ключ, з яким відкрили редактор (для PUT); null = нова сторінка
+
+  var SP_FIELDS = ['hero_title','hero_tagline','hero_description','hero_photo',
+    'symptoms_title','symptoms_items','symptoms_photo','symptoms_quote',
+    'benefits_title','benefits_items','steps_title','steps_items',
+    'detail_description','suitable_items'];
+  var SP_FIELD_TO_INPUT = {
+    hero_title: 'spHeroTitle', hero_tagline: 'spHeroTagline', hero_description: 'spHeroDesc', hero_photo: 'spHeroPhoto',
+    symptoms_title: 'spSymptomsTitle', symptoms_items: 'spSymptomsItems', symptoms_photo: 'spSymptomsPhoto', symptoms_quote: 'spSymptomsQuote',
+    benefits_title: 'spBenefitsTitle', benefits_items: 'spBenefitsItems', steps_title: 'spStepsTitle', steps_items: 'spStepsItems',
+    detail_description: 'spDetailDesc', suitable_items: 'spSuitableItems',
+  };
+
+  function openSvcPageOverlay() {
+    loadServiceKeys();
+    svcPageOverlay.classList.add('open');
+    closeSpEditor();
+    loadSvcPages();
+  }
+  document.getElementById('svcPageMgrBtn').addEventListener('click', openSvcPageOverlay);
+  document.getElementById('svcPageCloseBtn').addEventListener('click', function () {
+    svcPageOverlay.classList.remove('open');
+    closeSpEditor();
+  });
+  document.getElementById('svcPageNewBtn').addEventListener('click', function () { openSpEditor(null); });
+  document.getElementById('spCancelBtn').addEventListener('click', closeSpEditor);
+
+  function closeSpEditor() {
+    svcPageEditor.classList.remove('open');
+    editingSpKey = null;
+  }
+
+  function renderSpKeyDrop(q) {
+    q = (q || '').toLowerCase();
+    var list = svcKeys.filter(function (k) { return !q || k.toLowerCase().indexOf(q) !== -1; });
+    spKeyDrop.innerHTML = '';
+    if (!list.length) {
+      var empty = document.createElement('div');
+      empty.textContent = 'Нічого не знайдено';
+      empty.style.cssText = 'padding:10px 12px;color:var(--text-dim);font-size:.85rem;';
+      spKeyDrop.appendChild(empty);
+    }
+    list.forEach(function (k) {
+      var row = document.createElement('div');
+      row.textContent = k;
+      row.style.cssText = 'padding:10px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);color:var(--cream);font-size:.88rem;';
+      row.addEventListener('mouseenter', function () { row.style.background = 'rgba(122,145,86,0.15)'; });
+      row.addEventListener('mouseleave', function () { row.style.background = ''; });
+      row.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        spKey.value = k;
+        spKeyDrop.style.display = 'none';
+      });
+      spKeyDrop.appendChild(row);
+    });
+    spKeyDrop.style.display = 'block';
+  }
+  spKey.addEventListener('input', function () { renderSpKeyDrop(this.value.trim()); });
+  spKey.addEventListener('focus', function () { renderSpKeyDrop(this.value.trim()); });
+  spKey.addEventListener('blur', function () { setTimeout(function () { spKeyDrop.style.display = 'none'; }, 150); });
+
+  function spPhotoField(inputId, previewId, nameId, btnId, fileId) {
+    document.getElementById(btnId).addEventListener('click', function () { document.getElementById(fileId).click(); });
+    document.getElementById(fileId).addEventListener('change', function () {
+      var file = this.files[0];
+      if (!file) return;
+      uploadImage(file, function (url) {
+        document.getElementById(inputId).value = url;
+        var pv = document.getElementById(previewId);
+        pv.src = url; pv.classList.add('show');
+        document.getElementById(nameId).textContent = file.name;
+      });
+      this.value = '';
+    });
+  }
+  spPhotoField('spHeroPhoto', 'spHeroPhotoPreview', 'spHeroPhotoName', 'spHeroPhotoBtn', 'spHeroPhotoInput');
+  spPhotoField('spSymptomsPhoto', 'spSymptomsPhotoPreview', 'spSymptomsPhotoName', 'spSymptomsPhotoBtn', 'spSymptomsPhotoInput');
+
+  function openSpEditor(key) {
+    editingSpKey = key;
+    svcPageEditor.classList.add('open');
+    spKey.value = key || '';
+    SP_FIELDS.forEach(function (f) { document.getElementById(SP_FIELD_TO_INPUT[f]).value = ''; });
+    ['spHeroPhotoPreview', 'spSymptomsPhotoPreview'].forEach(function (id) {
+      var el = document.getElementById(id); el.src = ''; el.classList.remove('show');
+    });
+    document.getElementById('spHeroPhotoName').textContent = '';
+    document.getElementById('spSymptomsPhotoName').textContent = '';
+    document.getElementById('spPublished').checked = false;
+    spPreviewLink.style.display = 'none';
+    if (!key) { svcPageEditor.scrollIntoView({ behavior: 'smooth' }); return; }
+    fetch('/api/admin/service-pages/' + encodeURIComponent(key)).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j.ok) return;
+      var p = j.page;
+      SP_FIELDS.forEach(function (f) { document.getElementById(SP_FIELD_TO_INPUT[f]).value = p[f] || ''; });
+      if (p.hero_photo) {
+        var hp = document.getElementById('spHeroPhotoPreview'); hp.src = p.hero_photo; hp.classList.add('show');
+      }
+      if (p.symptoms_photo) {
+        var sp = document.getElementById('spSymptomsPhotoPreview'); sp.src = p.symptoms_photo; sp.classList.add('show');
+      }
+      document.getElementById('spPublished').checked = !!p.published;
+      spPreviewLink.href = '/service/' + encodeURIComponent(key);
+      spPreviewLink.style.display = p.published ? 'inline-block' : 'none';
+    });
+    svcPageEditor.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  document.getElementById('spSaveBtn').addEventListener('click', function () {
+    var key = spKey.value.trim();
+    if (!key) { alert('Оберіть послугу'); return; }
+    var data = {};
+    SP_FIELDS.forEach(function (f) { data[f] = document.getElementById(SP_FIELD_TO_INPUT[f]).value; });
+    data.published = document.getElementById('spPublished').checked;
+    var btn = this;
+    btn.textContent = 'Збереження...'; btn.disabled = true;
+    fetch('/api/admin/service-pages/' + encodeURIComponent(key), {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      btn.textContent = '💾 Зберегти'; btn.disabled = false;
+      if (j.ok) { closeSpEditor(); loadSvcPages(); }
+      else alert('Помилка збереження');
+    }).catch(function () { btn.textContent = '💾 Зберегти'; btn.disabled = false; });
+  });
+
+  function loadSvcPages() {
+    fetch('/api/admin/service-pages').then(function (r) { return r.json(); }).then(function (j) {
+      svcPageList.innerHTML = '';
+      var pages = (j && j.pages) || [];
+      if (!pages.length) {
+        svcPageList.innerHTML = '<div style="color:var(--text-dim);padding:20px;">Ще немає жодної сторінки послуги.</div>';
+        return;
+      }
+      pages.forEach(function (p) {
+        var card = document.createElement('div');
+        card.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;';
+        var badge = p.published ? '<span style="color:#8fc16a;font-size:11px;">● Опубліковано</span>' : '<span style="color:var(--text-dim);font-size:11px;">○ Чернетка</span>';
+        card.innerHTML =
+          '<div style="font-weight:600;color:var(--cream);">' + (p.hero_title || p.service_key) + '</div>' +
+          '<div style="font-size:12px;color:var(--text-dim);">' + p.service_key + '</div>' +
+          '<div>' + badge + '</div>';
+        var actions = document.createElement('div');
+        actions.style.cssText = 'display:flex;gap:8px;margin-top:6px;';
+        var editBtn = document.createElement('button');
+        editBtn.textContent = '✏️ Редагувати'; editBtn.className = 'blog-btn';
+        editBtn.addEventListener('click', function () { openSpEditor(p.service_key); });
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '🗑'; delBtn.className = 'blog-btn';
+        delBtn.addEventListener('click', function () {
+          if (!confirm('Видалити сторінку «' + p.service_key + '»?')) return;
+          fetch('/api/admin/service-pages/' + encodeURIComponent(p.service_key), { method: 'DELETE' }).then(loadSvcPages);
+        });
+        actions.appendChild(editBtn); actions.appendChild(delBtn);
+        card.appendChild(actions);
+        svcPageList.appendChild(card);
+      });
+    });
+  }
+  /* ========== END SERVICE PAGES ========== */
 
 })();
 </script>

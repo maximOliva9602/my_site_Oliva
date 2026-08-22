@@ -170,6 +170,37 @@ CREATE INDEX IF NOT EXISTS idx_posts_slug      ON blog_posts(slug);
 CREATE INDEX IF NOT EXISTS idx_posts_published ON blog_posts(published, date);
 `);
 
+/* ---------------- Сторінки послуг ("Про цей масаж") ----------------
+   Структурований лендінг за одним фіксованим шаблоном (hero, "Знайоме
+   відчуття", переваги, кроки сеансу, кому підійде) — власник заповнює
+   лише текст у полях, розмітку й порядок секцій міняти не може.
+   Прив'язка до послуги — той самий service_key, що й у blog_posts
+   (базова назва послуги без рівня майстра й тривалості). Списки
+   (symptoms/benefits/steps/suitable) зберігаються рядок-на-пункт у
+   textarea; для benefits/steps формат рядка "Заголовок :: текст".
+   Порожня секція на сайті просто не рендериться. */
+db.exec(`
+CREATE TABLE IF NOT EXISTS service_pages (
+  service_key        TEXT PRIMARY KEY,
+  hero_title          TEXT NOT NULL DEFAULT '',
+  hero_tagline         TEXT NOT NULL DEFAULT '',
+  hero_description     TEXT NOT NULL DEFAULT '',
+  hero_photo           TEXT NOT NULL DEFAULT '',
+  symptoms_title        TEXT NOT NULL DEFAULT '',
+  symptoms_items        TEXT NOT NULL DEFAULT '',
+  symptoms_photo        TEXT NOT NULL DEFAULT '',
+  symptoms_quote        TEXT NOT NULL DEFAULT '',
+  benefits_title        TEXT NOT NULL DEFAULT '',
+  benefits_items        TEXT NOT NULL DEFAULT '',
+  steps_title           TEXT NOT NULL DEFAULT '',
+  steps_items           TEXT NOT NULL DEFAULT '',
+  detail_description    TEXT NOT NULL DEFAULT '',
+  suitable_items        TEXT NOT NULL DEFAULT '',
+  published             INTEGER NOT NULL DEFAULT 0,
+  updated_at            INTEGER NOT NULL
+);
+`);
+
 /* ---------------- Таблиця відвідувань сайту ---------------- */
 db.exec(`
 CREATE TABLE IF NOT EXISTS page_visits (

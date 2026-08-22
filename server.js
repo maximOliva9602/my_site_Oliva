@@ -564,6 +564,74 @@ app.delete("/api/admin/posts/:id", requireAdmin, function (req, res) {
   res.json({ ok: true });
 });
 
+/* ---------------- Сторінки послуг ("Про цей масаж") ---------------- */
+var SVC_PAGE_FIELDS = [
+  "hero_title", "hero_tagline", "hero_description", "hero_photo",
+  "symptoms_title", "symptoms_items", "symptoms_photo", "symptoms_quote",
+  "benefits_title", "benefits_items", "steps_title", "steps_items",
+  "detail_description", "suitable_items",
+];
+var stmtSvcPageGet   = db.prepare("SELECT * FROM service_pages WHERE service_key=?");
+var stmtSvcPageAll   = db.prepare("SELECT service_key, hero_title, published, updated_at FROM service_pages ORDER BY updated_at DESC");
+var stmtSvcPageKeys  = db.prepare("SELECT service_key FROM service_pages WHERE published=1");
+var stmtSvcPageDel   = db.prepare("DELETE FROM service_pages WHERE service_key=?");
+
+/* Публічно: чи є опублікована сторінка для кожної послуги — щоб на
+   головній показувати кнопку "Про цей масаж →" лише там, де є що показати. */
+app.get("/api/service-pages/keys", function (req, res) {
+  res.json({ ok: true, keys: stmtSvcPageKeys.all().map(function (r) { return r.service_key; }) });
+});
+
+/* Публічно: повна сторінка для service.html */
+app.get("/api/service-pages/:key", function (req, res) {
+  var row = stmtSvcPageGet.get(req.params.key);
+  if (!row || !row.published) return res.status(404).json({ ok: false });
+  res.json({ ok: true, page: row });
+});
+
+/* Адмін: список для панелі керування */
+app.get("/api/admin/service-pages", requireAdmin, function (req, res) {
+  res.json({ ok: true, pages: stmtSvcPageAll.all() });
+});
+
+/* Адмін: одна сторінка (для редагування) — 200 з порожніми полями,
+   якщо ще не створювали, щоб форма завжди мала що показати. */
+app.get("/api/admin/service-pages/:key", requireAdmin, function (req, res) {
+  var row = stmtSvcPageGet.get(req.params.key);
+  if (row) return res.json({ ok: true, page: row });
+  var blank = { service_key: req.params.key, published: 0, updated_at: 0 };
+  SVC_PAGE_FIELDS.forEach(function (f) { blank[f] = ""; });
+  res.json({ ok: true, page: blank });
+});
+
+/* Адмін: створити/оновити (upsert) */
+app.put("/api/admin/service-pages/:key", requireAdmin, function (req, res) {
+  var key = String(req.params.key || "").slice(0, 120).trim();
+  if (!key) return res.status(400).json({ ok: false, error: "key required" });
+  var d = req.body || {};
+  var vals = {};
+  SVC_PAGE_FIELDS.forEach(function (f) {
+    var max = f.indexOf("photo") !== -1 ? 500 : (f.indexOf("items") !== -1 || f === "detail_description" ? 4000 : 300);
+    vals[f] = String(d[f] == null ? "" : d[f]).slice(0, max).trim();
+  });
+  var published = d.published ? 1 : 0;
+  var now = Date.now();
+  var stmt = db.prepare(
+    `INSERT INTO service_pages (service_key,${SVC_PAGE_FIELDS.join(",")},published,updated_at)
+     VALUES (?,${SVC_PAGE_FIELDS.map(function () { return "?"; }).join(",")},?,?)
+     ON CONFLICT(service_key) DO UPDATE SET
+       ${SVC_PAGE_FIELDS.map(function (f) { return f + "=excluded." + f; }).join(",\n       ")},
+       published=excluded.published, updated_at=excluded.updated_at`
+  );
+  stmt.run.apply(stmt, [key].concat(SVC_PAGE_FIELDS.map(function (f) { return vals[f]; })).concat([published, now]));
+  res.json({ ok: true });
+});
+
+app.delete("/api/admin/service-pages/:key", requireAdmin, function (req, res) {
+  stmtSvcPageDel.run(req.params.key);
+  res.json({ ok: true });
+});
+
 /* Фото для блогу — зберігається поруч з SQLite DB на Railway Volume */
 var IMG_DIR = path.join(path.dirname(process.env.DB_FILE || path.join(__dirname, "data", "oliva.db")), "img", "blog");
 
@@ -701,6 +769,9 @@ app.get("/blog", function (req, res) {
 });
 app.get("/blog/:slug", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "blog-post.html"));
+});
+app.get("/service/:key", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "service.html"));
 });
 
 /* ---------------- Socket.IO ---------------- */

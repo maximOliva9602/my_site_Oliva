@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Про масаж — Студія масажу Oliva</title>
+  <meta name="description" content="" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:site_name" content="Студія масажу Oliva" />
+  <meta property="og:title" content="" />
+  <meta property="og:description" content="" />
+  <meta property="og:url" content="" />
+  <meta property="og:image" content="https://massage-oliva.com/assets/img/og-image.jpg" />
+  <link rel="canonical" href="" />
+  <link rel="icon" href="/assets/img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #080A07; --olive: #2E3D22; --olive-light: #7A9156;
+      --cream: #F2EDE4; --text-dim: rgba(242,237,228,0.6); --line: rgba(122,145,86,0.18);
+      --panel: rgba(242,237,228,0.04);
+    }
+    html, body { min-height: 100vh; background: var(--black); color: var(--cream); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    img { max-width: 100%; display: block; }
+
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--black); z-index: 10; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .nav-logo span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); }
+    .nav-back { font-size: 13px; color: var(--olive-light); text-decoration: none; }
+    .nav-back:hover { color: var(--cream); }
+
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+    .loading { text-align: center; padding: 100px 24px; color: var(--text-dim); }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; border-radius: 50px; font-size: 15px; font-weight: 600; text-decoration: none; transition: all .2s; white-space: nowrap; }
+    .btn-primary { background: var(--olive-light); color: var(--black); border: none; }
+    .btn-primary:hover { background: var(--cream); }
+    .btn-secondary { background: transparent; border: 1.5px solid var(--olive-light); color: var(--olive-light); }
+    .btn-secondary:hover { background: rgba(122,145,86,0.15); color: var(--cream); border-color: var(--cream); }
+
+    /* HERO */
+    .hero { position: relative; min-height: 74vh; display: flex; align-items: flex-end; padding: 60px 0 56px; }
+    .hero-bg { position: absolute; inset: 0; object-fit: cover; width: 100%; height: 100%; z-index: 0; }
+    .hero-bg-fallback { position: absolute; inset: 0; background: linear-gradient(160deg, #1c2415, var(--black)); z-index: 0; }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,10,7,0.15) 0%, rgba(8,10,7,0.55) 55%, rgba(8,10,7,0.92) 100%); z-index: 1; }
+    .hero-inner { position: relative; z-index: 2; max-width: 640px; }
+    .hero-eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 14px; font-weight: 600; }
+    .hero-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.12; margin-bottom: 14px; text-transform: uppercase; }
+    .hero-tagline { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.4rem); color: var(--cream); opacity: .92; margin-bottom: 18px; line-height: 1.4; }
+    .hero-desc { font-size: 15px; color: var(--text-dim); line-height: 1.7; max-width: 520px; margin-bottom: 26px; }
+    .hero-meta { display: flex; align-items: center; gap: 18px; font-size: 14px; color: var(--text-dim); margin-bottom: 26px; flex-wrap: wrap; }
+    .hero-meta b { color: var(--cream); }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+
+    .perks { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 30px 24px; border-bottom: 1px solid var(--line); }
+    .perk { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; font-size: 13px; max-width: 220px; }
+    .perk-ico { font-size: 1.3rem; flex-shrink: 0; }
+    .perk-title { color: var(--cream); font-weight: 600; }
+    .perk-sub { color: var(--text-dim); font-size: 12px; margin-top: 1px; }
+
+    section.block { padding: 72px 0; }
+    .block-title { font-family: 'Playfair Display', serif; font-size: clamp(1.5rem, 3vw, 2.1rem); color: var(--cream); margin-bottom: 32px; }
+
+    /* SYMPTOMS */
+    .symptoms { background: var(--panel); }
+    .symptoms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    .symptoms-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+    .symptoms-item { display: flex; align-items: flex-start; gap: 12px; font-size: 15px; color: var(--cream); line-height: 1.5; }
+    .symptoms-item .dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--olive-light); margin-top: 7px; }
+    .symptoms-photo { border-radius: 18px; overflow: hidden; aspect-ratio: 4/3; }
+    .symptoms-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .symptoms-quote { background: var(--olive); border-radius: 14px; padding: 20px 24px; font-size: 15px; color: var(--cream); font-weight: 600; line-height: 1.5; }
+
+    /* BENEFITS */
+    .benefits-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px; }
+    .benefit-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+    .benefit-title { font-weight: 700; color: var(--cream); font-size: 15px; margin-bottom: 6px; }
+    .benefit-text { font-size: 13.5px; color: var(--text-dim); line-height: 1.6; }
+    .block-cta { text-align: center; }
+
+    /* STEPS */
+    .steps-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 28px; position: relative; }
+    .step { position: relative; }
+    .step-num { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--olive-light); opacity: .55; margin-bottom: 10px; }
+    .step-title { font-weight: 700; color: var(--cream); font-size: 15px; margin-bottom: 6px; }
+    .step-text { font-size: 13.5px; color: var(--text-dim); line-height: 1.6; }
+
+    /* DETAIL / PRICING */
+    .detail { background: var(--panel); }
+    .detail-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; }
+    .detail-eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 10px; }
+    .detail-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 14px; }
+    .detail-desc { font-size: 14.5px; color: var(--text-dim); line-height: 1.7; margin-bottom: 22px; }
+    .suitable-title { font-weight: 700; color: var(--cream); margin-bottom: 14px; font-size: 15px; }
+    .suitable-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+    .suitable-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text-dim); line-height: 1.5; }
+    .suitable-item .check { color: var(--olive-light); flex-shrink: 0; font-weight: 700; }
+    .price-table { background: var(--black); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+    .price-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .price-row:last-child { border-bottom: none; }
+    .price-dur { color: var(--cream); font-weight: 600; }
+    .price-vals { display: flex; gap: 16px; color: var(--text-dim); font-size: 13px; }
+    .price-vals b { color: var(--olive-light); }
+    .detail-loc { font-size: 12.5px; color: var(--text-dim); margin-top: 14px; }
+
+    .footer-badges { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; padding: 48px 24px 72px; text-align: center; }
+    .footer-badge { max-width: 180px; font-size: 12.5px; color: var(--text-dim); }
+    .footer-badge-ico { font-size: 1.4rem; margin-bottom: 8px; }
+    .footer-badge-title { color: var(--cream); font-weight: 700; font-size: 13.5px; margin-bottom: 4px; }
+
+    @media (max-width: 780px) {
+      .symptoms-grid, .detail-grid { grid-template-columns: 1fr; }
+      .symptoms-photo { order: -1; }
+      .benefits-grid { grid-template-columns: 1fr; }
+      .hero { min-height: 60vh; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/assets/img/logo.png" alt="Oliva" />
+    <span>Oliva.</span>
+  </a>
+  <a href="/#services" class="nav-back">← До послуг</a>
+</nav>
+
+<div id="pageContent"><div class="loading">Завантаження…</div></div>
+
+<script src="/assets/js/service-groups.js?v=3"></script>
+<script>
+(function () {
+  var key = decodeURIComponent(location.pathname.split('/').pop() || '');
+  var content = document.getElementById('pageContent');
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function lines(s) { return String(s || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean); }
+  function pair(line) {
+    var i = line.indexOf('::');
+    if (i === -1) return { title: line.trim(), text: '' };
+    return { title: line.slice(0, i).trim(), text: line.slice(i + 2).trim() };
+  }
+  function money(kop) { return Math.round((kop || 0) / 100) + ' грн'; }
+
+  Promise.all([
+    fetch('/api/service-pages/' + encodeURIComponent(key)).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    fetch('/api/services').then(function(r){ return r.json(); }).catch(function(){ return { services: [] }; }),
+  ]).then(function (results) {
+    var pageRes = results[0];
+    var servicesRes = results[1];
+    if (!pageRes || !pageRes.ok) {
+      content.innerHTML = '<div class="loading">Сторінку не знайдено. <a href="/#services" style="color:var(--olive-light)">← До послуг</a></div>';
+      return;
+    }
+    var p = pageRes.page;
+    var SG = window.OlivaServiceGroups;
+    var allServices = servicesRes.services || [];
+    // Всі тарифні варіанти саме цієї послуги (за базовою назвою, без рівня й тривалості)
+    var variants = allServices.filter(function (s) {
+      return SG.parseName(s.name).cat === key;
+    }).map(function (s) {
+      var parsed = SG.parseName(s.name);
+      return { level: parsed.level || 'Майстер', dur: parsed.dur, price: s.price };
+    }).filter(function (v) { return v.dur; }).sort(function (a, b) { return a.dur - b.dur; });
+
+    var minPrice = variants.length ? Math.min.apply(null, variants.map(function(v){ return v.price; })) : null;
+    var durSet = []; variants.forEach(function(v){ if (durSet.indexOf(v.dur) === -1) durSet.push(v.dur); });
+
+    var title = p.hero_title || key;
+    document.title = title + ' — Студія масажу Oliva';
+    var BASE = 'https://massage-oliva.com';
+    var pageUrl = BASE + location.pathname;
+    var ogImg = p.hero_photo ? (p.hero_photo.indexOf('http') === 0 ? p.hero_photo : BASE + p.hero_photo) : BASE + '/assets/img/og-image.jpg';
+    document.querySelector('meta[name="description"]').content = p.hero_description || p.hero_tagline || title;
+    document.querySelector('meta[property="og:title"]').content = title + ' — Студія масажу Oliva';
+    document.querySelector('meta[property="og:description"]').content = p.hero_description || p.hero_tagline || title;
+    document.querySelector('meta[property="og:url"]').content = pageUrl;
+    document.querySelector('meta[property="og:image"]').content = ogImg;
+    document.querySelector('link[rel="canonical"]').href = pageUrl;
+
+    var html = '';
+
+    // HERO
+    html += '<section class="hero">' +
+      (p.hero_photo ? '<img class="hero-bg" src="' + esc(p.hero_photo) + '" alt="' + esc(title) + '">' : '<div class="hero-bg-fallback"></div>') +
+      '<div class="hero-overlay"></div>' +
+      '<div class="wrap"><div class="hero-inner">' +
+        '<div class="hero-eyebrow">Студія масажу Oliva · Київ</div>' +
+        '<h1 class="hero-title">' + esc(title) + '</h1>' +
+        (p.hero_tagline ? '<div class="hero-tagline">' + esc(p.hero_tagline) + '</div>' : '') +
+        (p.hero_description ? '<p class="hero-desc">' + esc(p.hero_description) + '</p>' : '') +
+        (durSet.length || minPrice != null ? '<div class="hero-meta">' +
+          (durSet.length ? '<span>🕐 ' + durSet.join('/') + ' хв</span>' : '') +
+          (minPrice != null ? '<span>від <b>' + money(minPrice) + '</b></span>' : '') +
+        '</div>' : '') +
+        '<div class="hero-btns">' +
+          '<a href="/booking.html" class="btn btn-primary">Записатися онлайн →</a>' +
+          '<a href="/certificate.html" class="btn btn-secondary">🎁 Подарувати сертифікат</a>' +
+        '</div>' +
+      '</div></div>' +
+    '</section>';
+
+    // PERKS (статичні — однакові на кожній сторінці послуги)
+    html += '<div class="perks">' +
+      '<div class="perk"><span class="perk-ico">🌿</span><div><div class="perk-title">М\'яке розслаблення</div><div class="perk-sub">без зайвої інтенсивності</div></div></div>' +
+      '<div class="perk"><span class="perk-ico">💆</span><div><div class="perk-title">Зняття напруги</div><div class="perk-sub">у шиї, плечах та спині</div></div></div>' +
+      '<div class="perk"><span class="perk-ico">🪷</span><div><div class="perk-title">Емоційне перезавантаження</div></div></div>' +
+      '<div class="perk"><span class="perk-ico">🕯️</span><div><div class="perk-title">Час тільки для себе</div></div></div>' +
+    '</div>';
+
+    // SYMPTOMS
+    var symptomItems = lines(p.symptoms_items);
+    if (symptomItems.length) {
+      var symPhoto = p.symptoms_photo || p.hero_photo;
+      html += '<section class="block symptoms"><div class="wrap"><div class="symptoms-grid">' +
+        '<div>' +
+          '<h2 class="block-title">' + esc(p.symptoms_title || 'Знайоме відчуття?') + '</h2>' +
+          '<div class="symptoms-list">' + symptomItems.map(function(x){ return '<div class="symptoms-item"><span class="dot"></span>' + esc(x) + '</div>'; }).join('') + '</div>' +
+          (p.symptoms_quote ? '<div class="symptoms-quote">' + esc(p.symptoms_quote) + '</div>' : '') +
+        '</div>' +
+        (symPhoto ? '<div class="symptoms-photo"><img src="' + esc(symPhoto) + '" alt=""></div>' : '') +
+      '</div></div></section>';
+    }
+
+    // BENEFITS
+    var benefitItems = lines(p.benefits_items).map(pair).filter(function(x){ return x.title; });
+    if (benefitItems.length) {
+      html += '<section class="block"><div class="wrap">' +
+        '<h2 class="block-title">' + esc(p.benefits_title || 'Що ви відчуєте після масажу') + '</h2>' +
+        '<div class="benefits-grid">' + benefitItems.map(function(b){
+          return '<div class="benefit-card"><div class="benefit-title">' + esc(b.title) + '</div>' + (b.text ? '<div class="benefit-text">' + esc(b.text) + '</div>' : '') + '</div>';
+        }).join('') + '</div>' +
+        '<div class="block-cta"><a href="/booking.html" class="btn btn-primary">Обрати свій час →</a></div>' +
+      '</div></section>';
+    }
+
+    // STEPS
+    var stepItems = lines(p.steps_items).map(pair).filter(function(x){ return x.title; });
+    if (stepItems.length) {
+      html += '<section class="block symptoms"><div class="wrap">' +
+        '<h2 class="block-title">' + esc(p.steps_title || 'Як проходить ваш сеанс') + '</h2>' +
+        '<div class="steps-row">' + stepItems.map(function(s, i){
+          return '<div class="step"><div class="step-num">0' + (i+1) + '</div><div class="step-title">' + esc(s.title) + '</div>' + (s.text ? '<div class="step-text">' + esc(s.text) + '</div>' : '') + '</div>';
+        }).join('') + '</div>' +
+      '</div></section>';
+    }
+
+    // DETAIL + PRICING
+    var suitableItems = lines(p.suitable_items);
+    html += '<section class="block detail"><div class="wrap"><div class="detail-grid">' +
+      '<div>' +
+        '<div class="detail-eyebrow">Послуга</div>' +
+        '<h2 class="detail-title">' + esc(title) + '</h2>' +
+        (p.detail_description || p.hero_description ? '<p class="detail-desc">' + esc(p.detail_description || p.hero_description) + '</p>' : '') +
+        '<div class="hero-btns">' +
+          '<a href="/booking.html" class="btn btn-primary">Записатися онлайн →</a>' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        (suitableItems.length ? '<div class="suitable-title">Вам підійде цей масаж, якщо…</div><div class="suitable-list">' +
+          suitableItems.map(function(x){ return '<div class="suitable-item"><span class="check">✓</span>' + esc(x) + '</div>'; }).join('') +
+        '</div>' : '') +
+        (durSet.length ? '<div class="price-table">' + durSet.map(function(d){
+          var forDur = variants.filter(function(v){ return v.dur === d; });
+          var master = forDur.filter(function(v){ return v.level === 'Майстер'; })[0];
+          var top = forDur.filter(function(v){ return v.level === 'Топ Майстер'; })[0];
+          var expert = forDur.filter(function(v){ return v.level === 'Експерт'; })[0];
+          var vals = [];
+          if (master) vals.push('Майстер <b>' + money(master.price) + '</b>');
+          if (top) vals.push('Топ-майстер <b>' + money(top.price) + '</b>');
+          if (expert) vals.push('Експерт <b>' + money(expert.price) + '</b>');
+          if (!vals.length && forDur[0]) vals.push('<b>' + money(forDur[0].price) + '</b>');
+          return '<div class="price-row"><span class="price-dur">' + d + ' хвилин</span><span class="price-vals">' + vals.join(' · ') + '</span></div>';
+        }).join('') + '</div>' : '') +
+        '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Переглянути доступний час →</a>' +
+        '<div class="detail-loc">📍 Київ · Шулявська · район Індустріального мосту</div>' +
+      '</div>' +
+    '</div></div></section>';
+
+    // FOOTER BADGES (статичні)
+    html += '<div class="footer-badges">' +
+      '<div class="footer-badge"><div class="footer-badge-ico">🏅</div><div class="footer-badge-title">Професійні майстри</div>Досвідчені спеціалісти та індивідуальний підхід.</div>' +
+      '<div class="footer-badge"><div class="footer-badge-ico">🕯️</div><div class="footer-badge-title">Преміальна атмосфера</div>Затишна студія, в яку хочеться повертатися.</div>' +
+      '<div class="footer-badge"><div class="footer-badge-ico">🌿</div><div class="footer-badge-title">Тільки якісні засоби</div>Професійна косметика та безпечні олії.</div>' +
+      '<div class="footer-badge"><div class="footer-badge-ico">🤍</div><div class="footer-badge-title">Догляд, який відчувається</div>Не просто масаж — справжнє відновлення.</div>' +
+    '</div>';
+
+    content.innerHTML = html;
+  });
+})();
+</script>
+<script src="/assets/js/track.js"></script>
+</body>
+</html>
