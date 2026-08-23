@@ -1161,8 +1161,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   }
 
   // Deep-link з головної сторінки: ?service=<id> у /booking.html одразу
-  // підставляє послугу (і майстра, якщо він єдиний, хто її надає), клієнту
-  // лишається обрати дату й час замість повторення вибору з нуля.
+  // підставляє послугу й категорію, клієнту лишається обрати майстра
+  // (навіть якщо послугу надає лише один — раптом саме в нього немає
+  // вільних віконець, тоді можна обрати іншого, хай і дорожчого рівня)
+  // та дату й час, замість повторення вибору з нуля.
   function applyDeepLink() {
     var params = new URLSearchParams(location.search);
     var sid = parseInt(params.get("service"), 10);
@@ -1172,17 +1174,9 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var p = parseName(svc.name);
     state.group = resolveGroup(svc, p.cat) || state.group;
     state.category = p.cat;
-    var matching = allMasters.filter(function(m) { return (m.service_ids || []).indexOf(sid) !== -1; });
-    if (matching.length === 1) {
-      state.master = matching[0];
-      state.service = svc;
-      renderDateStep();
-      goStep(5);
-    } else {
-      pendingServiceId = sid;
-      renderMasters();
-      goStep(3);
-    }
+    pendingServiceId = sid;
+    renderMasters();
+    goStep(3);
   }
 
   /* Найближчі вільні віконця майстрів (прев'ю під кожним майстром) */
