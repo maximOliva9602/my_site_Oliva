@@ -172,10 +172,39 @@
       .abon-price-col { border-right: none; padding-right: 0; padding-bottom: 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
     }
 
-    .footer-badges { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; padding: 48px 24px 72px; text-align: center; }
-    .footer-badge { max-width: 180px; font-size: 12.5px; color: var(--text-dim); }
-    .footer-badge-ico { font-size: 1.4rem; margin-bottom: 8px; }
-    .footer-badge-title { color: var(--cream); font-weight: 700; font-size: 13.5px; margin-bottom: 4px; }
+    .contacts-section { padding: 72px 24px; background: rgba(14,18,12,0.9); border-top: 1px solid var(--line); }
+    .contacts-section .wrap { max-width: 1080px; margin: 0 auto; }
+    .contacts-section .section-label { display: flex; align-items: center; gap: 10px; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 10px; }
+    .contacts-section .section-label::before { content: ''; width: 24px; height: 1px; background: var(--olive-light); }
+    .contacts-section .section-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 3.5vw, 3rem); line-height: 1.15; color: var(--cream); margin-bottom: 16px; }
+    .contacts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; margin-top: 56px; }
+    .contact-block { margin-bottom: 32px; }
+    .contact-label { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 8px; }
+    .contact-value { font-size: 1.1rem; color: var(--cream); transition: color .25s; }
+    a.contact-value:hover { color: var(--olive-light); }
+    .social-row { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+    .social-btn { width: 48px; height: 48px; border-radius: 50%; background: rgba(46,61,34,0.4); border: 1px solid rgba(122,145,86,0.3); display: flex; align-items: center; justify-content: center; color: var(--text-dim); transition: all .3s; }
+    .social-btn svg { width: 22px; height: 22px; }
+    .social-btn--instagram { color: #e1306c !important; border-color: rgba(225,48,108,.3) !important; }
+    .social-btn--instagram:hover { background: rgba(225,48,108,.12) !important; border-color: #e1306c !important; }
+    .social-btn--tiktok { color: #fff !important; border-color: rgba(255,255,255,.3) !important; }
+    .social-btn--tiktok:hover { background: rgba(255,255,255,.12) !important; border-color: #fff !important; }
+    .social-btn--threads { color: #fff !important; border-color: rgba(255,255,255,.3) !important; }
+    .social-btn--threads:hover { background: rgba(255,255,255,.12) !important; border-color: #fff !important; }
+    .social-btn--whatsapp { color: #25d366 !important; border-color: rgba(37,211,102,.3) !important; }
+    .social-btn--whatsapp:hover { background: rgba(37,211,102,.12) !important; border-color: #25d366 !important; }
+    .social-btn--viber { color: #7360f2 !important; border-color: rgba(115,96,242,.3) !important; }
+    .social-btn--viber:hover { background: rgba(115,96,242,.12) !important; border-color: #7360f2 !important; }
+    .social-btn--telegram { color: #229ed9 !important; border-color: rgba(34,158,217,.3) !important; }
+    .social-btn--telegram:hover { background: rgba(34,158,217,.12) !important; border-color: #229ed9 !important; }
+    .social-btn--youtube { color: #ff0000 !important; border-color: rgba(255,0,0,.3) !important; }
+    .social-btn--youtube:hover { background: rgba(255,0,0,.12) !important; border-color: #ff0000 !important; }
+    .map-embed-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .map-open-link { font-size: 13px; color: var(--olive-light); text-decoration: none; text-align: center; }
+    .map-open-link:hover { color: var(--cream); }
+    @media (max-width: 780px) {
+      .contacts-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
 
     @media (max-width: 780px) {
       .symptoms-grid, .detail-grid { grid-template-columns: 1fr; }
@@ -466,13 +495,34 @@
       '</div>' +
     '</div></div></section>';
 
-    // FOOTER BADGES (статичні)
-    html += '<div class="footer-badges">' +
-      '<div class="footer-badge"><div class="footer-badge-ico">🏅</div><div class="footer-badge-title">Професійні майстри</div>Досвідчені спеціалісти та індивідуальний підхід.</div>' +
-      '<div class="footer-badge"><div class="footer-badge-ico">🕯️</div><div class="footer-badge-title">Преміальна атмосфера</div>Затишна студія, в яку хочеться повертатися.</div>' +
-      '<div class="footer-badge"><div class="footer-badge-ico">🌿</div><div class="footer-badge-title">Тільки якісні засоби</div>Професійна косметика та безпечні олії.</div>' +
-      '<div class="footer-badge"><div class="footer-badge-ico">🤍</div><div class="footer-badge-title">Догляд, який відчувається</div>Не просто масаж — справжнє відновлення.</div>' +
-    '</div>';
+    // КОНТАКТИ (як на головній)
+    html += '<section class="contacts-section" id="contacts"><div class="wrap">' +
+      '<div class="section-label">Де нас знайти</div>' +
+      '<h2 class="section-title">Контакти</h2>' +
+      '<div class="contacts-grid">' +
+        '<div>' +
+          '<div class="contact-block"><div class="contact-label">Адреса</div><a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="contact-value">Київ, вул. Борщагівська, 145</a></div>' +
+          '<div class="contact-block"><div class="contact-label">Телефон</div><a href="tel:+380974340112" class="contact-value">+38 097 434 01 12</a></div>' +
+          '<div class="contact-block"><div class="contact-label">Графік роботи</div><div class="contact-value">Щодня 09:00 — 21:30</div></div>' +
+          '<div class="contact-block"><div class="contact-label">Пошта</div><a href="mailto:olivastudio96@gmail.com" class="contact-value">olivastudio96@gmail.com</a></div>' +
+          '<div class="social-row">' +
+            '<a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener" class="social-btn social-btn--instagram" title="Instagram"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>' +
+            '<a href="https://www.tiktok.com/@oliva_massage_studio" target="_blank" rel="noopener" class="social-btn social-btn--tiktok" title="TikTok"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg></a>' +
+            '<a href="https://wa.me/380974340112" target="_blank" rel="noopener" class="social-btn social-btn--whatsapp" title="WhatsApp"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg></a>' +
+            '<a href="https://viber.me/+380974340112" class="social-btn social-btn--viber" title="Viber"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.398.002C8.865-.03 3.73.734 1.37 5.885c-1.177 2.535-1.33 5.84-1.13 8.68.198 2.84.772 5.63 2.698 7.226 0 0 2.56 2.657 8.548 2.905v2.527s-.038.992.617.992c.803 0 1.288-.824 2.063-1.703.43-.485.98-1.154 1.4-1.648 3.87.327 6.842-.422 7.177-.533.78-.254 5.197-1.7 5.197-7.74 0-5.955-2.855-9.61-6.285-10.964-1.12-.44-2.98-.82-5.587-.863-.237-.003-.474-.004-.71-.003zM11.47 2.4c.23-.002.46 0 .687.004 2.306.038 3.982.375 4.946.762 2.817 1.104 5.127 4.146 5.127 9.265 0 5.093-3.55 6.15-4.177 6.354-.27.088-2.966.732-6.328.526 0 0-2.51 3.025-3.296 3.815-.124.125-.265.174-.36.15-.134-.034-.17-.19-.168-.42l.02-3.7s-.004 0 0 0c-4.995-.617-5.29-5.45-5.427-7.32-.136-1.872.006-4.834.994-7.006 1.933-4.163 6.197-4.434 7.98-4.43zm.194 3.217c-.327 0-.327.504 0 .508 3.09.02 4.855 1.816 4.873 4.982.003.33.51.327.507 0-.02-3.445-1.993-5.47-5.38-5.49zm-2.44 1.37c-.31-.018-.614.063-.9.24-.273.168-.443.366-.588.63l-.04.076c-.474.86-.456 1.712.007 2.706l.028.063c.393.87 1.24 2.107 2.367 3.093 1.133.99 2.552 1.882 4.01 2.155l.064.01c1.254.198 2.073-.05 2.648-.585l.012-.012c.22-.224.393-.434.545-.67.194-.3.217-.61.063-.87l-.013-.02c-.454-.706-1.264-1.358-1.714-1.533-.27-.104-.54-.06-.756.173l-.457.528c-.214.244-.534.224-.534.224-2.47-.638-3.138-3.163-3.138-3.163s-.023-.322.218-.535l.524-.46c.232-.218.274-.488.168-.757-.18-.452-.835-1.265-1.543-1.72-.19-.122-.39-.19-.592-.19-.003 0-.005 0-.007 0l-.002-.002zM12.2 7.617c-.33 0-.33.517 0 .52 1.96.016 2.917.993 2.93 2.99.003.33.52.327.516 0-.016-2.277-1.17-3.493-3.447-3.51z"/></svg></a>' +
+            '<a href="https://t.me/massage_oliva_kyiv" target="_blank" rel="noopener" class="social-btn social-btn--telegram" title="Telegram"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.96 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></a>' +
+            '<a href="https://youtube.com/@oliva_massage_studio" target="_blank" rel="noopener" class="social-btn social-btn--youtube" title="YouTube"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg></a>' +
+            '<a href="https://www.threads.net/@oliva_massage_studio" target="_blank" rel="noopener" class="social-btn social-btn--threads" title="Threads"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.028-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.044 0 5.49 1.045 7.148 3.01 1.504 1.788 2.267 4.184 2.267 7.123 0 .44-.015.877-.044 1.308l-.006.082c-.11 1.649-.547 3.051-1.3 4.172-.824 1.225-1.985 2.063-3.452 2.489a9.26 9.26 0 0 1-2.622.371zm3.553-9.48c-.232-1.225-.856-1.972-1.787-2.09a3.494 3.494 0 0 0-.439-.03c-.626 0-1.175.193-1.631.573-.508.424-.82 1.044-.916 1.793a5.65 5.65 0 0 0-.044.728c0 .18.007.357.022.527.09.917.425 1.657.971 2.127.456.395 1.045.601 1.7.601.11 0 .222-.007.336-.02.75-.09 1.328-.418 1.722-1.007.36-.542.543-1.261.543-2.137 0-.084-.002-.169-.006-.253l-.458-.564z"/></svg></a>' +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div class="map-embed-wrap">' +
+            '<iframe src="https://maps.google.com/maps?q=Київ,+вул.+Борщагівська,+145&z=16&output=embed" width="100%" height="360" style="border:0;border-radius:16px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>' +
+            '<a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="map-open-link">Відкрити в Google Maps →</a>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div></section>';
 
     content.innerHTML = html;
 
