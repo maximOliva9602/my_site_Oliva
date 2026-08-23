@@ -150,6 +150,13 @@
     .abon-card-total { font-size: 12.5px; color: var(--text-dim); }
     .abon-card-total b { color: var(--cream); }
     .abon-card-total del { opacity: .55; margin-left: 6px; }
+    .abon-card--levels .abon-badge { top: 16px; }
+    .abon-levels { display: flex; flex-direction: column; gap: 10px; }
+    .abon-level-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .abon-level-row:first-child { padding-top: 0; border-top: none; }
+    .abon-level-name { font-size: 12.5px; color: var(--text-dim); }
+    .abon-level-price { font-size: 14px; color: var(--cream); font-weight: 700; text-align: right; }
+    .abon-level-price del { opacity: .55; font-weight: 400; margin-left: 5px; font-size: 12px; }
     @media (max-width: 780px) {
       .abon-block { grid-template-columns: 1fr; text-align: center; }
       .abon-cards { grid-template-columns: 1fr; }
@@ -195,18 +202,31 @@
   }
   function money(kop) { return Math.round((kop || 0) / 100) + ' грн'; }
   /* Рядок абонемента: "5 сеансів :: Разом :: Стара сума :: Бейдж :: рекомендовано"
-     Обов'язкові лише перші дві частини; решта — необов'язкові. */
+     Обов'язкові лише перші дві частини; решта — необов'язкові. "Разом" і
+     "Стара сума" можуть містити ціни для кількох рівнів майстра через кому:
+     "Майстер 6000 грн, Топ Майстер 7000 грн, Експерт 8500 грн" — або просто
+     одну суму без рівня, якщо в послуги рівнів немає. */
+  function parseAbonLevels(raw, sessions) {
+    if (!raw) return [];
+    return raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean).map(function(chunk){
+      var lm = chunk.match(/^(Топ Майстер|Майстер|Експерт)\s+(.+)$/i);
+      var level = lm ? lm[1] : '';
+      var price = lm ? lm[2].trim() : chunk;
+      var num = parseFloat(String(price).replace(/[^\d.,]/g, '').replace(',', '.'));
+      var perSession = (sessions && num) ? Math.round(num / sessions) : null;
+      return { level: level, price: price, perSession: perSession != null ? (perSession + ' грн') : '' };
+    });
+  }
   function parseAbon(line) {
     var parts = line.split('::').map(function(x){ return x.trim(); });
     var title = parts[0] || '';
-    var total = parts[1] || '';
     var m = title.match(/\d+/);
     var sessions = m ? parseInt(m[0], 10) : null;
-    var totalNum = parseFloat(String(total).replace(/[^\d.,]/g, '').replace(',', '.'));
-    var perSession = (sessions && totalNum) ? Math.round(totalNum / sessions) : null;
+    var totals = parseAbonLevels(parts[1] || '', sessions);
+    var originals = parseAbonLevels(parts[2] || '', sessions);
     return {
-      title: title, total: total, original: parts[2] || '', badge: parts[3] || '',
-      popular: !!parts[4], perSession: perSession != null ? (perSession + ' грн') : ''
+      title: title, totals: totals, originals: originals, badge: parts[3] || '',
+      popular: !!parts[4]
     };
   }
   /* Текст уже виводиться курсивом/у визначеному стилі через CSS, тож зайві
@@ -297,14 +317,27 @@
           '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
         '</div>' +
         '<div class="abon-cards">' + abonItems.map(function(a){
-          return '<div class="abon-card' + (a.popular ? ' abon-card--popular' : '') + '">' +
+          var single = a.totals.length <= 1 && !(a.totals[0] && a.totals[0].level);
+          var body;
+          if (single) {
+            var t = a.totals[0];
+            body =
+              '<div class="abon-card-price">' + esc(t ? (t.perSession || t.price) : '') + '</div>' +
+              (t && t.perSession ? '<div class="abon-card-persession">за сеанс</div>' : '') +
+              '<div class="abon-card-divider"></div>' +
+              '<div class="abon-card-total">Разом: <b>' + esc(t ? t.price : '') + '</b>' + (a.originals[0] ? ' <del>' + esc(a.originals[0].price) + '</del>' : '') + '</div>';
+          } else {
+            body = '<div class="abon-levels">' + a.totals.map(function(t, i){
+              var orig = a.originals[i];
+              return '<div class="abon-level-row"><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
+                '<span class="abon-level-price"><b>' + esc(t.price) + '</b>' + (orig ? ' <del>' + esc(orig.price) + '</del>' : '') + '</span></div>';
+            }).join('') + '</div>';
+          }
+          return '<div class="abon-card' + (a.popular ? ' abon-card--popular' : '') + (single ? '' : ' abon-card--levels') + '">' +
             (a.popular ? '<div class="abon-card-popular-label">Найпопулярніший</div>' : '') +
             (a.badge ? '<div class="abon-badge">' + esc(a.badge) + '</div>' : '') +
             '<div class="abon-card-title">' + esc(a.title) + '</div>' +
-            '<div class="abon-card-price">' + esc(a.perSession || a.total) + '</div>' +
-            (a.perSession ? '<div class="abon-card-persession">за сеанс</div>' : '') +
-            '<div class="abon-card-divider"></div>' +
-            '<div class="abon-card-total">Разом: <b>' + esc(a.total) + '</b>' + (a.original ? ' <del>' + esc(a.original) + '</del>' : '') + '</div>' +
+            body +
           '</div>';
         }).join('') + '</div>' +
       '</div></div>';
