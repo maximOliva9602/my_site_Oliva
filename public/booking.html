@@ -515,6 +515,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
     <div class="mst-pair-hint hide" id="mstPairHint">👥 Це парна процедура — оберіть майстра для себе, другого майстра для партнера підбере студія автоматично.</div>
+    <div class="mst-pair-hint hide" id="mstNoSlotsHint"></div>
     <div class="mst-list" id="masterGrid"><div class="empty">Завантаження…</div></div>
     <div class="step-foot"><button class="btn btn-ghost" data-back="2">&#8592; Назад</button></div>
   </div>
@@ -851,6 +852,9 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   // Якщо після deep-link (?service=ID) майстрів кілька — запам'ятовуємо
   // бажану послугу, щоб пропустити крок 4, коли клієнт обере майстра, який її надає.
   var pendingServiceId = null;
+  // Той самий майстер, що й pendingServiceId, але для банера "немає вільних
+  // віконець" на кроці 3 — обнуляється одразу після показу/перевірки.
+  var preferredMasterId = null;
   var branches = [], branchStepEnabled = false;
   var allServices = [], allMasters = [];
   var DOW = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
@@ -1116,6 +1120,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     // партнера студія підбирає сама, тож попереджаємо про це тут.
     var pairHint = $("mstPairHint");
     if (pairHint) pairHint.classList.toggle("hide", state.group !== "spa2");
+    var noSlotsHint = $("mstNoSlotsHint");
+    if (noSlotsHint) noSlotsHint.classList.add("hide"); // до відповіді /next-slots не блимаємо старим банером
     var catServices = allServices.filter(function(s) { return parseName(s.name).cat === state.category; });
     var em = eligibleMasters();
     var catIds = em.catIds, eligible = em.eligible;
@@ -1175,6 +1181,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     state.group = resolveGroup(svc, p.cat) || state.group;
     state.category = p.cat;
     pendingServiceId = sid;
+    var matching = allMasters.filter(function(m) { return (m.service_ids || []).indexOf(sid) !== -1; });
+    preferredMasterId = matching.length === 1 ? matching[0].id : null;
     renderMasters();
     goStep(3);
   }
@@ -1189,6 +1197,19 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       .then(function(j){
         if (!j || !j.ok) return;
         var map = j.masters || {};
+        var hintEl = $("mstNoSlotsHint");
+        if (hintEl) {
+          var info = preferredMasterId != null ? map[preferredMasterId] : null;
+          var noSlots = preferredMasterId != null && (!info || !info.times || !info.times.length);
+          if (noSlots) {
+            var pm = allMasters.filter(function(m) { return m.id === preferredMasterId; })[0];
+            hintEl.textContent = "😔 У " + (pm ? pm.name : "цього майстра") + " немає вільних місць найближчим часом. Оберіть іншого майстра нижче — можливо, дещо дорожчого.";
+            hintEl.classList.remove("hide");
+          } else {
+            hintEl.classList.add("hide");
+          }
+          preferredMasterId = null;
+        }
         document.querySelectorAll(".mst-slots").forEach(function(el){
           var mid = el.getAttribute("data-mid");
           var info = map[mid];
