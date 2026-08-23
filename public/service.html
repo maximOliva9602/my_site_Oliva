@@ -132,13 +132,28 @@
     .price-vals { display: flex; gap: 16px; color: var(--text-dim); font-size: 13px; }
     .price-vals b { color: var(--olive-light); }
     .detail-loc { font-size: 12.5px; color: var(--text-dim); margin-top: 14px; }
-    .abon-block { background: var(--black); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 20px; }
-    .abon-title { font-weight: 700; color: var(--cream); font-size: 14px; margin-bottom: 12px; }
-    .abon-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-    .abon-pill { background: transparent; border: 1px solid var(--line); color: var(--text-dim); border-radius: 30px; padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all .2s; font-family: inherit; }
-    .abon-pill.sel { border-color: var(--olive-light); color: var(--cream); background: rgba(122,145,86,0.18); }
-    .abon-pill:hover { border-color: var(--olive-light); color: var(--cream); }
-    .abon-price { font-size: 1.5rem; font-weight: 700; color: var(--olive-light); font-family: 'Playfair Display', serif; }
+
+    /* ABONEMENTS */
+    .abon-section { padding: 8px 24px 40px; }
+    .abon-block { max-width: 1080px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 36px; display: grid; grid-template-columns: 200px 1fr; gap: 32px; align-items: center; }
+    .abon-info-title { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
+    .abon-info-sub { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
+    .abon-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .abon-card { position: relative; background: var(--black); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
+    .abon-card--popular { border-color: var(--olive-light); }
+    .abon-card-popular-label { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--olive-light); color: var(--black); padding: 3px 12px; border-radius: 20px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; white-space: nowrap; }
+    .abon-badge { position: absolute; top: 16px; right: 16px; background: rgba(122,145,86,0.2); color: var(--olive-light); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+    .abon-card-title { font-size: 14px; color: var(--cream); margin-bottom: 12px; font-weight: 600; }
+    .abon-card-price { font-family: 'Playfair Display', serif; font-size: 1.7rem; color: var(--cream); font-weight: 700; line-height: 1; }
+    .abon-card-persession { font-size: 12px; color: var(--text-dim); margin: 6px 0 16px; }
+    .abon-card-divider { border-top: 1px solid var(--line); margin-bottom: 12px; }
+    .abon-card-total { font-size: 12.5px; color: var(--text-dim); }
+    .abon-card-total b { color: var(--cream); }
+    .abon-card-total del { opacity: .55; margin-left: 6px; }
+    @media (max-width: 780px) {
+      .abon-block { grid-template-columns: 1fr; text-align: center; }
+      .abon-cards { grid-template-columns: 1fr; }
+    }
 
     .footer-badges { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; padding: 48px 24px 72px; text-align: center; }
     .footer-badge { max-width: 180px; font-size: 12.5px; color: var(--text-dim); }
@@ -179,6 +194,21 @@
     return { title: line.slice(0, i).trim(), text: line.slice(i + 2).trim() };
   }
   function money(kop) { return Math.round((kop || 0) / 100) + ' грн'; }
+  /* Рядок абонемента: "5 сеансів :: Разом :: Стара сума :: Бейдж :: рекомендовано"
+     Обов'язкові лише перші дві частини; решта — необов'язкові. */
+  function parseAbon(line) {
+    var parts = line.split('::').map(function(x){ return x.trim(); });
+    var title = parts[0] || '';
+    var total = parts[1] || '';
+    var m = title.match(/\d+/);
+    var sessions = m ? parseInt(m[0], 10) : null;
+    var totalNum = parseFloat(String(total).replace(/[^\d.,]/g, '').replace(',', '.'));
+    var perSession = (sessions && totalNum) ? Math.round(totalNum / sessions) : null;
+    return {
+      title: title, total: total, original: parts[2] || '', badge: parts[3] || '',
+      popular: !!parts[4], perSession: perSession != null ? (perSession + ' грн') : ''
+    };
+  }
   /* Текст уже виводиться курсивом/у визначеному стилі через CSS, тож зайві
      markdown-хвости, які власник іноді лишає при копіюванні (*текст*,
      екрановані крапки "\.") прибираємо, а не показуємо як є. */
@@ -215,6 +245,7 @@
 
     var minPrice = variants.length ? Math.min.apply(null, variants.map(function(v){ return v.price; })) : null;
     var durSet = []; variants.forEach(function(v){ if (durSet.indexOf(v.dur) === -1) durSet.push(v.dur); });
+    var abonItems = lines(p.abonement_items).map(parseAbon).filter(function(x){ return x.title; });
 
     var title = p.hero_title || key;
     document.title = title + ' — Студія масажу Oliva';
@@ -256,6 +287,27 @@
         (p.hero_tagline ? '<div class="hero-tagline">' + esc(p.hero_tagline) + '</div>' : '') +
         (p.hero_description ? '<p class="hero-desc">' + esc(p.hero_description) + '</p>' : '') +
       '</div>';
+    }
+
+    // АБОНЕМЕНТИ
+    if (abonItems.length) {
+      html += '<div class="abon-section"><div class="abon-block">' +
+        '<div>' +
+          '<div class="abon-info-title">Абонементи</div>' +
+          '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
+        '</div>' +
+        '<div class="abon-cards">' + abonItems.map(function(a){
+          return '<div class="abon-card' + (a.popular ? ' abon-card--popular' : '') + '">' +
+            (a.popular ? '<div class="abon-card-popular-label">Найпопулярніший</div>' : '') +
+            (a.badge ? '<div class="abon-badge">' + esc(a.badge) + '</div>' : '') +
+            '<div class="abon-card-title">' + esc(a.title) + '</div>' +
+            '<div class="abon-card-price">' + esc(a.perSession || a.total) + '</div>' +
+            (a.perSession ? '<div class="abon-card-persession">за сеанс</div>' : '') +
+            '<div class="abon-card-divider"></div>' +
+            '<div class="abon-card-total">Разом: <b>' + esc(a.total) + '</b>' + (a.original ? ' <del>' + esc(a.original) + '</del>' : '') + '</div>' +
+          '</div>';
+        }).join('') + '</div>' +
+      '</div></div>';
     }
 
     // PERKS (статичні — однакові на кожній сторінці послуги)
@@ -306,7 +358,6 @@
 
     // DETAIL + PRICING
     var suitableItems = lines(p.suitable_items);
-    var abonItems = lines(p.abonement_items).map(pair).filter(function(x){ return x.title; });
     html += '<section class="block detail"><div class="wrap"><div class="detail-grid">' +
       '<div>' +
         '<div class="detail-eyebrow">Послуга</div>' +
@@ -332,13 +383,6 @@
           if (!vals.length && forDur[0]) vals.push('<b>' + money(forDur[0].price) + '</b>');
           return '<div class="price-row"><span class="price-dur">' + d + ' хвилин</span><span class="price-vals">' + vals.join(' · ') + '</span></div>';
         }).join('') + '</div>' : '') +
-        (abonItems.length ? '<div class="abon-block">' +
-          '<div class="abon-title">Абонементи</div>' +
-          '<div class="abon-pills">' + abonItems.map(function(a, i){
-            return '<button type="button" class="abon-pill' + (i === 0 ? ' sel' : '') + '" data-price="' + esc(a.text) + '">' + esc(a.title) + '</button>';
-          }).join('') + '</div>' +
-          '<div class="abon-price">' + esc(abonItems[0].text) + '</div>' +
-        '</div>' : '') +
         '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Переглянути доступний час →</a>' +
         '<div class="detail-loc">📍 Київ · Шулявська · район Індустріального мосту</div>' +
       '</div>' +
@@ -353,15 +397,6 @@
     '</div>';
 
     content.innerHTML = html;
-
-    var abonPriceEl = content.querySelector('.abon-price');
-    content.querySelectorAll('.abon-pill').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        content.querySelectorAll('.abon-pill').forEach(function (b) { b.classList.remove('sel'); });
-        btn.classList.add('sel');
-        if (abonPriceEl) abonPriceEl.textContent = btn.getAttribute('data-price');
-      });
-    });
   });
 })();
 </script>
