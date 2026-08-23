@@ -159,9 +159,12 @@
     .abon-level-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
     .abon-level-row:first-child { padding-top: 0; border-top: none; }
     .abon-level-name { font-size: 12.5px; color: var(--text-dim); }
-    .abon-level-persession { font-size: 11px; color: var(--olive-light); margin-top: 2px; }
-    .abon-level-price { font-size: 14px; color: var(--cream); font-weight: 700; text-align: right; }
-    .abon-level-price del { opacity: .55; font-weight: 400; margin-left: 5px; font-size: 12px; }
+    .abon-level-total { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .abon-level-total del { opacity: .55; margin-left: 4px; }
+    .abon-level-price { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--cream); font-weight: 700; text-align: right; white-space: nowrap; }
+    .abon-duration-switch { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 30px; padding: 4px; margin-bottom: 16px; }
+    .abon-duration-btn { padding: 7px 16px; border-radius: 30px; font-size: 12.5px; color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: inherit; transition: all .2s; }
+    .abon-duration-btn.active { background: var(--olive); color: var(--cream); }
     @media (max-width: 780px) {
       .abon-block { grid-template-columns: 1fr; text-align: center; }
       .abon-cards { grid-template-columns: 1fr; }
@@ -235,6 +238,26 @@
       popular: !!parts[4]
     };
   }
+  /* Рядок-заголовок "[90 хв]" перемикає групу тривалості для наступних
+     рядків абонементів — так можна задати різні ціни на той самий пакет
+     сеансів залежно від тривалості послуги. Послуги без такого заголовка
+     потрапляють в групу '' (тривалість не має значення, тумблер не показуємо). */
+  function parseAbonemenItems(raw) {
+    var groups = []; // [{duration, items:[]}]
+    var current = null;
+    lines(raw).forEach(function(line){
+      var dm = line.match(/^\[(.+)\]$/);
+      if (dm) {
+        current = { duration: dm[1].trim(), items: [] };
+        groups.push(current);
+        return;
+      }
+      if (!current) { current = { duration: '', items: [] }; groups.push(current); }
+      var a = parseAbon(line);
+      if (a.title) current.items.push(a);
+    });
+    return groups.filter(function(g){ return g.items.length; });
+  }
   /* Текст уже виводиться курсивом/у визначеному стилі через CSS, тож зайві
      markdown-хвости, які власник іноді лишає при копіюванні (*текст*,
      екрановані крапки "\.") прибираємо, а не показуємо як є. */
@@ -271,7 +294,7 @@
 
     var minPrice = variants.length ? Math.min.apply(null, variants.map(function(v){ return v.price; })) : null;
     var durSet = []; variants.forEach(function(v){ if (durSet.indexOf(v.dur) === -1) durSet.push(v.dur); });
-    var abonItems = lines(p.abonement_items).map(parseAbon).filter(function(x){ return x.title; });
+    var abonGroups = parseAbonemenItems(p.abonement_items);
 
     var title = p.hero_title || key;
     document.title = title + ' — Студія масажу Oliva';
@@ -316,17 +339,10 @@
     }
 
     // АБОНЕМЕНТИ
-    if (abonItems.length) {
-      html += '<div class="abon-section"><div class="abon-block">' +
-        '<div class="abon-price-col">' +
-          '<div class="abon-price-label">Ціна за візит</div>' +
-          (minPrice != null ? '<div class="abon-price-big"><span>від </span>' + esc(money(minPrice)) + '</div>' : '') +
-          '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
-        '</div>' +
-        '<div>' +
-        '<div class="abon-info-title">Абонементи</div>' +
-        '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
-        '<div class="abon-cards">' + abonItems.map(function(a){
+    if (abonGroups.length) {
+      var multiDur = abonGroups.length > 1;
+      function renderAbonCards(items){
+        return items.map(function(a){
           var single = a.totals.length <= 1 && !(a.totals[0] && a.totals[0].level);
           var body;
           if (single) {
@@ -340,8 +356,8 @@
             body = '<div class="abon-levels">' + a.totals.map(function(t, i){
               var orig = a.originals[i];
               return '<div class="abon-level-row"><div><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
-                (t.perSession ? '<div class="abon-level-persession">' + esc(t.perSession) + ' / візит</div>' : '') + '</div>' +
-                '<span class="abon-level-price"><b>' + esc(t.price) + '</b>' + (orig ? ' <del>' + esc(orig.price) + '</del>' : '') + '</span></div>';
+                '<div class="abon-level-total">Разом: ' + esc(t.price) + (orig ? ' <del>' + esc(orig.price) + '</del>' : '') + '</div></div>' +
+                '<span class="abon-level-price">' + esc(t.perSession || t.price) + '</span></div>';
             }).join('') + '</div>';
           }
           return '<div class="abon-card' + (a.popular ? ' abon-card--popular' : '') + (single ? '' : ' abon-card--levels') + '">' +
@@ -350,7 +366,23 @@
             '<div class="abon-card-title">' + esc(a.title) + '</div>' +
             body +
           '</div>';
-        }).join('') + '</div>' +
+        }).join('');
+      }
+      html += '<div class="abon-section"><div class="abon-block">' +
+        '<div class="abon-price-col">' +
+          '<div class="abon-price-label">Ціна за візит</div>' +
+          (minPrice != null ? '<div class="abon-price-big"><span>від </span>' + esc(money(minPrice)) + '</div>' : '') +
+          '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
+        '</div>' +
+        '<div>' +
+        '<div class="abon-info-title">Абонементи</div>' +
+        '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
+        (multiDur ? '<div class="abon-duration-switch">' + abonGroups.map(function(g, i){
+          return '<button type="button" class="abon-duration-btn' + (i === 0 ? ' active' : '') + '" data-abon-dur="' + i + '">' + esc(g.duration) + '</button>';
+        }).join('') + '</div>' : '') +
+        abonGroups.map(function(g, i){
+          return '<div class="abon-cards" data-abon-group="' + i + '"' + (i === 0 ? '' : ' style="display:none;"') + '>' + renderAbonCards(g.items) + '</div>';
+        }).join('') +
         '</div>' +
       '</div></div>';
     }
@@ -442,6 +474,17 @@
     '</div>';
 
     content.innerHTML = html;
+
+    // Перемикач тривалості для абонементів
+    content.querySelectorAll('.abon-duration-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var idx = btn.getAttribute('data-abon-dur');
+        content.querySelectorAll('.abon-duration-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+        content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
+          box.style.display = (box.getAttribute('data-abon-group') === idx) ? '' : 'none';
+        });
+      });
+    });
   });
 })();
 </script>
