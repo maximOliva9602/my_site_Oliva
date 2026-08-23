@@ -1061,19 +1061,20 @@
 </style>
 
 <script>
-function openBookingDrawer(e) {
+function openBookingDrawer(e, href) {
   // На мобільному шторка з iframe тісна й незручна — просто переходимо на
   // /booking.html як на звичайну сторінку (href уже на неї вказує, тож
   // достатньо не викликати preventDefault і не чіпати drawer/iframe).
   if (window.innerWidth <= 900) return;
   if (e) e.preventDefault();
+  var url = href || '/booking.html';
   var iframe = document.getElementById('bookingIframe');
   /* Порівнювати iframe.src із location.href не можна: у адресі сторінки
      майже завжди є якір (#services тощо), а src його не має — умова
      хибно спрацьовувала, запис не підвантажувався і шторка була біла.
-     Дивимось на сам атрибут: він або вже '/booking.html', або порожній. */
-  if (iframe.getAttribute('src') !== '/booking.html') {
-    iframe.src = '/booking.html';
+     Дивимось на сам атрибут: він або вже дорівнює потрібному url, або ні. */
+  if (iframe.getAttribute('src') !== url) {
+    iframe.src = url;
   }
   document.getElementById('bookingOverlay').classList.add('open');
   document.getElementById('bookingDrawer').classList.add('open');
@@ -1469,7 +1470,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
           '<span class="srv-multi-dur">' + fmtDur(v.duration_min) + '</span>' +
           '<div class="srv-multi-right">' +
             '<span class="srv-multi-price">' + fmtPrice(v.price) + '<span class="cur"> грн</span></span>' +
-            '<a href="/booking.html" class="srv-card-btn" onclick="openBookingDrawer(event)">Записатися</a>' +
+            '<a href="/booking.html?service=' + v.id + '" class="srv-card-btn" onclick="openBookingDrawer(event, this.href)">Записатися</a>' +
           '</div>';
         rows.appendChild(row);
       });
