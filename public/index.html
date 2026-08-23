@@ -323,6 +323,7 @@
         <div class="srv-tier-switch">
           <button class="srv-tier-btn active" data-tier="master" data-i18n="srv.tier.master">Майстер</button>
           <button class="srv-tier-btn" data-tier="top" data-i18n="srv.tier.top">Топ Майстер</button>
+          <button class="srv-tier-btn" data-tier="expert" data-i18n="srv.tier.expert">Експерт</button>
         </div>
       </div>
     </div>
@@ -1395,13 +1396,14 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
     /* Рівень майстра з назви послуги: 'top' | 'master' | null (без поділу). */
     function tierOf(name) {
       if (/\(\s*Топ\s+Майстер\s*\)/i.test(name)) return 'top';
+      if (/\(\s*Експерт\s*\)/i.test(name)) return 'expert';
       if (/\(\s*Майстер\s*\)/i.test(name)) return 'master';
       return null;
     }
     /* Назва без суфікса рівня — щоб «… (Майстер)» і «… (Топ Майстер)»
        склеювались в ОДНУ картку, а рівень обирався перемикачем. */
     function stripTier(name) {
-      return name.replace(/\s*\(\s*(?:Топ\s+)?Майстер\s*\)\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+      return name.replace(/\s*\(\s*(?:Топ\s+)?Майстер\s*\)\s*/gi, ' ').replace(/\s*\(\s*Експерт\s*\)\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim();
     }
     var curTier = 'master';   // за замовчуванням показуємо нижчу ціну
     /* Сторінки послуг ("Про цей масаж"): множина назв послуг, для яких
@@ -1621,13 +1623,15 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
             if (!panel) return false;
             var names = Array.from(panel.querySelectorAll('.srv-card-name'))
               .map(function(n) { return n.getAttribute('data-uk') || n.textContent; });
-            /* Потрібні саме ОБИДВА рівні: якщо послуга є лише в одному
+            /* Потрібні щонайменше ДВА рівні: якщо послуга є лише в одному
                прайсі (напр. Кінезіотейпування — тільки Майстер), перемикач
                не змінював би нічого й лише збивав би з пантелику. */
             return names.some(function(bn) {
               var pool = tierPool[bn] || [];
-              return pool.some(function(s) { return tierOf(s.name) === 'master'; })
-                  && pool.some(function(s) { return tierOf(s.name) === 'top'; });
+              var tiers = ['master', 'top', 'expert'].filter(function(t) {
+                return pool.some(function(s) { return tierOf(s.name) === t; });
+              });
+              return tiers.length >= 2;
             });
           }
           function syncTierVisibility() {

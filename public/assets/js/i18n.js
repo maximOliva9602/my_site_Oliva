@@ -35,7 +35,7 @@
       "srv.tab.complex": "Комплекси", "srv.tab.spa": "SPA-ритуали",
       "srv.tab.general": "Масажі", "srv.tab.spa2": "SPA для двох", "srv.tab.spa1": "SPA для одного",
       "srv.tab.body": "Корекція фігури", "srv.tab.extra": "Додаткові послуги",
-      "srv.tier.label": "Рівень майстра:", "srv.tier.master": "Майстер", "srv.tier.top": "Топ Майстер",
+      "srv.tier.label": "Рівень майстра:", "srv.tier.master": "Майстер", "srv.tier.top": "Топ Майстер", "srv.tier.expert": "Експерт",
 
       "dur.30": "30 хвилин", "dur.45": "45 хв.", "dur.60": "1 година",
       "dur.60s": "1 год.", "dur.90": "1 год. 30 хв.", "dur.120": "2 год.",
@@ -216,7 +216,7 @@
       "srv.tab.complex": "Packages", "srv.tab.spa": "SPA rituals",
       "srv.tab.general": "Massages", "srv.tab.spa2": "SPA for two", "srv.tab.spa1": "SPA for one",
       "srv.tab.body": "Body shaping", "srv.tab.extra": "Add-on services",
-      "srv.tier.label": "Specialist level:", "srv.tier.master": "Master", "srv.tier.top": "Top Master",
+      "srv.tier.label": "Specialist level:", "srv.tier.master": "Master", "srv.tier.top": "Top Master", "srv.tier.expert": "Expert",
 
       "dur.30": "30 minutes", "dur.45": "45 min", "dur.60": "1 hour",
       "dur.60s": "1 hr", "dur.90": "1 hr 30 min", "dur.120": "2 hrs",
