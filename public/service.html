@@ -152,9 +152,10 @@
     .abon-card-total del { opacity: .55; margin-left: 6px; }
     .abon-card--levels .abon-badge { top: 16px; }
     .abon-levels { display: flex; flex-direction: column; gap: 10px; }
-    .abon-level-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .abon-level-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
     .abon-level-row:first-child { padding-top: 0; border-top: none; }
     .abon-level-name { font-size: 12.5px; color: var(--text-dim); }
+    .abon-level-persession { font-size: 11px; color: var(--olive-light); margin-top: 2px; }
     .abon-level-price { font-size: 14px; color: var(--cream); font-weight: 700; text-align: right; }
     .abon-level-price del { opacity: .55; font-weight: 400; margin-left: 5px; font-size: 12px; }
     @media (max-width: 780px) {
@@ -329,7 +330,8 @@
           } else {
             body = '<div class="abon-levels">' + a.totals.map(function(t, i){
               var orig = a.originals[i];
-              return '<div class="abon-level-row"><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
+              return '<div class="abon-level-row"><div><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
+                (t.perSession ? '<div class="abon-level-persession">' + esc(t.perSession) + ' / візит</div>' : '') + '</div>' +
                 '<span class="abon-level-price"><b>' + esc(t.price) + '</b>' + (orig ? ' <del>' + esc(orig.price) + '</del>' : '') + '</span></div>';
             }).join('') + '</div>';
           }
