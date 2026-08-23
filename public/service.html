@@ -494,18 +494,6 @@
         (suitableItems.length ? '<div class="suitable-title">Вам підійде цей масаж, якщо…</div><div class="suitable-list">' +
           suitableItems.map(function(x){ return '<div class="suitable-item"><span class="check">✓</span>' + esc(x) + '</div>'; }).join('') +
         '</div>' : '') +
-        (durSet.length ? '<div class="price-table">' + durSet.map(function(d){
-          var forDur = variants.filter(function(v){ return v.dur === d; });
-          var master = forDur.filter(function(v){ return v.level === 'Майстер'; })[0];
-          var top = forDur.filter(function(v){ return v.level === 'Топ Майстер'; })[0];
-          var expert = forDur.filter(function(v){ return v.level === 'Експерт'; })[0];
-          var vals = [];
-          if (master) vals.push('Майстер <b>' + money(master.price) + '</b>');
-          if (top) vals.push('Топ-майстер <b>' + money(top.price) + '</b>');
-          if (expert) vals.push('Експерт <b>' + money(expert.price) + '</b>');
-          if (!vals.length && forDur[0]) vals.push('<b>' + money(forDur[0].price) + '</b>');
-          return '<div class="price-row"><span class="price-dur">' + d + ' хвилин</span><span class="price-vals">' + vals.join(' · ') + '</span></div>';
-        }).join('') + '</div>' : '') +
         '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Переглянути доступний час →</a>' +
         '<div class="detail-loc">📍 Київ · Шулявська · район Індустріального мосту</div>' +
       '</div>' +
