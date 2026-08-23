@@ -550,6 +550,11 @@
             <option value="compact">Компактна висота</option>
             <option value="tall">Велика висота</option>
           </select>
+          <select id="spHeroTextAlign" style="margin-top:8px;margin-left:8px;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:var(--cream);font-family:inherit;font-size:13px;">
+            <option value="">Текст зліва (типово)</option>
+            <option value="right">Текст справа</option>
+          </select>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Оберіть «справа», якщо текст закриває обличчя чи головний об'єкт на фото</div>
         </div>
 
         <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Розділ «Знайоме відчуття?» <span style="color:var(--text-dim);text-transform:none;letter-spacing:0;">— порожньо, якщо не заповнити пункти</span></div>
@@ -1501,12 +1506,12 @@
   var spPreviewLink   = document.getElementById('spPreviewLink');
   var editingSpKey    = null; // ключ, з яким відкрили редактор (для PUT); null = нова сторінка
 
-  var SP_FIELDS = ['hero_title','hero_tagline','hero_description','hero_photo','hero_photo_size',
+  var SP_FIELDS = ['hero_title','hero_tagline','hero_description','hero_photo','hero_photo_size','hero_text_align',
     'symptoms_title','symptoms_items','symptoms_photo','symptoms_photo_size','symptoms_quote',
     'benefits_title','benefits_items','steps_title','steps_items',
     'detail_description','suitable_items'];
   var SP_FIELD_TO_INPUT = {
-    hero_title: 'spHeroTitle', hero_tagline: 'spHeroTagline', hero_description: 'spHeroDesc', hero_photo: 'spHeroPhoto', hero_photo_size: 'spHeroPhotoSize',
+    hero_title: 'spHeroTitle', hero_tagline: 'spHeroTagline', hero_description: 'spHeroDesc', hero_photo: 'spHeroPhoto', hero_photo_size: 'spHeroPhotoSize', hero_text_align: 'spHeroTextAlign',
     symptoms_title: 'spSymptomsTitle', symptoms_items: 'spSymptomsItems', symptoms_photo: 'spSymptomsPhoto', symptoms_photo_size: 'spSymptomsPhotoSize', symptoms_quote: 'spSymptomsQuote',
     benefits_title: 'spBenefitsTitle', benefits_items: 'spBenefitsItems', steps_title: 'spStepsTitle', steps_items: 'spStepsItems',
     detail_description: 'spDetailDesc', suitable_items: 'spSuitableItems',
