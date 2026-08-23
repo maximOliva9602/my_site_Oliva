@@ -1479,7 +1479,19 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     fetch("/api/public/slots?service=" + state.service.id + "&master=" + (state.master ? state.master.id : "any") + "&date=" + state.date + "&extra=" + extrasTotalMin())
       .then(function(r) { return r.json(); }).then(function(j) {
         wrap.innerHTML = "";
-        if (!j.ok || !j.slots.length) { wrap.innerHTML = '<div class="empty" style="padding:28px 16px;">На цю дату вільних віконець немає. Спробуйте іншу дату.</div>'; return; }
+        if (!j.ok || !j.slots.length) {
+          var otherCount = eligibleMasters().eligible.filter(function(m){ return !state.master || m.id !== state.master.id; }).length;
+          var msg = state.master && otherCount
+            ? 'У ' + state.master.name + ' немає вільних віконець на цю дату. Спробуйте іншу дату або оберіть іншого майстра нижче — можливо, трохи дорожчого.'
+            : 'На цю дату вільних віконець немає. Спробуйте іншу дату.';
+          wrap.innerHTML = '<div class="empty" style="padding:28px 16px;">' + msg + '</div>';
+          if (state.master && otherCount) {
+            var oml = $("otherMList"), omt = $("otherMToggle");
+            if (oml) oml.classList.remove("hide");
+            if (omt) omt.textContent = "Приховати інших майстрів";
+          }
+          return;
+        }
         var grid = document.createElement("div"); grid.className = "slot-grid";
         j.slots.forEach(function(s) {
           var b = document.createElement("div"); b.className = "slot2"; b.textContent = s.time;
