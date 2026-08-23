@@ -44,6 +44,14 @@
     .btn-secondary { background: transparent; border: 1.5px solid var(--olive-light); color: var(--olive-light); }
     .btn-secondary:hover { background: rgba(122,145,86,0.15); color: var(--cream); border-color: var(--cream); }
 
+    @keyframes btnPulse {
+      0% { box-shadow: 0 0 0 0 rgba(122,145,86,0.55); }
+      70% { box-shadow: 0 0 0 14px rgba(122,145,86,0); }
+      100% { box-shadow: 0 0 0 0 rgba(122,145,86,0); }
+    }
+    .hero .hero-btns .btn { animation: btnPulse 2.2s ease-out infinite; }
+    .hero .hero-btns .btn:hover { animation-play-state: paused; }
+
     /* HERO */
     .hero { position: relative; min-height: 74vh; display: flex; align-items: center; padding: 60px 0 56px; }
     .hero--compact { min-height: 52vh; }
