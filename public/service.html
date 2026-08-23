@@ -46,6 +46,8 @@
 
     /* HERO */
     .hero { position: relative; min-height: 74vh; display: flex; align-items: flex-end; padding: 60px 0 56px; }
+    .hero--compact { min-height: 52vh; }
+    .hero--tall { min-height: 92vh; }
     .hero-bg { position: absolute; inset: 0; object-fit: cover; width: 100%; height: 100%; z-index: 0; }
     .hero-bg-fallback { position: absolute; inset: 0; background: linear-gradient(160deg, #1c2415, var(--black)); z-index: 0; }
     .hero-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,10,7,0.15) 0%, rgba(8,10,7,0.55) 55%, rgba(8,10,7,0.92) 100%); z-index: 1; }
@@ -74,6 +76,9 @@
     .symptoms-item { display: flex; align-items: flex-start; gap: 12px; font-size: 15px; color: var(--cream); line-height: 1.5; }
     .symptoms-item .dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--olive-light); margin-top: 7px; }
     .symptoms-photo { border-radius: 18px; overflow: hidden; aspect-ratio: 4/3; }
+    .symptoms-photo--square { aspect-ratio: 1/1; }
+    .symptoms-photo--wide { aspect-ratio: 16/9; }
+    .symptoms-photo--tall { aspect-ratio: 3/4; }
     .symptoms-photo img { width: 100%; height: 100%; object-fit: cover; }
     .symptoms-quote { background: var(--olive); border-radius: 14px; padding: 20px 24px; font-size: 15px; color: var(--cream); font-weight: 600; line-height: 1.5; }
 
@@ -188,7 +193,8 @@
     var html = '';
 
     // HERO
-    html += '<section class="hero">' +
+    var heroSizeCls = { compact: ' hero--compact', tall: ' hero--tall' }[p.hero_photo_size] || '';
+    html += '<section class="hero' + heroSizeCls + '">' +
       (p.hero_photo ? '<img class="hero-bg" src="' + esc(p.hero_photo) + '" alt="' + esc(title) + '">' : '<div class="hero-bg-fallback"></div>') +
       '<div class="hero-overlay"></div>' +
       '<div class="wrap"><div class="hero-inner">' +
@@ -219,13 +225,14 @@
     var symptomItems = lines(p.symptoms_items);
     if (symptomItems.length) {
       var symPhoto = p.symptoms_photo || p.hero_photo;
+      var symPhotoSizeCls = { square: ' symptoms-photo--square', wide: ' symptoms-photo--wide', tall: ' symptoms-photo--tall' }[p.symptoms_photo_size] || '';
       html += '<section class="block symptoms"><div class="wrap"><div class="symptoms-grid">' +
         '<div>' +
           '<h2 class="block-title">' + esc(p.symptoms_title || 'Знайоме відчуття?') + '</h2>' +
           '<div class="symptoms-list">' + symptomItems.map(function(x){ return '<div class="symptoms-item"><span class="dot"></span>' + esc(x) + '</div>'; }).join('') + '</div>' +
           (p.symptoms_quote ? '<div class="symptoms-quote">' + esc(p.symptoms_quote) + '</div>' : '') +
         '</div>' +
-        (symPhoto ? '<div class="symptoms-photo"><img src="' + esc(symPhoto) + '" alt=""></div>' : '') +
+        (symPhoto ? '<div class="symptoms-photo' + symPhotoSizeCls + '"><img src="' + esc(symPhoto) + '" alt=""></div>' : '') +
       '</div></div></section>';
     }
 

@@ -1285,5 +1285,10 @@ try {
   `);
 } catch (e) { console.error("[db] backfill push_subscriptions.role:", e.message); }
 
+/* Розмір фото на сторінці "Про цей масаж" — власник обирає при завантаженні,
+   бо різні фото не однаково добре вписуються у фіксовану пропорцію блоку. */
+try { db.exec("ALTER TABLE service_pages ADD COLUMN hero_photo_size TEXT NOT NULL DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE service_pages ADD COLUMN symptoms_photo_size TEXT NOT NULL DEFAULT ''"); } catch(e) {}
+
 module.exports = db;
 module.exports.DB_FILE = DB_FILE;
