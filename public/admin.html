@@ -617,6 +617,10 @@
           <textarea id="spSuitableItems" rows="4" placeholder="Багато працюєте за компʼютером&#10;Відчуваєте напруження шиї та плечей" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
         </div>
         <div style="font-size:12.5px;color:var(--text-dim);">Тривалість і ціни підтягуються з «Послуги» автоматично — вписувати їх окремо не треба.</div>
+        <div>
+          <label>Абонементи — формат «К-сть сеансів :: ціна», один варіант у рядку <span style="color:var(--text-dim);font-weight:400;">(порожньо — блок не показується)</span></label>
+          <textarea id="spAbonementItems" rows="3" placeholder="5 сеансів :: 3 500 грн&#10;10 сеансів :: 6 500 грн&#10;15 сеансів :: 9 000 грн" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        </div>
 
         <div class="publish-row">
           <input type="checkbox" id="spPublished" />
@@ -1509,12 +1513,12 @@
   var SP_FIELDS = ['hero_title','hero_tagline','hero_description','hero_photo','hero_photo_size','hero_text_align',
     'symptoms_title','symptoms_items','symptoms_photo','symptoms_photo_size','symptoms_quote',
     'benefits_title','benefits_items','steps_title','steps_items',
-    'detail_description','suitable_items'];
+    'detail_description','suitable_items','abonement_items'];
   var SP_FIELD_TO_INPUT = {
     hero_title: 'spHeroTitle', hero_tagline: 'spHeroTagline', hero_description: 'spHeroDesc', hero_photo: 'spHeroPhoto', hero_photo_size: 'spHeroPhotoSize', hero_text_align: 'spHeroTextAlign',
     symptoms_title: 'spSymptomsTitle', symptoms_items: 'spSymptomsItems', symptoms_photo: 'spSymptomsPhoto', symptoms_photo_size: 'spSymptomsPhotoSize', symptoms_quote: 'spSymptomsQuote',
     benefits_title: 'spBenefitsTitle', benefits_items: 'spBenefitsItems', steps_title: 'spStepsTitle', steps_items: 'spStepsItems',
-    detail_description: 'spDetailDesc', suitable_items: 'spSuitableItems',
+    detail_description: 'spDetailDesc', suitable_items: 'spSuitableItems', abonement_items: 'spAbonementItems',
   };
 
   function openSvcPageOverlay() {

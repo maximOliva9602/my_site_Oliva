@@ -132,6 +132,13 @@
     .price-vals { display: flex; gap: 16px; color: var(--text-dim); font-size: 13px; }
     .price-vals b { color: var(--olive-light); }
     .detail-loc { font-size: 12.5px; color: var(--text-dim); margin-top: 14px; }
+    .abon-block { background: var(--black); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 20px; }
+    .abon-title { font-weight: 700; color: var(--cream); font-size: 14px; margin-bottom: 12px; }
+    .abon-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .abon-pill { background: transparent; border: 1px solid var(--line); color: var(--text-dim); border-radius: 30px; padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all .2s; font-family: inherit; }
+    .abon-pill.sel { border-color: var(--olive-light); color: var(--cream); background: rgba(122,145,86,0.18); }
+    .abon-pill:hover { border-color: var(--olive-light); color: var(--cream); }
+    .abon-price { font-size: 1.5rem; font-weight: 700; color: var(--olive-light); font-family: 'Playfair Display', serif; }
 
     .footer-badges { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; padding: 48px 24px 72px; text-align: center; }
     .footer-badge { max-width: 180px; font-size: 12.5px; color: var(--text-dim); }
@@ -299,6 +306,7 @@
 
     // DETAIL + PRICING
     var suitableItems = lines(p.suitable_items);
+    var abonItems = lines(p.abonement_items).map(pair).filter(function(x){ return x.title; });
     html += '<section class="block detail"><div class="wrap"><div class="detail-grid">' +
       '<div>' +
         '<div class="detail-eyebrow">Послуга</div>' +
@@ -324,6 +332,13 @@
           if (!vals.length && forDur[0]) vals.push('<b>' + money(forDur[0].price) + '</b>');
           return '<div class="price-row"><span class="price-dur">' + d + ' хвилин</span><span class="price-vals">' + vals.join(' · ') + '</span></div>';
         }).join('') + '</div>' : '') +
+        (abonItems.length ? '<div class="abon-block">' +
+          '<div class="abon-title">Абонементи</div>' +
+          '<div class="abon-pills">' + abonItems.map(function(a, i){
+            return '<button type="button" class="abon-pill' + (i === 0 ? ' sel' : '') + '" data-price="' + esc(a.text) + '">' + esc(a.title) + '</button>';
+          }).join('') + '</div>' +
+          '<div class="abon-price">' + esc(abonItems[0].text) + '</div>' +
+        '</div>' : '') +
         '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Переглянути доступний час →</a>' +
         '<div class="detail-loc">📍 Київ · Шулявська · район Індустріального мосту</div>' +
       '</div>' +
@@ -338,6 +353,15 @@
     '</div>';
 
     content.innerHTML = html;
+
+    var abonPriceEl = content.querySelector('.abon-price');
+    content.querySelectorAll('.abon-pill').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        content.querySelectorAll('.abon-pill').forEach(function (b) { b.classList.remove('sel'); });
+        btn.classList.add('sel');
+        if (abonPriceEl) abonPriceEl.textContent = btn.getAttribute('data-price');
+      });
+    });
   });
 })();
 </script>

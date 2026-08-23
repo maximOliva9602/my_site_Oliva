@@ -569,7 +569,7 @@ var SVC_PAGE_FIELDS = [
   "hero_title", "hero_tagline", "hero_description", "hero_photo", "hero_photo_size", "hero_text_align",
   "symptoms_title", "symptoms_items", "symptoms_photo", "symptoms_photo_size", "symptoms_quote",
   "benefits_title", "benefits_items", "steps_title", "steps_items",
-  "detail_description", "suitable_items",
+  "detail_description", "suitable_items", "abonement_items",
 ];
 var stmtSvcPageGet   = db.prepare("SELECT * FROM service_pages WHERE service_key=?");
 var stmtSvcPageAll   = db.prepare("SELECT service_key, hero_title, published, updated_at FROM service_pages ORDER BY updated_at DESC");

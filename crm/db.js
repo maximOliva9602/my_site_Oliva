@@ -1292,6 +1292,9 @@ try { db.exec("ALTER TABLE service_pages ADD COLUMN symptoms_photo_size TEXT NOT
 /* Позиція тексту в шапці ("" = зліва, "right" = справа) — щоб текст не
    закривав обличчя/головний об'єкт на фото, коли він знаходиться зліва. */
 try { db.exec("ALTER TABLE service_pages ADD COLUMN hero_text_align TEXT NOT NULL DEFAULT ''"); } catch(e) {}
+/* Абонементи (5/10/15 сеансів тощо) — власник вписує варіанти, на сторінці
+   клієнт клацає кількість сеансів і бачить ціну, як у прайс-таблиці. */
+try { db.exec("ALTER TABLE service_pages ADD COLUMN abonement_items TEXT NOT NULL DEFAULT ''"); } catch(e) {}
 
 module.exports = db;
 module.exports.DB_FILE = DB_FILE;
