@@ -37,6 +37,10 @@ body::before {
 }
 
 .wrap { max-width: 480px; margin: 0 auto; position: relative; z-index: 1; padding: 0 0 90px; }
+.lang-switch { position: fixed; top: 14px; right: 14px; z-index: 30; display: flex; align-items: center; gap: 6px; font-size: 12px; background: rgba(10,7,5,0.72); border: 1px solid var(--line); border-radius: 20px; padding: 5px 10px; backdrop-filter: blur(6px); }
+.lang-switch button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-family: inherit; font-size: 12px; padding: 3px 6px; border-radius: 4px; }
+.lang-switch button.active { color: var(--cream); font-weight: 600; }
+.lang-switch span { color: rgba(217,185,120,0.35); }
 .hide { display: none !important; }
 
 /* ── HERO (step 1) ──────────────────────────────────── */
@@ -456,13 +460,18 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 </style>
 </head>
 <body>
+<div class="lang-switch" id="langSwitch" role="group" aria-label="Мова">
+  <button type="button" data-lang="uk" class="active">UA</button>
+  <span>/</span>
+  <button type="button" data-lang="en">EN</button>
+</div>
 <div class="wrap">
 
   <!-- ── Hero (кроку 1) ── -->
   <div id="step1Hero">
     <div class="hero-brand-name">OLIVA</div>
-    <div class="hero-brand-sub">СТУДІЯ МАСАЖУ</div>
-    <h1 class="hero-h1">Онлайн-запис</h1>
+    <div class="hero-brand-sub" data-i18n="book.brandSub">СТУДІЯ МАСАЖУ</div>
+    <h1 class="hero-h1" data-i18n="book.title">Онлайн-запис</h1>
     <svg class="hero-ornament" viewBox="0 0 200 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <line x1="0" y1="9" x2="66" y2="9" stroke="#D9B978" stroke-width="0.7" opacity="0.50"/>
       <path d="M75 9 Q81 3.5 87 9 Q81 14.5 75 9Z" fill="none" stroke="#D9B978" stroke-width="1" opacity="0.65"/>
@@ -482,8 +491,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   <div class="step hide" id="stepBranch">
     <div class="shead">
       <button class="sback" data-back="1" aria-label="Назад">&#8249;</button>
-      <h1 class="stitle">Оберіть філію</h1>
-      <div class="ssub">Де вам зручніше</div>
+      <h1 class="stitle" data-i18n="book.branch.title">Оберіть філію</h1>
+      <div class="ssub" data-i18n="book.branch.sub">Де вам зручніше</div>
     </div>
     <div class="mst-list" id="branchGrid"></div>
   </div>
@@ -493,66 +502,66 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     <div class="shead">
       <button class="sback" data-back="1" aria-label="Назад">&#8249;</button>
       <h1 class="stitle" id="step2title">Послуги</h1>
-      <div class="ssub">Оберіть послугу</div>
+      <div class="ssub" data-i18n="book.step2.sub">Оберіть послугу</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
     <div class="svc-search">
       <div class="svc-search-box">
         <svg class="svc-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="search" id="catSearch" placeholder="Пошук масажу за назвою…" autocomplete="off" aria-label="Пошук послуги за назвою" />
+        <input type="search" id="catSearch" placeholder="Пошук масажу за назвою…" data-i18n-placeholder="book.search.placeholder" autocomplete="off" aria-label="Пошук послуги за назвою" />
       </div>
     </div>
     <div class="svc-grid" id="catGrid"><div class="empty">Завантаження…</div></div>
-    <button class="showmore hide" id="showMoreBtn">Показати ще <span>&#9662;</span></button>
+    <button class="showmore hide" id="showMoreBtn"><span data-i18n="book.showmore">Показати ще</span> <span>&#9662;</span></button>
   </div>
 
   <!-- 3. Майстер -->
   <div class="step hide" id="step3">
     <div class="shead">
       <button class="sback" data-back="2" aria-label="Назад">&#8249;</button>
-      <h1 class="stitle">Оберіть майстра</h1>
-      <div class="ssub">Для вашої послуги</div>
+      <h1 class="stitle" data-i18n="book.step3.title">Оберіть майстра</h1>
+      <div class="ssub" data-i18n="book.step3.sub">Для вашої послуги</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
-    <div class="mst-pair-hint hide" id="mstPairHint">👥 Це парна процедура — оберіть майстра для себе, другого майстра для партнера підбере студія автоматично.</div>
+    <div class="mst-pair-hint hide" id="mstPairHint" data-i18n="book.pairhint">👥 Це парна процедура — оберіть майстра для себе, другого майстра для партнера підбере студія автоматично.</div>
     <div class="mst-pair-hint hide" id="mstNoSlotsHint"></div>
     <div class="mst-list" id="masterGrid"><div class="empty">Завантаження…</div></div>
-    <div class="step-foot"><button class="btn btn-ghost" data-back="2">&#8592; Назад</button></div>
+    <div class="step-foot"><button class="btn btn-ghost" data-back="2" data-i18n="book.back">&#8592; Назад</button></div>
   </div>
 
   <!-- 4. Тривалість -->
   <div class="step hide" id="step4">
     <div class="shead">
       <button class="sback" data-back="3" aria-label="Назад">&#8249;</button>
-      <h1 class="stitle">Тривалість сеансу</h1>
-      <div class="ssub">Оберіть зручний час</div>
+      <h1 class="stitle" data-i18n="book.step4.title">Тривалість сеансу</h1>
+      <div class="ssub" data-i18n="book.step4.sub">Оберіть зручний час</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
     <div class="dur-list2" id="durList"></div>
     <a class="help-card" href="https://t.me/massage_oliva_kyiv" target="_blank" rel="noopener noreferrer">
       <span class="help-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 3-3 6 0 9 3-3 3-6 0-9z"/><path d="M12 12c-2.5-1.5-5-1.5-7.5 0 2.5 2 5 2 7.5 0z"/><path d="M12 12c2.5-1.5 5-1.5 7.5 0-2.5 2-5 2-7.5 0z"/><path d="M12 12v9"/></svg></span>
-      <div><div class="help-t">Не знаєте, що обрати?</div><div class="help-d">Напишіть нам у Telegram — адміністратори допоможуть підібрати ідеальний сеанс для вас</div></div>
+      <div><div class="help-t" data-i18n="book.help.title">Не знаєте, що обрати?</div><div class="help-d" data-i18n="book.help.desc">Напишіть нам у Telegram — адміністратори допоможуть підібрати ідеальний сеанс для вас</div></div>
     </a>
-    <div class="step-foot"><button class="btn btn-ghost" data-back="3">&#8592; Назад</button></div>
+    <div class="step-foot"><button class="btn btn-ghost" data-back="3" data-i18n="book.back">&#8592; Назад</button></div>
   </div>
 
   <!-- 4b. Додаткові послуги -->
   <div class="step hide" id="stepExtras">
     <div class="shead">
       <button class="sback" data-back="5" aria-label="Назад">&#8249;</button>
-      <h1 class="stitle">Додаткові послуги</h1>
-      <div class="ssub">Доповніть сеанс за бажанням</div>
+      <h1 class="stitle" data-i18n="book.extras.title">Додаткові послуги</h1>
+      <div class="ssub" data-i18n="book.extras.sub">Доповніть сеанс за бажанням</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
-    <div class="addon-reco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z"/></svg><span>Рекомендуємо</span></div>
+    <div class="addon-reco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z"/></svg><span data-i18n="book.extras.recommend">Рекомендуємо</span></div>
     <div class="addon-avail" id="addonAvail" style="display:none;"></div>
     <div class="addon-list" id="addonList"></div>
     <div class="addon-bar">
       <div class="addon-bar-info">
-        <span class="addon-bar-label">Разом</span>
+        <span class="addon-bar-label" data-i18n="book.extras.total">Разом</span>
         <span class="addon-bar-total" id="addonTotal">—</span>
       </div>
-      <button class="addon-bar-btn" id="addonContinue">Зберегти та продовжити</button>
+      <button class="addon-bar-btn" id="addonContinue" data-i18n="book.extras.continue">Зберегти та продовжити</button>
     </div>
   </div>
 
@@ -560,37 +569,37 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   <div class="step hide" id="step5">
     <div class="shead">
       <button class="sback" data-back="4" aria-label="Назад">&#8249;</button>
-      <h1 class="stitle">Дата та час</h1>
-      <div class="ssub">Оберіть зручний час</div>
+      <h1 class="stitle" data-i18n="book.step5.title">Дата та час</h1>
+      <div class="ssub" data-i18n="book.step5.sub">Оберіть зручний час</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
     <div class="day-strip" id="dayStrip"></div>
     <div id="slotsWrap"><div class="empty">Завантаження…</div></div>
     <div class="other-m-wrap">
-      <button type="button" class="other-m-toggle" id="otherMToggle">Показати час інших майстрів</button>
+      <button type="button" class="other-m-toggle" id="otherMToggle" data-i18n="book.othermasters">Показати час інших майстрів</button>
       <div class="other-m-list hide" id="otherMList"></div>
     </div>
     <div class="info-card">
       <span class="info-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8z"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span>
-      <div class="info-t">Вільний час може змінюватись. Будь ласка, оберіть актуальний слот</div>
+      <div class="info-t" data-i18n="book.freetime.note">Вільний час може змінюватись. Будь ласка, оберіть актуальний слот</div>
     </div>
-    <div class="step-foot"><button class="btn btn-ghost" data-back="4">&#8592; Назад</button></div>
+    <div class="step-foot"><button class="btn btn-ghost" data-back="4" data-i18n="book.back">&#8592; Назад</button></div>
   </div>
 
   <!-- 6. Ваш запис -->
   <div class="step hide" id="step6">
     <div class="shead">
       <button class="sback" data-back="extras" aria-label="Назад">&#8249;</button>
-      <h1 class="stitle">Ваш запис</h1>
-      <div class="ssub">Перевірте деталі запису</div>
+      <h1 class="stitle" data-i18n="book.step6.title">Ваш запис</h1>
+      <div class="ssub" data-i18n="book.step6.sub">Перевірте деталі запису</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
     <div class="rev-card" id="summary"></div>
 
     <div class="contact-sec">
-      <label class="fld">Ваше ім'я</label>
-      <input type="text" id="nameInput" placeholder="Ваше ім'я" maxlength="100" />
-      <label class="fld">Телефон</label>
+      <label class="fld" data-i18n="book.nameLabel">Ваше ім'я</label>
+      <input type="text" id="nameInput" placeholder="Ваше ім'я" data-i18n-placeholder="book.namePh" maxlength="100" />
+      <label class="fld" data-i18n="book.phoneLabel">Телефон</label>
       <input type="tel" id="phoneInput" placeholder="+380667894576" maxlength="16" inputmode="tel" />
     </div>
 
@@ -598,58 +607,58 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
          вертатись на початок і обирати все наново. -->
     <div class="addextra" id="addSvcRow">
       <span class="addextra-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>
-      <div style="flex:1;"><div class="addextra-t">Додати послугу</div><div class="addextra-d" id="addSvcHint">Забули щось? Додайте без повернення на початок</div></div>
+      <div style="flex:1;"><div class="addextra-t" data-i18n="book.addService.title">Додати послугу</div><div class="addextra-d" id="addSvcHint" data-i18n="book.addService.hint">Забули щось? Додайте без повернення на початок</div></div>
       <span class="mst-arrow" id="addSvcCaret">&#8250;</span>
     </div>
     <div class="addsvc-list hide" id="addSvcList"></div>
 
     <div class="addextra" id="addExtraRow">
       <span class="addextra-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>
-      <div style="flex:1;"><div class="addextra-t">Додати побажання</div><div class="addextra-d">Покращіть свій сеанс релаксу</div></div>
+      <div style="flex:1;"><div class="addextra-t" data-i18n="book.addWish.title">Додати побажання</div><div class="addextra-d" data-i18n="book.addWish.hint">Покращіть свій сеанс релаксу</div></div>
       <span class="mst-arrow">&#8250;</span>
     </div>
     <div class="contact-sec hide" id="commentWrap">
-      <label class="fld">Коментар</label>
-      <textarea id="commentInput" maxlength="500" placeholder="Побажання…"></textarea>
+      <label class="fld" data-i18n="book.commentLabel">Коментар</label>
+      <textarea id="commentInput" maxlength="500" placeholder="Побажання…" data-i18n-placeholder="book.commentPh"></textarea>
     </div>
 
     <div class="err" id="bookErr" style="margin:8px 16px 0;"></div>
-    <button class="confirm-btn" id="bookBtn">Підтвердити запис</button>
-    <div class="secure-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></svg> Ваші дані надійно захищені</div>
+    <button class="confirm-btn" id="bookBtn" data-i18n="book.confirm">Підтвердити запис</button>
+    <div class="secure-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></svg> <span data-i18n="book.secure">Ваші дані надійно захищені</span></div>
   </div>
 
   <!-- Готово -->
   <div class="step hide" id="stepDone">
     <div class="done">
       <div class="done-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
-      <h2>Запис прийнято!</h2>
+      <h2 data-i18n="book.done.title">Запис прийнято!</h2>
       <p id="doneText"></p>
     </div>
 
     <!-- Додати в календар -->
     <div class="done-card">
-      <div class="done-card-h">Додати нагадування в календар</div>
+      <div class="done-card-h" data-i18n="book.cal.title">Додати нагадування в календар</div>
       <div class="done-cal-btns">
         <a id="calGoogle" href="#" target="_blank" rel="noopener noreferrer" class="done-cal-btn">
           <span class="dc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></span>
-          Google Календар
+          <span data-i18n="book.cal.google">Google Календар</span>
         </a>
         <a id="calIcs" href="#" class="done-cal-btn">
           <span class="dc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></span>
-          Apple / iOS
+          <span data-i18n="book.cal.apple">Apple / iOS</span>
         </a>
       </div>
     </div>
 
     <!-- Потрібна допомога -->
     <div class="done-card">
-      <div class="done-card-h">Потрібна допомога?</div>
+      <div class="done-card-h" data-i18n="book.help2.title">Потрібна допомога?</div>
       <a href="tel:+380974340112" class="done-phone">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.3.2 2.5.57 3.6a1 1 0 0 1-.25 1z"/></svg>
         +38 097 434 01 12
       </a>
       <div class="done-socials">
-        <span class="done-soc-label">Написати:</span>
+        <span class="done-soc-label" data-i18n="book.help2.write">Написати:</span>
         <a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener noreferrer" class="done-soc soc-ig" title="Instagram" aria-label="Instagram">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
         </a>
@@ -763,20 +772,20 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       </div>
     </div>
 
-    <a class="back-site" href="/" style="display:block;text-align:center;margin:22px auto 40px;">← На головну</a>
+    <a class="back-site" href="/" style="display:block;text-align:center;margin:22px auto 40px;" data-i18n="book.backhome">← На головну</a>
   </div>
 
 </div><!-- /wrap -->
 
 <!-- Контакти (дубль із головної сторінки) — показуються на кроці 1 -->
 <div id="bookContacts">
-  <div class="bc-label">Де нас знайти</div>
-  <h2 class="bc-title">Контакти</h2>
+  <div class="bc-label" data-i18n="book.contacts.find">Де нас знайти</div>
+  <h2 class="bc-title" data-i18n="book.contacts.title">Контакти</h2>
   <div class="bc-rows">
-    <div class="bc-item"><span class="bc-k">Адреса</span><a class="bc-v" href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener noreferrer">Київ, вул. Борщагівська, 145</a></div>
-    <div class="bc-item"><span class="bc-k">Телефон</span><a class="bc-v" href="tel:+380974340112">+38 097 434 01 12</a></div>
-    <div class="bc-item"><span class="bc-k">Графік роботи</span><span class="bc-v">Щодня 09:00 — 21:30</span></div>
-    <div class="bc-item"><span class="bc-k">Пошта</span><a class="bc-v" href="mailto:olivastudio96@gmail.com">olivastudio96@gmail.com</a></div>
+    <div class="bc-item"><span class="bc-k" data-i18n="book.contacts.address">Адреса</span><a class="bc-v" href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener noreferrer">Київ, вул. Борщагівська, 145</a></div>
+    <div class="bc-item"><span class="bc-k" data-i18n="book.contacts.phone">Телефон</span><a class="bc-v" href="tel:+380974340112">+38 097 434 01 12</a></div>
+    <div class="bc-item"><span class="bc-k" data-i18n="book.contacts.hours">Графік роботи</span><span class="bc-v" data-i18n="book.contacts.hoursVal">Щодня 09:00 — 21:30</span></div>
+    <div class="bc-item"><span class="bc-k" data-i18n="book.contacts.mail">Пошта</span><a class="bc-v" href="mailto:olivastudio96@gmail.com">olivastudio96@gmail.com</a></div>
   </div>
   <div class="bc-social">
     <a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener noreferrer" class="social-btn social-btn--instagram" title="Instagram" aria-label="Instagram">
@@ -831,17 +840,17 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 <div id="trustBar">
   <div class="trust-item">
     <span class="trust-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l7 3v5.5c0 4.4-3 7.6-7 8.5-4-.9-7-4.1-7-8.5V5.5l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
-    <span class="trust-label">Ваші дані<br>в безпеці</span>
+    <span class="trust-label"><span data-i18n="book.trust.safe1">Ваші дані</span><br><span data-i18n="book.trust.safe2">в безпеці</span></span>
   </div>
   <div class="trust-sep"></div>
   <div class="trust-item">
     <span class="trust-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17"/><path d="M8 3v4M16 3v4"/></svg></span>
-    <span class="trust-label">Онлайн-запис<br>24/7</span>
+    <span class="trust-label"><span data-i18n="book.trust.online1">Онлайн-запис</span><br><span data-i18n="book.trust.online2">24/7</span></span>
   </div>
   <div class="trust-sep"></div>
   <div class="trust-item">
     <span class="trust-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></svg></span>
-    <span class="trust-label">Захищене<br>з'єднання</span>
+    <span class="trust-label"><span data-i18n="book.trust.secure1">Захищене</span><br><span data-i18n="book.trust.secure2">з'єднання</span></span>
   </div>
 </div>
 
@@ -939,6 +948,95 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 
   var parseName = SG.parseName;
 
+  /* ---------- Переклад (UA/EN) для контенту, який малюється з JS ----------
+     Статичний HTML перекладається через data-i18n (i18n.js). Динамічний
+     контент (групи, послуги, майстри, add-on'и тощо) — через tr(): спершу
+     локальний словник фраз цієї сторінки, потім спільний
+     window.OlivaI18n.translate() (назви послуг/рівнів майстра, "хв"/"год"/"грн"). */
+  /* i18n.js викликає window._olivaLangCallback(lang) ДО localStorage.setItem,
+     тож читати мову з OlivaI18n.get() у цей момент — читати ще старе значення.
+     currentLangOverride підставляє щойно обрану мову, поки re-render триває. */
+  var currentLangOverride = null;
+  function curLang() { return currentLangOverride || (window.OlivaI18n ? window.OlivaI18n.get() : "uk"); }
+  var BOOK_PHRASES = [
+    ["Оздоровлення та відновлення для тіла і обличчя", "Wellness and recovery for body and face"],
+    ["Парні масажі та SPA для вас і ваших близьких", "Couples massages and SPA for you and your loved ones"],
+    ["Індивідуальний релакс та глибоке розслаблення", "Individual relaxation and deep unwinding"],
+    ["Моделювання та покращення контурів тіла", "Body contouring and sculpting"],
+    ["Додатковий догляд для краси та гармонії", "Extra care for beauty and harmony"],
+    ["SPA для двох", "SPA for Two"], ["SPA для одного", "SPA for One"],
+    ["Корекція фігури", "Body Shaping"], ["Додаткові послуги", "Add-on Services"],
+    ["Масажі", "Massages"],
+    ["У цій категорії поки немає послуг.", "No services in this category yet."],
+    ["Послуги тимчасово недоступні", "Services are temporarily unavailable"],
+    ["Послуги", "Services"],
+    ["Для цієї послуги майстрів поки немає.", "No therapists available for this service yet."],
+    ["Немає доступних варіантів.", "No options available."],
+    ["Найближчі вільні віконця", "Next available slots"],
+    ["Пошук вільних годин…", "Searching for free hours…"],
+    ["Сьогодні", "Today"],
+    ["Сховати", "Hide"],
+    ["Найближчим часом вільних годин немає", "No free hours in the near future"],
+    ["Накладання кінезіологічних тейпів для підтримки м'язів і суглобів.", "Application of kinesiology tapes to support muscles and joints."],
+    ["Глибоке прогрівання у ІЧ Сауні", "Deep IR Sauna Warming"],
+    ["Глибоке прогрівання організму, виведення токсинів і релакс.", "Deep body warming, toxin removal and relaxation."],
+    ["Гаряче каміння", "Hot Stones"],
+    ["Локальне прогрівання м'язів, глибоке розслаблення.", "Localized muscle warming, deep relaxation."],
+    ["Прогрівання тіла на цілющих травах перед масажем.", "Body warming on healing herbs before the massage."],
+    ["Масаж голови", "Head Massage"],
+    ["Зняття напруги, покращення сну та концентрації.", "Relieves tension, improves sleep and focus."],
+    ["Шийно-комірцева зона", "Neck & Shoulder Area"],
+    ["Розслаблення шиї та плечей, зняття напруги.", "Relaxes neck and shoulders, relieves tension."],
+    ["Масаж долонь", "Hand Massage"],
+    ["Зняття напруги в кистях і передпліччях.", "Relieves tension in hands and forearms."],
+    ["Розслаблення втомлених ніг і стоп.", "Relaxes tired legs and feet."],
+    ["Масаж зі зволожувальним кремом", "Massage with Moisturizing Cream"],
+    ["Живлення шкіри та ніжний догляд під час сеансу.", "Skin nourishment and gentle care during the session."],
+    ["Композиція зі свічок", "Candle Composition"],
+    ["Атмосфера спокою з ароматом теплих свічок.", "A calm atmosphere with the scent of warm candles."],
+    ["У вартість входять: рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.", "Includes: towel, slippers, cap, shampoo, conditioner and shower gel."],
+    ["Душ", "Shower"],
+    ["Рекомендуємо", "Recommended"], ["Популярно", "Popular"], ["Хіт", "Hit"],
+    ["популярний", "popular"],
+    ["без часу", "no extra time"],
+    ["Недостатньо вільного часу", "Not enough free time"],
+    ["не вміщується у вільний час", "doesn't fit the available time"],
+    ["Прибрати", "Remove"], ["Додати", "Add"],
+    ["Детальніше →", "Learn more →"],
+    ["Завантаження…", "Loading…"],
+    ["Помилка завантаження. Оновіть сторінку.", "Loading error. Please refresh the page."],
+    ["Помилка завантаження.", "Loading error."],
+    ["Помилка з'єднання.", "Connection error."],
+    ["Помилка. Спробуйте ще раз.", "Error. Please try again."],
+    ["Зачекайте…", "Please wait…"],
+    ["Це віконце щойно зайняли. Оберіть інший час.", "This slot was just taken. Please choose another time."],
+    ["Вкажіть ім'я", "Please enter your name"],
+    ["Ви вказали невірний номер — формат: +380667894576 (міжнародні — з кодом країни, напр. +48...)", "Invalid phone number — format: +380667894576 (international — with country code, e.g. +48...)"],
+    ["Підтвердити запис", "Confirm booking"],
+    ["Після цього сеансу у майстра немає вільного часу для додаткових послуг.", "The therapist has no free time for add-ons after this session."],
+    ["Показати час інших майстрів", "Show other therapists' times"],
+    ["Приховати інших майстрів", "Hide other therapists"],
+    ["На цю дату вільних віконець немає. Спробуйте іншу дату.", "No free slots on this date. Try another date."],
+    ["Оберіть іншого майстра нижче — можливо, дещо дорожчого.", "Choose another therapist below — possibly a bit pricier."],
+    ["Оберіть іншого майстра нижче — можливо, трохи дорожчого.", "Choose another therapist below — possibly a bit pricier."],
+    ["немає вільних місць найближчим часом.", "has no free slots in the near future."],
+    ["немає вільних віконець на цю дату. Спробуйте іншу дату або", "has no free slots on this date. Try another date or"],
+    ["Послуга", "Service"], ["Майстер", "Therapist"], ["Додатково", "Extra"],
+    ["Тривалість", "Duration"], ["Дата", "Date"], ["Час", "Time"], ["Вартість", "Cost"],
+  ];
+  function tr(text) {
+    if (text == null) return text;
+    var lang = curLang();
+    if (lang === "uk") return text;
+    var s = String(text);
+    for (var i = 0; i < BOOK_PHRASES.length; i++) s = s.split(BOOK_PHRASES[i][0]).join(BOOK_PHRASES[i][1]);
+    if (window.OlivaI18n) s = window.OlivaI18n.translate(s, lang);
+    return s;
+  }
+  var MON_EN_F = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var DOW_STRIP_EN = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+  var DOW_SHORT_EN = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
   function goStep(n) {
     // Hero і панель довіри — лише на кроці 1
     var hero = $("step1Hero"), tb = $("trustBar"), bc = $("bookContacts");
@@ -971,7 +1069,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     renderGroups();
     applyDeepLink();
   }).catch(function() {
-    $("groupGrid").innerHTML = '<div class="empty">Помилка завантаження. Оновіть сторінку.</div>';
+    $("groupGrid").innerHTML = '<div class="empty">' + tr("Помилка завантаження. Оновіть сторінку.") + '</div>';
   });
 
   // Крок 1b: Філії (показується лише коли branchStepEnabled і філій > 1)
@@ -1008,12 +1106,12 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   // Крок 1: Групи послуг
   function renderGroups() {
     var box = $("groupGrid"); box.innerHTML = "";
-    if (!allServices.length) { box.innerHTML = '<div class="empty">Послуги тимчасово недоступні</div>'; return; }
+    if (!allServices.length) { box.innerHTML = '<div class="empty">' + tr("Послуги тимчасово недоступні") + '</div>'; return; }
     GROUPS.forEach(function(g, i) {
       var btn = document.createElement("button"); btn.className = "grp-card grp-" + (i + 1);
       btn.innerHTML =
         '<div class="grp-ico">' + (GRP_ICONS[g.key] || "") + '</div>' +
-        '<div class="grp-body"><div class="grp-title">' + g.name + '</div><div class="grp-sub">' + g.sub + '</div></div>' +
+        '<div class="grp-body"><div class="grp-title">' + tr(g.name) + '</div><div class="grp-sub">' + tr(g.sub) + '</div></div>' +
         '<div class="grp-arrow">›</div>';
       btn.addEventListener("click", function() {
         state.group = g.key; state.category = null; state.master = null; state.service = null; state.start_min = null; state.branch = null;
@@ -1035,7 +1133,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   // Крок 2: Конкретні послуги (категорії) в межах обраної групи
   function renderCats() {
     var g = GROUPS.filter(function(x){ return x.key === state.group; })[0];
-    $("step2title").textContent = g ? g.name : "Послуги";
+    $("step2title").textContent = tr(g ? g.name : "Послуги");
     var step2Back = document.querySelector("#step2 .sback");
     if (step2Back) step2Back.dataset.back = (branchStepEnabled && branches.length > 1) ? "branch" : "1";
     var sb = $("catSearch"); if (sb) sb.value = ""; // скинути пошук при вході в категорію
@@ -1050,7 +1148,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       if (s.featured) cats[p.cat].hit = true;
     });
     var names = Object.keys(cats);
-    if (!names.length) { box.innerHTML = '<div class="empty">У цій категорії поки немає послуг.</div>'; return; }
+    if (!names.length) { box.innerHTML = '<div class="empty">' + tr("У цій категорії поки немає послуг.") + '</div>'; return; }
     names.forEach(function(cat, idx) {
       var c = cats[cat];
       var durTxt = c.dur ? (c.dur + " хв · ") : "";
@@ -1058,9 +1156,9 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       if (idx >= 6) card.classList.add("hide", "svc-extra");
       card.innerHTML =
         (c.img ? '<img class="svc-photo" src="' + c.img + '" alt="" />' : '<div class="svc-photo-ph">' + (ICONS[cat] || "🌿") + '</div>') +
-        (c.hit ? '<span class="svc-hit">Хіт</span>' : '') +
-        '<div class="svc-info"><div class="svc-name">' + cat + '</div>' +
-          '<a class="svc-more" href="' + serviceInfoUrl(cat) + '" target="_blank" rel="noopener noreferrer">Детальніше →</a>' +
+        (c.hit ? '<span class="svc-hit">' + tr("Хіт") + '</span>' : '') +
+        '<div class="svc-info"><div class="svc-name">' + tr(cat) + '</div>' +
+          '<a class="svc-more" href="' + serviceInfoUrl(cat) + '" target="_blank" rel="noopener noreferrer">' + tr("Детальніше →") + '</a>' +
         '</div>';
       var moreLink = card.querySelector(".svc-more");
       if (moreLink) moreLink.addEventListener("click", function(e) { e.stopPropagation(); }); // відкрити опис, не обираючи послугу
@@ -1104,7 +1202,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var nr = box.querySelector(".cat-noresult");
     if (q && shown === 0) {
       if (!nr) { nr = document.createElement("div"); nr.className = "empty cat-noresult"; box.appendChild(nr); }
-      nr.textContent = "Нічого не знайдено за запитом «" + q + "»";
+      nr.textContent = (curLang() === "en" ? "Nothing found for “" + q + "”" : "Нічого не знайдено за запитом «" + q + "»");
       nr.classList.remove("hide");
     } else if (nr) {
       nr.classList.add("hide");
@@ -1126,27 +1224,28 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var em = eligibleMasters();
     var catIds = em.catIds, eligible = em.eligible;
     if (!eligible.length) {
-      box.innerHTML = '<div class="empty">Для цієї послуги майстрів поки немає.</div>'; return;
+      box.innerHTML = '<div class="empty">' + tr("Для цієї послуги майстрів поки немає.") + '</div>'; return;
     }
+    var isEn = curLang() === "en";
     eligible.forEach(function(m) {
       var isTop = m.level === "Топ Майстер";
       // Ціна «від» саме цього майстра для обраної послуги (мінімум серед його варіантів)
       var mPrices = catServices.filter(function(s){ return (m.service_ids||[]).indexOf(s.id) !== -1; }).map(function(s){ return s.price; });
       var fromPrice = mPrices.length ? Math.min.apply(null, mPrices) : null;
       var meta = [];
-      if (m.experience_years > 0) meta.push(m.experience_years + " " + yearsWord(m.experience_years) + " досвіду");
-      if (m.reviews_count > 0) meta.push(m.reviews_count + "+ відгуків"); // без «Новий майстер»
+      if (m.experience_years > 0) meta.push(isEn ? m.experience_years + (m.experience_years === 1 ? " year" : " years") + " of experience" : m.experience_years + " " + yearsWord(m.experience_years) + " досвіду");
+      if (m.reviews_count > 0) meta.push(m.reviews_count + (isEn ? "+ reviews" : "+ відгуків")); // без «Новий майстер»
       var card = document.createElement("div"); card.className = "mst-card";
       card.innerHTML =
         (m.photo ? '<img class="mst-photo" src="' + m.photo + '" alt="' + m.name + '" />' : '<div class="mst-photo-ph">👤</div>') +
         '<div class="mst-body">' +
-          '<span class="mst-badge">' + (isTop ? "Топ Майстер" : (m.level || "Майстер")) + '</span>' +
+          '<span class="mst-badge">' + tr(isTop ? "Топ Майстер" : (m.level || "Майстер")) + '</span>' +
           '<div class="mst-top"><div class="mst-name">' + m.name + '</div>' +
             (m.rating ? '<span class="mst-rate">' + STAR + m.rating.toFixed(1) + '</span>' : '') +
           '</div>' +
-          (fromPrice != null ? '<div class="mst-price">від ' + money(fromPrice) + '</div>' : '') +
+          (fromPrice != null ? '<div class="mst-price">' + (isEn ? "from " : "від ") + tr(money(fromPrice)) + '</div>' : '') +
           (meta.length ? '<div class="mst-meta">' + meta.join(' · ') + '</div>' : '') +
-          '<div class="mst-slots" data-mid="' + m.id + '"><span class="mst-slots-load">Пошук вільних годин…</span></div>' +
+          '<div class="mst-slots" data-mid="' + m.id + '"><span class="mst-slots-load">' + tr("Пошук вільних годин…") + '</span></div>' +
         '</div>' +
         '<span class="mst-arrow">›</span>';
       card.addEventListener("click", function() {
@@ -1203,7 +1302,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
           var noSlots = preferredMasterId != null && (!info || !info.times || !info.times.length);
           if (noSlots) {
             var pm = allMasters.filter(function(m) { return m.id === preferredMasterId; })[0];
-            hintEl.textContent = "😔 У " + (pm ? pm.name : "цього майстра") + " немає вільних місць найближчим часом. Оберіть іншого майстра нижче — можливо, дещо дорожчого.";
+            var pmName = pm ? pm.name : (curLang() === "en" ? "this therapist" : "цього майстра");
+            hintEl.textContent = curLang() === "en"
+              ? "😔 " + pmName + " has no free slots in the near future. Choose another therapist below — possibly a bit pricier."
+              : "😔 У " + pmName + " немає вільних місць найближчим часом. Оберіть іншого майстра нижче — можливо, дещо дорожчого.";
             hintEl.classList.remove("hide");
           } else {
             hintEl.classList.add("hide");
@@ -1214,21 +1316,22 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
           var mid = el.getAttribute("data-mid");
           var info = map[mid];
           if (!info || !info.times || !info.times.length) {
-            el.innerHTML = '<span class="mst-slots-none">Найближчим часом вільних годин немає</span>';
+            el.innerHTML = '<span class="mst-slots-none">' + tr("Найближчим часом вільних годин немає") + '</span>';
             return;
           }
           var d = info.date.split("-");
-          var label = info.today ? "Сьогодні" : (DOW_SHORT[weekdayIdx(info.date)] + ", " + d[2] + "." + d[1]);
+          var dowArr = curLang() === "en" ? DOW_SHORT_EN : DOW_SHORT;
+          var label = info.today ? tr("Сьогодні") : (dowArr[weekdayIdx(info.date)] + ", " + d[2] + "." + d[1]);
           var VISIBLE = 6;
           var head = info.times.slice(0, VISIBLE);
           var rest = info.times.slice(VISIBLE);
           var chip = function(t) { return '<span class="mst-slot-chip">' + t + '</span>'; };
-          var html = '<div class="mst-slots-label">Найближчі вільні віконця</div>' +
+          var html = '<div class="mst-slots-label">' + tr("Найближчі вільні віконця") + '</div>' +
             '<span class="mst-slots-day">' + label + ':</span> ' +
             head.map(chip).join("");
           if (rest.length) {
             html += '<span class="mst-slots-rest hide">' + rest.map(chip).join("") + '</span>' +
-              '<button type="button" class="mst-slots-more"><span class="lbl">Дивитись ще (' + rest.length + ')</span><span class="arr">▾</span></button>';
+              '<button type="button" class="mst-slots-more"><span class="lbl">' + (curLang() === "en" ? "Show more (" + rest.length + ")" : "Дивитись ще (" + rest.length + ")") + '</span><span class="arr">▾</span></button>';
           }
           el.innerHTML = html;
           // stopPropagation — уся картка клікабельна (обирає майстра),
@@ -1241,7 +1344,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
               var willOpen = restEl.classList.contains("hide");
               restEl.classList.toggle("hide", !willOpen);
               moreBtn.classList.toggle("open", willOpen);
-              moreBtn.querySelector(".lbl").textContent = willOpen ? "Сховати" : "Дивитись ще (" + rest.length + ")";
+              moreBtn.querySelector(".lbl").textContent = willOpen ? tr("Сховати") : (curLang() === "en" ? "Show more (" + rest.length + ")" : "Дивитись ще (" + rest.length + ")");
             });
           }
         });
@@ -1268,22 +1371,22 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       opts = allServices.filter(function(s) { return parseName(s.name).cat === state.category && state.master.service_ids.indexOf(s.id) !== -1; });
     }
     opts.sort(function(a, b) { return a.duration_min - b.duration_min; });
-    if (!opts.length) { box.innerHTML = '<div class="empty">Немає доступних варіантів.</div>'; return; }
+    if (!opts.length) { box.innerHTML = '<div class="empty">' + tr("Немає доступних варіантів.") + '</div>'; return; }
     // «Популярний» — варіант 60 хв, або середній за тривалістю
     var popId = null;
     var sixty = opts.filter(function(s){ return s.duration_min === 60; })[0];
     popId = sixty ? sixty.id : opts[Math.floor(opts.length / 2)].id;
     opts.forEach(function(s) {
       var d = s.duration_min;
-      var label = d >= 60 ? (Math.floor(d/60) + " год" + (d%60 ? " " + (d%60) + " хв" : "")) : (d + " хв");
+      var label = tr(d >= 60 ? (Math.floor(d/60) + " год" + (d%60 ? " " + (d%60) + " хв" : "")) : (d + " хв"));
       var row = document.createElement("div"); row.className = "dur-row";
       if (state.service && state.service.id === s.id) row.classList.add("sel");
       row.innerHTML =
         '<span class="dur-ico">' + CLOCK + '</span>' +
         '<span class="dur-min">' + label + '</span>' +
-        (s.id === popId ? '<span class="dur-pop">популярний</span>' : '') +
+        (s.id === popId ? '<span class="dur-pop">' + tr("популярний") + '</span>' : '') +
         '<span class="dur-sp"></span>' +
-        '<span class="dur-cost">' + money(s.price) + '</span>' +
+        '<span class="dur-cost">' + tr(money(s.price)) + '</span>' +
         '<span class="dur-check">✓</span>';
       row.addEventListener("click", function() {
         box.querySelectorAll(".dur-row").forEach(function(x){ x.classList.remove("sel"); });
@@ -1338,7 +1441,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var el = $("addonTotal"); if (!el) return;
     var baseMin = state.service ? state.service.duration_min : 0;
     var basePrice = state.service ? state.service.price : 0;
-    el.textContent = (baseMin + extrasTotalMin()) + " хв · " + money(basePrice + extrasTotalPrice());
+    el.textContent = tr((baseMin + extrasTotalMin()) + " хв · " + money(basePrice + extrasTotalPrice()));
   }
 
   var ADDON_PLUS  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
@@ -1369,7 +1472,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     if (hint) {
       if (typeof state.maxDur === "number") {
         var avail = Math.max(0, state.maxDur - (state.service ? state.service.duration_min : 0) - extrasTotalMin());
-        hint.textContent = "Вільно у майстра після сеансу: " + avail + " хв";
+        hint.textContent = curLang() === "en" ? "Free time after session: " + avail + " min" : "Вільно у майстра після сеансу: " + avail + " хв";
         hint.style.display = "";
       } else { hint.style.display = "none"; }
     }
@@ -1385,23 +1488,23 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       var varsHtml = a.variants.length > 1
         ? '<div class="addon-vars">' + a.variants.map(function(vv, i) {
             var vFits = on || addonFits(a, vv.min);
-            return '<button type="button" class="addon-var' + (addonVarIdx[a.key] === i ? " sel" : "") + (vFits ? "" : " off") + '" data-i="' + i + '">' + (vv.min > 0 ? vv.min + " хв" : "без часу") + '</button>';
+            return '<button type="button" class="addon-var' + (addonVarIdx[a.key] === i ? " sel" : "") + (vFits ? "" : " off") + '" data-i="' + i + '">' + tr(vv.min > 0 ? vv.min + " хв" : "без часу") + '</button>';
           }).join("") + '</div>'
         : '';
       var metaInner = disabled
-        ? '<span class="addon-nofit">Недостатньо вільного часу</span>'
-        : '<span class="ic">' + CLOCK + '</span><span>' + (v.min > 0 ? v.min + " хв" : "без часу") + '</span><span class="sep">|</span><span class="price">+' + money(v.price) + '</span>';
+        ? '<span class="addon-nofit">' + tr("Недостатньо вільного часу") + '</span>'
+        : '<span class="ic">' + CLOCK + '</span><span>' + tr(v.min > 0 ? v.min + " хв" : "без часу") + '</span><span class="sep">|</span><span class="price">+' + tr(money(v.price)) + '</span>';
       card.innerHTML =
         '<div class="addon-photo"' + (a.img ? ' style="background-image:url(\'assets/img/' + a.img + '\')"' : '') + '>' + (a.img ? '' : '<span class="addon-photo-ph">🚿</span>') + '</div>' +
         '<div class="addon-body">' +
-          '<div class="addon-titlerow"><span class="addon-name">' + a.name + '</span>' +
-            (a.badge ? '<span class="addon-badge ' + badgeCls + '">' + a.badge + '</span>' : '') +
+          '<div class="addon-titlerow"><span class="addon-name">' + tr(a.name) + '</span>' +
+            (a.badge ? '<span class="addon-badge ' + badgeCls + '">' + tr(a.badge) + '</span>' : '') +
           '</div>' +
-          '<div class="addon-desc">' + a.desc + '</div>' +
+          '<div class="addon-desc">' + tr(a.desc) + '</div>' +
           varsHtml +
           '<div class="addon-meta">' + metaInner + '</div>' +
         '</div>' +
-        '<button type="button" class="addon-toggle" aria-label="' + (on ? "Прибрати" : "Додати") + '">' + (on ? ADDON_CHECK : ADDON_PLUS) + '</button>';
+        '<button type="button" class="addon-toggle" aria-label="' + tr(on ? "Прибрати" : "Додати") + '">' + (on ? ADDON_CHECK : ADDON_PLUS) + '</button>';
       card.querySelectorAll(".addon-var[data-i]").forEach(function(btn) {
         btn.addEventListener("click", function(e) {
           e.stopPropagation();
@@ -1449,7 +1552,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       var d = new Date(min); d.setDate(min.getDate() + i);
       var ds = ymd(d);
       var cell = document.createElement("div"); cell.className = "day-cell" + (ds === state.date ? " sel" : "");
-      cell.innerHTML = '<span class="day-dow">' + DOW_STRIP[d.getDay()] + '</span>' +
+      var dowStripArr = curLang() === "en" ? DOW_STRIP_EN : DOW_STRIP;
+      cell.innerHTML = '<span class="day-dow">' + dowStripArr[d.getDay()] + '</span>' +
                        '<span class="day-num">' + String(d.getDate()).padStart(2,"0") + "." + String(d.getMonth()+1).padStart(2,"0") + '</span>';
       cell.dataset.date = ds;
       cell.addEventListener("click", function() {
@@ -1464,7 +1568,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     // скинути перемикач інших майстрів у згорнутий стан
     var oml = $("otherMList"), omt = $("otherMToggle");
     if (oml) oml.classList.add("hide");
-    if (omt) omt.textContent = "Показати час інших майстрів";
+    if (omt) omt.textContent = tr("Показати час інших майстрів");
     loadSlots();
   }
 
@@ -1477,7 +1581,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       var chip = document.createElement("button");
       chip.type = "button";
       chip.className = "other-m-chip" + (state.master && state.master.id === m.id ? " sel" : "");
-      chip.innerHTML = m.name + (m.level ? "<small>" + m.level + "</small>" : "");
+      chip.innerHTML = m.name + (m.level ? "<small>" + tr(m.level) + "</small>" : "");
       chip.addEventListener("click", function(){
         state.master = m; state.start_min = null;
         wrap.querySelectorAll(".other-m-chip").forEach(function(c){ c.classList.remove("sel"); });
@@ -1491,25 +1595,28 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   if (otherMToggleBtn) otherMToggleBtn.addEventListener("click", function(){
     var list = $("otherMList");
     var nowHidden = list.classList.toggle("hide");
-    this.textContent = nowHidden ? "Показати час інших майстрів" : "Приховати інших майстрів";
+    this.textContent = tr(nowHidden ? "Показати час інших майстрів" : "Приховати інших майстрів");
   });
 
   function loadSlots() {
     if (!state.date || !state.service) return;
-    var wrap = $("slotsWrap"); wrap.innerHTML = '<div class="empty">Завантаження…</div>';
+    var wrap = $("slotsWrap"); wrap.innerHTML = '<div class="empty">' + tr("Завантаження…") + '</div>';
     fetch("/api/public/slots?service=" + state.service.id + "&master=" + (state.master ? state.master.id : "any") + "&date=" + state.date + "&extra=" + extrasTotalMin())
       .then(function(r) { return r.json(); }).then(function(j) {
         wrap.innerHTML = "";
         if (!j.ok || !j.slots.length) {
           var otherCount = eligibleMasters().eligible.filter(function(m){ return !state.master || m.id !== state.master.id; }).length;
+          var isEn5 = curLang() === "en";
           var msg = state.master && otherCount
-            ? 'У ' + state.master.name + ' немає вільних віконець на цю дату. Спробуйте іншу дату або оберіть іншого майстра нижче — можливо, трохи дорожчого.'
-            : 'На цю дату вільних віконець немає. Спробуйте іншу дату.';
+            ? (isEn5
+                ? state.master.name + " has no free slots on this date. Try another date or choose another therapist below — possibly a bit pricier."
+                : 'У ' + state.master.name + ' немає вільних віконець на цю дату. Спробуйте іншу дату або оберіть іншого майстра нижче — можливо, трохи дорожчого.')
+            : tr('На цю дату вільних віконець немає. Спробуйте іншу дату.');
           wrap.innerHTML = '<div class="empty" style="padding:28px 16px;">' + msg + '</div>';
           if (state.master && otherCount) {
             var oml = $("otherMList"), omt = $("otherMToggle");
             if (oml) oml.classList.remove("hide");
-            if (omt) omt.textContent = "Приховати інших майстрів";
+            if (omt) omt.textContent = tr("Приховати інших майстрів");
           }
           return;
         }
@@ -1524,7 +1631,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
           grid.appendChild(b);
         });
         wrap.appendChild(grid);
-      }).catch(function() { wrap.innerHTML = '<div class="empty">Помилка завантаження.</div>'; });
+      }).catch(function() { wrap.innerHTML = '<div class="empty">' + tr("Помилка завантаження.") + '</div>'; });
   }
 
   // Крок 6: Резюме (картка «Ваш запис»)
@@ -1542,27 +1649,31 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var h = Math.floor(state.start_min/60), m = state.start_min%60;
     var time = String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
     var p = parseName(state.service.name);
-    var dateTxt = dt.getDate() + " " + MON_UA_F[dt.getMonth()] + " " + dt.getFullYear() + " р.";
+    var isEn6 = curLang() === "en";
+    var monArr = isEn6 ? MON_EN_F : MON_UA_F;
+    var dateTxt = isEn6
+      ? monArr[dt.getMonth()] + " " + dt.getDate() + ", " + dt.getFullYear()
+      : dt.getDate() + " " + monArr[dt.getMonth()] + " " + dt.getFullYear() + " р.";
     var avatar = state.master.photo ? '<img class="rev-avatar" src="' + state.master.photo + '" alt="" />' : '';
     var img = (state.service.image_url) || "";
     function row(ico, label, val) {
-      return '<div class="rev-row"><span class="rev-ico">' + ico + '</span><span class="rev-label">' + label + '</span><span class="rev-sp"></span><span class="rev-val">' + val + '</span></div>';
+      return '<div class="rev-row"><span class="rev-ico">' + ico + '</span><span class="rev-label">' + tr(label) + '</span><span class="rev-sp"></span><span class="rev-val">' + val + '</span></div>';
     }
     var totMin = state.service.duration_min + extrasTotalMin();
     var totPrice = state.service.price + extrasTotalPrice();
     var extrasRows = state.extras.map(function(e) {
-      return row(RICO.svc, "Додатково", e.name + (e.price ? ' · +' + money(e.price) : ''));
+      return row(RICO.svc, "Додатково", tr(e.name) + (e.price ? ' · +' + tr(money(e.price)) : ''));
     }).join("");
     $("summary").innerHTML =
       (img ? '<img class="rev-photo" src="' + img + '" alt="" />' : '') +
       '<div class="rev-rows">' +
-        row(RICO.svc, "Послуга", p.cat + (state.service && state.service.duration_min ? " · " + state.service.duration_min + " хв" : "")) +
+        row(RICO.svc, "Послуга", tr(p.cat) + (state.service && state.service.duration_min ? " · " + tr(state.service.duration_min + " хв") : "")) +
         row(RICO.master, "Майстер", state.master.name + avatar) +
         extrasRows +
-        row(RICO.dur, "Тривалість", totMin + " хв") +
+        row(RICO.dur, "Тривалість", tr(totMin + " хв")) +
         row(RICO.date, "Дата", dateTxt) +
         row(RICO.time, "Час", time) +
-        row(RICO.cost, "Вартість", money(totPrice)) +
+        row(RICO.cost, "Вартість", tr(money(totPrice))) +
       '</div>';
   }
 
@@ -1584,9 +1695,9 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       it.className = "addsvc-item" + (on ? " on" : "") + (disabled ? " off" : "");
       it.innerHTML =
         '<span class="addsvc-box">' + ADDON_CHECK + '</span>' +
-        '<div style="flex:1;"><div class="addsvc-name">' + a.name + '</div>' +
-        '<div class="addsvc-meta">' + (v.min ? v.min + " хв · " : "") + "+" + money(v.price) +
-        (disabled ? " · не вміщується у вільний час" : "") + '</div></div>';
+        '<div style="flex:1;"><div class="addsvc-name">' + tr(a.name) + '</div>' +
+        '<div class="addsvc-meta">' + tr(v.min ? v.min + " хв · " : "") + "+" + tr(money(v.price)) +
+        (disabled ? tr(" · не вміщується у вільний час") : "") + '</div></div>';
       if (!disabled) {
         it.addEventListener("click", function() {
           setAddon(a, !isAddonOn(a.key));
@@ -1597,7 +1708,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       box.appendChild(it);
     });
     if (!any && !state.extras.length) {
-      box.innerHTML = '<div class="addsvc-empty">Після цього сеансу у майстра немає вільного часу для додаткових послуг.</div>';
+      box.innerHTML = '<div class="addsvc-empty">' + tr("Після цього сеансу у майстра немає вільного часу для додаткових послуг.") + '</div>';
     }
   }
 
@@ -1636,9 +1747,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var mm = String(state.start_min % 60).padStart(2, "0");
     var start = new Date(state.date + "T" + hh + ":" + mm + ":00"); // локальний час пристрою (клієнти в Києві)
     var end = new Date(start.getTime() + totMin * 60000);
-    var title = "Масаж: " + p.cat + " — Oliva";
+    var isEnCal = curLang() === "en";
+    var title = (isEnCal ? "Massage: " : "Масаж: ") + tr(p.cat) + " — Oliva";
     var loc = "Київ, вул. Борщагівська, 145";
-    var details = "Майстер: " + state.master.name + "\nСтудія масажу Oliva\nТел: +38 097 434 01 12";
+    var details = (isEnCal ? "Therapist: " : "Майстер: ") + state.master.name + "\n" + (isEnCal ? "Oliva Massage Studio" : "Студія масажу Oliva") + "\n" + (isEnCal ? "Tel: " : "Тел: ") + "+38 097 434 01 12";
 
     var g = "https://calendar.google.com/calendar/render?action=TEMPLATE" +
       "&text=" + encodeURIComponent(title) +
@@ -1657,7 +1769,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       "SUMMARY:" + icsEsc(title),
       "LOCATION:" + icsEsc(loc),
       "DESCRIPTION:" + icsEsc(details),
-      "BEGIN:VALARM", "TRIGGER:-PT2H", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc("Нагадування: " + title), "END:VALARM",
+      "BEGIN:VALARM", "TRIGGER:-PT2H", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc((curLang() === "en" ? "Reminder: " : "Нагадування: ") + title), "END:VALARM",
       "END:VEVENT", "END:VCALENDAR"
     ].join("\r\n");
     var icsEl = $("calIcs");
@@ -1680,26 +1792,72 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   $("bookBtn").addEventListener("click", function() {
     var name = $("nameInput").value.trim(), phone = $("phoneInput").value.trim();
     var err = $("bookErr"); err.textContent = "";
-    if (!name) { err.textContent = "Вкажіть ім'я"; return; }
-    if (!isValidPhone(phone)) { err.textContent = "Ви вказали невірний номер — формат: +380667894576 (міжнародні — з кодом країни, напр. +48...)"; return; }
-    var btn = this; btn.disabled = true; btn.textContent = "Зачекайте…";
+    if (!name) { err.textContent = tr("Вкажіть ім'я"); return; }
+    if (!isValidPhone(phone)) { err.textContent = tr("Ви вказали невірний номер — формат: +380667894576 (міжнародні — з кодом країни, напр. +48...)"); return; }
+    var btn = this; btn.disabled = true; btn.textContent = tr("Зачекайте…");
     fetch("/api/public/book", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ service: state.service.id, master: state.master.id, branch: state.branch, date: state.date, start_min: state.start_min, name: name, phone: phone, comment: $("commentInput").value.trim(),
         extra_services: state.extras.length ? JSON.stringify(state.extras.map(function(e){ return { name: e.name, duration_min: e.duration_min, price: e.price }; })) : null })
     }).then(function(r) { return r.json().then(function(j) { return { code: r.status, j: j }; }); })
       .then(function(res) {
-        btn.disabled = false; btn.textContent = "Підтвердити запис";
-        if (res.code === 409) { err.textContent = "Це віконце щойно зайняли. Оберіть інший час."; setTimeout(function() { renderDateStep(); goStep(5); }, 1000); return; }
-        if (!res.j.ok) { err.textContent = "Помилка. Спробуйте ще раз."; return; }
+        btn.disabled = false; btn.textContent = tr("Підтвердити запис");
+        if (res.code === 409) { err.textContent = tr("Це віконце щойно зайняли. Оберіть інший час."); setTimeout(function() { renderDateStep(); goStep(5); }, 1000); return; }
+        if (!res.j.ok) { err.textContent = tr("Помилка. Спробуйте ще раз."); return; }
         var p = parseName(state.service.name);
         var h = Math.floor(state.start_min/60), m = state.start_min%60;
-        $("doneText").innerHTML = "<b>" + p.cat + "</b> · " + state.master.name + "<br>" + state.date.split("-").reverse().slice(0,2).join(".") + ", " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+        $("doneText").innerHTML = "<b>" + tr(p.cat) + "</b> · " + state.master.name + "<br>" + state.date.split("-").reverse().slice(0,2).join(".") + ", " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
         buildCalendar();
         goStep("done");
-      }).catch(function() { btn.disabled = false; btn.textContent = "Підтвердити запис"; err.textContent = "Помилка з'єднання."; });
+      }).catch(function() { btn.disabled = false; btn.textContent = tr("Підтвердити запис"); err.textContent = tr("Помилка з'єднання."); });
   });
+
+  /* Перемикання мови на льоту: статичний текст оновлює i18n.js сам (data-i18n),
+     а вже намальовані кроки з JS-контентом (групи, послуги, майстри, add-on'и,
+     дата/час, підсумок) треба перемалювати заново з поточною мовою. */
+  function reRenderCurrentStep() {
+    if (!allServices.length) return; // дані ще не завантажені — початковий рендер сам підхопить мову
+    if (!$("step1").classList.contains("hide")) { renderGroups(); return; }
+    if (!$("stepBranch").classList.contains("hide")) { renderBranches(); return; }
+    if (!$("step2").classList.contains("hide")) {
+      var q = $("catSearch") ? $("catSearch").value : "";
+      renderCats();
+      if (q) { $("catSearch").value = q; applyCatFilter(q); }
+      return;
+    }
+    if (!$("step3").classList.contains("hide")) { renderMasters(); return; }
+    if (!$("step4").classList.contains("hide")) { renderDurations(); return; }
+    if (!$("stepExtras").classList.contains("hide")) { renderExtras(); return; }
+    if (!$("step5").classList.contains("hide")) { renderDateStep(); return; }
+    if (!$("step6").classList.contains("hide")) {
+      renderSummary();
+      if ($("addSvcList") && !$("addSvcList").classList.contains("hide")) renderAddSvcList();
+      return;
+    }
+  }
+  // Викликається з i18n.js: одразу при завантаженні (збережена мова) і при кожному перемиканні.
+  window._olivaLangCallback = function (lang) {
+    currentLangOverride = lang || null;
+    reRenderCurrentStep();
+    currentLangOverride = null;
+  };
 })();
+</script>
+
+<script src="/assets/js/i18n.js"></script>
+<script>
+  var langSwitch = document.getElementById('langSwitch');
+  if (langSwitch && window.OlivaI18n) {
+    langSwitch.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        window.OlivaI18n.apply(b.getAttribute('data-lang'));
+      });
+    });
+    var savedLang = window.OlivaI18n.get();
+    langSwitch.querySelectorAll('button').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-lang') === savedLang);
+    });
+  }
 </script>
 </body>
 </html>
