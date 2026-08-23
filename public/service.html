@@ -45,11 +45,12 @@
     .btn-secondary:hover { background: rgba(122,145,86,0.15); color: var(--cream); border-color: var(--cream); }
 
     @keyframes btnPulse {
-      0% { box-shadow: 0 0 0 0 rgba(122,145,86,0.55); }
-      70% { box-shadow: 0 0 0 14px rgba(122,145,86,0); }
-      100% { box-shadow: 0 0 0 0 rgba(122,145,86,0); }
+      0% { box-shadow: 0 0 0 0 rgba(122,145,86,0.75); transform: scale(1); }
+      50% { transform: scale(1.05); }
+      70% { box-shadow: 0 0 0 22px rgba(122,145,86,0); }
+      100% { box-shadow: 0 0 0 0 rgba(122,145,86,0); transform: scale(1); }
     }
-    .hero .hero-btns .btn { animation: btnPulse 2.2s ease-out infinite; }
+    .hero .hero-btns .btn { animation: btnPulse 1.8s ease-out infinite; }
     .hero .hero-btns .btn:hover { animation-play-state: paused; }
 
     /* HERO */
@@ -69,6 +70,9 @@
     .hero-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.12; margin-bottom: 14px; text-transform: uppercase; }
     .hero-tagline { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.4rem); color: var(--cream); opacity: .92; margin-bottom: 18px; line-height: 1.4; }
     .hero-desc { font-size: 15px; color: var(--text-dim); line-height: 1.7; max-width: 520px; margin-bottom: 26px; }
+    .hero-sub { padding: 44px 24px 0; text-align: center; }
+    .hero-sub .hero-tagline, .hero-sub .hero-desc { margin: 0 auto 14px; max-width: 640px; text-align: center; }
+    .hero-sub .hero-desc { margin-bottom: 0; }
     .hero-meta { display: flex; align-items: center; gap: 18px; font-size: 14px; color: var(--text-dim); margin-bottom: 26px; flex-wrap: wrap; }
     .hero-meta b { color: var(--cream); }
     .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -214,8 +218,6 @@
       '<div class="wrap"><div class="hero-inner' + heroInnerCls + '">' +
         '<div class="hero-eyebrow">Студія масажу Oliva · Київ</div>' +
         '<h1 class="hero-title">' + esc(title) + '</h1>' +
-        (p.hero_tagline ? '<div class="hero-tagline">' + esc(p.hero_tagline) + '</div>' : '') +
-        (p.hero_description ? '<p class="hero-desc">' + esc(p.hero_description) + '</p>' : '') +
         (durSet.length || minPrice != null ? '<div class="hero-meta">' +
           (durSet.length ? '<span>🕐 ' + durSet.join('/') + ' хв</span>' : '') +
           (minPrice != null ? '<span>від <b>' + money(minPrice) + '</b></span>' : '') +
@@ -226,6 +228,14 @@
         '</div>' +
       '</div></div>' +
     '</section>';
+
+    // Підзаголовок і опис — під фото шапки, щоб не перекривати об'єкт на фото
+    if (p.hero_tagline || p.hero_description) {
+      html += '<div class="hero-sub">' +
+        (p.hero_tagline ? '<div class="hero-tagline">' + esc(p.hero_tagline) + '</div>' : '') +
+        (p.hero_description ? '<p class="hero-desc">' + esc(p.hero_description) + '</p>' : '') +
+      '</div>';
+    }
 
     // PERKS (статичні — однакові на кожній сторінці послуги)
     html += '<div class="perks">' +
