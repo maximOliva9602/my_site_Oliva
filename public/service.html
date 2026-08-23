@@ -41,8 +41,8 @@
     .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; border-radius: 50px; font-size: 15px; font-weight: 600; text-decoration: none; transition: all .2s; white-space: nowrap; }
     .btn-primary { background: var(--olive-light); color: var(--black); border: none; }
     .btn-primary:hover { background: var(--cream); }
-    .btn-secondary { background: transparent; border: 1.5px solid var(--olive-light); color: var(--olive-light); }
-    .btn-secondary:hover { background: rgba(122,145,86,0.15); color: var(--cream); border-color: var(--cream); }
+    .btn-secondary { background: rgba(8,10,7,0.45); border: 1.5px solid var(--olive-light); color: var(--olive-light); }
+    .btn-secondary:hover { background: rgba(122,145,86,0.25); color: var(--cream); border-color: var(--cream); }
 
     @keyframes btnPulse {
       0% { box-shadow: 0 0 0 0 rgba(122,145,86,0.75); transform: scale(1); }
@@ -71,10 +71,12 @@
     .hero-tagline { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.4rem); color: var(--cream); opacity: .92; margin-bottom: 18px; line-height: 1.4; }
     .hero-desc { font-size: 15px; color: var(--text-dim); line-height: 1.7; max-width: 520px; margin-bottom: 26px; }
     .hero-sub { padding: 44px 24px 0; text-align: center; }
-    .hero-sub .hero-tagline, .hero-sub .hero-desc { margin: 0 auto 14px; max-width: 640px; text-align: center; }
-    .hero-sub .hero-desc { margin-bottom: 0; }
-    .hero-meta { display: flex; align-items: center; gap: 18px; font-size: 14px; color: var(--text-dim); margin-bottom: 26px; flex-wrap: wrap; }
-    .hero-meta b { color: var(--cream); }
+    .hero-sub .hero-tagline, .hero-sub .hero-desc { margin: 0 auto 16px; max-width: 900px; text-align: center; }
+    .hero-sub .hero-tagline { font-size: clamp(1.2rem, 2.6vw, 1.6rem); }
+    .hero-sub .hero-desc { margin-bottom: 0; font-size: 16px; }
+    .hero-meta { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--cream); margin-bottom: 26px; flex-wrap: wrap; }
+    .hero-meta span { background: rgba(8,10,7,0.5); border: 1px solid rgba(232,224,209,0.25); border-radius: 30px; padding: 6px 14px; }
+    .hero-meta b { color: var(--olive-light); }
     .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
 
     .perks { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 30px 24px; border-bottom: 1px solid var(--line); }
