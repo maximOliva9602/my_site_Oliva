@@ -135,9 +135,13 @@
 
     /* ABONEMENTS */
     .abon-section { padding: 8px 24px 40px; }
-    .abon-block { max-width: 1080px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 36px; display: grid; grid-template-columns: 200px 1fr; gap: 32px; align-items: center; }
+    .abon-block { max-width: 1080px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 36px; display: grid; grid-template-columns: 260px 1fr; gap: 32px; align-items: center; }
     .abon-info-title { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
-    .abon-info-sub { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
+    .abon-info-sub { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-bottom: 18px; }
+    .abon-price-col { border-right: 1px solid var(--line); padding-right: 32px; }
+    .abon-price-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
+    .abon-price-big { font-family: 'Playfair Display', serif; font-size: 2.4rem; color: var(--cream); font-weight: 700; line-height: 1; margin-bottom: 18px; }
+    .abon-price-big span { font-size: 1.1rem; color: var(--text-dim); font-family: 'Inter', sans-serif; font-weight: 400; }
     .abon-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .abon-card { position: relative; background: var(--black); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
     .abon-card--popular { border-color: var(--olive-light); }
@@ -161,6 +165,7 @@
     @media (max-width: 780px) {
       .abon-block { grid-template-columns: 1fr; text-align: center; }
       .abon-cards { grid-template-columns: 1fr; }
+      .abon-price-col { border-right: none; padding-right: 0; padding-bottom: 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
     }
 
     .footer-badges { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; padding: 48px 24px 72px; text-align: center; }
@@ -313,10 +318,14 @@
     // АБОНЕМЕНТИ
     if (abonItems.length) {
       html += '<div class="abon-section"><div class="abon-block">' +
-        '<div>' +
-          '<div class="abon-info-title">Абонементи</div>' +
-          '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
+        '<div class="abon-price-col">' +
+          '<div class="abon-price-label">Ціна за візит</div>' +
+          (minPrice != null ? '<div class="abon-price-big"><span>від </span>' + esc(money(minPrice)) + '</div>' : '') +
+          '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
         '</div>' +
+        '<div>' +
+        '<div class="abon-info-title">Абонементи</div>' +
+        '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
         '<div class="abon-cards">' + abonItems.map(function(a){
           var single = a.totals.length <= 1 && !(a.totals[0] && a.totals[0].level);
           var body;
@@ -342,6 +351,7 @@
             body +
           '</div>';
         }).join('') + '</div>' +
+        '</div>' +
       '</div></div>';
     }
 
