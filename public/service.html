@@ -170,6 +170,15 @@
     return { title: line.slice(0, i).trim(), text: line.slice(i + 2).trim() };
   }
   function money(kop) { return Math.round((kop || 0) / 100) + ' грн'; }
+  /* Текст уже виводиться курсивом/у визначеному стилі через CSS, тож зайві
+     markdown-хвости, які власник іноді лишає при копіюванні (*текст*,
+     екрановані крапки "\.") прибираємо, а не показуємо як є. */
+  function clean(s) {
+    s = String(s == null ? '' : s).trim();
+    s = s.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '');
+    s = s.replace(/\\\./g, '.');
+    return s;
+  }
 
   Promise.all([
     fetch('/api/service-pages/' + encodeURIComponent(key)).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
@@ -182,6 +191,9 @@
       return;
     }
     var p = pageRes.page;
+    ['hero_tagline', 'hero_description', 'symptoms_quote', 'detail_description'].forEach(function (f) {
+      if (p[f]) p[f] = clean(p[f]);
+    });
     var SG = window.OlivaServiceGroups;
     var allServices = servicesRes.services || [];
     // Всі тарифні варіанти саме цієї послуги (за базовою назвою, без рівня й тривалості)
