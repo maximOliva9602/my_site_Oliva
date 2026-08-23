@@ -288,6 +288,20 @@
     });
     return groups.filter(function(g){ return g.items.length; });
   }
+  /* Найменша ціна за візит серед карток однієї групи тривалості — щоб велика
+     цифра "Ціна за візит" зверху блока абонементів перемикалась разом з
+     тумблером 90/130 хв, а не показувала одне й те саме число завжди. */
+  function groupMinPerVisit(items) {
+    var nums = [];
+    items.forEach(function(a){
+      a.totals.forEach(function(t){
+        var raw = t.perSession || t.price;
+        var num = parseFloat(String(raw).replace(/[^\d.,]/g, '').replace(',', '.'));
+        if (!isNaN(num)) nums.push(num);
+      });
+    });
+    return nums.length ? Math.min.apply(null, nums) : null;
+  }
   /* Текст уже виводиться курсивом/у визначеному стилі через CSS, тож зайві
      markdown-хвости, які власник іноді лишає при копіюванні (*текст*,
      екрановані крапки "\.") прибираємо, а не показуємо як є. */
@@ -325,6 +339,7 @@
     var minPrice = variants.length ? Math.min.apply(null, variants.map(function(v){ return v.price; })) : null;
     var durSet = []; variants.forEach(function(v){ if (durSet.indexOf(v.dur) === -1) durSet.push(v.dur); });
     var abonGroups = parseAbonemenItems(p.abonement_items);
+    var abonMinByGroup = abonGroups.map(function(g){ return groupMinPerVisit(g.items); });
 
     var title = p.hero_title || key;
     document.title = title + ' — Студія масажу Oliva';
@@ -398,10 +413,11 @@
           '</div>';
         }).join('');
       }
+      var abonHeaderPrice = abonMinByGroup[0] != null ? abonMinByGroup[0] : (minPrice != null ? Math.round(minPrice / 100) : null);
       html += '<div class="abon-section"><div class="abon-block">' +
         '<div class="abon-price-col">' +
           '<div class="abon-price-label">Ціна за візит</div>' +
-          (minPrice != null ? '<div class="abon-price-big"><span>від </span>' + esc(money(minPrice)) + '</div>' : '') +
+          (abonHeaderPrice != null ? '<div class="abon-price-big" id="abonPriceBig"><span>від </span>' + abonHeaderPrice + ' грн</div>' : '') +
           '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
         '</div>' +
         '<div>' +
@@ -534,6 +550,11 @@
         content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
           box.style.display = (box.getAttribute('data-abon-group') === idx) ? '' : 'none';
         });
+        var big = content.querySelector('#abonPriceBig');
+        var groupPrice = abonMinByGroup[idx];
+        if (big && groupPrice != null) {
+          big.innerHTML = '<span>від </span>' + groupPrice + ' грн';
+        }
       });
     });
   });
