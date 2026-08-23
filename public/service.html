@@ -163,13 +163,15 @@
     .abon-level-total { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
     .abon-level-total del { opacity: .55; margin-left: 4px; }
     .abon-level-price { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--cream); font-weight: 700; text-align: right; white-space: nowrap; }
-    .abon-duration-switch { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 30px; padding: 4px; margin-bottom: 16px; }
+    .abon-duration-switch-wrap { max-width: 1080px; margin: 0 auto 20px; display: flex; }
+    .abon-duration-switch { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 30px; padding: 4px; }
     .abon-duration-btn { padding: 7px 16px; border-radius: 30px; font-size: 12.5px; color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: inherit; transition: all .2s; }
     .abon-duration-btn.active { background: var(--olive); color: var(--cream); }
     @media (max-width: 780px) {
       .abon-block { grid-template-columns: 1fr; text-align: center; }
       .abon-cards { grid-template-columns: 1fr; }
       .abon-price-col { border-right: none; padding-right: 0; padding-bottom: 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+      .abon-duration-switch-wrap { justify-content: center; }
     }
 
     .contacts-section { padding: 72px 24px; background: rgba(14,18,12,0.9); border-top: 1px solid var(--line); }
@@ -414,7 +416,11 @@
         }).join('');
       }
       var abonHeaderPrice = abonMinByGroup[0] != null ? abonMinByGroup[0] : (minPrice != null ? Math.round(minPrice / 100) : null);
-      html += '<div class="abon-section"><div class="abon-block">' +
+      html += '<div class="abon-section">' +
+        (multiDur ? '<div class="abon-duration-switch-wrap"><div class="abon-duration-switch">' + abonGroups.map(function(g, i){
+          return '<button type="button" class="abon-duration-btn' + (i === 0 ? ' active' : '') + '" data-abon-dur="' + i + '">' + esc(g.duration) + '</button>';
+        }).join('') + '</div></div>' : '') +
+        '<div class="abon-block">' +
         '<div class="abon-price-col">' +
           '<div class="abon-price-label">Ціна за візит</div>' +
           (abonHeaderPrice != null ? '<div class="abon-price-big" id="abonPriceBig"><span>від </span>' + abonHeaderPrice + ' грн</div>' : '') +
@@ -423,9 +429,6 @@
         '<div>' +
         '<div class="abon-info-title">Абонементи</div>' +
         '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
-        (multiDur ? '<div class="abon-duration-switch">' + abonGroups.map(function(g, i){
-          return '<button type="button" class="abon-duration-btn' + (i === 0 ? ' active' : '') + '" data-abon-dur="' + i + '">' + esc(g.duration) + '</button>';
-        }).join('') + '</div>' : '') +
         abonGroups.map(function(g, i){
           return '<div class="abon-cards" data-abon-group="' + i + '"' + (i === 0 ? '' : ' style="display:none;"') + '>' + renderAbonCards(g.items) + '</div>';
         }).join('') +
