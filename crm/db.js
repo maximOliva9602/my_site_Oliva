@@ -1296,5 +1296,52 @@ try { db.exec("ALTER TABLE service_pages ADD COLUMN hero_text_align TEXT NOT NUL
    клієнт клацає кількість сеансів і бачить ціну, як у прайс-таблиці. */
 try { db.exec("ALTER TABLE service_pages ADD COLUMN abonement_items TEXT NOT NULL DEFAULT ''"); } catch(e) {}
 
+/* Рівень "Експерт" підтримувався в коді (майстри, прайс-таблиці, перемикач
+   на сайті), але жодної послуги з тегом "(Експерт)" в прайсі не було — редагувати
+   в адмінці було просто нічого. Створюємо пару "(Експерт)" для кожної "(Майстер)"
+   на 400 грн дорожче (власник попросив саме таку різницю); одноразово, не
+   чіпає рядки, які вже існують (idempotent — за точним іменем). */
+try {
+  var masterSvcsForExpert = db.prepare(
+    "SELECT * FROM services WHERE active=1 AND name LIKE '%(Майстер)%' AND name NOT LIKE '%(Топ Майстер)%'"
+  ).all();
+  var expertExists = db.prepare("SELECT id FROM services WHERE name=? AND active=1");
+  var insertExpertSvc = db.prepare(
+    "INSERT INTO services (name,duration_min,price,active,sort_order,created_at,category,description,image_url,featured,in_carousel) VALUES (?,?,?,1,?,?,?,?,?,0,0)"
+  );
+  var expertNow = Date.now();
+  db.transaction(function () {
+    masterSvcsForExpert.forEach(function (s) {
+      var expertName = s.name.replace("(Майстер)", "(Експерт)");
+      if (expertExists.get(expertName)) return;
+      var expertCategory = (s.category || "").replace("Майстер", "Експерт") || "Прайс Експерт";
+      insertExpertSvc.run(expertName, s.duration_min, s.price + 40000, s.sort_order || 0, expertNow, expertCategory, s.description, s.image_url);
+    });
+  })();
+} catch (e) { console.error("[db] backfill Експерт tier:", e.message); }
+
+/* Майстри з посадою "Експерт" (напр. Максим) до цього моменту не мали
+   ЖОДНОЇ послуги "(Експерт)" в прайсі — щойно вона з'явилась вище,
+   перерахунок прив'язки послуг для них (та сама логіка, що й у
+   autoAssignServicesByLevel при зміні посади в crm/routes.crm.js). */
+try {
+  var expertMasters = db.prepare("SELECT id FROM masters WHERE active=1 AND level='Експерт'").all();
+  if (expertMasters.length) {
+    var expertTaggedIds = db.prepare("SELECT id FROM services WHERE active=1 AND name LIKE '%(Експерт)%'").all().map(function (r) { return r.id; });
+    var sharedSvcIds = db.prepare(
+      "SELECT id FROM services WHERE active=1 AND name NOT LIKE '%(Майстер)%' AND name NOT LIKE '%(Топ Майстер)%' AND name NOT LIKE '%(Експерт)%'"
+    ).all().map(function (r) { return r.id; });
+    var expertServiceIds = expertTaggedIds.concat(sharedSvcIds);
+    var delMasterSvcs = db.prepare("DELETE FROM master_services WHERE master_id=?");
+    var insMasterSvc = db.prepare("INSERT OR IGNORE INTO master_services (master_id,service_id) VALUES (?,?)");
+    db.transaction(function () {
+      expertMasters.forEach(function (m) {
+        delMasterSvcs.run(m.id);
+        expertServiceIds.forEach(function (sid) { insMasterSvc.run(m.id, sid); });
+      });
+    })();
+  }
+} catch (e) { console.error("[db] resync Експерт-master service_ids:", e.message); }
+
 module.exports = db;
 module.exports.DB_FILE = DB_FILE;
