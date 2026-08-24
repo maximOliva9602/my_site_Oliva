@@ -947,7 +947,7 @@
 })();
 </script>
 <script src="assets/js/service-groups.js?v=4"></script>
-<script src="assets/js/i18n.js?v=6"></script>
+<script src="assets/js/i18n.js?v=7"></script>
 <script src="assets/js/script.js?v=6"></script>
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
 <script src="/socket.io/socket.io.js"></script>
@@ -1599,6 +1599,10 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
           ['tab-general','tab-spa2','tab-spa1','tab-body','tab-extra'].forEach(function(tid) {
             renderTab(tid, all.filter(function(s) { return tabOf(s) === tid; }));
           });
+          /* Картки малюються завжди українською; якщо активна англійська —
+             перекладаємо їх одразу, інакше після зміни рівня чи першого
+             завантаження зі збереженою мовою вони лишаються українською. */
+          if (window.OlivaI18n) window.OlivaI18n.apply(window.OlivaI18n.get());
         }
         renderAll();
 
