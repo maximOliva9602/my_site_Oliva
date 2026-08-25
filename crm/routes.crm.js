@@ -135,49 +135,64 @@ function viewAppt(a) {
     /* Скасований візит і неявка сеанс не займають — не даємо їм номера,
        інакше поруч із наступним активним записом світився б той самий. */
     if (a.status === "cancelled" || a.status === "no_show") return out;
-    /* Номер сеансу вже зафіксовано за цим записом — показуємо саме його.
-       Фіксується у двох випадках: при «Завершено» (setStatus) і коли
-       абонемент оформили прямо на цьому візиті (POST /subscriptions з
-       appointment_id: перший сеанс уже враховано в used_sessions).
-       Раніше умова вимагала status='completed', тож щойно оформлений
-       абонемент рахувався загальною формулою — used_sessions(1) + 1 = 2,
-       і перший же візит показувало як 2/10. */
-    if (a.subscription_session_no != null && a.subscription_session_total != null) {
-      out.sub_used = a.subscription_session_no;
-      out.sub_total = a.subscription_session_total;
-      out.sub_index = a.subscription_session_no;
-      return out;
-    }
+    /* Завершений візит, за яким сеанс НЕ списувався (був до оформлення
+       абонемента або вже після його вичерпання), теж не нумеруємо. */
+    if (a.status === "completed" && !a.subscription_used) return out;
     const svcIds = subServiceIds(a.service_id);
     const sub = db.prepare(
-      `SELECT used_sessions, total_sessions, created_at FROM subscriptions
+      `SELECT id, used_sessions, total_sessions, created_at FROM subscriptions
         WHERE client_id=? AND service_id IN (${inList(svcIds.length)})
         ORDER BY (used_sessions < total_sessions) DESC, id DESC LIMIT 1`
     ).get(a.client_id, ...svcIds);
     if (sub) {
-      /* Порядковий номер саме цього візиту в абонементі. used_sessions росте
-         лише коли запис позначають «виконано», тому номер майбутнього візиту
-         = вже списано + його черга серед ІНШИХ незавершених візитів клієнта
-         за цією послугою (усі тарифні варіанти). Рахувати позицію серед усіх
-         візитів підряд не можна: сеанси, списані до створення абонемента або
-         перенесені з попереднього (used_sessions на старті), випадали з
-         нумерації — і номер «відставав» від реального залишку. */
-      /* subscription_session_no IS NULL — виключаємо візити, за якими номер
-         уже зафіксовано: вони враховані в used_sessions. Без цього візит, на
-         якому оформили абонемент, рахувався двічі (і в used_sessions, і в
-         черзі), і наступний запис показувало на одиницю більше. */
-      const pendingBefore = db.prepare(
-        `SELECT COUNT(*) c FROM appointments
-          WHERE client_id=? AND service_id IN (${inList(svcIds.length)})
-            AND status IN ('pending','confirmed') AND id<>?
-            AND subscription_session_no IS NULL
-            AND (date < ? OR (date = ? AND start_min < ?))`
-      ).get(a.client_id, ...svcIds, a.id, a.date, a.date, a.start_min).c;
-      const subIndex = sub.used_sessions + pendingBefore + 1;
-      /* Після останнього сеансу (наприклад, 5/5) усі незавершені записи —
-         звичайні. Не передаємо їм дані абонемента, навіть якщо запис було
-         створено раніше й має малий номер у черзі. */
-      if (sub.used_sessions < sub.total_sessions && subIndex <= sub.total_sessions) {
+      /* Номер сеансу рахуємо ЗА ХРОНОЛОГІЄЮ візитів, а не за порядком, у
+         якому їх позначали «Завершено».
+
+         Раніше було два різні механізми: завершеним візитам номер
+         ЗАМОРОЖУВАВСЯ (used_sessions+1 у момент завершення), а незавершеним
+         рахувався від дати. Щойно візит завершували не по порядку (напр.
+         спершу клацнули той, що 27-го, а запис на 25-те ще висів
+         підтвердженим), нумерація перекидалась: ранішому візиту діставався
+         БІЛЬШИЙ номер (25-те → 3/5, 27-ме → 2/5). Ті самі заморожені номери
+         могли й дублюватись: при знятті «Завершено» лічильник відкочувався,
+         а номери інших візитів лишались старими.
+
+         Тепер номер — це просто позиція візиту в часі серед візитів, які
+         абонемент покриває, тож він завжди узгоджений, без дублів і
+         сам виправляється після скасування чи перенесення. */
+
+      /* Візит "покритий" абонементом, якщо сеанс за ним уже списано
+         (subscription_used=1) або він ще попереду (pending/confirmed).
+         Скасовані, неявки та завершені ДО оформлення абонемента (за ними
+         нічого не списувалось) у нумерацію не потрапляють. */
+      const COVERED = `(a2.subscription_used = 1 OR a2.status IN ('pending','confirmed'))`;
+
+      /* Скільки сеансів списано без прив'язки до візиту — кнопкою
+         «✓ Списати сеанс» на картці клієнта або перенесено зі старого
+         абонемента (used_sessions на старті). Такі сеанси реальних записів
+         не мають, тож зсувають нумерацію решти. */
+      const withAppt = db.prepare(
+        `SELECT COUNT(*) c FROM appointments a2
+          WHERE a2.client_id=? AND a2.service_id IN (${inList(svcIds.length)})
+            AND a2.subscription_used = 1`
+      ).get(a.client_id, ...svcIds).c;
+      const phantom = Math.max(0, sub.used_sessions - withAppt);
+
+      /* Позиція цього візиту серед покритих — строго за датою/часом,
+         id як стабільний тайбрейкер для двох записів в одну хвилину. */
+      const before = db.prepare(
+        `SELECT COUNT(*) c FROM appointments a2
+          WHERE a2.client_id=? AND a2.service_id IN (${inList(svcIds.length)})
+            AND ${COVERED} AND a2.id <> ?
+            AND (a2.date < ?
+              OR (a2.date = ? AND a2.start_min < ?)
+              OR (a2.date = ? AND a2.start_min = ? AND a2.id < ?))`
+      ).get(a.client_id, ...svcIds, a.id, a.date, a.date, a.start_min, a.date, a.start_min, a.id).c;
+
+      const subIndex = phantom + before + 1;
+      /* Візити понад обсяг абонемента (6-й із 5) до нього не належать —
+         номера не показуємо взагалі, щоб не було «сеанс 6 з 5». */
+      if (subIndex <= sub.total_sessions) {
         out.sub_used = sub.used_sessions;
         out.sub_total = sub.total_sessions;
         out.sub_index = subIndex;
@@ -2483,3 +2498,4 @@ router.delete("/certificates/:id", owner, function (req, res) {
 
 module.exports = router;
 module.exports.setStatus = setStatus;
+module.exports.viewAppt = viewAppt;
