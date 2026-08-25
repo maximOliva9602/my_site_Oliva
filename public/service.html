@@ -74,9 +74,6 @@
     .hero-sub .hero-tagline, .hero-sub .hero-desc { margin: 0 auto 16px; max-width: 900px; text-align: center; }
     .hero-sub .hero-tagline { font-size: clamp(1.2rem, 2.6vw, 1.6rem); }
     .hero-sub .hero-desc { margin-bottom: 0; font-size: 16px; }
-    .hero-meta { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--cream); margin-bottom: 26px; flex-wrap: wrap; }
-    .hero-meta span { background: rgba(8,10,7,0.5); border: 1px solid rgba(232,224,209,0.25); border-radius: 30px; padding: 6px 14px; }
-    .hero-meta b { color: var(--olive-light); }
     .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
 
     section.block { padding: 72px 0; }
@@ -335,7 +332,6 @@
     }).filter(function (v) { return v.dur; }).sort(function (a, b) { return a.dur - b.dur; });
 
     var minPrice = variants.length ? Math.min.apply(null, variants.map(function(v){ return v.price; })) : null;
-    var durSet = []; variants.forEach(function(v){ if (durSet.indexOf(v.dur) === -1) durSet.push(v.dur); });
     var abonGroups = parseAbonemenItems(p.abonement_items);
     var abonMinByGroup = abonGroups.map(function(g){ return groupMinPerVisit(g.items); });
 
@@ -362,10 +358,6 @@
       '<div class="wrap"><div class="hero-inner' + heroInnerCls + '">' +
         '<div class="hero-eyebrow">Студія масажу Oliva · Київ</div>' +
         '<h1 class="hero-title">' + esc(title) + '</h1>' +
-        (durSet.length || minPrice != null ? '<div class="hero-meta">' +
-          (durSet.length ? '<span>🕐 ' + durSet.join('/') + ' хв</span>' : '') +
-          (minPrice != null ? '<span>від <b>' + money(minPrice) + '</b></span>' : '') +
-        '</div>' : '') +
         '<div class="hero-btns">' +
           '<a href="/booking.html" class="btn btn-primary">Записатися онлайн →</a>' +
           '<a href="/certificate.html" class="btn btn-secondary">🎁 Подарувати сертифікат</a>' +
