@@ -79,12 +79,6 @@
     .hero-meta b { color: var(--olive-light); }
     .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
 
-    .perks { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 30px 24px; border-bottom: 1px solid var(--line); }
-    .perk { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; font-size: 13px; max-width: 220px; }
-    .perk-ico { font-size: 1.3rem; flex-shrink: 0; }
-    .perk-title { color: var(--cream); font-weight: 600; }
-    .perk-sub { color: var(--text-dim); font-size: 12px; margin-top: 1px; }
-
     section.block { padding: 72px 0; }
     .block-title { font-family: 'Playfair Display', serif; font-size: clamp(1.5rem, 3vw, 2.1rem); color: var(--cream); margin-bottom: 32px; }
 
@@ -138,11 +132,12 @@
     .abon-section { padding: 8px 24px 40px; }
     .abon-block { max-width: 1080px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 36px; }
     .abon-grid { display: grid; grid-template-columns: 260px 1fr; gap: 32px; align-items: center; }
-    .abon-info-title { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
+    .abon-info-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; letter-spacing: .01em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
     .abon-info-sub { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-bottom: 18px; }
+    .abon-info-box { border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
     .abon-price-col { border-right: 1px solid var(--line); padding-right: 32px; }
     .abon-price-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
-    .abon-price-big { font-family: 'Playfair Display', serif; font-size: 2.4rem; color: var(--cream); font-weight: 700; line-height: 1; margin-bottom: 18px; }
+    .abon-price-big { font-family: 'Playfair Display', serif; font-size: 2.8rem; color: var(--cream); font-weight: 700; line-height: 1; margin-bottom: 18px; }
     .abon-price-big span { font-size: 1.1rem; color: var(--text-dim); font-family: 'Inter', sans-serif; font-weight: 400; }
     .abon-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .abon-card { position: relative; background: var(--black); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
@@ -427,7 +422,7 @@
           (abonHeaderPrice != null ? '<div class="abon-price-big" id="abonPriceBig"><span>від </span>' + abonHeaderPrice + ' грн</div>' : '') +
           '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
         '</div>' +
-        '<div>' +
+        '<div class="abon-info-box">' +
         '<div class="abon-info-title">Абонементи</div>' +
         '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
         abonGroups.map(function(g, i){
@@ -438,13 +433,16 @@
       '</div></div>';
     }
 
-    // PERKS (статичні — однакові на кожній сторінці послуги)
-    html += '<div class="perks">' +
-      '<div class="perk"><div><div class="perk-title">М\'яке розслаблення</div><div class="perk-sub">без зайвої інтенсивності</div></div></div>' +
-      '<div class="perk"><div><div class="perk-title">Зняття напруги</div><div class="perk-sub">у шиї, плечах та спині</div></div></div>' +
-      '<div class="perk"><div><div class="perk-title">Емоційне перезавантаження</div></div></div>' +
-      '<div class="perk"><div><div class="perk-title">Час тільки для себе</div></div></div>' +
-    '</div>';
+    // STEPS (перенесено вище, замість блока перків)
+    var stepItems = lines(p.steps_items).map(pair).filter(function(x){ return x.title; });
+    if (stepItems.length) {
+      html += '<section class="block symptoms"><div class="wrap">' +
+        '<h2 class="block-title">' + esc(p.steps_title || 'Як проходить ваш сеанс') + '</h2>' +
+        '<div class="steps-row">' + stepItems.map(function(s, i){
+          return '<div class="step"><div class="step-num">0' + (i+1) + '</div><div class="step-title">' + esc(s.title) + '</div>' + (s.text ? '<div class="step-text">' + esc(s.text) + '</div>' : '') + '</div>';
+        }).join('') + '</div>' +
+      '</div></section>';
+    }
 
     // SYMPTOMS
     var symptomItems = lines(p.symptoms_items);
@@ -470,17 +468,6 @@
           return '<div class="benefit-card"><div class="benefit-title">' + esc(b.title) + '</div>' + (b.text ? '<div class="benefit-text">' + esc(b.text) + '</div>' : '') + '</div>';
         }).join('') + '</div>' +
         '<div class="block-cta"><a href="/booking.html" class="btn btn-primary">Обрати свій час →</a></div>' +
-      '</div></section>';
-    }
-
-    // STEPS
-    var stepItems = lines(p.steps_items).map(pair).filter(function(x){ return x.title; });
-    if (stepItems.length) {
-      html += '<section class="block symptoms"><div class="wrap">' +
-        '<h2 class="block-title">' + esc(p.steps_title || 'Як проходить ваш сеанс') + '</h2>' +
-        '<div class="steps-row">' + stepItems.map(function(s, i){
-          return '<div class="step"><div class="step-num">0' + (i+1) + '</div><div class="step-title">' + esc(s.title) + '</div>' + (s.text ? '<div class="step-text">' + esc(s.text) + '</div>' : '') + '</div>';
-        }).join('') + '</div>' +
       '</div></section>';
     }
 
