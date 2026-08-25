@@ -321,8 +321,8 @@
       <div class="srv-tier reveal" id="srvTier">
         <span class="srv-tier-label" data-i18n="srv.tier.label">Рівень майстра:</span>
         <div class="srv-tier-switch">
-          <button class="srv-tier-btn active" data-tier="master" data-i18n="srv.tier.master">Майстер</button>
-          <button class="srv-tier-btn" data-tier="top" data-i18n="srv.tier.top">Топ Майстер</button>
+          <button class="srv-tier-btn" data-tier="master" data-i18n="srv.tier.master">Майстер</button>
+          <button class="srv-tier-btn active" data-tier="top" data-i18n="srv.tier.top">Топ Майстер</button>
           <button class="srv-tier-btn" data-tier="expert" data-i18n="srv.tier.expert">Експерт</button>
         </div>
       </div>
@@ -1405,7 +1405,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
     function stripTier(name) {
       return name.replace(/\s*\(\s*(?:Топ\s+)?Майстер\s*\)\s*/gi, ' ').replace(/\s*\(\s*Експерт\s*\)\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim();
     }
-    var curTier = 'master';   // за замовчуванням показуємо нижчу ціну
+    var curTier = 'top';   // за замовчуванням показуємо ціни Топ Майстра
     /* Сторінки послуг ("Про цей масаж"): множина назв послуг, для яких
        є опублікована сторінка (заповнюється з /api/service-pages/keys). */
     var svcArticles = {};
