@@ -131,7 +131,7 @@
     .abon-grid { display: grid; grid-template-columns: 260px 1fr; gap: 32px; align-items: center; }
     .abon-info-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; letter-spacing: .01em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
     .abon-info-sub { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-bottom: 18px; }
-    .abon-info-box { border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+    .abon-info-box { border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
     .abon-price-col { border-right: 1px solid var(--line); padding-right: 32px; }
     .abon-price-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
     .abon-price-big { font-family: 'Playfair Display', serif; font-size: 2.8rem; color: var(--cream); font-weight: 700; line-height: 1; margin-bottom: 18px; }
@@ -145,7 +145,7 @@
     .abon-card-price { font-family: 'Playfair Display', serif; font-size: 1.7rem; color: var(--cream); font-weight: 700; line-height: 1; }
     .abon-card-persession { font-size: 12px; color: var(--text-dim); margin: 6px 0 16px; }
     .abon-card-divider { border-top: 1px solid var(--line); margin-bottom: 12px; }
-    .abon-card-total { font-size: 12.5px; color: var(--text-dim); white-space: nowrap; }
+    .abon-card-total { font-size: 12.5px; color: var(--text-dim); }
     .abon-card-total b { color: var(--cream); }
     .abon-card-total del { opacity: .55; margin-left: 6px; }
     .abon-card--levels .abon-badge { top: 16px; }
@@ -153,7 +153,7 @@
     .abon-level-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
     .abon-level-row:first-child { padding-top: 0; border-top: none; }
     .abon-level-name { font-size: 12.5px; color: var(--text-dim); }
-    .abon-level-total { font-size: 11px; color: var(--text-dim); margin-top: 2px; white-space: nowrap; }
+    .abon-level-total { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
     .abon-level-total del { opacity: .55; margin-left: 4px; }
     .abon-level-price { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--cream); font-weight: 700; text-align: right; white-space: nowrap; }
     .abon-duration-switch-wrap { display: flex; margin-bottom: 16px; }
@@ -269,6 +269,10 @@
   var content = document.getElementById('pageContent');
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  /* Незамінний пробіл між числом і одиницею ("6000 грн"), щоб "грн" не
+     переносилось саме по собі на новий рядок — решта тексту лишається
+     звичайно переносною, тож рядок не розпирає колонку. */
+  function nbspCur(s) { return s.replace(/ (?=\S+$)/, ' '); }
   function lines(s) { return String(s || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean); }
   function pair(line) {
     var i = line.indexOf('::');
@@ -427,12 +431,12 @@
               '<div class="abon-card-price">' + esc(t ? (t.perSession || t.price) : '') + '</div>' +
               (t && t.perSession ? '<div class="abon-card-persession">за сеанс</div>' : '') +
               '<div class="abon-card-divider"></div>' +
-              '<div class="abon-card-total">Разом: <b>' + esc(t ? t.price : '') + '</b>' + (a.originals[0] ? ' <del>' + esc(a.originals[0].price) + '</del>' : '') + '</div>';
+              '<div class="abon-card-total">Разом: <b>' + nbspCur(esc(t ? t.price : '')) + '</b>' + (a.originals[0] ? ' <del>' + nbspCur(esc(a.originals[0].price)) + '</del>' : '') + '</div>';
           } else {
             body = '<div class="abon-levels">' + a.totals.map(function(t, i){
               var orig = a.originals[i];
               return '<div class="abon-level-row"><div><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
-                '<div class="abon-level-total">Разом: ' + esc(t.price) + (orig ? ' <del>' + esc(orig.price) + '</del>' : '') + '</div></div>' +
+                '<div class="abon-level-total">Разом: ' + nbspCur(esc(t.price)) + (orig ? ' <del>' + nbspCur(esc(orig.price)) + '</del>' : '') + '</div></div>' +
                 '<span class="abon-level-price">' + esc(t.perSession || t.price) + '</span></div>';
             }).join('') + '</div>';
           }
@@ -453,6 +457,7 @@
           }).join('') + '</div></div>' : '') +
           '<div class="abon-price-label">Ціна за візит</div>' +
           (abonHeaderPrice != null ? '<div class="abon-price-big" id="abonPriceBig"><span>від </span>' + abonHeaderPrice + ' грн</div>' : '') +
+          '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
         '</div>' +
         '<div class="abon-info-box">' +
         '<div class="abon-info-title">Абонементи</div>' +
