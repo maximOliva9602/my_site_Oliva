@@ -4345,6 +4345,105 @@
     addrInput.style.cssText = "font-size:.92rem;padding:10px 12px;border:1.5px solid #d8ddd4;border-radius:10px;width:100%;box-sizing:border-box;margin-bottom:20px;";
     content.appendChild(addrInput);
 
+    // ── Підпис над назвою в картці онлайн-запису
+    var subLbl = document.createElement("div"); subLbl.textContent = "Підпис над назвою";
+    subLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:4px;";
+    content.appendChild(subLbl);
+    var subInput = document.createElement("input"); subInput.type = "text";
+    subInput.value = (branch && branch.subtitle) ? branch.subtitle : "";
+    subInput.placeholder = "Студія масажу / Кабінет студії масажу";
+    subInput.style.cssText = "font-size:.92rem;padding:10px 12px;border:1.5px solid #d8ddd4;border-radius:10px;width:100%;box-sizing:border-box;margin-bottom:20px;";
+    content.appendChild(subInput);
+
+    // ── Орієнтири поруч
+    var nearLbl = document.createElement("div"); nearLbl.textContent = "Поруч (орієнтири)";
+    nearLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:4px;";
+    content.appendChild(nearLbl);
+    var nearInput = document.createElement("input"); nearInput.type = "text";
+    nearInput.value = (branch && branch.nearby) ? branch.nearby : "";
+    nearInput.placeholder = "ст. метро Шулявська / Індустріальний міст";
+    nearInput.style.cssText = "font-size:.92rem;padding:10px 12px;border:1.5px solid #d8ddd4;border-radius:10px;width:100%;box-sizing:border-box;margin-bottom:20px;";
+    content.appendChild(nearInput);
+
+    // ── Фото інтер'єру (галерея в картці філії)
+    var phLbl = document.createElement("div"); phLbl.textContent = "Фото філії";
+    phLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:4px;font-weight:600;";
+    content.appendChild(phLbl);
+    var phHint = document.createElement("div");
+    phHint.textContent = "Клієнт гортає їх у картці філії. Перше фото — головне. Натисніть на фото, щоб видалити.";
+    phHint.style.cssText = "font-size:.72rem;color:#7a8573;margin-bottom:8px;line-height:1.4;";
+    content.appendChild(phHint);
+
+    var branchPhotos = (branch && Array.isArray(branch.photos)) ? branch.photos.slice()
+                     : (branch && branch.photo ? [branch.photo] : []);
+    var phGrid = document.createElement("div");
+    phGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;";
+    content.appendChild(phGrid);
+    function drawPhotos() {
+      phGrid.innerHTML = "";
+      branchPhotos.forEach(function (url, i) {
+        var t = document.createElement("div");
+        t.style.cssText = "position:relative;width:78px;height:100px;border-radius:8px;overflow:hidden;border:1.5px solid " + (i === 0 ? "#3d5430" : "#d8ddd4") + ";cursor:pointer;";
+        t.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;">' +
+          (i === 0 ? '<span style="position:absolute;bottom:0;left:0;right:0;background:#3d5430;color:#fff;font-size:.6rem;text-align:center;padding:1px;">головне</span>' : '');
+        t.title = "Видалити фото";
+        t.addEventListener("click", function () {
+          branchPhotos = branchPhotos.filter(function (_, k) { return k !== i; });
+          drawPhotos();
+        });
+        phGrid.appendChild(t);
+      });
+      if (!branchPhotos.length) {
+        phGrid.innerHTML = '<div style="color:#aaa;font-size:.8rem;">Фото ще немає</div>';
+      }
+    }
+    drawPhotos();
+
+    var phBtn = el("button", "btn btn-sm btn-ghost", "📷 Додати фото");
+    phBtn.style.cssText += ";margin-bottom:20px;";
+    var phFile = document.createElement("input");
+    phFile.type = "file"; phFile.accept = "image/*"; phFile.multiple = true; phFile.style.display = "none";
+    phBtn.addEventListener("click", function () { phFile.click(); });
+    /* Стискаємо на клієнті (як в адмінці): 1600px по довшій стороні, JPEG 85%. */
+    function uploadOne(file, done) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+          var MAX = 1600, w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+          cv.getContext("2d").drawImage(img, 0, 0, w, h);
+          fetch("/api/admin/upload-image", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl: cv.toDataURL("image/jpeg", 0.85), ext: "jpg" })
+          }).then(function (r) { return r.json(); })
+            .then(function (j) { done(j && j.ok ? j.url : null); })
+            .catch(function () { done(null); });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    phFile.addEventListener("change", function () {
+      var files = Array.prototype.slice.call(phFile.files || []);
+      phFile.value = "";
+      if (!files.length) return;
+      phBtn.disabled = true; phBtn.textContent = "Завантаження…";
+      var left = files.length;
+      files.forEach(function (f) {
+        uploadOne(f, function (url) {
+          if (url) branchPhotos.push(url);
+          if (--left === 0) { drawPhotos(); phBtn.disabled = false; phBtn.textContent = "📷 Додати фото"; }
+        });
+      });
+    });
+    content.appendChild(phBtn);
+    content.appendChild(phFile);
+
     // ── Тижневий розклад
     var schedLbl = document.createElement("div"); schedLbl.textContent = "Розклад (тижневий)";
     schedLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:10px;font-weight:600;";
@@ -4545,7 +4644,14 @@
 
       /* selectedSvcIds ще null, якщо список послуг не встиг завантажитись —
          тоді не чіпаємо прив'язки взагалі (не шлемо поле). */
-      var body = { name: name, address: addrInput.value.trim(), master_ids: selectedMasterIds };
+      var body = {
+        name: name,
+        address: addrInput.value.trim(),
+        subtitle: subInput.value.trim(),
+        nearby: nearInput.value.trim(),
+        photos: branchPhotos,
+        master_ids: selectedMasterIds
+      };
       if (selectedSvcIds) body.service_ids = selectedSvcIds;
       var p = isNew
         ? api("POST", "/api/crm/branches", body)

@@ -877,6 +877,19 @@ router.delete("/masters/:id", owner, function (req, res) {
 });
 
 /* ========== ФІЛІЇ ========== */
+/* Галерея філії зберігається JSON-масивом у branches.photos. Обрізаємо
+   до 12 фото — більше в картці все одно ніхто не догортає. */
+function normPhotos(v) {
+  if (!Array.isArray(v)) return [];
+  return v.map(function (x) { return String(x || "").trim().slice(0, 500); })
+          .filter(Boolean).slice(0, 12);
+}
+/* Старі філії мають лише photo — віддаємо його як галерею з одного фото. */
+function parsePhotos(raw, single) {
+  if (raw) { try { const a = JSON.parse(raw); if (Array.isArray(a) && a.length) return a; } catch (e) {} }
+  return single ? [single] : [];
+}
+
 /* Перезаписує список послуг філії. Порожній масив = «всі послуги»
    (рядки просто видаляються), тож філію завжди можна повернути в
    типовий стан, знявши всі галочки. */
@@ -907,6 +920,7 @@ router.get("/branches", any, function (req, res) {
        всі галочки поставленими. */
     b.service_ids = db.prepare("SELECT service_id FROM branch_services WHERE branch_id=?")
       .all(b.id).map(function (r) { return r.service_id; });
+    b.photos = parsePhotos(b.photos, b.photo);
   });
   res.json({ ok: true, branches: rows, booking_branch_step: settingOn("booking_branch_step", false) });
 });
@@ -926,9 +940,13 @@ router.post("/branches", owner, function (req, res) {
   if (!name) return res.status(400).json({ ok: false, error: "name required" });
   let branchId;
   db.transaction(function () {
-    const info = db.prepare("INSERT INTO branches (name,photo,active,sort_order,created_at,address) VALUES (?,?,1,?,?,?)")
-      .run(name, d.photo ? d.photo.slice(0, 500) : null, parseInt(d.sort_order, 10) || 0, Date.now(),
-           d.address ? String(d.address).trim().slice(0, 200) : null);
+    const photos = normPhotos(d.photos);
+    const info = db.prepare("INSERT INTO branches (name,photo,active,sort_order,created_at,address,subtitle,nearby,photos) VALUES (?,?,1,?,?,?,?,?,?)")
+      .run(name, photos[0] || (d.photo ? d.photo.slice(0, 500) : null), parseInt(d.sort_order, 10) || 0, Date.now(),
+           d.address ? String(d.address).trim().slice(0, 200) : null,
+           d.subtitle ? String(d.subtitle).trim().slice(0, 120) : null,
+           d.nearby ? String(d.nearby).trim().slice(0, 200) : null,
+           photos.length ? JSON.stringify(photos) : null);
     branchId = info.lastInsertRowid;
     if (Array.isArray(d.service_ids)) setBranchServices(branchId, d.service_ids);
     if (Array.isArray(d.master_ids)) {
@@ -950,11 +968,16 @@ router.put("/branches/:id", owner, function (req, res) {
   const b = db.prepare("SELECT * FROM branches WHERE id=?").get(id);
   if (!b) return res.status(404).json({ ok: false });
   const d = req.body || {};
-  db.prepare("UPDATE branches SET name=?,photo=?,sort_order=?,address=? WHERE id=?")
+  const newPhotos = d.photos !== undefined ? normPhotos(d.photos) : null;
+  db.prepare("UPDATE branches SET name=?,photo=?,sort_order=?,address=?,subtitle=?,nearby=?,photos=? WHERE id=?")
     .run(d.name !== undefined ? d.name.slice(0, 100) : b.name,
-         d.photo !== undefined ? (d.photo ? d.photo.slice(0, 500) : null) : b.photo,
+         newPhotos ? (newPhotos[0] || null)
+                   : (d.photo !== undefined ? (d.photo ? d.photo.slice(0, 500) : null) : b.photo),
          d.sort_order !== undefined ? parseInt(d.sort_order, 10) || 0 : b.sort_order,
-         d.address !== undefined ? (String(d.address).trim().slice(0, 200) || null) : b.address, id);
+         d.address !== undefined ? (String(d.address).trim().slice(0, 200) || null) : b.address,
+         d.subtitle !== undefined ? (String(d.subtitle).trim().slice(0, 120) || null) : b.subtitle,
+         d.nearby !== undefined ? (String(d.nearby).trim().slice(0, 200) || null) : b.nearby,
+         newPhotos ? (newPhotos.length ? JSON.stringify(newPhotos) : null) : b.photos, id);
   if (Array.isArray(d.service_ids)) setBranchServices(id, d.service_ids);
   // Оновити список майстрів філії
   if (Array.isArray(d.master_ids)) {

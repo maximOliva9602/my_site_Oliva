@@ -594,6 +594,14 @@ CREATE INDEX IF NOT EXISTS idx_branch_services_branch ON branch_services(branch_
    в SMS/подію календаря замість однієї адреси студії на всіх. */
 try { db.exec("ALTER TABLE branches ADD COLUMN address TEXT"); } catch(e) {}
 
+/* Картка філії в онлайн-записі: підпис над назвою ("Студія масажу" /
+   "Кабінет студії масажу"), орієнтири ("ст. метро Шулявська / ...") і
+   галерея фото інтер'єру. photos — JSON-масив адрес; старе одиночне
+   поле photo лишається як перше фото для сумісності. */
+try { db.exec("ALTER TABLE branches ADD COLUMN subtitle TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE branches ADD COLUMN nearby TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE branches ADD COLUMN photos TEXT"); } catch(e) {}
+
 /* Для майстра з кількома філіями запис повинен пам'ятати конкретну
    філію, яку обрав клієнт. Старі записи залишаються сумісними (NULL). */
 try { db.exec("ALTER TABLE appointments ADD COLUMN branch_id INTEGER REFERENCES branches(id)"); } catch(e) {}

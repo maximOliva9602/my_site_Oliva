@@ -318,6 +318,46 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 /* Крок 3 — майстри */
 .mst-list { display: flex; flex-direction: column; gap: 12px; padding: 8px 16px 0; }
 .mst-pair-hint { margin: 8px 16px 0; padding: 12px 14px; background: rgba(217,185,120,0.12); border: 1px solid rgba(217,185,120,0.3); border-radius: 12px; color: var(--cream); font-size: .84rem; line-height: 1.45; }
+/* ── Картка філії ── */
+.br-card { background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 18px; padding: 14px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.br-gal { position: relative; border-radius: 14px; overflow: hidden; background: rgba(46,61,34,0.25); aspect-ratio: 3/4; }
+.br-gal__track { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.br-gal__track::-webkit-scrollbar { display: none; }
+.br-gal__slide { flex: 0 0 100%; height: 100%; scroll-snap-align: center; }
+.br-gal__slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.br-gal__ph { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 2rem; color: var(--text-dim); }
+.br-gal__count { position: absolute; top: 8px; left: 8px; background: rgba(10,7,5,0.7); color: var(--cream); font-size: 11px; padding: 3px 8px; border-radius: 20px; backdrop-filter: blur(4px); }
+.br-gal__dots { position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 5px; }
+.br-gal__dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(242,237,228,0.35); transition: background .2s; }
+.br-gal__dot.active { background: var(--gold); }
+.br-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.br-eyebrow { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); }
+.br-name { font-family: 'Playfair Display', serif; font-size: 1.7rem; letter-spacing: .06em; color: var(--gold); line-height: 1; }
+.br-addr { display: flex; gap: 7px; font-size: .86rem; color: var(--cream); line-height: 1.4; }
+.br-addr svg { flex-shrink: 0; margin-top: 2px; }
+.br-near { font-size: .78rem; color: var(--text-dim); line-height: 1.45; }
+.br-near b { display: block; color: var(--text); font-weight: 500; }
+.br-map-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: rgba(217,185,120,0.12); border: 1px solid rgba(217,185,120,0.35); color: var(--gold); border-radius: 10px; padding: 10px 14px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; font-family: inherit; transition: background .2s; }
+.br-map-btn:hover { background: rgba(217,185,120,0.22); }
+.br-map-prev { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); height: 130px; cursor: pointer; position: relative; }
+.br-map-prev iframe { width: 100%; height: 100%; border: 0; display: block; pointer-events: none; filter: grayscale(.35) brightness(.85); }
+.br-choose { margin-top: 2px; width: 100%; background: var(--gold); color: #14100b; border: none; border-radius: 10px; padding: 12px; font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.br-choose:active { transform: scale(.995); }
+/* Модалка з великою картою */
+.br-modal { position: fixed; inset: 0; background: rgba(6,4,3,0.86); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
+.br-modal.open { display: flex; }
+.br-modal__box { width: min(760px, 100%); background: #14100b; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
+.br-modal__head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.br-modal__ttl { flex: 1; font-size: .88rem; color: var(--cream); line-height: 1.35; }
+.br-modal__x { background: none; border: none; color: var(--text-dim); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 4px; }
+.br-modal iframe { width: 100%; height: 60vh; border: 0; display: block; }
+.br-modal__open { display: block; text-align: center; padding: 12px; color: var(--gold); font-size: .84rem; text-decoration: none; border-top: 1px solid var(--line); }
+@media (max-width: 640px) {
+  .br-card { grid-template-columns: 1fr; }
+  .br-gal { aspect-ratio: 4/3; }
+  .br-name { font-size: 1.5rem; }
+}
+
 .mst-card { display: flex; align-items: stretch; gap: 14px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: border-color .2s, transform .15s; }
 .mst-card:active { transform: scale(.995); }
 @media (hover:hover){ .mst-card:hover { border-color: rgba(217,185,120,0.42); } }
@@ -968,6 +1008,13 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   var currentLangOverride = null;
   function curLang() { return currentLangOverride || (window.OlivaI18n ? window.OlivaI18n.get() : "uk"); }
   var BOOK_PHRASES = [
+    /* Картка філії. Довші фрази — першими, бо заміна послідовна
+       (інакше "Студія масажу" зʼїла б частину "Кабінет студії масажу"). */
+    ["Кабінет студії масажу", "Massage studio room"],
+    ["Переглянути на карті", "View on map"],
+    ["Обрати цю філію", "Choose this location"],
+    ["Студія масажу", "Massage studio"],
+    ["Поруч:", "Nearby:"],
     ["Оздоровлення та відновлення для тіла і обличчя", "Wellness and recovery for body and face"],
     ["Парні масажі та SPA для вас і ваших близьких", "Couples massages and SPA for you and your loved ones"],
     ["Індивідуальний релакс та глибоке розслаблення", "Individual relaxation and deep unwinding"],
@@ -1082,15 +1129,97 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   });
 
   // Крок 1b: Філії (показується лише коли branchStepEnabled і філій > 1)
+  function esc(t) {
+    return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  var PIN_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.4 7-11a7 7 0 1 0-14 0c0 4.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg>';
+  var MAP_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>';
+
+  /* Велика карта у модалці — щоб клієнт зорієнтувався, не покидаючи запис. */
+  function openBranchMap(b) {
+    var q = encodeURIComponent(b.address || b.name);
+    bindBranchMapOnce();
+    var m = $("branchMapModal");
+    $("branchMapTitle").innerHTML = esc(tr(b.subtitle || "Студія масажу")) + "<br><b>" + esc(b.address || b.name) + "</b>";
+    $("branchMapFrame").src = "https://maps.google.com/maps?q=" + q + "&z=16&output=embed";
+    $("branchMapOpen").href = "https://maps.google.com/?q=" + q;
+    m.classList.add("open");
+  }
+  function closeBranchMap() {
+    $("branchMapModal").classList.remove("open");
+    $("branchMapFrame").src = "";   // зупиняємо завантаження карти
+  }
+
+  /* Закриття модалки карти: хрестик, клік по тлу, Esc. Прив'язуємо при
+     першому відкритті — розмітка модалки лежить нижче цього скрипта,
+     тож на момент його виконання елементів ще немає. */
+  var branchMapBound = false;
+  function bindBranchMapOnce() {
+    if (branchMapBound) return;
+    var m = $("branchMapModal");
+    if (!m) return;
+    branchMapBound = true;
+    $("branchMapClose").addEventListener("click", closeBranchMap);
+    m.addEventListener("click", function (e) { if (e.target === m) closeBranchMap(); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && m.classList.contains("open")) closeBranchMap();
+    });
+  }
+
   function renderBranches() {
     var box = $("branchGrid"); box.innerHTML = "";
     branches.forEach(function(b) {
-      var card = document.createElement("div"); card.className = "mst-card";
+      var photos = Array.isArray(b.photos) && b.photos.length ? b.photos : (b.photo ? [b.photo] : []);
+      var q = encodeURIComponent(b.address || b.name);
+      var card = document.createElement("div"); card.className = "br-card";
       card.innerHTML =
-        (b.photo ? '<img class="mst-photo" src="' + b.photo + '" alt="' + b.name + '" />' : '<div class="mst-photo-ph">🏢</div>') +
-        '<div class="mst-body"><div class="mst-top"><div class="mst-name">' + b.name + '</div></div></div>' +
-        '<span class="mst-arrow">›</span>';
-      card.addEventListener("click", function() { state.branch = b.id; renderCats(); goStep(2); });
+        '<div class="br-gal">' +
+          (photos.length
+            ? '<div class="br-gal__track">' + photos.map(function(src) {
+                return '<div class="br-gal__slide"><img src="' + esc(src) + '" alt="' + esc(b.name) + '" loading="lazy"></div>';
+              }).join("") + '</div>' +
+              (photos.length > 1
+                ? '<div class="br-gal__count">1/' + photos.length + '</div>' +
+                  '<div class="br-gal__dots">' + photos.map(function(_, i) {
+                    return '<span class="br-gal__dot' + (i === 0 ? " active" : "") + '"></span>';
+                  }).join("") + '</div>'
+                : "")
+            : '<div class="br-gal__ph">🏢</div>') +
+        '</div>' +
+        '<div class="br-info">' +
+          '<div class="br-eyebrow">' + esc(tr(b.subtitle || "Студія масажу")) + '</div>' +
+          '<div class="br-name">' + esc(b.name) + '</div>' +
+          (b.address ? '<div class="br-addr">' + PIN_SVG + '<span>' + esc(b.address) + '</span></div>' : "") +
+          (b.nearby ? '<div class="br-near"><b>' + tr("Поруч:") + '</b>' + esc(tr(b.nearby)) + '</div>' : "") +
+          '<button type="button" class="br-map-btn">' + MAP_SVG + tr("Переглянути на карті") + '</button>' +
+          (b.address ? '<div class="br-map-prev"><iframe src="https://maps.google.com/maps?q=' + q + '&z=15&output=embed" loading="lazy" title="' + esc(b.name) + '"></iframe></div>' : "") +
+          '<button type="button" class="br-choose">' + tr("Обрати цю філію") + ' →</button>' +
+        '</div>';
+
+      /* Гортання фото — рахуємо активний слайд за прокруткою треку. */
+      var track = card.querySelector(".br-gal__track");
+      if (track && photos.length > 1) {
+        var dots = card.querySelectorAll(".br-gal__dot");
+        var counter = card.querySelector(".br-gal__count");
+        track.addEventListener("scroll", function() {
+          var i = Math.round(track.scrollLeft / track.clientWidth);
+          if (i < 0) i = 0; if (i >= photos.length) i = photos.length - 1;
+          dots.forEach(function(d, k) { d.classList.toggle("active", k === i); });
+          if (counter) counter.textContent = (i + 1) + "/" + photos.length;
+        }, { passive: true });
+      }
+
+      /* Карта — і кнопка, і прев'ю відкривають модалку (прев'ю не клікабельне
+         саме по собі: pointer-events у iframe вимкнено, ловимо клік по обгортці). */
+      card.querySelector(".br-map-btn").addEventListener("click", function(e) {
+        e.stopPropagation(); openBranchMap(b);
+      });
+      var prev = card.querySelector(".br-map-prev");
+      if (prev) prev.addEventListener("click", function(e) { e.stopPropagation(); openBranchMap(b); });
+
+      card.querySelector(".br-choose").addEventListener("click", function() {
+        state.branch = b.id; renderCats(); goStep(2);
+      });
       box.appendChild(card);
     });
   }
@@ -1871,5 +2000,16 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     });
   }
 </script>
+<!-- Велика карта філії (відкривається з картки) -->
+<div class="br-modal" id="branchMapModal">
+  <div class="br-modal__box">
+    <div class="br-modal__head">
+      <div class="br-modal__ttl" id="branchMapTitle"></div>
+      <button type="button" class="br-modal__x" id="branchMapClose" aria-label="Закрити">&times;</button>
+    </div>
+    <iframe id="branchMapFrame" title="Карта філії" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <a class="br-modal__open" id="branchMapOpen" href="#" target="_blank" rel="noopener">Відкрити в Google Maps →</a>
+  </div>
+</div>
 </body>
 </html>
