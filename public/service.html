@@ -106,6 +106,11 @@
     .step-num { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--olive-light); opacity: .55; margin-bottom: 10px; }
     .step-title { font-weight: 700; color: var(--cream); font-size: 15px; margin-bottom: 6px; }
     .step-text { font-size: 13.5px; color: var(--text-dim); line-height: 1.6; }
+    /* Фото кроку — необов'язкове (третя частина рядка в адмінці). */
+    .steps-row--photos { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .step-photo { border-radius: 14px; overflow: hidden; aspect-ratio: 4/3; margin-bottom: 16px; background: var(--panel); }
+    .step-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .step-photo--empty { background: none; }
 
     /* DETAIL / PRICING */
     .detail { background: var(--panel); }
@@ -282,6 +287,13 @@
     var i = line.indexOf('::');
     if (i === -1) return { title: line.trim(), text: '' };
     return { title: line.slice(0, i).trim(), text: line.slice(i + 2).trim() };
+  }
+  /* Крок розділу «Як проходить…»: "Заголовок :: Опис :: /фото.jpg".
+     Третя частина необов'язкова — якщо є, над кроком показуємо картинку.
+     Окремо від pair(), бо той усе після першого "::" кладе в опис. */
+  function stepParts(line) {
+    var p = String(line == null ? '' : line).split('::').map(function(x){ return x.trim(); });
+    return { title: p[0] || '', text: p[1] || '', photo: p[2] || '' };
   }
   function money(kop) { return Math.round((kop || 0) / 100) + ' грн'; }
   /* Рядок абонемента: "5 сеансів :: Разом :: Стара сума :: Бейдж :: рекомендовано"
@@ -475,12 +487,23 @@
     }
 
     // STEPS (перенесено вище, замість блока перків)
-    var stepItems = lines(p.steps_items).map(pair).filter(function(x){ return x.title; });
+    var stepItems = lines(p.steps_items).map(stepParts).filter(function(x){ return x.title; });
     if (stepItems.length) {
+      /* Якщо хоч в одного кроку є фото — вирівнюємо решту: кроки без
+         картинки отримують порожнє місце тієї ж висоти, щоб заголовки
+         й номери стояли в один рядок, а не «стрибали». */
+      var anyStepPhoto = stepItems.some(function(s){ return s.photo; });
       html += '<section class="block symptoms"><div class="wrap">' +
         '<h2 class="block-title">' + esc(p.steps_title || 'Як проходить ваш сеанс') + '</h2>' +
-        '<div class="steps-row">' + stepItems.map(function(s, i){
-          return '<div class="step"><div class="step-num">0' + (i+1) + '</div><div class="step-title">' + esc(s.title) + '</div>' + (s.text ? '<div class="step-text">' + esc(s.text) + '</div>' : '') + '</div>';
+        '<div class="steps-row' + (anyStepPhoto ? ' steps-row--photos' : '') + '">' + stepItems.map(function(s, i){
+          return '<div class="step">' +
+            (anyStepPhoto ? '<div class="step-photo' + (s.photo ? '' : ' step-photo--empty') + '">' +
+              (s.photo ? '<img src="' + esc(s.photo) + '" alt="' + esc(s.title) + '" loading="lazy">' : '') +
+            '</div>' : '') +
+            '<div class="step-num">0' + (i+1) + '</div>' +
+            '<div class="step-title">' + esc(s.title) + '</div>' +
+            (s.text ? '<div class="step-text">' + esc(s.text) + '</div>' : '') +
+          '</div>';
         }).join('') + '</div>' +
       '</div></section>';
     }

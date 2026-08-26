@@ -603,8 +603,14 @@
           <input type="text" id="spStepsTitle" placeholder="Як проходить ваш сеанс" />
         </div>
         <div>
-          <label>Кроки — формат «Заголовок :: текст», один крок у рядку (нумеруються автоматично)</label>
-          <textarea id="spStepsItems" rows="4" placeholder="Знайомство :: Майстер уточнює самопочуття та побажання&#10;Налаштовуємо інтенсивність :: Масаж не повинен бути однаковим для всіх" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+          <label>Кроки — формат «Заголовок :: текст», один крок у рядку (нумеруються автоматично)<br>
+          <span style="color:var(--text-dim);font-weight:400;">Можна додати фото до кроку — третьою частиною: «Заголовок :: текст :: /assets/img/фото.jpg». Поставте курсор у потрібний рядок і натисніть кнопку нижче — адреса фото допишеться сама. Фото показується над кроком; кроки без фото просто лишаються з текстом.</span></label>
+          <textarea id="spStepsItems" rows="4" placeholder="Фітобочка :: Починаємо з м'якого прогрівання :: /assets/img/step-1.jpg&#10;Масаж :: Майстер опрацьовує тіло&#10;Скрабування :: Завершуємо доглядом" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+          <div class="cover-row" style="margin-top:8px;">
+            <button type="button" id="spStepPhotoBtn">📷 Фото для кроку (за курсором)</button>
+            <span class="cover-name" id="spStepPhotoName"></span>
+          </div>
+          <input type="file" id="spStepPhotoInput" class="upload-input" accept="image/*" />
         </div>
 
         <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Блок послуги внизу сторінки</div>
@@ -1588,6 +1594,47 @@
   }
   spPhotoField('spHeroPhoto', 'spHeroPhotoPreview', 'spHeroPhotoName', 'spHeroPhotoBtn', 'spHeroPhotoInput');
   spPhotoField('spSymptomsPhoto', 'spSymptomsPhotoPreview', 'spSymptomsPhotoName', 'spSymptomsPhotoBtn', 'spSymptomsPhotoInput');
+
+  /* Фото для КРОКУ: вантажимо файл і дописуємо адресу третьою частиною
+     того рядка, де стоїть курсор. Так не треба вручну копіювати URL.
+     Якщо в рядку фото вже є — замінюємо його, а не додаємо ще одне. */
+  (function () {
+    var ta = document.getElementById('spStepsItems');
+    var btn = document.getElementById('spStepPhotoBtn');
+    var file = document.getElementById('spStepPhotoInput');
+    var nameEl = document.getElementById('spStepPhotoName');
+    if (!ta || !btn || !file) return;
+    var caret = 0;
+    ['keyup', 'click', 'focus'].forEach(function (ev) {
+      ta.addEventListener(ev, function () { caret = ta.selectionStart; });
+    });
+    btn.addEventListener('click', function () { file.click(); });
+    file.addEventListener('change', function () {
+      var f = this.files[0];
+      this.value = '';
+      if (!f) return;
+      var text = ta.value;
+      if (!text.trim()) { nameEl.textContent = 'Спочатку впишіть хоча б один крок'; return; }
+      /* Межі рядка, в якому стоїть курсор. */
+      var pos = Math.min(caret, text.length);
+      var from = text.lastIndexOf('\n', pos - 1) + 1;
+      var to = text.indexOf('\n', pos);
+      if (to === -1) to = text.length;
+      var line = text.slice(from, to);
+      if (!line.trim()) { nameEl.textContent = 'Курсор стоїть на порожньому рядку'; return; }
+      nameEl.textContent = 'Завантаження…';
+      uploadImage(f, function (url) {
+        var parts = line.split('::').map(function (x) { return x.trim(); });
+        parts[1] = parts[1] || '';
+        parts[2] = url;                       // третя частина — фото
+        var next = parts.slice(0, 3).join(' :: ');
+        ta.value = text.slice(0, from) + next + text.slice(to);
+        nameEl.textContent = f.name + ' → «' + (parts[0] || '').slice(0, 24) + '»';
+        var end = from + next.length;
+        ta.focus(); ta.setSelectionRange(end, end); caret = end;
+      });
+    });
+  })();
 
   function openSpEditor(key) {
     editingSpKey = key;
