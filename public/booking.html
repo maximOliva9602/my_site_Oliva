@@ -332,7 +332,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .br-gal__dot.active { background: var(--gold); }
 .br-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .br-eyebrow { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); }
-.br-name { font-family: 'Playfair Display', serif; font-size: 1.7rem; letter-spacing: .06em; color: var(--gold); line-height: 1; }
+.br-name { font-family: 'Playfair Display', serif; font-size: 1.7rem; letter-spacing: .06em; color: var(--gold); line-height: 1.1; overflow-wrap: anywhere; }
+/* Назва філії з адресою всередині (як у старих записах) не має
+   розпирати картку — робимо її помітно дрібнішою. */
+.br-name--long { font-size: 1rem; letter-spacing: .02em; line-height: 1.35; }
 .br-addr { display: flex; gap: 7px; font-size: .86rem; color: var(--cream); line-height: 1.4; }
 .br-addr svg { flex-shrink: 0; margin-top: 2px; }
 .br-near { font-size: .78rem; color: var(--text-dim); line-height: 1.45; }
@@ -356,6 +359,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   .br-card { grid-template-columns: 1fr; }
   .br-gal { aspect-ratio: 4/3; }
   .br-name { font-size: 1.5rem; }
+  /* Повторюємо після .br-name, інакше довга назва знову виросте. */
+  .br-name--long { font-size: .98rem; }
 }
 
 .mst-card { display: flex; align-items: stretch; gap: 14px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: border-color .2s, transform .15s; }
@@ -1188,11 +1193,11 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         '</div>' +
         '<div class="br-info">' +
           '<div class="br-eyebrow">' + esc(tr(b.subtitle || "Студія масажу")) + '</div>' +
-          '<div class="br-name">' + esc(b.name) + '</div>' +
+          '<div class="br-name' + (String(b.name || "").length > 24 ? " br-name--long" : "") + '">' + esc(b.name) + '</div>' +
           (b.address ? '<div class="br-addr">' + PIN_SVG + '<span>' + esc(b.address) + '</span></div>' : "") +
           (b.nearby ? '<div class="br-near"><b>' + tr("Поруч:") + '</b>' + esc(tr(b.nearby)) + '</div>' : "") +
           '<button type="button" class="br-map-btn">' + MAP_SVG + tr("Переглянути на карті") + '</button>' +
-          (b.address ? '<div class="br-map-prev"><iframe src="https://maps.google.com/maps?q=' + q + '&z=15&output=embed" loading="lazy" title="' + esc(b.name) + '"></iframe></div>' : "") +
+          '<div class="br-map-prev"><iframe src="https://maps.google.com/maps?q=' + q + '&z=15&output=embed" loading="lazy" title="' + esc(b.name) + '"></iframe></div>' +
           '<button type="button" class="br-choose">' + tr("Обрати цю філію") + ' →</button>' +
         '</div>';
 
