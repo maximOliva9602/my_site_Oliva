@@ -142,6 +142,10 @@
     .abon-info-sub { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-bottom: 18px; }
     .abon-info-box { border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
     .abon-price-col { border-right: 1px solid var(--line); padding-right: 32px; }
+    /* Послуга без абонементів — лишається сама колонка з ціною:
+       без розділювача й на всю ширину картки. */
+    .abon-block--price-only { max-width: 520px; }
+    .abon-price-col--solo { border-right: none; padding-right: 0; }
     .abon-price-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
     .abon-price-big { font-family: 'Playfair Display', serif; font-size: 2.8rem; color: var(--cream); font-weight: 700; line-height: 1; margin-bottom: 18px; }
     .abon-price-big span { font-size: 1.1rem; color: var(--text-dim); font-family: 'Inter', sans-serif; font-weight: 400; }
@@ -486,6 +490,18 @@
           return '<div class="abon-cards" data-abon-group="' + i + '"' + (i === 0 ? '' : ' style="display:none;"') + '>' + renderAbonCards(g.items) + '</div>';
         }).join('') +
         '</div>' +
+        '</div>' +
+      '</div></div>';
+    } else if (minPrice != null) {
+      /* Абонементів у послуги немає — але ціну показати треба: раніше вона
+         дублювалась у шапці й у таблиці цін, обидва блоки прибрані, тож без
+         цієї гілки сторінка лишалась зовсім без ціни (напр. «Антивіковий
+         масаж обличчя»). Той самий блок, лише без правої колонки з картками. */
+      html += '<div class="abon-section"><div class="abon-block abon-block--price-only">' +
+        '<div class="abon-price-col abon-price-col--solo">' +
+          '<div class="abon-price-label">Ціна за візит</div>' +
+          '<div class="abon-price-big"><span>від </span>' + Math.round(minPrice / 100) + ' грн</div>' +
+          '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
         '</div>' +
       '</div></div>';
     }
