@@ -484,7 +484,7 @@ section { padding: 100px 0; }
 .contacts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; margin-top: 56px; }
 .contact-block { margin-bottom: 32px; }
 .contact-label { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 8px; }
-.contact-value { font-size: 1.1rem; color: var(--cream); transition: color .25s; }
+.contact-value { font-size: 1.1rem; color: var(--cream); text-decoration: none; transition: color .25s; }
 a.contact-value:hover { color: var(--olive-light); }
 .social-row { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
 .social-btn { width: 48px; height: 48px; border-radius: 50%; background: rgba(46,61,34,0.4); border: 1px solid rgba(122,145,86,0.3); display: flex; align-items: center; justify-content: center; color: var(--text-dim); transition: all .3s; }
