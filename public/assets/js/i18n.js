@@ -9,7 +9,7 @@
 
   var DICT = {
     uk: {
-      "top.address": "Київ, вул. Борщагівська, 145",
+      "top.address": "Київ: вул. Борщагівська, 145 · вул. Успішна, 8",
       "top.hours": "Щодня 9:00 – 21:30",
 
       "nav.home": "Головна", "nav.services": "Послуги", "nav.prices": "Прайси",
@@ -24,7 +24,7 @@
       "hero.title1": "Тут починається", "hero.title2": "твоє відновлення", "hero.title3": "",
       "hero.desc": "",
       "hero.cta1": "Записатися онлайн", "hero.cta2": "Переглянути послуги",
-      "hero.badgeAddr": "Борщагівська, 145", "hero.badgeDaily": "щодня",
+      "hero.badgeAddr": "Борщагівська, 145 · Успішна, 8", "hero.badgeDaily": "щодня",
 
       "mq.1": "Загально-оздоровчий масаж", "mq.2": "Парний масаж", "mq.3": "Антицелюлітний масаж",
       "mq.4": "SPA-ритуали", "mq.5": "Спортивний масаж", "mq.6": "Фітобочка",
@@ -117,7 +117,7 @@
       "cta.buy": "Купити сертифікат →", "cta.book": "Записатися онлайн",
 
       "con.label": "Де нас знайти", "con.title": "Контакти",
-      "con.addr": "Адреса", "con.addrVal": "Київ, вул. Борщагівська, 145",
+      "con.addr": "Адреси", "con.addrVal": "Київ, вул. Борщагівська, 145", "con.addrVal2": "Київ, вул. Успішна, 8",
       "con.phone": "Телефон", "con.hours": "Графік роботи", "con.hoursVal": "Щодня 09:00 — 21:30",
       "con.email": "Пошта", "con.openMap": "Відкрити в Google Maps →",
 
@@ -215,7 +215,7 @@
       "book.rules.title": "Правила відвідування", "book.contra.title": "Абсолютні протипокази",
       "book.backhome": "← На головну",
       "book.contacts.find": "Де нас знайти", "book.contacts.title": "Контакти",
-      "book.contacts.address": "Адреса", "book.contacts.phone": "Телефон",
+      "book.contacts.address": "Адреси", "book.contacts.phone": "Телефон",
       "book.contacts.hours": "Графік роботи", "book.contacts.hoursVal": "Щодня 09:00 — 21:30",
       "book.contacts.mail": "Пошта",
       "book.trust.safe1": "Ваші дані", "book.trust.safe2": "в безпеці",
@@ -224,7 +224,7 @@
     },
 
     en: {
-      "top.address": "Kyiv, Borshchahivska St, 145",
+      "top.address": "Kyiv: Borshchahivska St, 145 · Uspishna St, 8",
       "top.hours": "Daily 9:00 – 21:30",
 
       "nav.home": "Home", "nav.services": "Services", "nav.prices": "Prices",
@@ -239,7 +239,7 @@
       "hero.title1": "Here begins", "hero.title2": "your recovery", "hero.title3": "",
       "hero.desc": "",
       "hero.cta1": "Book online", "hero.cta2": "View services",
-      "hero.badgeAddr": "Borshchahivska, 145", "hero.badgeDaily": "daily",
+      "hero.badgeAddr": "Borshchahivska, 145 · Uspishna, 8", "hero.badgeDaily": "daily",
 
       "mq.1": "Wellness massage", "mq.2": "Couples massage", "mq.3": "Anti-cellulite massage",
       "mq.4": "SPA rituals", "mq.5": "Sports massage", "mq.6": "Phyto-barrel",
@@ -332,7 +332,7 @@
       "cta.buy": "Buy a certificate →", "cta.book": "Book online",
 
       "con.label": "Where to find us", "con.title": "Contacts",
-      "con.addr": "Address", "con.addrVal": "Kyiv, Borshchahivska St, 145",
+      "con.addr": "Addresses", "con.addrVal": "Kyiv, Borshchahivska St, 145", "con.addrVal2": "Kyiv, Uspishna St, 8",
       "con.phone": "Phone", "con.hours": "Working hours", "con.hoursVal": "Daily 09:00 — 21:30",
       "con.email": "Email", "con.openMap": "Open in Google Maps →",
 
@@ -430,7 +430,7 @@
       "book.rules.title": "Правила відвідування", "book.contra.title": "Абсолютні протипокази",
       "book.backhome": "← Back to home",
       "book.contacts.find": "Find us", "book.contacts.title": "Contacts",
-      "book.contacts.address": "Address", "book.contacts.phone": "Phone",
+      "book.contacts.address": "Addresses", "book.contacts.phone": "Phone",
       "book.contacts.hours": "Working hours", "book.contacts.hoursVal": "Daily 09:00 — 21:30",
       "book.contacts.mail": "Email",
       "book.trust.safe1": "Your data", "book.trust.safe2": "is safe",

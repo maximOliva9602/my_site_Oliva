@@ -210,6 +210,7 @@
     .map-embed-wrap { display: flex; flex-direction: column; gap: 10px; }
     .map-open-link { font-size: 13px; color: var(--olive-light); text-decoration: none; text-align: center; }
     .map-open-link:hover { color: var(--cream); }
+    .map-links { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; }
     @media (max-width: 780px) {
       .contacts-grid { grid-template-columns: 1fr; gap: 40px; }
     }
@@ -576,7 +577,9 @@
       '<h2 class="section-title">Контакти</h2>' +
       '<div class="contacts-grid">' +
         '<div>' +
-          '<div class="contact-block"><div class="contact-label">Адреса</div><a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="contact-value">Київ, вул. Борщагівська, 145</a></div>' +
+          '<div class="contact-block"><div class="contact-label">Адреси</div>' +
+            '<a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="contact-value">Київ, вул. Борщагівська, 145</a>' +
+            '<a href="https://maps.google.com/?q=Київ,+вул.+Успішна,+8" target="_blank" rel="noopener" class="contact-value" style="display:block;margin-top:4px;">Київ, вул. Успішна, 8</a></div>' +
           '<div class="contact-block"><div class="contact-label">Телефон</div><a href="tel:+380974340112" class="contact-value">+38 097 434 01 12</a></div>' +
           '<div class="contact-block"><div class="contact-label">Графік роботи</div><div class="contact-value">Щодня 09:00 — 21:30</div></div>' +
           '<div class="contact-block"><div class="contact-label">Пошта</div><a href="mailto:olivastudio96@gmail.com" class="contact-value">olivastudio96@gmail.com</a></div>' +
@@ -593,7 +596,10 @@
         '<div>' +
           '<div class="map-embed-wrap">' +
             '<iframe src="https://maps.google.com/maps?q=Київ,+вул.+Борщагівська,+145&z=16&output=embed" width="100%" height="360" style="border:0;border-radius:16px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>' +
-            '<a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="map-open-link">Відкрити в Google Maps →</a>' +
+            '<div class="map-links">' +
+              '<a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="map-open-link">Борщагівська, 145 →</a>' +
+              '<a href="https://maps.google.com/?q=Київ,+вул.+Успішна,+8" target="_blank" rel="noopener" class="map-open-link">Успішна, 8 →</a>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +

@@ -495,6 +495,8 @@ a.contact-value:hover { color: var(--olive-light); }
 .map-embed-wrap { display: flex; flex-direction: column; gap: 10px; }
 .map-open-link { font-size: 13px; color: var(--olive-light); text-decoration: none; text-align: center; }
 .map-open-link:hover { color: var(--cream); }
+/* Дві філії — два посилання на карту в один рядок. */
+.map-links { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; }
 .map-icon { font-size: 2rem; }
 .map-sub { font-size: 0.75rem; }
 
