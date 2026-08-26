@@ -67,31 +67,42 @@ function blockedIntervals(masterId, date) {
   return blocked;
 }
 
+/* Робочі години майстра на дату з урахуванням філії.
+   Порядок пошуку: день-override цієї філії -> день-override «усі філії»
+   -> тижневий графік цієї філії -> тижневий «усі філії».
+   branch_id = 0 = «усі філії»: таким лишається графік, заведений до
+   появи філій, тож старі дані працюють без міграції.
+   Повертає {start, end} або null (вихідний / графіка немає). */
+function workWindow(masterId, date, branchId) {
+  const b = parseInt(branchId, 10) || 0;
+  const ovStmt = db.prepare(
+    "SELECT is_off, work_start, work_end FROM master_day_overrides WHERE master_id=? AND date=? AND branch_id=?"
+  );
+  let ov = b ? ovStmt.get(masterId, date, b) : null;
+  if (!ov) ov = ovStmt.get(masterId, date, 0);
+  if (ov) {
+    if (ov.is_off) return null;
+    return { start: ov.work_start, end: ov.work_end };
+  }
+  const weekday = tz.weekdayOf(date);
+  const schStmt = db.prepare(
+    "SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=? AND branch_id=?"
+  );
+  let sch = b ? schStmt.get(masterId, weekday, b) : null;
+  if (!sch) sch = schStmt.get(masterId, weekday, 0);
+  if (!sch) return null;
+  return { start: sch.work_start, end: sch.work_end };
+}
+
 /* Вільні старти для конкретного майстра. nowMs — для тестів. */
-function freeSlots(masterId, date, durationMin, nowMs) {
+function freeSlots(masterId, date, durationMin, nowMs, branchId) {
   if (!tz.isDate(date) || !(durationMin > 0)) return [];
   const now = tz.nowKyiv(undefined, nowMs);
   if (date < now.date) return [];                 // минула дата
 
-  // День-override має пріоритет над тижневим графіком
-  const override = db.prepare(
-    "SELECT is_off, work_start, work_end FROM master_day_overrides WHERE master_id=? AND date=?"
-  ).get(masterId, date);
-
-  let workStart, workEnd;
-  if (override) {
-    if (override.is_off) return [];               // явний вихідний
-    workStart = override.work_start;
-    workEnd   = override.work_end;
-  } else {
-    const weekday = tz.weekdayOf(date);
-    const sched = db.prepare(
-      "SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=?"
-    ).get(masterId, weekday);
-    if (!sched) return [];                        // тижневий вихідний
-    workStart = sched.work_start;
-    workEnd   = sched.work_end;
-  }
+  const win = workWindow(masterId, date, branchId);
+  if (!win) return [];                            // вихідний або графіка немає
+  const workStart = win.start, workEnd = win.end;
 
   let earliest = workStart;
   if (date === now.date) earliest = Math.max(workStart, now.min + LEAD_MIN);
@@ -114,11 +125,20 @@ function mastersForService(serviceId) {
 
 /* "Будь-який майстер": об'єднання стартів. Повертає
    [{ start_min, masterIds:[...] }] відсортовано за часом. */
-function freeSlotsAny(serviceId, date, durationMin, nowMs) {
-  const ids = mastersForService(serviceId);
+function freeSlotsAny(serviceId, date, durationMin, nowMs, branchId) {
+  /* branchId звужує і список майстрів (лише ті, хто працює у філії),
+     і їхні робочі години — інакше «будь-який майстер» пропонував би час
+     колеги з іншої адреси. */
+  let ids = mastersForService(serviceId);
+  const b = parseInt(branchId, 10) || 0;
+  if (b) {
+    const inBranch = db.prepare("SELECT master_id FROM branch_masters WHERE branch_id=?")
+      .all(b).map(function (r) { return r.master_id; });
+    if (inBranch.length) ids = ids.filter(function (id) { return inBranch.indexOf(id) !== -1; });
+  }
   const map = new Map(); // start_min -> Set(masterId)
   for (const id of ids) {
-    for (const s of freeSlots(id, date, durationMin, nowMs)) {
+    for (const s of freeSlots(id, date, durationMin, nowMs, branchId)) {
       if (!map.has(s)) map.set(s, []);
       map.get(s).push(id);
     }
@@ -128,30 +148,18 @@ function freeSlotsAny(serviceId, date, durationMin, nowMs) {
 }
 
 /* Чи вільний конкретний старт у майстра (для повторної перевірки при броні). */
-function isSlotFree(masterId, date, startMin, durationMin, nowMs) {
-  return freeSlots(masterId, date, durationMin, nowMs).indexOf(startMin) !== -1;
+function isSlotFree(masterId, date, startMin, durationMin, nowMs, branchId) {
+  return freeSlots(masterId, date, durationMin, nowMs, branchId).indexOf(startMin) !== -1;
 }
 
 /* Максимальна тривалість (хв), яку можна вписати від startMin у майстра на дату:
    від startMin до найближчого заблокованого інтервалу або кінця зміни.
    Використовується, щоб дозволяти додаткові послуги лише якщо вони влазять. */
-function maxDurationFrom(masterId, date, startMin) {
+function maxDurationFrom(masterId, date, startMin, branchId) {
   if (!tz.isDate(date)) return 0;
-  const override = db.prepare(
-    "SELECT is_off, work_start, work_end FROM master_day_overrides WHERE master_id=? AND date=?"
-  ).get(masterId, date);
-  let workStart, workEnd;
-  if (override) {
-    if (override.is_off) return 0;
-    workStart = override.work_start; workEnd = override.work_end;
-  } else {
-    const weekday = tz.weekdayOf(date);
-    const sched = db.prepare(
-      "SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=?"
-    ).get(masterId, weekday);
-    if (!sched) return 0;
-    workStart = sched.work_start; workEnd = sched.work_end;
-  }
+  const win = workWindow(masterId, date, branchId);
+  if (!win) return 0;
+  const workStart = win.start, workEnd = win.end;
   if (startMin < workStart || startMin >= workEnd) return 0;
   let limit = workEnd;
   const blocked = blockedIntervals(masterId, date);
@@ -166,5 +174,5 @@ function maxDurationFrom(masterId, date, startMin) {
 module.exports = {
   STEP, LEAD_MIN, BUFFER_MIN,
   computeSlots, blockedIntervals,
-  freeSlots, freeSlotsAny, mastersForService, isSlotFree, maxDurationFrom,
+  workWindow, freeSlots, freeSlotsAny, mastersForService, isSlotFree, maxDurationFrom,
 };

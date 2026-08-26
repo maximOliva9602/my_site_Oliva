@@ -1434,7 +1434,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   function weekdayIdx(dateStr) { var p = dateStr.split("-").map(Number); return new Date(Date.UTC(p[0], p[1]-1, p[2], 12)).getUTCDay(); }
   function loadMasterNextSlots(catIds) {
     if (!catIds || !catIds.length) return;
-    fetch("/api/public/next-slots?services=" + catIds.join(","))
+    fetch("/api/public/next-slots?services=" + catIds.join(",") + (state.branch ? "&branch=" + state.branch : ""))
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.ok) return;
@@ -1744,7 +1744,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   function loadSlots() {
     if (!state.date || !state.service) return;
     var wrap = $("slotsWrap"); wrap.innerHTML = '<div class="empty">' + tr("Завантаження…") + '</div>';
-    fetch("/api/public/slots?service=" + state.service.id + "&master=" + (state.master ? state.master.id : "any") + "&date=" + state.date + "&extra=" + extrasTotalMin())
+    fetch("/api/public/slots?service=" + state.service.id + "&master=" + (state.master ? state.master.id : "any") + "&date=" + state.date + "&extra=" + extrasTotalMin() + (state.branch ? "&branch=" + state.branch : ""))
       .then(function(r) { return r.json(); }).then(function(j) {
         wrap.innerHTML = "";
         if (!j.ok || !j.slots.length) {

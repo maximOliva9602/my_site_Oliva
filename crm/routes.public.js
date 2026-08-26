@@ -122,15 +122,17 @@ router.get("/slots", function (req, res) {
   const extraMin = Math.max(0, Math.min(600, parseInt(req.query.extra, 10) || 0));
   const totalDur = svc.duration_min + extraMin;
 
+  /* Філія звужує графік: майстер може мати різні години на різних адресах. */
+  const branchQ = parseInt(req.query.branch, 10) || 0;
   if (!master || master === "any") {
-    const list = slots.freeSlotsAny(serviceId, date, totalDur);
+    const list = slots.freeSlotsAny(serviceId, date, totalDur, undefined, branchQ);
     return res.json({
       ok: true, any: true,
       slots: list.map(function (s) { return { start_min: s.start_min, time: tz.fmtMin(s.start_min), masterIds: s.masterIds }; }),
     });
   }
   const masterId = parseInt(master, 10);
-  const list = slots.freeSlots(masterId, date, totalDur);
+  const list = slots.freeSlots(masterId, date, totalDur, undefined, branchQ);
   res.json({
     ok: true, any: false,
     slots: list.map(function (m) { return { start_min: m, time: tz.fmtMin(m) }; }),
@@ -170,13 +172,14 @@ router.get("/next-slots", function (req, res) {
     return dt.toISOString().slice(0, 10);
   }
   const today = tz.nowKyiv().date;
+  const nextBranch = parseInt(req.query.branch, 10) || 0;
   const out = {};
   Object.keys(masterDur).forEach(function (midStr) {
     const mid = parseInt(midStr, 10);
     const dur = masterDur[mid] + extra;
     for (let i = 0; i < 14; i++) {
       const date = addDays(today, i);
-      const free = slots.freeSlots(mid, date, dur);
+      const free = slots.freeSlots(mid, date, dur, undefined, nextBranch);
       if (free.length) {
         out[mid] = { date: date, today: i === 0, times: free.slice(0, 30).map(function (m) { return tz.fmtMin(m); }) };
         break;
@@ -242,7 +245,7 @@ router.post("/book", function (req, res) {
   // Обрати майстра: конкретний або найперший вільний серед «будь-яких»
   let masterId;
   if (!master || master === "any") {
-    const cand = slots.freeSlotsAny(serviceId, date, totalDur)
+    const cand = slots.freeSlotsAny(serviceId, date, totalDur, undefined, branchId || 0)
       .find(function (s) { return s.start_min === startMin; });
     if (!cand) return res.status(409).json({ ok: false, error: "SLOT_TAKEN" });
     masterId = cand.masterIds[0];
@@ -269,7 +272,7 @@ router.post("/book", function (req, res) {
   try {
     const txn = db.transaction(function () {
       // повторна перевірка накладок усередині транзакції
-      if (!slots.isSlotFree(masterId, date, startMin, totalDur)) {
+      if (!slots.isSlotFree(masterId, date, startMin, totalDur, undefined, branchId || 0)) {
         const err = new Error("SLOT_TAKEN"); err.code = "SLOT_TAKEN"; throw err;
       }
       // upsert клієнта за телефоном

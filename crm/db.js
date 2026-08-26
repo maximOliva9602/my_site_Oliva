@@ -545,6 +545,53 @@ CREATE TABLE IF NOT EXISTS master_day_overrides (
   FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_day_overrides ON master_day_overrides(master_id, date);
+`);
+
+/* ── Графік по філіях ───────────────────────────────────────────────
+   Майстер може працювати в кількох філіях, і графік у них різний.
+   branch_id = 0 означає «усі філії» — саме таким лишається весь графік,
+   заведений до появи філій, тож нічого не ламається.
+
+   master_day_overrides мала UNIQUE(master_id, date), що не дає завести
+   один день у двох філіях, — тому таблицю перебудовуємо (ALTER у SQLite
+   не змінює обмежень). Робимо це лише раз: коли колонки ще немає. */
+(function migrateBranchSchedules() {
+  const hasCol = (t, c) => db.prepare(`PRAGMA table_info(${t})`).all().some(x => x.name === c);
+  try {
+    if (!hasCol("master_day_overrides", "branch_id")) {
+      db.transaction(function () {
+        db.exec(`
+          CREATE TABLE master_day_overrides__new (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            master_id  INTEGER NOT NULL,
+            branch_id  INTEGER NOT NULL DEFAULT 0,
+            date       TEXT    NOT NULL,
+            is_off     INTEGER NOT NULL DEFAULT 0,
+            work_start INTEGER,
+            work_end   INTEGER,
+            UNIQUE(master_id, date, branch_id),
+            FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
+          );
+          INSERT INTO master_day_overrides__new (id, master_id, branch_id, date, is_off, work_start, work_end)
+            SELECT id, master_id, 0, date, is_off, work_start, work_end FROM master_day_overrides;
+          DROP TABLE master_day_overrides;
+          ALTER TABLE master_day_overrides__new RENAME TO master_day_overrides;
+          CREATE INDEX IF NOT EXISTS idx_day_overrides ON master_day_overrides(master_id, date);
+        `);
+      })();
+      console.log("[db] master_day_overrides: додано branch_id");
+    }
+  } catch (e) { console.error("[db] міграція master_day_overrides:", e.message); }
+  /* master_schedule обмежень не має — вистачає звичайного ALTER. */
+  try {
+    if (!hasCol("master_schedule", "branch_id")) {
+      db.exec("ALTER TABLE master_schedule ADD COLUMN branch_id INTEGER NOT NULL DEFAULT 0");
+      console.log("[db] master_schedule: додано branch_id");
+    }
+  } catch (e) { console.error("[db] міграція master_schedule:", e.message); }
+})();
+
+db.exec(`
 
 CREATE TABLE IF NOT EXISTS branches (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,

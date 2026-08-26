@@ -3742,11 +3742,21 @@
         var masters   = results[1].j.masters   || [];
         var rawOvs    = results[2].j.overrides || [];
         // overrideMap[masterId][date] = { is_off, work_start, work_end }
+        /* overrideMap[masterId][branchId][date]. branchId 0 = «усі філії»:
+           саме там лежить графік, заведений до появи філій. */
         var overrideMap = {};
         rawOvs.forEach(function(ov) {
+          var br = ov.branch_id || 0;
           if (!overrideMap[ov.master_id]) overrideMap[ov.master_id] = {};
-          overrideMap[ov.master_id][ov.date] = ov;
+          if (!overrideMap[ov.master_id][br]) overrideMap[ov.master_id][br] = {};
+          overrideMap[ov.master_id][br][ov.date] = ov;
         });
+        /* Override філії має пріоритет; якщо його немає — спільний (0). */
+        function ovFor(masterId, branchId, dateStr) {
+          var byBr = overrideMap[masterId] || {};
+          var b = branchId || 0;
+          return (b && byBr[b] && byBr[b][dateStr]) || (byBr[0] && byBr[0][dateStr]) || null;
+        }
 
         return Promise.all(masters.map(function(m) {
           return api("GET", "/api/crm/masters/" + m.id + "/schedule").then(function(r) {
@@ -3794,8 +3804,9 @@
             return tr;
           }
 
-          function masterRow(row) {
+          function masterRow(row, branchId) {
             var m = row.master;
+            var rowBranch = branchId || 0;
             // Редагувати може власник, або сам майстер — лише свій рядок і
             // лише якщо власник надав право (can_edit_own_schedule).
             var canEdit = ME.role === "owner" || (m.id === ME.masterId && !!m.can_edit_own_schedule);
@@ -3811,12 +3822,12 @@
               '<div style="font-size:.62rem;color:#1a2016;font-weight:600;margin-top:2px;white-space:nowrap;">' + (m.name||'') + '</div>';
             if (canEdit) {
               tdAv.addEventListener("click", (function(master) { return function() {
-                scheduleEditPage(master, todayStr(), "grafik");
+                scheduleEditPage(master, todayStr(), "grafik", null, rowBranch);
               }; })(m));
             }
             tr.appendChild(tdAv);
             days.forEach(function(day) {
-              var ov = (overrideMap[m.id] || {})[day.dateStr];
+              var ov = ovFor(m.id, rowBranch, day.dateStr);
               var s;
               if (ov) {
                 s = ov.is_off ? null : { work_start: ov.work_start, work_end: ov.work_end };
@@ -3827,9 +3838,9 @@
               td.style.cssText = "padding:3px;text-align:center;" + (canEdit ? "cursor:pointer;" : "");
               td.innerHTML = schedCellHtml(s);
               if (canEdit) {
-                td.addEventListener("click", (function(master2, ds2) { return function() {
-                  scheduleEditPage(master2, ds2, "grafik", "day");
-                }; })(m, day.dateStr));
+                td.addEventListener("click", (function(master2, ds2, br2) { return function() {
+                  scheduleEditPage(master2, ds2, "grafik", "day", br2);
+                }; })(m, day.dateStr, rowBranch));
               }
               tr.appendChild(td);
             });
@@ -3860,7 +3871,7 @@
             branches.forEach(function(branch) {
               tbody.appendChild(sectionRow((branch.name || "ФІЛІЯ").toUpperCase(), totalCols));
               tbody.appendChild(branchRow(branch));
-              (rowsByBranch[branch.id] || []).forEach(function(row) { tbody.appendChild(masterRow(row)); });
+              (rowsByBranch[branch.id] || []).forEach(function(row) { tbody.appendChild(masterRow(row, branch.id)); });
             });
             if (unassigned.length) {
               tbody.appendChild(sectionRow("БЕЗ ФІЛІЇ", totalCols));
@@ -6165,7 +6176,12 @@
 
   function scheduleModal(m) { scheduleEditPage(m, todayStr(), "masters"); }
 
-  function scheduleEditPage(m, startDate, backTabId, defaultTab) {
+  /* branchId — філія, з рядка якої відкрили графік. 0 = «усі філії»
+     (так поводиться графік, заведений до появи філій). Денний графік
+     зберігається саме для цієї філії, тож інші філії його не бачать. */
+  function scheduleEditPage(m, startDate, backTabId, defaultTab, branchId) {
+    var schedBranch = parseInt(branchId, 10) || 0;
+    var brQ = schedBranch ? "&branch=" + schedBranch : "";
     var main2 = $("main"); main2.innerHTML = "";
     var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
     main2.style.cssText = "padding:50px 0 0;";
@@ -6329,7 +6345,7 @@
 
       function loadDay(date) {
         dayStateArea.innerHTML = '<div style="color:#aaa;font-size:.85rem;padding:8px 0;">Завантаження…</div>';
-        api("GET", "/api/crm/masters/" + m.id + "/day-override?date=" + date).then(function(r) {
+        api("GET", "/api/crm/masters/" + m.id + "/day-override?date=" + date + brQ).then(function(r) {
           renderDayState(date, r.j.override, r.j.weekly);
         });
       }
@@ -6391,7 +6407,7 @@
           resetBtn.textContent = "Скинути до тижневого графіку";
           resetBtn.style.cssText = "background:none;border:1.5px solid #d8ddd4;color:#6a7a60;border-radius:10px;padding:8px 14px;font-size:.8rem;cursor:pointer;margin-bottom:10px;";
           resetBtn.addEventListener("click", function() {
-            api("DELETE", "/api/crm/masters/" + m.id + "/day-override?date=" + date).then(function() { loadDay(date); });
+            api("DELETE", "/api/crm/masters/" + m.id + "/day-override?date=" + date + brQ).then(function() { loadDay(date); });
           });
           dayStateArea.appendChild(resetBtn);
         }
@@ -6403,7 +6419,7 @@
         saveBtn.addEventListener("click", function() {
           var isOffNow = rOff.rb.checked;
           api("PUT", "/api/crm/masters/" + m.id + "/day-override", {
-            date: date, is_off: isOffNow ? 1 : 0,
+            date: date, branch: schedBranch, is_off: isOffNow ? 1 : 0,
             work_start: isOffNow ? null : toMin(wsI.value),
             work_end:   isOffNow ? null : toMin(weI.value)
           }).then(function(r) {

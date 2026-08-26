@@ -1069,7 +1069,7 @@ router.get("/masters/:id/schedule", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
   res.json({
     ok: true,
-    schedule: db.prepare("SELECT weekday, work_start, work_end FROM master_schedule WHERE master_id=? ORDER BY weekday").all(id),
+    schedule: db.prepare("SELECT weekday, work_start, work_end, branch_id FROM master_schedule WHERE master_id=? ORDER BY weekday").all(id),
     breaks: db.prepare("SELECT id, weekday, break_start, break_end FROM master_breaks WHERE master_id=? ORDER BY weekday, break_start").all(id),
   });
 });
@@ -1091,10 +1091,17 @@ router.get("/masters/:id/day-override", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
   const date = req.query.date;
   if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
-  const override = db.prepare("SELECT * FROM master_day_overrides WHERE master_id=? AND date=?").get(id, date);
+  /* branch=0 (або без параметра) — «усі філії»: так поводиться графік,
+     заведений до появи філій. */
+  const br = parseInt(req.query.branch, 10) || 0;
+  const ovStmt = db.prepare("SELECT * FROM master_day_overrides WHERE master_id=? AND date=? AND branch_id=?");
+  let override = br ? ovStmt.get(id, date, br) : null;
+  if (!override) override = ovStmt.get(id, date, 0);
   const d = new Date(date + "T00:00:00");
   const weekday = d.getDay(); // 0=Sun..6=Sat
-  const weekly = db.prepare("SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=?").get(id, weekday);
+  const wkStmt = db.prepare("SELECT work_start, work_end FROM master_schedule WHERE master_id=? AND weekday=? AND branch_id=?");
+  let weekly = br ? wkStmt.get(id, weekday, br) : null;
+  if (!weekly) weekly = wkStmt.get(id, weekday, 0);
   res.json({ ok: true, override: override || null, weekly: weekly || null });
 });
 
@@ -1107,8 +1114,15 @@ router.put("/masters/:id/day-override", any, function (req, res) {
   const isOff = b.is_off ? 1 : 0;
   const ws = (!isOff && b.work_start != null) ? parseInt(b.work_start, 10) : null;
   const we = (!isOff && b.work_end   != null) ? parseInt(b.work_end,   10) : null;
-  db.prepare("INSERT OR REPLACE INTO master_day_overrides (master_id,date,is_off,work_start,work_end) VALUES (?,?,?,?,?)")
-    .run(id, date, isOff, ws, we);
+  const br = parseInt(b.branch, 10) || 0;
+  db.transaction(function () {
+    /* Щойно день виставили для конкретної філії, спільний запис
+       «усі філії» на цю дату більше не діє — інакше той самий день
+       світився б і в решті філій (це й був баг із дублюванням). */
+    if (br) db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=? AND branch_id=0").run(id, date);
+    db.prepare("INSERT OR REPLACE INTO master_day_overrides (master_id,date,branch_id,is_off,work_start,work_end) VALUES (?,?,?,?,?,?)")
+      .run(id, date, br, isOff, ws, we);
+  })();
   res.json({ ok: true });
 });
 
@@ -1117,7 +1131,8 @@ router.delete("/masters/:id/day-override", any, function (req, res) {
   if (!canEditSchedule(req.session, id)) return res.status(403).json({ ok: false, error: "forbidden" });
   const date = req.query.date;
   if (!tz.isDate(date)) return res.status(400).json({ ok: false, error: "bad date" });
-  db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=?").run(id, date);
+  const brDel = parseInt(req.query.branch, 10) || 0;
+  db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=? AND branch_id=?").run(id, date, brDel);
   res.json({ ok: true });
 });
 
@@ -1127,7 +1142,7 @@ router.get("/masters-overrides", any, function (req, res) {
   const to   = (req.query.to   || "").slice(0, 10);
   if (!tz.isDate(from) || !tz.isDate(to)) return res.status(400).json({ ok: false, error: "bad dates" });
   const overrides = db.prepare(
-    "SELECT master_id, date, is_off, work_start, work_end FROM master_day_overrides WHERE date >= ? AND date <= ? ORDER BY master_id, date"
+    "SELECT master_id, branch_id, date, is_off, work_start, work_end FROM master_day_overrides WHERE date >= ? AND date <= ? ORDER BY master_id, date"
   ).all(from, to);
   res.json({ ok: true, overrides });
 });
