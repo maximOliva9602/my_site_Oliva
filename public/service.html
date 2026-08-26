@@ -107,8 +107,12 @@
     .step-title { font-weight: 700; color: var(--cream); font-size: 15px; margin-bottom: 6px; }
     .step-text { font-size: 13.5px; color: var(--text-dim); line-height: 1.6; }
     /* Фото кроку — необов'язкове (третя частина рядка в адмінці). */
+    /* Розділ із кроками тримаємо компактнішим за решту блоків —
+       з фото він і так високий. */
+    section.block.steps-section { padding: 40px 0 44px; }
+    .steps-section .block-title { margin-bottom: 22px; }
     .steps-row--photos { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-    .step-photo { border-radius: 14px; overflow: hidden; aspect-ratio: 4/3; margin-bottom: 16px; background: var(--panel); }
+    .step-photo { border-radius: 14px; overflow: hidden; aspect-ratio: 16/9; margin-bottom: 12px; background: var(--panel); }
     .step-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .step-photo--empty { background: none; }
 
@@ -493,7 +497,7 @@
          картинки отримують порожнє місце тієї ж висоти, щоб заголовки
          й номери стояли в один рядок, а не «стрибали». */
       var anyStepPhoto = stepItems.some(function(s){ return s.photo; });
-      html += '<section class="block symptoms"><div class="wrap">' +
+      html += '<section class="block symptoms steps-section"><div class="wrap">' +
         '<h2 class="block-title">' + esc(p.steps_title || 'Як проходить ваш сеанс') + '</h2>' +
         '<div class="steps-row' + (anyStepPhoto ? ' steps-row--photos' : '') + '">' + stepItems.map(function(s, i){
           return '<div class="step">' +
