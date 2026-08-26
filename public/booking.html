@@ -865,6 +865,15 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   // віконець" на кроці 3 — обнуляється одразу після показу/перевірки.
   var preferredMasterId = null;
   var branches = [], branchStepEnabled = false;
+  /* Послуги, доступні в обраній філії. Порожній service_ids у філії
+     означає «філія надає всі послуги» — тоді нічого не фільтруємо,
+     тож старі філії поводяться як раніше. */
+  function availServices() {
+    if (!state.branch) return allServices;
+    var b = branches.filter(function(x) { return x.id === state.branch; })[0];
+    if (!b || !Array.isArray(b.service_ids) || !b.service_ids.length) return allServices;
+    return allServices.filter(function(s) { return b.service_ids.indexOf(s.id) !== -1; });
+  }
   var allServices = [], allMasters = [];
   var DOW = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
   var ICONS = {
@@ -1089,7 +1098,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   /* Майстри для обраної категорії, звужені до обраної філії (якщо крок
      "Оберіть філію" активний і клієнт уже щось обрав). */
   function eligibleMasters() {
-    var catServices = allServices.filter(function(s) { return parseName(s.name).cat === state.category; });
+    var catServices = availServices().filter(function(s) { return parseName(s.name).cat === state.category; });
     var catIds = catServices.map(function(s) { return s.id; });
     var list = allMasters.filter(function(m) {
       return (m.service_ids || []).some(function(id) { return catIds.indexOf(id) !== -1; });
@@ -1139,7 +1148,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var sb = $("catSearch"); if (sb) sb.value = ""; // скинути пошук при вході в категорію
     var box = $("catGrid"); box.innerHTML = "";
     var cats = {};
-    allServices.forEach(function(s) {
+    availServices().forEach(function(s) {
       var p = parseName(s.name);
       if (resolveGroup(s, p.cat) !== state.group) return;
       if (!cats[p.cat]) cats[p.cat] = { min: Infinity, dur: null, img: null, hit: false };
@@ -1220,7 +1229,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     if (pairHint) pairHint.classList.toggle("hide", state.group !== "spa2");
     var noSlotsHint = $("mstNoSlotsHint");
     if (noSlotsHint) noSlotsHint.classList.add("hide"); // до відповіді /next-slots не блимаємо старим банером
-    var catServices = allServices.filter(function(s) { return parseName(s.name).cat === state.category; });
+    var catServices = availServices().filter(function(s) { return parseName(s.name).cat === state.category; });
     var em = eligibleMasters();
     var catIds = em.catIds, eligible = em.eligible;
     if (!eligible.length) {
@@ -1366,9 +1375,9 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var box = $("durList"); box.innerHTML = "";
     var opts;
     if (!state.master) {
-      opts = allServices.filter(function(s) { return parseName(s.name).cat === state.category; });
+      opts = availServices().filter(function(s) { return parseName(s.name).cat === state.category; });
     } else {
-      opts = allServices.filter(function(s) { return parseName(s.name).cat === state.category && state.master.service_ids.indexOf(s.id) !== -1; });
+      opts = availServices().filter(function(s) { return parseName(s.name).cat === state.category && state.master.service_ids.indexOf(s.id) !== -1; });
     }
     opts.sort(function(a, b) { return a.duration_min - b.duration_min; });
     if (!opts.length) { box.innerHTML = '<div class="empty">' + tr("Немає доступних варіантів.") + '</div>'; return; }
@@ -1749,7 +1758,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var end = new Date(start.getTime() + totMin * 60000);
     var isEnCal = curLang() === "en";
     var title = (isEnCal ? "Massage: " : "Масаж: ") + tr(p.cat) + " — Oliva";
-    var loc = "Київ, вул. Борщагівська, 145";
+    /* Адреса саме тієї філії, куди записався клієнт; якщо філій немає
+       або адреса не заповнена — головна адреса студії. */
+    var bSel = branches.filter(function(x) { return x.id === state.branch; })[0];
+    var loc = (bSel && bSel.address) || "Київ, вул. Борщагівська, 145";
     var details = (isEnCal ? "Therapist: " : "Майстер: ") + state.master.name + "\n" + (isEnCal ? "Oliva Massage Studio" : "Студія масажу Oliva") + "\n" + (isEnCal ? "Tel: " : "Тел: ") + "+38 097 434 01 12";
 
     var g = "https://calendar.google.com/calendar/render?action=TEMPLATE" +

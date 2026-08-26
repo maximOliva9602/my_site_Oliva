@@ -575,7 +575,24 @@ CREATE TABLE IF NOT EXISTS branch_masters (
   FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_branch_masters_master ON branch_masters(master_id);
+
+/* Які послуги надає філія. ПОРОЖНЬО = філія надає ВСІ послуги — так
+   старі філії, заведені до цієї таблиці, працюють як і раніше, без
+   міграції даних. Щойно власник зберігає список у CRM, з'являються явні
+   рядки, і філія показує лише їх. */
+CREATE TABLE IF NOT EXISTS branch_services (
+  branch_id  INTEGER NOT NULL,
+  service_id INTEGER NOT NULL,
+  PRIMARY KEY (branch_id, service_id),
+  FOREIGN KEY (branch_id)  REFERENCES branches(id)  ON DELETE CASCADE,
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_branch_services_branch ON branch_services(branch_id);
 `);
+
+/* Адреса філії. Показується клієнту в онлайн-записі та підставляється
+   в SMS/подію календаря замість однієї адреси студії на всіх. */
+try { db.exec("ALTER TABLE branches ADD COLUMN address TEXT"); } catch(e) {}
 
 /* Для майстра з кількома філіями запис повинен пам'ятати конкретну
    філію, яку обрав клієнт. Старі записи залишаються сумісними (NULL). */

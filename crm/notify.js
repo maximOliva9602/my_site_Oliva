@@ -29,11 +29,13 @@ function apptView(appointmentId) {
   return db.prepare(
     `SELECT a.*, c.name AS client_name, c.phone AS client_phone,
             c.no_reminders AS client_no_reminders,
-            s.name AS service_name, m.name AS master_name
+            s.name AS service_name, m.name AS master_name,
+            br.address AS branch_address
        FROM appointments a
        JOIN clients c  ON c.id = a.client_id
        JOIN services s ON s.id = a.service_id
        JOIN masters m  ON m.id = a.master_id
+       LEFT JOIN branches br ON br.id = COALESCE(a.branch_id, m.branch_id)
       WHERE a.id = ?`
   ).get(appointmentId);
 }
@@ -66,7 +68,7 @@ function renderTemplate(kind, v) {
   return `Нагадування від Oliva 💆\n` +
     `Майстер: ${v.master_name}\n` +
     `Дата: ${ddmm(v.date)}\nЧас: ${tz.fmtMin(v.start_min)}\n` +
-    `Адреса: ${STUDIO_ADDRESS}\n` +
+    `Адреса: ${v.branch_address || STUDIO_ADDRESS}\n` +
     `Питання? ${STUDIO_PHONE}`;
 }
 

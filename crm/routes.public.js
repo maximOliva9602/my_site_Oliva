@@ -50,8 +50,14 @@ router.get("/branches", function (req, res) {
   const setting = db.prepare("SELECT value FROM app_settings WHERE key='booking_branch_step'").get();
   const enabled = !!setting && setting.value === "1";
   const branches = db.prepare(
-    "SELECT id, name, photo FROM branches WHERE active=1 ORDER BY sort_order, id"
+    "SELECT id, name, photo, address FROM branches WHERE active=1 ORDER BY sort_order, id"
   ).all();
+  /* Порожній список = філія надає всі послуги (див. branch_services у db.js).
+     Онлайн-запис у такому разі нічого не фільтрує. */
+  const svcStmt = db.prepare("SELECT service_id FROM branch_services WHERE branch_id=?");
+  branches.forEach(function (b) {
+    b.service_ids = svcStmt.all(b.id).map(function (r) { return r.service_id; });
+  });
   res.json({ ok: true, enabled: enabled && branches.length > 1, branches: branches });
 });
 

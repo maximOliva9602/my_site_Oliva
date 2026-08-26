@@ -4331,6 +4331,20 @@
     nameInput.style.cssText = "font-size:.92rem;padding:10px 12px;border:1.5px solid #d8ddd4;border-radius:10px;width:100%;box-sizing:border-box;margin-bottom:20px;";
     content.appendChild(nameInput);
 
+    // ── Адреса (йде клієнту в SMS-нагадування та в подію календаря)
+    var addrLbl = document.createElement("div"); addrLbl.textContent = "Адреса філії";
+    addrLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:4px;";
+    content.appendChild(addrLbl);
+    var addrHint = document.createElement("div");
+    addrHint.textContent = "Цю адресу клієнт побачить у нагадуванні та в події календаря. Порожньо — підставиться головна адреса студії.";
+    addrHint.style.cssText = "font-size:.72rem;color:#7a8573;margin-bottom:6px;line-height:1.4;";
+    content.appendChild(addrHint);
+    var addrInput = document.createElement("input"); addrInput.type = "text";
+    addrInput.value = (branch && branch.address) ? branch.address : "";
+    addrInput.placeholder = "Наприклад: м. Київ, вул. Успішна, 8";
+    addrInput.style.cssText = "font-size:.92rem;padding:10px 12px;border:1.5px solid #d8ddd4;border-radius:10px;width:100%;box-sizing:border-box;margin-bottom:20px;";
+    content.appendChild(addrInput);
+
     // ── Тижневий розклад
     var schedLbl = document.createElement("div"); schedLbl.textContent = "Розклад (тижневий)";
     schedLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:10px;font-weight:600;";
@@ -4411,6 +4425,75 @@
       });
     });
 
+    // ── Послуги філії
+    var svcLbl = document.createElement("div"); svcLbl.textContent = "Послуги філії";
+    svcLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:10px;font-weight:600;";
+    content.appendChild(svcLbl);
+    var svcHint = document.createElement("div");
+    svcHint.textContent = "Зніміть галочки з послуг, яких у цій філії немає — вони зникнуть з онлайн-запису для неї. Якщо позначені всі, філія надає всі послуги.";
+    svcHint.style.cssText = "font-size:.72rem;color:#7a8573;margin:-4px 0 10px;line-height:1.4;";
+    content.appendChild(svcHint);
+
+    var svcTools = document.createElement("div");
+    svcTools.style.cssText = "display:flex;gap:8px;margin-bottom:10px;";
+    var svcSearch = document.createElement("input"); svcSearch.type = "text";
+    svcSearch.placeholder = "Пошук послуги…";
+    svcSearch.style.cssText = "flex:1;font-size:.85rem;padding:8px 10px;border:1.5px solid #d8ddd4;border-radius:8px;box-sizing:border-box;";
+    var svcAll = el("button", "btn btn-sm btn-ghost", "Усі");
+    var svcNone = el("button", "btn btn-sm btn-ghost", "Жодної");
+    svcTools.appendChild(svcSearch); svcTools.appendChild(svcAll); svcTools.appendChild(svcNone);
+    content.appendChild(svcTools);
+
+    var svcGrid = document.createElement("div");
+    svcGrid.style.cssText = "margin-bottom:24px;max-height:320px;overflow-y:auto;border:1px solid #e6eae2;border-radius:10px;padding:0 12px;";
+    svcGrid.innerHTML = '<div style="color:#aaa;font-size:.82rem;padding:10px 0;">Завантаження…</div>';
+    content.appendChild(svcGrid);
+
+    /* Порожній service_ids = «усі послуги» (див. branch_services у db.js),
+       тому в такому разі показуємо всі галочки поставленими. */
+    var selectedSvcIds = null;   // заповнимо після завантаження списку послуг
+    var svcRows = [];
+    api("GET", "/api/crm/services").then(function(res) {
+      var services = (res.j.services || []).filter(function(x) { return x.active !== 0; });
+      var saved = (branch && Array.isArray(branch.service_ids)) ? branch.service_ids : [];
+      selectedSvcIds = saved.length ? saved.slice() : services.map(function(x) { return x.id; });
+      svcGrid.innerHTML = "";
+      if (!services.length) { svcGrid.innerHTML = '<div style="color:#aaa;font-size:.82rem;padding:10px 0;">Послуг ще немає</div>'; return; }
+      services.forEach(function(sv) {
+        var row3 = document.createElement("label");
+        row3.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2ee;cursor:pointer;";
+        var cb3 = document.createElement("input"); cb3.type = "checkbox";
+        cb3.style.cssText = "width:18px;height:18px;accent-color:#3d5430;flex-shrink:0;";
+        cb3.checked = selectedSvcIds.indexOf(sv.id) !== -1;
+        cb3.addEventListener("change", function() {
+          if (cb3.checked) { if (selectedSvcIds.indexOf(sv.id) === -1) selectedSvcIds.push(sv.id); }
+          else { selectedSvcIds = selectedSvcIds.filter(function(id) { return id !== sv.id; }); }
+        });
+        var nm = document.createElement("div");
+        nm.textContent = sv.name;
+        nm.style.cssText = "font-size:.85rem;color:#1a2016;line-height:1.35;";
+        row3.appendChild(cb3); row3.appendChild(nm);
+        svcGrid.appendChild(row3);
+        svcRows.push({ row: row3, cb: cb3, id: sv.id, name: (sv.name || "").toLowerCase() });
+      });
+    });
+    svcSearch.addEventListener("input", function() {
+      var q = svcSearch.value.trim().toLowerCase();
+      svcRows.forEach(function(r) { r.row.style.display = (!q || r.name.indexOf(q) !== -1) ? "" : "none"; });
+    });
+    /* «Усі»/«Жодної» діють на те, що зараз видно у списку — так зручно
+       знімати цілу групу через пошук, не чіпаючи решту. */
+    function bulkSvc(on) {
+      svcRows.forEach(function(r) {
+        if (r.row.style.display === "none") return;
+        r.cb.checked = on;
+        if (on) { if (selectedSvcIds.indexOf(r.id) === -1) selectedSvcIds.push(r.id); }
+        else { selectedSvcIds = selectedSvcIds.filter(function(id) { return id !== r.id; }); }
+      });
+    }
+    svcAll.addEventListener("click", function() { bulkSvc(true); });
+    svcNone.addEventListener("click", function() { bulkSvc(false); });
+
     // Видалити (тільки для існуючих)
     if (!isNew) {
       var delBtn = document.createElement("button");
@@ -4460,9 +4543,13 @@
 
       saveBtn.textContent = "Збереження…"; saveBtn.disabled = true;
 
+      /* selectedSvcIds ще null, якщо список послуг не встиг завантажитись —
+         тоді не чіпаємо прив'язки взагалі (не шлемо поле). */
+      var body = { name: name, address: addrInput.value.trim(), master_ids: selectedMasterIds };
+      if (selectedSvcIds) body.service_ids = selectedSvcIds;
       var p = isNew
-        ? api("POST", "/api/crm/branches", { name: name, master_ids: selectedMasterIds })
-        : api("PUT", "/api/crm/branches/" + branch.id, { name: name, master_ids: selectedMasterIds });
+        ? api("POST", "/api/crm/branches", body)
+        : api("PUT", "/api/crm/branches/" + branch.id, body);
 
       p.then(function(r) {
         var bId = isNew ? r.j.id : branch.id;
