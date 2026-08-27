@@ -170,6 +170,7 @@
     .abon-level-row:first-child { padding-top: 0; border-top: none; }
     .abon-level-name { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); }
     .abon-level-total { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--cream); font-weight: 700; }
+    .abon-level-total-label { font-weight: 400; }
     .abon-level-total del { font-family: 'Inter', sans-serif; font-weight: 400; font-size: .7em; opacity: .55; margin-left: 6px; }
     .abon-duration-switch-wrap, .abon-level-switch-wrap { display: flex; margin-bottom: 12px; }
     .abon-duration-switch, .abon-level-switch { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 30px; padding: 4px; }
@@ -480,7 +481,7 @@
             body = '<div class="abon-levels">' + a.totals.map(function(t, i){
               var orig = a.originals[i];
               return '<div class="abon-level-row"><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
-                '<span class="abon-level-total">Разом: ' + nbspCur(esc(t.price)) + (orig ? ' <del>' + nbspCur(esc(orig.price)) + '</del>' : '') + '</span></div>';
+                '<span class="abon-level-total"><span class="abon-level-total-label">Разом: </span>' + nbspCur(esc(t.price)) + (orig ? ' <del>' + nbspCur(esc(orig.price)) + '</del>' : '') + '</span></div>';
             }).join('') + '</div>';
           }
           return '<div class="abon-card' + (a.popular ? ' abon-card--popular' : '') + (single ? '' : ' abon-card--levels') + '">' +
