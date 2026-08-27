@@ -51,9 +51,19 @@ function blockedIntervals(masterId, date) {
     else blocked.push([o.off_start, o.off_end]);
   }
 
+  /* ЗАВЕРШЕНІ візити теж займають час. Раніше їх тут не було, а
+     планувальник переводить запис у "completed" уже на СЕРЕДИНІ візиту
+     (start + duration/2) — тож друга половина кожного візиту ставала
+     "вільною", і клієнт міг записатися в зайнятий час.
+     Скасовані та неявки не блокують: майстер справді вільний.
+
+     Другий майстер парної процедури теж зайнятий — його час раніше
+     не блокувався взагалі, тож його можна було записати двічі. */
   const appts = db.prepare(
-    "SELECT start_min, end_min FROM appointments WHERE master_id = ? AND date = ? AND status IN ('pending','confirmed')"
-  ).all(masterId, date);
+    `SELECT start_min, end_min FROM appointments
+      WHERE date = ? AND status IN ('pending','confirmed','completed')
+        AND (master_id = ? OR second_master_id = ?)`
+  ).all(date, masterId, masterId);
   for (const a of appts) blocked.push([a.start_min, a.end_min + BUFFER_MIN]);
 
   /* Разові перерви на конкретну дату (кнопка "⏸ Перерва" в календарі
