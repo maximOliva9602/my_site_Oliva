@@ -246,6 +246,28 @@
   .svc-variant-add-btn { background: rgba(122,145,86,0.15); border: 1px dashed rgba(122,145,86,0.4); color: var(--olive-light); border-radius: 10px; padding: 9px 16px; font-size: 13px; cursor: pointer; transition: all .2s; margin-top: 8px; }
   .svc-variant-add-btn:hover { background: rgba(122,145,86,0.25); border-style: solid; color: var(--cream); }
 
+  /* Конструктор абонементів: замінює текстове поле зі складним DSL-форматом
+     (":: :: ::") на таблицю з полями — власнику не треба пам'ятати синтаксис. */
+  .abon-builder { display: flex; flex-direction: column; gap: 14px; }
+  .abon-group { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.15); }
+  .abon-group-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .abon-dur-input { flex: 1; box-sizing: border-box; background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 13px; outline: none; }
+  .abon-dur-input:focus { border-color: var(--olive-light); }
+  .abon-group-remove { background: none; border: 1px solid rgba(224,112,112,0.35); color: #e07070; border-radius: 8px; padding: 8px 12px; font-size: 12px; cursor: pointer; transition: all .2s; white-space: nowrap; }
+  .abon-group-remove:hover { background: rgba(224,112,112,0.12); border-color: #e07070; }
+  .abon-pkg-table { border-collapse: collapse; width: 100%; min-width: 560px; }
+  .abon-pkg-table th { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); font-weight: 600; text-align: left; padding: 0 4px 6px; }
+  .abon-pkg-table td { padding: 3px; }
+  .abon-pkg-table input[type="number"], .abon-pkg-table input[type="text"] { width: 100%; box-sizing: border-box; background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 8px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 13px; outline: none; text-align: center; }
+  .abon-pkg-table input:focus { border-color: var(--olive-light); }
+  .abon-pkg-table input.abon-sessions { font-weight: 600; }
+  .abon-pkg-table input.abon-badge { text-align: left; }
+  .abon-pkg-table input.abon-popular { width: 20px; height: 20px; cursor: pointer; accent-color: var(--olive-light); }
+  .abon-pkg-remove { background: none; border: 1px solid rgba(224,112,112,0.35); color: #e07070; border-radius: 8px; padding: 9px 0; width: 32px; cursor: pointer; transition: all .2s; }
+  .abon-pkg-remove:hover { background: rgba(224,112,112,0.12); border-color: #e07070; }
+  .abon-pkg-add { background: rgba(122,145,86,0.1); border: 1px dashed rgba(122,145,86,0.35); color: var(--olive-light); border-radius: 8px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; transition: all .2s; margin-top: 8px; }
+  .abon-pkg-add:hover { background: rgba(122,145,86,0.2); border-style: solid; color: var(--cream); }
+
   /* ===== MASTERS MANAGER ===== */
   .svc-close-btn { background: none !important; border: 1px solid var(--line) !important; color: var(--text-dim) !important; border-radius: 8px !important; padding: 7px 16px !important; font-size: 0.8rem !important; cursor: pointer; transition: all .2s !important; }
   .svc-close-btn:hover { color: var(--cream) !important; border-color: var(--olive-light) !important; }
@@ -656,11 +678,10 @@
         </div>
         <div style="font-size:12.5px;color:var(--text-dim);">Тривалість і ціни підтягуються з «Послуги» автоматично — вписувати їх окремо не треба.</div>
         <div>
-          <label>Абонементи — по одному варіанту в рядку, формат:<br>
-          «К-сть сеансів :: Разом :: Стара сума :: Бейдж :: рекомендовано»<br>
-          <span style="color:var(--text-dim);font-weight:400;">Обов'язкові лише перші дві частини. «Разом» — якщо в послуги є рівні майстра, вкажіть ціну для кожного через кому: «Майстер 6000 грн, Топ Майстер 7000 грн, Експерт 8500 грн» (порядок і слова рівнів — довільні, головне щоб рівень стояв перед сумою). Якщо рівнів немає — просто одна сума, напр. «6000 грн». «Стара сума» — закреслені ціни поруч, у тому ж форматі й порядку рівнів (необов'язково). «Бейдж» — напр. «-10%» (необов'язково). Останнє поле — будь-який текст (напр. «так») позначає картку як «Найпопулярніший»; порожньо — блок не показується.<br><br>
-          <b style="color:var(--cream);">Якщо в послуги кілька тривалостей з різною ціною</b> (напр. 90 і 130 хв) — розбийте варіанти на групи рядком-заголовком у квадратних дужках, напр. «[90 хв]» і «[130 хв]». На сторінці з'явиться перемикач тривалості над картками.</span></label>
-          <textarea id="spAbonementItems" rows="8" placeholder="[90 хв]&#10;5 сеансів :: Майстер 6000 грн, Топ Майстер 7000 грн, Експерт 8500 грн :: :: -5%&#10;10 сеансів :: Майстер 11000 грн, Топ Майстер 13000 грн, Експерт 16000 грн :: :: -10% :: так&#10;15 сеансів :: Майстер 15000 грн, Топ Майстер 18000 грн, Експерт 22000 грн :: :: -13%&#10;&#10;[130 хв]&#10;5 сеансів :: Майстер 8000 грн, Топ Майстер 9500 грн, Експерт 11500 грн :: :: -5%&#10;10 сеансів :: Майстер 15000 грн, Топ Майстер 18000 грн, Експерт 22000 грн :: :: -10% :: так&#10;15 сеансів :: Майстер 21000 грн, Топ Майстер 25000 грн, Експерт 30000 грн :: :: -13%" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+          <label>Абонементи <span class="field-hint">(пакети сеансів зі знижкою — необов'язково; оберіть послугу вгорі, щоб з'явились колонки рівнів майстра)</span></label>
+          <div id="spAbonBuilder" class="abon-builder"></div>
+          <button type="button" class="svc-variant-add-btn" id="spAbonAddGroupBtn">+ Додати тривалість <span class="field-hint">(якщо ціна абонемента залежить від тривалості послуги)</span></button>
+          <textarea id="spAbonementItems" style="display:none;"></textarea>
         </div>
 
         <div class="publish-row">
@@ -1776,6 +1797,12 @@
 
   function openSvcPageOverlay() {
     loadServiceKeys();
+    if (!svcAllItems.length) {
+      fetch('/api/admin/services').then(function (r) { return r.json(); }).then(function (j) {
+        svcAllItems = j.services || [];
+        renderAbonBuilder();
+      });
+    }
     svcPageOverlay.classList.add('open');
     closeSpEditor();
     loadSvcPages();
@@ -1813,6 +1840,7 @@
         e.preventDefault();
         spKey.value = k;
         spKeyDrop.style.display = 'none';
+        renderAbonBuilder();
       });
       spKeyDrop.appendChild(row);
     });
@@ -1820,7 +1848,7 @@
   }
   spKey.addEventListener('input', function () { renderSpKeyDrop(this.value.trim()); });
   spKey.addEventListener('focus', function () { renderSpKeyDrop(this.value.trim()); });
-  spKey.addEventListener('blur', function () { setTimeout(function () { spKeyDrop.style.display = 'none'; }, 150); });
+  spKey.addEventListener('blur', function () { setTimeout(function () { spKeyDrop.style.display = 'none'; renderAbonBuilder(); }, 150); });
 
   function spPhotoField(inputId, previewId, nameId, btnId, fileId) {
     document.getElementById(btnId).addEventListener('click', function () { document.getElementById(fileId).click(); });
@@ -1880,6 +1908,195 @@
     });
   })();
 
+  /* ===== Конструктор абонементів =====
+     Раніше власник мав вручну писати DSL на кшталт
+     "5 сеансів :: Майстер 6000 грн, Топ Майстер 7000 грн :: :: -5% :: так" —
+     легко було переплутати кількість "::" чи порядок рівнів. Тепер це
+     таблиця з окремими полями; серіалізація в той самий текстовий формат
+     (який service.html і далі парсить без змін) відбувається лише в
+     момент збереження, у serializeAbonState(). */
+  var ABON_LEVEL_ORDER = LEVELS.slice(1); // ['Майстер','Топ Майстер','Експерт']
+  var abonState = { groups: [{ duration: '', packages: [] }] };
+
+  function abonEmptyPackage() { return { sessions: 5, totals: {}, originals: {}, badge: '', popular: false }; }
+
+  function abonSessionsWord(n) {
+    n = Math.abs(n) % 100;
+    var n1 = n % 10;
+    if (n > 10 && n < 20) return 'сеансів';
+    if (n1 > 1 && n1 < 5) return 'сеанси';
+    if (n1 === 1) return 'сеанс';
+    return 'сеансів';
+  }
+
+  function abonParseMoney(raw) {
+    var m = String(raw == null ? '' : raw).match(/[\d.,]+/);
+    return m ? m[0].replace(',', '.') : '';
+  }
+
+  function abonParseLevelsMap(raw) {
+    var map = {};
+    if (!raw) return map;
+    raw.split(',').forEach(function (s) {
+      s = s.trim(); if (!s) return;
+      var lm = s.match(/^(Топ Майстер|Майстер|Експерт)\s+(.+)$/i);
+      map[lm ? lm[1] : ''] = abonParseMoney(lm ? lm[2] : s);
+    });
+    return map;
+  }
+
+  function abonParseLine(line) {
+    var parts = line.split('::').map(function (x) { return x.trim(); });
+    var m = (parts[0] || '').match(/\d+/);
+    return {
+      sessions: m ? parseInt(m[0], 10) : '',
+      totals: abonParseLevelsMap(parts[1] || ''),
+      originals: abonParseLevelsMap(parts[2] || ''),
+      badge: parts[3] || '',
+      popular: !!parts[4]
+    };
+  }
+
+  function abonParseRaw(raw) {
+    var groups = []; var current = null;
+    String(raw || '').split(/\r?\n/).forEach(function (line) {
+      line = line.trim(); if (!line) return;
+      var dm = line.match(/^\[(.+)\]$/);
+      if (dm) { current = { duration: dm[1].trim(), packages: [] }; groups.push(current); return; }
+      if (!current) { current = { duration: '', packages: [] }; groups.push(current); }
+      var pkg = abonParseLine(line);
+      if (pkg.sessions !== '') current.packages.push(pkg);
+    });
+    groups = groups.filter(function (g) { return g.packages.length; });
+    return { groups: groups.length ? groups : [{ duration: '', packages: [] }] };
+  }
+
+  function abonLine(pkg, levels) {
+    var title = pkg.sessions + ' ' + abonSessionsWord(pkg.sessions);
+    function joinMap(map) {
+      if (levels.length) {
+        return levels.filter(function (lv) { return map[lv] != null && map[lv] !== ''; })
+          .map(function (lv) { return lv + ' ' + map[lv] + ' грн'; }).join(', ');
+      }
+      return (map[''] != null && map[''] !== '') ? (map[''] + ' грн') : '';
+    }
+    var parts = [title, joinMap(pkg.totals), joinMap(pkg.originals), pkg.badge || '', pkg.popular ? 'так' : ''];
+    while (parts.length && !parts[parts.length - 1]) parts.pop();
+    return parts.join(' :: ');
+  }
+
+  function serializeAbonState(state, levels) {
+    var lines = [];
+    var multi = state.groups.length > 1;
+    state.groups.forEach(function (g, gi) {
+      if (multi) { if (gi > 0) lines.push(''); lines.push('[' + (g.duration || '') + ']'); }
+      g.packages.forEach(function (pkg) { lines.push(abonLine(pkg, levels)); });
+    });
+    return lines.join('\n');
+  }
+
+  /* Рівні майстра беремо з реальних цін послуги (як у матриці вище) — це
+     джерело правди, а не з уже введеного тексту абонементів. Але якщо в
+     раніше збереженому абонементі трапився рівень, якого в послузі більше
+     немає, лишаємо і його — щоб не загубити дані на порожньому місці. */
+  function abonLevelsForCurrentKey() {
+    var key = spKey.value.trim();
+    var set = {};
+    if (key && window.OlivaServiceGroups) {
+      var SG = window.OlivaServiceGroups;
+      svcAllItems.forEach(function (s) {
+        var p = SG.parseName(s.name);
+        if (p.cat === key && p.level) set[p.level] = true;
+      });
+    }
+    abonState.groups.forEach(function (g) {
+      g.packages.forEach(function (pkg) {
+        Object.keys(pkg.totals).concat(Object.keys(pkg.originals)).forEach(function (lv) { if (lv) set[lv] = true; });
+      });
+    });
+    return ABON_LEVEL_ORDER.filter(function (lv) { return set[lv]; });
+  }
+
+  function renderAbonBuilder() {
+    var levels = abonLevelsForCurrentKey();
+    var cols = levels.length ? levels : [''];
+    var builder = document.getElementById('spAbonBuilder');
+    builder.innerHTML = '';
+    abonState.groups.forEach(function (g, gi) {
+      var card = document.createElement('div');
+      card.className = 'abon-group';
+      if (abonState.groups.length > 1) {
+        var head = document.createElement('div');
+        head.className = 'abon-group-head';
+        var durInput = document.createElement('input');
+        durInput.type = 'text'; durInput.className = 'abon-dur-input'; durInput.placeholder = 'Напр. 90 хв'; durInput.value = g.duration;
+        durInput.addEventListener('input', function () { g.duration = durInput.value; });
+        head.appendChild(durInput);
+        var rmGroup = document.createElement('button');
+        rmGroup.type = 'button'; rmGroup.className = 'abon-group-remove'; rmGroup.textContent = '✕ Прибрати тривалість';
+        rmGroup.addEventListener('click', function () { abonState.groups.splice(gi, 1); renderAbonBuilder(); });
+        head.appendChild(rmGroup);
+        card.appendChild(head);
+      }
+      var wrap = document.createElement('div');
+      wrap.className = 'svc-matrix-wrap';
+      var table = document.createElement('table');
+      table.className = 'abon-pkg-table';
+      var thead = document.createElement('thead');
+      var headRow = document.createElement('tr');
+      ['Сеансів'].concat(cols.map(function (lv) { return lv || 'Ціна'; }), ['Бейдж', '⭐', '']).forEach(function (label) {
+        var th = document.createElement('th'); th.textContent = label; headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+      var tbody = document.createElement('tbody');
+      g.packages.forEach(function (pkg, pi) {
+        var tr = document.createElement('tr');
+        var sTd = document.createElement('td');
+        var sInp = document.createElement('input');
+        sInp.type = 'number'; sInp.min = '1'; sInp.className = 'abon-sessions'; sInp.value = pkg.sessions;
+        sInp.addEventListener('input', function () { pkg.sessions = parseInt(sInp.value, 10) || ''; });
+        sTd.appendChild(sInp); tr.appendChild(sTd);
+        cols.forEach(function (lv) {
+          var td = document.createElement('td');
+          var inp = document.createElement('input');
+          inp.type = 'number'; inp.min = '0'; inp.step = '50'; inp.placeholder = 'грн';
+          inp.value = pkg.totals[lv] != null ? pkg.totals[lv] : '';
+          inp.addEventListener('input', function () { pkg.totals[lv] = inp.value; });
+          td.appendChild(inp); tr.appendChild(td);
+        });
+        var bTd = document.createElement('td');
+        var bInp = document.createElement('input');
+        bInp.type = 'text'; bInp.className = 'abon-badge'; bInp.placeholder = '-10%'; bInp.value = pkg.badge;
+        bInp.addEventListener('input', function () { pkg.badge = bInp.value; });
+        bTd.appendChild(bInp); tr.appendChild(bTd);
+        var pTd = document.createElement('td');
+        var pInp = document.createElement('input');
+        pInp.type = 'checkbox'; pInp.className = 'abon-popular'; pInp.title = 'Найпопулярніший'; pInp.checked = pkg.popular;
+        pInp.addEventListener('change', function () { pkg.popular = pInp.checked; });
+        pTd.appendChild(pInp); tr.appendChild(pTd);
+        var rTd = document.createElement('td');
+        var rBtn = document.createElement('button');
+        rBtn.type = 'button'; rBtn.className = 'abon-pkg-remove'; rBtn.title = 'Прибрати пакет'; rBtn.textContent = '✕';
+        rBtn.addEventListener('click', function () { g.packages.splice(pi, 1); renderAbonBuilder(); });
+        rTd.appendChild(rBtn); tr.appendChild(rTd);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      card.appendChild(wrap);
+      var addPkgBtn = document.createElement('button');
+      addPkgBtn.type = 'button'; addPkgBtn.className = 'abon-pkg-add'; addPkgBtn.textContent = '+ Додати пакет сеансів';
+      addPkgBtn.addEventListener('click', function () { g.packages.push(abonEmptyPackage()); renderAbonBuilder(); });
+      card.appendChild(addPkgBtn);
+      builder.appendChild(card);
+    });
+  }
+  document.getElementById('spAbonAddGroupBtn').addEventListener('click', function () {
+    abonState.groups.push({ duration: '', packages: [abonEmptyPackage()] });
+    renderAbonBuilder();
+  });
+
   function openSpEditor(key) {
     editingSpKey = key;
     svcPageEditor.classList.add('open');
@@ -1892,7 +2109,12 @@
     document.getElementById('spSymptomsPhotoName').textContent = '';
     document.getElementById('spPublished').checked = false;
     spPreviewLink.style.display = 'none';
-    if (!key) { svcPageEditor.scrollIntoView({ behavior: 'smooth' }); return; }
+    if (!key) {
+      abonState = { groups: [{ duration: '', packages: [] }] };
+      renderAbonBuilder();
+      svcPageEditor.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     fetch('/api/admin/service-pages/' + encodeURIComponent(key)).then(function (r) { return r.json(); }).then(function (j) {
       if (!j.ok) return;
       var p = j.page;
@@ -1906,10 +2128,16 @@
       document.getElementById('spPublished').checked = !!p.published;
       spPreviewLink.href = '/service/' + encodeURIComponent(key);
       spPreviewLink.style.display = p.published ? 'inline-block' : 'none';
+      abonState = abonParseRaw(p.abonement_items);
+      renderAbonBuilder();
     });
     svcPageEditor.scrollIntoView({ behavior: 'smooth' });
   }
 
+  document.getElementById('spSaveBtn').addEventListener('click', function () {
+    var levels = abonLevelsForCurrentKey();
+    document.getElementById('spAbonementItems').value = serializeAbonState(abonState, levels);
+  });
   document.getElementById('spSaveBtn').addEventListener('click', function () {
     var key = spKey.value.trim();
     if (!key) { alert('Оберіть послугу'); return; }
