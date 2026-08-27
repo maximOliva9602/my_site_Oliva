@@ -319,7 +319,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .mst-list { display: flex; flex-direction: column; gap: 12px; padding: 8px 16px 0; }
 .mst-pair-hint { margin: 8px 16px 0; padding: 12px 14px; background: rgba(217,185,120,0.12); border: 1px solid rgba(217,185,120,0.3); border-radius: 12px; color: var(--cream); font-size: .84rem; line-height: 1.45; }
 /* ── Картка філії ── */
-.br-card { background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 18px; padding: 14px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.br-card { background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 18px; padding: 12px; margin-bottom: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .br-gal { position: relative; border-radius: 14px; overflow: hidden; background: rgba(46,61,34,0.25); aspect-ratio: 3/4; }
 .br-gal__track { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .br-gal__track::-webkit-scrollbar { display: none; }
@@ -330,7 +330,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .br-gal__dots { position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 5px; }
 .br-gal__dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(242,237,228,0.35); transition: background .2s; }
 .br-gal__dot.active { background: var(--gold); }
-.br-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.br-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .br-eyebrow { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); }
 .br-name { font-family: 'Playfair Display', serif; font-size: 1.7rem; letter-spacing: .06em; color: var(--gold); line-height: 1.1; overflow-wrap: anywhere; }
 /* Назва філії з адресою всередині (як у старих записах) не має
@@ -342,7 +342,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .br-near b { display: block; color: var(--text); font-weight: 500; }
 .br-map-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: rgba(217,185,120,0.12); border: 1px solid rgba(217,185,120,0.35); color: var(--gold); border-radius: 10px; padding: 10px 14px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; font-family: inherit; transition: background .2s; }
 .br-map-btn:hover { background: rgba(217,185,120,0.22); }
-.br-map-prev { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); height: 130px; cursor: pointer; position: relative; }
+.br-map-prev { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); height: 96px; cursor: pointer; position: relative; }
 .br-map-prev iframe { width: 100%; height: 100%; border: 0; display: block; pointer-events: none; filter: grayscale(.35) brightness(.85); }
 .br-choose { margin-top: 2px; width: 100%; background: var(--gold); color: #14100b; border: none; border-radius: 10px; padding: 12px; font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit; }
 .br-choose:active { transform: scale(.995); }
@@ -355,12 +355,25 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .br-modal__x { background: none; border: none; color: var(--text-dim); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 4px; }
 .br-modal iframe { width: 100%; height: 60vh; border: 0; display: block; }
 .br-modal__open { display: block; text-align: center; padding: 12px; color: var(--gold); font-size: .84rem; text-decoration: none; border-top: 1px solid var(--line); }
+/* На вузькому екрані НЕ розкладаємо в один стовпчик: фото лишається
+   зліва, і тоді обидві філії видно одразу, без прокрутки. */
 @media (max-width: 640px) {
-  .br-card { grid-template-columns: 1fr; }
-  .br-gal { aspect-ratio: 4/3; }
-  .br-name { font-size: 1.5rem; }
+  .br-card { grid-template-columns: 0.8fr 1fr; gap: 11px; padding: 11px; margin-bottom: 12px; border-radius: 15px; }
+  .br-gal { aspect-ratio: 3/4; border-radius: 11px; }
+  .br-gal__count { font-size: 10px; padding: 2px 6px; top: 6px; left: 6px; }
+  .br-info { gap: 5px; }
+  .br-eyebrow { font-size: 8.5px; letter-spacing: .1em; }
+  .br-name { font-size: 1.45rem; }
   /* Повторюємо після .br-name, інакше довга назва знову виросте. */
-  .br-name--long { font-size: .98rem; }
+  .br-name--long { font-size: .92rem; }
+  .br-addr { font-size: .76rem; gap: 5px; }
+  .br-addr svg { width: 13px; height: 13px; }
+  .br-near { font-size: .68rem; line-height: 1.35; }
+  .br-map-btn { padding: 7px 8px; font-size: 9px; letter-spacing: .06em; gap: 5px; }
+  .br-map-btn svg { width: 12px; height: 12px; }
+  .br-map-prev { height: 76px; border-radius: 9px; }
+  /* Кнопку ховаємо — на мобільному тапається вся картка (див. JS). */
+  .br-choose { display: none; }
 }
 
 .mst-card { display: flex; align-items: stretch; gap: 14px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 16px; padding: 14px; cursor: pointer; transition: border-color .2s, transform .15s; }
@@ -1222,9 +1235,13 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       var prev = card.querySelector(".br-map-prev");
       if (prev) prev.addEventListener("click", function(e) { e.stopPropagation(); openBranchMap(b); });
 
-      card.querySelector(".br-choose").addEventListener("click", function() {
-        state.branch = b.id; renderCats(); goStep(2);
-      });
+      function chooseBranch() { state.branch = b.id; renderCats(); goStep(2); }
+      card.querySelector(".br-choose").addEventListener("click", chooseBranch);
+      /* На мобільному кнопку сховано (економимо висоту), тож обирати можна
+         тапом по самій картці. Кліки по карті/кнопці карти сюди не доходять —
+         вони зупиняють спливання вище. */
+      card.style.cursor = "pointer";
+      card.addEventListener("click", chooseBranch);
       box.appendChild(card);
     });
   }
