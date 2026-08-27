@@ -115,7 +115,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=8" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=9" />
 </head>
 <body>
 
@@ -163,10 +163,13 @@
         <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.2 1l-2.3 2.2z"/></svg>
         <span>+38 (097) 434 01 12</span>
       </a>
-      <a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="topbar__item">
+      <span class="topbar__item topbar__item--addr">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
-        <span data-i18n="top.address">Київ: вул. Борщагівська, 145 · вул. Успішна, 8</span>
-      </a>
+        <span data-i18n="top.addrCity">Київ:</span>
+        <a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="topbar__addr" data-i18n="top.addr1">вул. Борщагівська, 145</a>
+        <span class="topbar__addr-sep">·</span>
+        <a href="https://maps.google.com/?q=Київ,+вул.+Успішна,+8" target="_blank" rel="noopener" class="topbar__addr" data-i18n="top.addr2">вул. Успішна, 8</a>
+      </span>
       <span class="topbar__item topbar__item--hours">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm.5-13H11v6l5.2 3.1.8-1.3-4.5-2.7V7Z"/></svg>
         <span data-i18n="top.hours">Щодня 9:00 – 21:30</span>
@@ -269,7 +272,7 @@
   </div>
 
   <div class="hero-badge">
-    <a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="hero-badge-item"><strong data-i18n="hero.badgeAddr">Борщагівська, 145 · Успішна, 8</strong></a>
+    <div class="hero-badge-item"><a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener"><strong data-i18n="hero.badgeAddr1">Борщагівська, 145</strong></a> <span style="opacity:.5;">·</span> <a href="https://maps.google.com/?q=Київ,+вул.+Успішна,+8" target="_blank" rel="noopener"><strong data-i18n="hero.badgeAddr2">Успішна, 8</strong></a></div>
     <div class="hero-badge-sep"></div>
     <div class="hero-badge-item"><strong>09:00–21:30</strong> <span data-i18n="hero.badgeDaily">щодня</span></div>
     <div class="hero-badge-sep"></div>

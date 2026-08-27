@@ -74,6 +74,11 @@ em { font-style: italic; }
 .topbar__item svg { color: var(--olive-light); flex-shrink: 0; }
 .topbar__item--phone { color: var(--cream); font-weight: 500; }
 a.topbar__item:hover { color: var(--cream); }
+/* Дві адреси — кожна окреме посилання на свою точку на карті. */
+.topbar__item--addr { gap: 6px; }
+.topbar__addr { color: var(--text-dim); transition: color .25s; }
+.topbar__addr:hover { color: var(--cream); }
+.topbar__addr-sep { opacity: .45; }
 
 /* ── NAV ── */
 nav {

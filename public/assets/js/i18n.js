@@ -9,7 +9,7 @@
 
   var DICT = {
     uk: {
-      "top.address": "Київ: вул. Борщагівська, 145 · вул. Успішна, 8",
+      "top.addrCity": "Київ:", "top.addr1": "вул. Борщагівська, 145", "top.addr2": "вул. Успішна, 8",
       "top.hours": "Щодня 9:00 – 21:30",
 
       "nav.home": "Головна", "nav.services": "Послуги", "nav.prices": "Прайси",
@@ -24,7 +24,7 @@
       "hero.title1": "Тут починається", "hero.title2": "твоє відновлення", "hero.title3": "",
       "hero.desc": "",
       "hero.cta1": "Записатися онлайн", "hero.cta2": "Переглянути послуги",
-      "hero.badgeAddr": "Борщагівська, 145 · Успішна, 8", "hero.badgeDaily": "щодня",
+      "hero.badgeAddr1": "Борщагівська, 145", "hero.badgeAddr2": "Успішна, 8", "hero.badgeDaily": "щодня",
 
       "mq.1": "Загально-оздоровчий масаж", "mq.2": "Парний масаж", "mq.3": "Антицелюлітний масаж",
       "mq.4": "SPA-ритуали", "mq.5": "Спортивний масаж", "mq.6": "Фітобочка",
@@ -224,7 +224,7 @@
     },
 
     en: {
-      "top.address": "Kyiv: Borshchahivska St, 145 · Uspishna St, 8",
+      "top.addrCity": "Kyiv:", "top.addr1": "Borshchahivska St, 145", "top.addr2": "Uspishna St, 8",
       "top.hours": "Daily 9:00 – 21:30",
 
       "nav.home": "Home", "nav.services": "Services", "nav.prices": "Prices",
@@ -239,7 +239,7 @@
       "hero.title1": "Here begins", "hero.title2": "your recovery", "hero.title3": "",
       "hero.desc": "",
       "hero.cta1": "Book online", "hero.cta2": "View services",
-      "hero.badgeAddr": "Borshchahivska, 145 · Uspishna, 8", "hero.badgeDaily": "daily",
+      "hero.badgeAddr1": "Borshchahivska, 145", "hero.badgeAddr2": "Uspishna, 8", "hero.badgeDaily": "daily",
 
       "mq.1": "Wellness massage", "mq.2": "Couples massage", "mq.3": "Anti-cellulite massage",
       "mq.4": "SPA rituals", "mq.5": "Sports massage", "mq.6": "Phyto-barrel",
