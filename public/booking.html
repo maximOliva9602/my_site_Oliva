@@ -840,7 +840,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   <div class="bc-label" data-i18n="book.contacts.find">Де нас знайти</div>
   <h2 class="bc-title" data-i18n="book.contacts.title">Контакти</h2>
   <div class="bc-rows">
-    <div class="bc-item"><span class="bc-k" data-i18n="book.contacts.address">Адреси</span><span class="bc-v"><a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener noreferrer">Київ, вул. Борщагівська, 145</a><br><a href="https://maps.google.com/?q=Київ,+вул.+Успішна,+8" target="_blank" rel="noopener noreferrer">Київ, вул. Успішна, 8</a></span></div>
+    <div class="bc-item"><span class="bc-v"><a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener noreferrer">Київ, вул. Борщагівська, 145</a><br><a href="https://maps.google.com/?q=Київ,+вул.+Успішна,+8" target="_blank" rel="noopener noreferrer">Київ, вул. Успішна, 8</a></span></div>
     <div class="bc-item"><span class="bc-k" data-i18n="book.contacts.phone">Телефон</span><a class="bc-v" href="tel:+380974340112">+38 097 434 01 12</a></div>
     <div class="bc-item"><span class="bc-k" data-i18n="book.contacts.hours">Графік роботи</span><span class="bc-v" data-i18n="book.contacts.hoursVal">Щодня 09:00 — 21:30</span></div>
     <div class="bc-item"><span class="bc-k" data-i18n="book.contacts.mail">Пошта</span><a class="bc-v" href="mailto:olivastudio96@gmail.com">olivastudio96@gmail.com</a></div>
@@ -876,7 +876,12 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     #bookContacts .bc-item { display: flex; flex-direction: column; gap: 2px; }
     #bookContacts .bc-k { color: #7a9156; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; }
     #bookContacts .bc-v { color: var(--cream); font-size: 1rem; text-decoration: none; }
-    #bookContacts a.bc-v:hover { color: var(--gold); }
+    /* Адреси — це <a> ВСЕРЕДИНІ .bc-v, тож правило вище на них не діяло
+       і вони малювались типовим стилем браузера. */
+    #bookContacts .bc-v a { color: var(--cream); text-decoration: none; }
+    #bookContacts a.bc-v:hover, #bookContacts .bc-v a:hover { color: var(--gold); }
+    /* Загальний .bc-item:hover підкреслює весь рядок — тут це зайве. */
+    #bookContacts .bc-item:hover { text-decoration: none; }
     #bookContacts .bc-social { display: flex; flex-wrap: wrap; gap: 10px; }
     #bookContacts .social-btn { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); display: inline-flex; align-items: center; justify-content: center; color: var(--text); background: rgba(20,15,10,0.4); transition: all .15s; }
     #bookContacts .social-btn--instagram { color: #e1306c; border-color: rgba(225,48,108,.3); }
