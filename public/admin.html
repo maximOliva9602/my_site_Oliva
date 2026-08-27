@@ -216,6 +216,25 @@
   .svc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .svc-editor-actions { display: flex; gap: 10px; }
   .svc-editor-actions button { padding: 12px 24px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all .2s; }
+  /* Селект категорії раніше не мав жодного стилю — малювався сірим
+     системним віджетом і губився серед решти полів. */
+  .svc-editor select { width: 100%; background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 15px; outline: none; }
+  .svc-editor select:focus { border-color: var(--olive-light); }
+  .svc-editor select option { background: #14180f; color: var(--cream); }
+  /* Рівень майстра — кнопки замість тексту в назві (той самий вигляд,
+     що в редакторі майстрів). */
+  .svc-level-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .svc-hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.4; }
+  .svc-hint b { color: var(--olive-light); font-weight: 600; }
+  .svc-hint.warn { color: #e0a94b; }
+  .svc-name-preview { font-size: 13px; color: var(--cream); background: rgba(122,145,86,0.1); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
+  .svc-name-preview b { color: var(--olive-light); }
+  /* Попередження на картці — щоб неповні дані було видно одразу в списку,
+     а не тільки після відкриття редагування. */
+  .svc-card-warn { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+  .svc-card-warn span { font-size: 10px; color: #e0a94b; background: rgba(224,169,75,0.12); border: 1px solid rgba(224,169,75,0.35); border-radius: 20px; padding: 2px 8px; }
+  .cover-remove-btn { background: none; border: 1px solid rgba(224,112,112,0.4); color: #e07070; border-radius: 10px; padding: 10px 14px; font-size: 13px; cursor: pointer; transition: all .2s; }
+  .cover-remove-btn:hover { background: rgba(224,112,112,0.12); border-color: #e07070; }
 
   /* ===== MASTERS MANAGER ===== */
   .svc-close-btn { background: none !important; border: 1px solid var(--line) !important; color: var(--text-dim) !important; border-radius: 8px !important; padding: 7px 16px !important; font-size: 0.8rem !important; cursor: pointer; transition: all .2s !important; }
@@ -318,19 +337,18 @@
     <div class="svc-body" id="svcBody">
       <div class="svc-editor" id="svcEditor">
         <div>
-          <label>Назва послуги *</label>
-          <input type="text" id="svcName" placeholder="Наприклад: Антистресовий масаж 60 хв" />
+          <label>Базова назва послуги * <span class="field-hint">(без рівня й тривалості — їх додають поля нижче)</span></label>
+          <input type="text" id="svcName" placeholder="Наприклад: Антистресовий масаж" />
         </div>
         <div>
-          <label>Група на сторінці запису</label>
-          <select id="svcCategory">
-            <option value="">— Авто (визначається за назвою) —</option>
-            <option value="Загальні масажі">Загальні масажі</option>
-            <option value="SPA-масажі для двох">SPA-масажі для двох</option>
-            <option value="SPA-масажі для одного">SPA-масажі для одного</option>
-            <option value="Корекція фігури">Корекція фігури</option>
-            <option value="Додаткові послуги">Додаткові послуги</option>
-          </select>
+          <label>Рівень майстра</label>
+          <div class="svc-level-btns" id="svcLevelBtns">
+            <button type="button" class="level-btn active" data-level="">Без рівня</button>
+            <button type="button" class="level-btn" data-level="Майстер">Майстер</button>
+            <button type="button" class="level-btn" data-level="Топ Майстер">Топ Майстер</button>
+            <button type="button" class="level-btn" data-level="Експерт">Експерт</button>
+          </div>
+          <input type="hidden" id="svcLevel" value="" />
         </div>
         <div class="svc-row2">
           <div>
@@ -342,6 +360,19 @@
             <input type="number" id="svcDuration" placeholder="60" min="1" step="5" />
           </div>
         </div>
+        <div class="svc-name-preview" id="svcNamePreview"></div>
+        <div>
+          <label>Розділ на сторінці запису</label>
+          <select id="svcCategory">
+            <option value="">— Авто (визначається за базовою назвою) —</option>
+            <option value="Загальні масажі">Масажі</option>
+            <option value="SPA-масажі для двох">SPA для двох</option>
+            <option value="SPA-масажі для одного">SPA для одного</option>
+            <option value="Корекція фігури">Корекція фігури</option>
+            <option value="Додаткові послуги">Додаткові послуги</option>
+          </select>
+          <div class="svc-hint" id="svcCatHint"></div>
+        </div>
         <div>
           <label>Опис</label>
           <textarea id="svcDesc" placeholder="Короткий опис послуги для клієнтів..."></textarea>
@@ -350,11 +381,13 @@
           <label>Фото (фон картки)</label>
           <div class="cover-upload-btn">
             <button type="button" id="svcUploadBtn">📷 Завантажити фото</button>
+            <button type="button" id="svcRemoveBtn" class="cover-remove-btn" style="display:none;">✕ Прибрати фото</button>
             <img id="svcImgPreview" class="cover-thumb" src="" alt="cover" />
             <span class="cover-name" id="svcImgName"></span>
           </div>
           <input type="file" id="svcUploadInput" class="upload-input" accept="image/*" />
           <input type="hidden" id="svcImgUrl" />
+          <div class="svc-hint warn" id="svcPhotoHint" style="display:none;">⚠ Фото ще немає — картка на сайті буде без зображення (сіра заглушка).</div>
         </div>
         <div class="svc-editor-actions">
           <button class="btn-save" id="svcSaveBtn">💾 Зберегти</button>
@@ -667,6 +700,7 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="/assets/js/service-groups.js?v=4"></script>
 <script>
 (function () {
   "use strict";
@@ -807,15 +841,87 @@
   var svcList       = document.getElementById("svcList");
   var svcFilter     = document.getElementById("svcFilter");
   var svcName       = document.getElementById("svcName");
+  var svcLevel      = document.getElementById("svcLevel");
+  var svcLevelBtns  = document.getElementById("svcLevelBtns");
+  var svcNamePreview= document.getElementById("svcNamePreview");
   var svcCategory   = document.getElementById("svcCategory");
+  var svcCatHint    = document.getElementById("svcCatHint");
   var svcPrice      = document.getElementById("svcPrice");
   var svcDuration   = document.getElementById("svcDuration");
   var svcDesc       = document.getElementById("svcDesc");
   var svcImgUrl     = document.getElementById("svcImgUrl");
   var svcImgPreview = document.getElementById("svcImgPreview");
   var svcImgName    = document.getElementById("svcImgName");
+  var svcRemoveBtn  = document.getElementById("svcRemoveBtn");
+  var svcPhotoHint  = document.getElementById("svcPhotoHint");
   var svcEditingId  = null;
   var svcAllItems   = [];
+
+  /* Категорія в базі — вільний текст, і за роки в ньому накопичились
+     синоніми одного й того ж розділу («Загальні масажі», «Прайс Майстер»,
+     «Прайс Топ Майстер», «Прайс Експерт» — усі це «Масажі»). Селект
+     показує лише 5 канонічних варіантів; цей словник підбирає, який із
+     них відповідає вже збереженому значенню, щоб при відкритті послуги
+     потрібний пункт був одразу обраний, а не губився як "невідомий". */
+  var SVC_CATEGORY_ALIASES = {
+    "Загальні масажі": "Загальні масажі", "Прайс Майстер": "Загальні масажі",
+    "Прайс Топ Майстер": "Загальні масажі", "Прайс Експерт": "Загальні масажі",
+    "SPA-масажі для двох": "SPA-масажі для двох",
+    "SPA-масажі для одного": "SPA-масажі для одного", "SPA-ритуали": "SPA-масажі для одного",
+    "Корекція фігури": "Корекція фігури", "Комплекси": "Корекція фігури",
+    "Додаткові послуги": "Додаткові послуги"
+  };
+  function canonicalCategory(raw) {
+    return SVC_CATEGORY_ALIASES[(raw || "").trim()] || "";
+  }
+  /* Назва рівня майстра — той самий текст, що й скрізь на сайті
+     (парситься назад через OlivaServiceGroups.parseName). */
+  function composeSvcName(base, level, dur) {
+    base = (base || "").trim();
+    var lvl = level ? " (" + level + ")" : "";
+    return base + lvl + " " + (parseInt(dur, 10) || 0) + " хв";
+  }
+  function updateSvcPreview() {
+    var base = svcName.value.trim();
+    var dur = svcDuration.value;
+    if (!base || !(parseInt(dur, 10) > 0)) {
+      svcNamePreview.style.display = "none";
+      return;
+    }
+    svcNamePreview.style.display = "";
+    svcNamePreview.innerHTML = "Буде збережено як: <b>" + composeSvcName(base, svcLevel.value, dur).replace(/&/g,"&amp;").replace(/</g,"&lt;") + "</b>";
+    updateSvcCatHint();
+  }
+  function updateSvcCatHint() {
+    var SG = window.OlivaServiceGroups;
+    if (!SG) { svcCatHint.textContent = ""; return; }
+    var picked = svcCategory.value;
+    // resolveGroup потребує обʼєкт послуги — збираємо мінімальний
+    var fakeSvc = { category: picked, name: composeSvcName(svcName.value, svcLevel.value, svcDuration.value || 60) };
+    var parsed = SG.parseName(fakeSvc.name);
+    var key = SG.resolveGroup(fakeSvc, parsed.cat);
+    var group = SG.GROUPS.filter(function (g) { return g.key === key; })[0];
+    svcCatHint.innerHTML = group ? "→ Розділ на сайті: <b>" + group.name + "</b>" : "";
+  }
+  svcLevelBtns.querySelectorAll(".level-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      svcLevelBtns.querySelectorAll(".level-btn").forEach(function (b) { b.classList.toggle("active", b === btn); });
+      svcLevel.value = btn.getAttribute("data-level");
+      updateSvcPreview();
+    });
+  });
+  svcName.addEventListener("input", updateSvcPreview);
+  svcDuration.addEventListener("input", updateSvcPreview);
+  svcCategory.addEventListener("change", updateSvcCatHint);
+  svcRemoveBtn.addEventListener("click", function () {
+    svcImgUrl.value = "";
+    svcImgPreview.classList.remove("show");
+    svcImgPreview.src = "";
+    svcImgName.textContent = "";
+    svcRemoveBtn.style.display = "none";
+    svcPhotoHint.style.display = "";
+    document.getElementById("svcUploadBtn").textContent = "📷 Завантажити фото";
+  });
   var svcActiveFilter = "";
   var svcFeatOnly = false;
   var svcSearchEl   = document.getElementById("svcSearch");
@@ -844,6 +950,9 @@
       svcImgPreview.src = url;
       svcImgPreview.classList.add("show");
       svcImgName.textContent = file.name;
+      svcRemoveBtn.style.display = "";
+      svcPhotoHint.style.display = "none";
+      document.getElementById("svcUploadBtn").textContent = "🔄 Змінити фото";
     });
     this.value = "";
   });
@@ -913,11 +1022,18 @@
       var priceGrn = s.price ? Math.round(s.price / 100) + ' грн' : 'Ціна не вказана';
       var catHtml = s.category ? '<div class="svc-card-cat">' + s.category + '</div>' : '';
       var descHtml = s.description ? '<div class="svc-card-desc">' + s.description + '</div>' : '';
+      /* Мітки неповних даних — щоб таке видно було одразу в списку,
+         а не тільки після відкриття редагування кожної картки. */
+      var warns = [];
+      if (!s.image_url) warns.push('⚠ без фото');
+      if (!s.price) warns.push('⚠ без ціни');
+      var warnHtml = warns.length ? '<div class="svc-card-warn">' + warns.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>' : '';
       card.innerHTML = imgHtml +
         '<div class="svc-card-body">' +
           catHtml +
           '<div class="svc-card-name">' + s.name + '</div>' +
           '<div class="svc-card-meta"><span>⏱ ' + s.duration_min + ' хв</span><span>💰 ' + priceGrn + '</span></div>' +
+          warnHtml +
           descHtml +
           '<div class="svc-card-actions">' +
             '<button data-edit>✏️ Редагувати</button>' +
@@ -962,20 +1078,37 @@
 
   function openSvcEditor(svc) {
     svcEditingId = svc ? svc.id : null;
-    svcName.value     = svc ? svc.name : '';
-    svcCategory.value = svc ? (svc.category || '') : '';
+    var SG = window.OlivaServiceGroups;
+    /* Стара назва містила рівень і тривалість самим текстом — розбираємо
+       її назад тим самим парсером, що працює на сайті, щоб поля Базова
+       назва / Рівень / Тривалість заповнились окремо. */
+    var parsed = (svc && SG) ? SG.parseName(svc.name) : null;
+    svcName.value     = svc ? (parsed ? parsed.cat : svc.name) : '';
+    svcLevel.value    = (parsed && parsed.level) || '';
+    svcLevelBtns.querySelectorAll('.level-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-level') === svcLevel.value);
+    });
+    svcCategory.value = svc ? canonicalCategory(svc.category) : '';
     svcPrice.value    = svc ? Math.round(svc.price / 100) : '';
-    svcDuration.value = svc ? svc.duration_min : '';
+    svcDuration.value = svc ? ((parsed && parsed.dur) || svc.duration_min) : '';
     svcDesc.value     = svc ? (svc.description || '') : '';
     svcImgUrl.value   = svc ? (svc.image_url || '') : '';
+    var svcUploadBtnEl = document.getElementById('svcUploadBtn');
     if (svc && svc.image_url) {
       svcImgPreview.src = svc.image_url;
       svcImgPreview.classList.add('show');
       svcImgName.textContent = '';
+      svcRemoveBtn.style.display = '';
+      svcPhotoHint.style.display = 'none';
+      svcUploadBtnEl.textContent = '🔄 Змінити фото';
     } else {
       svcImgPreview.classList.remove('show');
       svcImgName.textContent = '';
+      svcRemoveBtn.style.display = 'none';
+      svcPhotoHint.style.display = '';
+      svcUploadBtnEl.textContent = '📷 Завантажити фото';
     }
+    updateSvcPreview();
     svcList.style.display = 'none';
     svcFilter.style.display = 'none';
     document.getElementById('svcNewBtn').style.display = 'none';
@@ -991,12 +1124,16 @@
   }
 
   document.getElementById('svcSaveBtn').addEventListener('click', function () {
-    var name = svcName.value.trim();
+    var base = svcName.value.trim();
     var dur  = parseInt(svcDuration.value, 10);
-    if (!name) { svcName.style.borderColor = '#e07070'; svcName.focus(); return; }
+    if (!base) { svcName.style.borderColor = '#e07070'; svcName.focus(); return; }
     svcName.style.borderColor = '';
     if (!(dur > 0)) { svcDuration.style.borderColor = '#e07070'; svcDuration.focus(); return; }
     svcDuration.style.borderColor = '';
+    /* Рівень і тривалість дописуємо в саме поле name — так само, як це
+       завжди зберігалось у базі: parseName() на сайті й далі розбирає
+       їх назад із тексту назви. */
+    var name = composeSvcName(base, svcLevel.value, dur);
     var data = {
       name:         name,
       category:     svcCategory.value.trim(),
