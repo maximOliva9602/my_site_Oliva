@@ -144,13 +144,13 @@
     .abon-info-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; letter-spacing: .01em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
     .abon-info-sub { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-bottom: 18px; }
     .abon-info-box { border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
-    .abon-price-col { border-right: 1px solid var(--line); padding-right: 32px; }
+    .abon-price-col { border-right: 2px solid rgba(122,145,86,0.35); padding-right: 32px; }
     /* Послуга без абонементів — лишається сама колонка з ціною:
        без розділювача й на всю ширину картки. */
     .abon-block--price-only { max-width: 520px; }
     .abon-price-col--solo { border-right: none; padding-right: 0; }
     .abon-price-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
-    .abon-price-big { font-family: 'Playfair Display', serif; font-size: 2.8rem; color: var(--cream); font-weight: 700; line-height: 1; margin-bottom: 18px; }
+    .abon-price-big { font-family: 'Playfair Display', serif; font-size: 3.6rem; color: var(--cream); font-weight: 700; line-height: 1; margin-bottom: 18px; }
     .abon-price-big span { font-size: 1.1rem; color: var(--text-dim); font-family: 'Inter', sans-serif; font-weight: 400; }
     .abon-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .abon-card { position: relative; background: var(--black); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
@@ -166,21 +166,21 @@
     .abon-card-total del { opacity: .55; margin-left: 6px; }
     .abon-card--levels .abon-badge { top: 16px; }
     .abon-levels { display: flex; flex-direction: column; gap: 10px; }
-    .abon-level-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .abon-level-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
     .abon-level-row:first-child { padding-top: 0; border-top: none; }
     .abon-level-name { font-size: 12.5px; color: var(--text-dim); }
-    .abon-level-total { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-    .abon-level-total del { opacity: .55; margin-left: 4px; }
-    .abon-level-price { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--cream); font-weight: 700; text-align: right; white-space: nowrap; }
-    .abon-duration-switch-wrap { display: flex; margin-bottom: 16px; }
-    .abon-duration-switch { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 30px; padding: 4px; }
-    .abon-duration-btn { padding: 7px 16px; border-radius: 30px; font-size: 12.5px; color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: inherit; transition: all .2s; }
-    .abon-duration-btn.active { background: var(--olive); color: var(--cream); }
+    .abon-level-total { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--cream); font-weight: 700; white-space: nowrap; }
+    .abon-level-total del { font-family: 'Inter', sans-serif; font-weight: 400; font-size: .7em; opacity: .55; margin-left: 6px; }
+    .abon-duration-switch-wrap, .abon-level-switch-wrap { display: flex; margin-bottom: 12px; }
+    .abon-duration-switch, .abon-level-switch { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 30px; padding: 4px; }
+    .abon-duration-btn, .abon-level-btn { padding: 7px 16px; border-radius: 30px; font-size: 12.5px; color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: inherit; transition: all .2s; }
+    .abon-duration-btn.active, .abon-level-btn.active { background: var(--olive); color: var(--cream); }
+    .abon-level-switch-wrap { margin-bottom: 16px; }
     @media (max-width: 780px) {
       .abon-grid { grid-template-columns: 1fr; text-align: center; }
       .abon-cards { grid-template-columns: 1fr; }
-      .abon-price-col { border-right: none; padding-right: 0; padding-bottom: 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
-      .abon-duration-switch-wrap { justify-content: center; }
+      .abon-price-col { border-right: none; padding-right: 0; padding-bottom: 24px; border-bottom: 2px solid rgba(122,145,86,0.35); margin-bottom: 24px; }
+      .abon-duration-switch-wrap, .abon-level-switch-wrap { justify-content: center; }
     }
 
     .contacts-section { padding: 72px 24px; background: rgba(14,18,12,0.9); border-top: 1px solid var(--line); }
@@ -358,17 +358,30 @@
   }
   /* Найменша ціна за візит серед карток однієї групи тривалості — щоб велика
      цифра "Ціна за візит" зверху блока абонементів перемикалась разом з
-     тумблером 90/130 хв, а не показувала одне й те саме число завжди. */
-  function groupMinPerVisit(items) {
+     тумблером 90/130 хв і тумблером рівня майстра, а не показувала одне й
+     те саме число завжди. Без level враховує всі рівні (як і раніше); з
+     level — лише рядки цього рівня (рядки без рівня взагалі йдуть завжди,
+     бо це послуги, де рівнів немає). */
+  function groupMinPerVisit(items, level) {
     var nums = [];
     items.forEach(function(a){
       a.totals.forEach(function(t){
+        if (level && t.level && t.level !== level) return;
         var raw = t.perSession || t.price;
         var num = parseFloat(String(raw).replace(/[^\d.,]/g, '').replace(',', '.'));
         if (!isNaN(num)) nums.push(num);
       });
     });
     return nums.length ? Math.min.apply(null, nums) : null;
+  }
+  var LEVEL_ORDER = ['Майстер', 'Топ Майстер', 'Експерт'];
+  /* Рівні, які реально зустрічаються в абонементах цієї послуги — щоб
+     тумблер рівня показувати лише тоді, коли послуга справді ділиться на
+     категорії майстрів (а не для послуг з однією ціною на всіх). */
+  function collectAbonLevels(groups) {
+    var set = {};
+    groups.forEach(function(g){ g.items.forEach(function(a){ a.totals.forEach(function(t){ if (t.level) set[t.level] = true; }); }); });
+    return LEVEL_ORDER.filter(function(l){ return set[l]; });
   }
   /* Текст уже виводиться курсивом/у визначеному стилі через CSS, тож зайві
      markdown-хвости, які власник іноді лишає при копіюванні (*текст*,
@@ -406,7 +419,10 @@
 
     var minPrice = variants.length ? Math.min.apply(null, variants.map(function(v){ return v.price; })) : null;
     var abonGroups = parseAbonemenItems(p.abonement_items);
-    var abonMinByGroup = abonGroups.map(function(g){ return groupMinPerVisit(g.items); });
+    var abonLevels = collectAbonLevels(abonGroups);
+    var activeLevel = abonLevels.length ? abonLevels[0] : null;
+    var activeDurIdx = 0;
+    var abonMinByGroup = abonGroups.map(function(g){ return groupMinPerVisit(g.items, activeLevel); });
 
     var title = p.hero_title || key;
     document.title = title + ' — Студія масажу Oliva';
@@ -463,9 +479,8 @@
           } else {
             body = '<div class="abon-levels">' + a.totals.map(function(t, i){
               var orig = a.originals[i];
-              return '<div class="abon-level-row"><div><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
-                '<div class="abon-level-total">Разом: ' + nbspCur(esc(t.price)) + (orig ? ' <del>' + nbspCur(esc(orig.price)) + '</del>' : '') + '</div></div>' +
-                '<span class="abon-level-price">' + esc(t.perSession || t.price) + '</span></div>';
+              return '<div class="abon-level-row"><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
+                '<span class="abon-level-total">Разом: ' + nbspCur(esc(t.price)) + (orig ? ' <del>' + nbspCur(esc(orig.price)) + '</del>' : '') + '</span></div>';
             }).join('') + '</div>';
           }
           return '<div class="abon-card' + (a.popular ? ' abon-card--popular' : '') + (single ? '' : ' abon-card--levels') + '">' +
@@ -482,6 +497,9 @@
         '<div class="abon-price-col">' +
           (multiDur ? '<div class="abon-duration-switch-wrap"><div class="abon-duration-switch">' + abonGroups.map(function(g, i){
             return '<button type="button" class="abon-duration-btn' + (i === 0 ? ' active' : '') + '" data-abon-dur="' + i + '">' + esc(g.duration) + '</button>';
+          }).join('') + '</div></div>' : '') +
+          (abonLevels.length ? '<div class="abon-level-switch-wrap"><div class="abon-level-switch">' + abonLevels.map(function(lv, i){
+            return '<button type="button" class="abon-level-btn' + (i === 0 ? ' active' : '') + '" data-abon-level="' + esc(lv) + '">' + esc(lv) + '</button>';
           }).join('') + '</div></div>' : '') +
           '<div class="abon-price-label">Ціна за візит</div>' +
           (abonHeaderPrice != null ? '<div class="abon-price-big" id="abonPriceBig"><span>від </span>' + abonHeaderPrice + ' грн</div>' : '') +
@@ -610,19 +628,28 @@
 
     content.innerHTML = html;
 
-    // Перемикач тривалості для абонементів
+    // Перемикачі тривалості й рівня майстра для абонементів — обидва
+    // впливають на велику цифру "Ціна за візит" зверху блока.
+    function updateAbonPrice(){
+      var big = content.querySelector('#abonPriceBig');
+      var price = groupMinPerVisit(abonGroups[activeDurIdx].items, activeLevel);
+      if (big && price != null) big.innerHTML = '<span>від </span>' + price + ' грн';
+    }
     content.querySelectorAll('.abon-duration-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
-        var idx = btn.getAttribute('data-abon-dur');
+        activeDurIdx = parseInt(btn.getAttribute('data-abon-dur'), 10);
         content.querySelectorAll('.abon-duration-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
         content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
-          box.style.display = (box.getAttribute('data-abon-group') === idx) ? '' : 'none';
+          box.style.display = (parseInt(box.getAttribute('data-abon-group'), 10) === activeDurIdx) ? '' : 'none';
         });
-        var big = content.querySelector('#abonPriceBig');
-        var groupPrice = abonMinByGroup[idx];
-        if (big && groupPrice != null) {
-          big.innerHTML = '<span>від </span>' + groupPrice + ' грн';
-        }
+        updateAbonPrice();
+      });
+    });
+    content.querySelectorAll('.abon-level-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        activeLevel = btn.getAttribute('data-abon-level');
+        content.querySelectorAll('.abon-level-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+        updateAbonPrice();
       });
     });
   });
