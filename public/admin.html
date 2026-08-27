@@ -354,7 +354,7 @@
           <label>Тривалість і ціна за рівнем майстра * <span class="field-hint">(оберіть рядок — тривалість, і колонку — рівень; порожня клітинка = цей рівень послугу не пропонує)</span></label>
           <div class="svc-matrix-wrap">
             <table class="svc-matrix">
-              <thead><tr><th>Хв</th><th>Без рівня</th><th>Майстер</th><th>Топ Майстер</th><th>Експерт</th><th></th></tr></thead>
+              <thead><tr><th>Хв</th><th id="svcMatrixNoLevelTh">Без рівня</th><th>Майстер</th><th>Топ Майстер</th><th>Експерт</th><th></th></tr></thead>
               <tbody id="svcMatrixBody"></tbody>
             </table>
           </div>
@@ -931,8 +931,28 @@
       .sort(function (a, b) { return a.duration - b.duration; });
   }
 
+  var svcMatrixNoLevelTh = document.getElementById("svcMatrixNoLevelTh");
+
+  /* Колонку "Без рівня" показуємо, лише якщо вона реально потрібна: або в
+     послузі вже є ціна без рівня (SPA-ритуали, додаткові послуги тощо —
+     таких у базі 35+), або жодного рівня ще не вказано (нова послуга —
+     не знаємо наперед, буде вона рівневою чи ні). Якщо ж рівні (Майстер/
+     Топ Майстер/Експерт) вже заповнені, а "без рівня" — ні, колонка тільки
+     плутає й провокує випадкове "0" від стрілочок number-інпута. */
+  function svcMatrixShowNoLevel() {
+    var hasLeveled = svcMatrixRows.some(function (r) {
+      return LEVELS.slice(1).some(function (lv) { return r.cells[lv] && r.cells[lv].price != null; });
+    });
+    var hasNoLevel = svcMatrixRows.some(function (r) {
+      return r.cells[""] && r.cells[""].price != null;
+    });
+    return hasNoLevel || !hasLeveled;
+  }
+
   function renderSvcMatrix() {
     svcMatrixBody.innerHTML = "";
+    var showNoLevel = svcMatrixShowNoLevel();
+    svcMatrixNoLevelTh.style.display = showNoLevel ? "" : "none";
     svcMatrixRows.forEach(function (row, ri) {
       var tr = document.createElement("tr");
       var durTd = document.createElement("td");
@@ -943,6 +963,7 @@
       durTd.appendChild(durI);
       tr.appendChild(durTd);
       LEVELS.forEach(function (lv) {
+        if (lv === "" && !showNoLevel) return;
         var td = document.createElement("td");
         var cell = row.cells[lv];
         if (cell && svcEditingId && cell.id === svcEditingId) td.className = "sm-self";
@@ -1208,7 +1229,7 @@
       var dur = parseInt(row.duration, 10);
       LEVELS.forEach(function (lv) {
         var cell = row.cells[lv];
-        var hasPrice = cell && cell.price != null && cell.price !== '' && !isNaN(cell.price) && dur > 0;
+        var hasPrice = cell && cell.price != null && cell.price !== '' && !isNaN(cell.price) && cell.price > 0 && dur > 0;
         if (hasPrice) {
           anyFilled = true;
           var body = {
