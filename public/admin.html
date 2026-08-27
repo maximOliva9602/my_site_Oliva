@@ -235,6 +235,21 @@
   .svc-card-warn span { font-size: 10px; color: #e0a94b; background: rgba(224,169,75,0.12); border: 1px solid rgba(224,169,75,0.35); border-radius: 20px; padding: 2px 8px; }
   .cover-remove-btn { background: none; border: 1px solid rgba(224,112,112,0.4); color: #e07070; border-radius: 10px; padding: 10px 14px; font-size: 13px; cursor: pointer; transition: all .2s; }
   .cover-remove-btn:hover { background: rgba(224,112,112,0.12); border-color: #e07070; }
+  /* Інші варіанти тієї ж послуги (рівень/тривалість/ціна) — щоб не
+     створювати кожен окремою послугою через "+ Нова послуга" по черзі. */
+  .svc-variant-head { display: flex; gap: 8px; padding: 0 40px 0 0; margin-bottom: 4px; }
+  .svc-variant-head span { flex: 1; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); }
+  .svc-variant-head span:nth-child(1) { flex: 1.6; }
+  .svc-variant-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .svc-variant-row select, .svc-variant-row input { background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 13px; outline: none; }
+  .svc-variant-row select:focus, .svc-variant-row input:focus { border-color: var(--olive-light); }
+  .svc-variant-row select { flex: 1.6; }
+  .svc-variant-row input { flex: 1; min-width: 0; }
+  .svc-variant-row .sv-remove { flex: 0 0 32px; background: none; border: 1px solid rgba(224,112,112,0.35); color: #e07070; border-radius: 8px; padding: 8px 0; cursor: pointer; transition: all .2s; }
+  .svc-variant-row .sv-remove:hover { background: rgba(224,112,112,0.12); border-color: #e07070; }
+  .svc-variant-row.is-new { border: 1px dashed rgba(122,145,86,0.4); border-radius: 10px; padding: 6px; margin: -6px -6px 8px; }
+  .svc-variant-add-btn { background: rgba(122,145,86,0.15); border: 1px dashed rgba(122,145,86,0.4); color: var(--olive-light); border-radius: 10px; padding: 9px 16px; font-size: 13px; cursor: pointer; transition: all .2s; }
+  .svc-variant-add-btn:hover { background: rgba(122,145,86,0.25); border-style: solid; color: var(--cream); }
 
   /* ===== MASTERS MANAGER ===== */
   .svc-close-btn { background: none !important; border: 1px solid var(--line) !important; color: var(--text-dim) !important; border-radius: 8px !important; padding: 7px 16px !important; font-size: 0.8rem !important; cursor: pointer; transition: all .2s !important; }
@@ -361,6 +376,12 @@
           </div>
         </div>
         <div class="svc-name-preview" id="svcNamePreview"></div>
+        <div>
+          <label>Інші варіанти цієї ж послуги <span class="field-hint">(інші рівні/тривалості — опис, категорія й фото нижче застосуються до всіх одразу)</span></label>
+          <div class="svc-variant-head" id="svcVariantHead" style="display:none;"><span>Рівень</span><span>Хв</span><span>Грн</span><span></span></div>
+          <div id="svcVariantsList"></div>
+          <button type="button" class="svc-variant-add-btn" id="svcVariantAddBtn">+ Додати варіант</button>
+        </div>
         <div>
           <label>Розділ на сторінці запису</label>
           <select id="svcCategory">
@@ -922,6 +943,80 @@
     svcPhotoHint.style.display = "";
     document.getElementById("svcUploadBtn").textContent = "📷 Завантажити фото";
   });
+
+  /* ---- Інші варіанти тієї ж послуги (рівень/тривалість/ціна) ----
+     Раніше кожен рівень/тривалість тієї самої послуги («Майстер» 30/45/60хв,
+     «Топ Майстер» 30/45/60хв тощо) доводилось заводити окремою послугою
+     через "+ Нова послуга", повторюючи опис, категорію й фото щоразу.
+     Тепер вони редагуються тут же одним списком, а опис/категорія/фото
+     з полів вище застосовуються до всіх варіантів одразу при збереженні. */
+  var svcVariants = [];       // { id: number|null, level, duration, price }
+  var svcVariantIdsAtOpen = []; // ids сиблінгів на момент відкриття — щоб знати, кого видалили
+  var svcVariantsList = document.getElementById("svcVariantsList");
+  var svcVariantHead  = document.getElementById("svcVariantHead");
+  var LEVEL_OPTIONS = ["", "Майстер", "Топ Майстер", "Експерт"];
+
+  function renderSvcVariants() {
+    svcVariantsList.innerHTML = "";
+    svcVariantHead.style.display = svcVariants.length ? "flex" : "none";
+    svcVariants.forEach(function (v, i) {
+      var row = document.createElement("div");
+      row.className = "svc-variant-row" + (v.id ? "" : " is-new");
+      var sel = document.createElement("select");
+      LEVEL_OPTIONS.forEach(function (lv) {
+        var opt = document.createElement("option");
+        opt.value = lv; opt.textContent = lv || "Без рівня";
+        if (lv === v.level) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener("change", function () { v.level = sel.value; });
+      var durI = document.createElement("input");
+      durI.type = "number"; durI.min = "1"; durI.step = "5"; durI.placeholder = "хв"; durI.value = v.duration || "";
+      durI.addEventListener("input", function () { v.duration = parseInt(durI.value, 10) || 0; });
+      var priceI = document.createElement("input");
+      priceI.type = "number"; priceI.min = "0"; priceI.step = "50"; priceI.placeholder = "грн"; priceI.value = v.price || "";
+      priceI.addEventListener("input", function () { v.price = parseFloat(priceI.value) || 0; });
+      var rm = document.createElement("button");
+      rm.type = "button"; rm.className = "sv-remove"; rm.title = "Прибрати варіант"; rm.textContent = "✕";
+      rm.addEventListener("click", function () {
+        svcVariants.splice(i, 1);
+        renderSvcVariants();
+      });
+      row.appendChild(sel); row.appendChild(durI); row.appendChild(priceI); row.appendChild(rm);
+      svcVariantsList.appendChild(row);
+    });
+  }
+  /* Знаходить усі послуги з тією ж базовою назвою (той самий парсер, що
+     на сайті розбирає "Назва (Рівень) NN хв" назад), крім самої себе. */
+  function findSvcSiblings(baseName, excludeId) {
+    var SG = window.OlivaServiceGroups;
+    if (!SG || !baseName) return [];
+    var base = baseName.trim();
+    return svcAllItems.filter(function (s) {
+      if (excludeId && s.id === excludeId) return false;
+      var p = SG.parseName(s.name);
+      return p.cat === base;
+    });
+  }
+  document.getElementById("svcVariantAddBtn").addEventListener("click", function () {
+    svcVariants.push({ id: null, level: svcLevel.value, duration: parseInt(svcDuration.value, 10) || 60, price: parseFloat(svcPrice.value) || 0 });
+    renderSvcVariants();
+  });
+  /* Під час створення НОВОЇ послуги — щойно назва збігається з уже
+     наявною, підтягуємо її варіанти сюди ж, щоб не заводити дублікат
+     окремою карткою, а одразу дописати бракуючий рівень/тривалість. */
+  svcName.addEventListener("input", function () {
+    if (svcEditingId) return; // для існуючої послуги список уже сформовано при відкритті
+    var siblings = findSvcSiblings(svcName.value, null);
+    var SG = window.OlivaServiceGroups;
+    svcVariantIdsAtOpen = siblings.map(function (s) { return s.id; });
+    svcVariants = siblings.map(function (s) {
+      var p = SG.parseName(s.name);
+      return { id: s.id, level: p.level || "", duration: p.dur || s.duration_min, price: s.price / 100 };
+    });
+    renderSvcVariants();
+  });
+
   var svcActiveFilter = "";
   var svcFeatOnly = false;
   var svcSearchEl   = document.getElementById("svcSearch");
@@ -1109,6 +1204,15 @@
       svcUploadBtnEl.textContent = '📷 Завантажити фото';
     }
     updateSvcPreview();
+    /* Інші рівні/тривалості тієї ж послуги — одразу в списку варіантів,
+       щоб донабрати бракуючі, не гортаючи назад до списку карток. */
+    var siblings = svc ? findSvcSiblings(parsed ? parsed.cat : svc.name, svc.id) : [];
+    svcVariantIdsAtOpen = siblings.map(function (s) { return s.id; });
+    svcVariants = siblings.map(function (s) {
+      var p = SG ? SG.parseName(s.name) : {};
+      return { id: s.id, level: p.level || '', duration: p.dur || s.duration_min, price: s.price / 100 };
+    });
+    renderSvcVariants();
     svcList.style.display = 'none';
     svcFilter.style.display = 'none';
     document.getElementById('svcNewBtn').style.display = 'none';
@@ -1121,6 +1225,9 @@
     svcList.style.display = '';
     svcFilter.style.display = '';
     document.getElementById('svcNewBtn').style.display = '';
+    svcVariants = [];
+    svcVariantIdsAtOpen = [];
+    renderSvcVariants();
   }
 
   document.getElementById('svcSaveBtn').addEventListener('click', function () {
@@ -1146,13 +1253,40 @@
     var method = svcEditingId ? 'PUT' : 'POST';
     var btn = this;
     btn.textContent = 'Збереження...'; btn.disabled = true;
+
+    /* Опис/категорія/фото — спільні для всіх варіантів; кожен варіант
+       відрізняється лише рівнем, тривалістю й ціною. Видалені з форми
+       рядки (були на момент відкриття, зникли зі списку) — видаляємо
+       і в базі, решту створюємо чи оновлюємо. */
+    var currentVariantIds = svcVariants.map(function (v) { return v.id; }).filter(Boolean);
+    var removedIds = svcVariantIdsAtOpen.filter(function (id) { return currentVariantIds.indexOf(id) === -1; });
+    var variantJobs = svcVariants.map(function (v) {
+      var vName = composeSvcName(base, v.level, v.duration || dur);
+      var vData = {
+        name: vName, category: data.category, description: data.description, image_url: data.image_url,
+        price: Math.round((v.price || 0) * 100), duration_min: v.duration || dur
+      };
+      return v.id
+        ? fetch('/api/admin/services/' + v.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vData) })
+        : fetch('/api/admin/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vData) });
+    }).concat(removedIds.map(function (id) {
+      return fetch('/api/admin/services/' + id, { method: 'DELETE' });
+    }));
+
     fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
       .then(function (r) { return r.json(); })
       .then(function (j) {
+        if (!j.ok) throw new Error(j.error || 'save failed');
+        return Promise.all(variantJobs);
+      })
+      .then(function () {
         btn.textContent = '💾 Зберегти'; btn.disabled = false;
-        if (j.ok) { closeSvcEditor(); loadServices(); }
-        else alert('Помилка збереження: ' + (j.error || ''));
-      }).catch(function () { btn.textContent = '💾 Зберегти'; btn.disabled = false; });
+        closeSvcEditor(); loadServices();
+      })
+      .catch(function (e) {
+        btn.textContent = '💾 Зберегти'; btn.disabled = false;
+        alert('Помилка збереження: ' + (e && e.message || ''));
+      });
   });
 
   function deleteSvc(id) {
