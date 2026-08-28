@@ -254,6 +254,12 @@ router.post("/book", function (req, res) {
     const m = db.prepare("SELECT id,branch_id FROM masters WHERE id = ? AND active = 1").get(masterId);
     if (!m) return res.status(404).json({ ok: false, error: "master not found" });
     if (!branchId) branchId = m.branch_id || null;
+    /* Захист від розсинхрону клієнта (напр. перемикання майстра на кроці
+       дати без переобрання послуги) — майстер і послуга мають різні рядки
+       на кожен рівень, тож без цієї перевірки запис міг піти з ціною
+       чужого рівня. */
+    const offers = db.prepare("SELECT 1 FROM master_services WHERE master_id = ? AND service_id = ?").get(masterId, serviceId);
+    if (!offers) return res.status(400).json({ ok: false, error: "master does not offer this service" });
   }
 
   // Обрана філія повинна бути однією з філій цього майстра.

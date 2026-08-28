@@ -1748,7 +1748,18 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       chip.className = "other-m-chip" + (state.master && state.master.id === m.id ? " sel" : "");
       chip.innerHTML = m.name + (m.level ? "<small>" + tr(m.level) + "</small>" : "");
       chip.addEventListener("click", function(){
+        /* Різні майстри мають різні рядки-послуги (рівень зашитий у назву,
+           а з ним і ціна) — при перемиканні майстра тут підтягуємо саме
+           ЙОГО варіант цієї ж послуги+тривалості, інакше запис піде зі
+           старою ціною попереднього майстра (був баг: клієнтку записали
+           до Топ Майстра за ціною звичайного Майстра). */
+        var curDur = state.service ? parseName(state.service.name).dur : null;
+        var matched = availServices().filter(function(s) {
+          return parseName(s.name).cat === state.category && parseName(s.name).dur === curDur
+            && (m.service_ids || []).indexOf(s.id) !== -1;
+        })[0];
         state.master = m; state.start_min = null;
+        if (matched) state.service = matched;
         wrap.querySelectorAll(".other-m-chip").forEach(function(c){ c.classList.remove("sel"); });
         chip.classList.add("sel");
         loadSlots(); // показати віконця цього майстра на обраний день
