@@ -211,12 +211,19 @@
     .social-btn--telegram:hover { background: rgba(34,158,217,.12) !important; border-color: #229ed9 !important; }
     .social-btn--youtube { color: #ff0000 !important; border-color: rgba(255,0,0,.3) !important; }
     .social-btn--youtube:hover { background: rgba(255,0,0,.12) !important; border-color: #ff0000 !important; }
-    .map-embed-wrap { display: flex; flex-direction: column; gap: 10px; }
+    /* Дві філії — дві окремі підписані карти поруч (зліва й справа). На
+       вузьких екранах (медіазапит нижче) переносимо в стовпчик. */
+    .map-embed-wrap { display: flex; flex-direction: row; gap: 20px; }
+    .map-embed-item { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+    .map-embed-label { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--olive-light); }
     .map-open-link { font-size: 13px; color: var(--olive-light); text-decoration: none; text-align: center; }
     .map-open-link:hover { color: var(--cream); }
     .map-links { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; }
     @media (max-width: 780px) {
       .contacts-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
+    @media (max-width: 480px) {
+      .map-embed-wrap { flex-direction: column; }
     }
 
     /* FLOATING ACTIONS (запис + чат) — завжди по вертикальному центру справа */
