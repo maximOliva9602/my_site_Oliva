@@ -513,7 +513,12 @@ a.contact-value:hover { color: var(--olive-light); }
 .social-btn:hover { background: var(--olive); color: var(--cream); border-color: var(--olive-light); }
 .map-placeholder { background: rgba(46,61,34,0.2); border: 1px solid var(--line); border-radius: var(--r); height: 320px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; color: var(--text-dim); font-size: 0.95rem; text-align: center; transition: background .3s; }
 .map-placeholder:hover { background: rgba(46,61,34,0.35); }
-.map-embed-wrap { display: flex; flex-direction: column; gap: 10px; }
+/* Дві філії — дві окремі підписані карти одна під одною, а не одна карта
+   з посиланням-заглушкою на другу адресу: інакше філію на Успішній
+   ніде не видно на самій карті, тільки текстовим лінком. */
+.map-embed-wrap { display: flex; flex-direction: column; gap: 20px; }
+.map-embed-item { display: flex; flex-direction: column; gap: 8px; }
+.map-embed-label { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--olive-light); }
 .map-open-link { font-size: 13px; color: var(--olive-light); text-decoration: none; text-align: center; }
 .map-open-link:hover { color: var(--cream); }
 /* Дві філії — два посилання на карту в один рядок. */
