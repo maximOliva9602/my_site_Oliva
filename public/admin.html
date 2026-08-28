@@ -1490,9 +1490,13 @@
   var svcKeysLoaded = false;
   var originalServiceKey = ''; // значення поста при редагуванні (на випадок перейменованої послуги)
 
-  /* Назва послуги без рівня і тривалості: "Масаж спини (Топ Майстер) 60 хв" → "Масаж спини" */
+  /* Назва послуги без рівня і тривалості: "Масаж спини (Топ Майстер) 60 хв" → "Масаж спини".
+     Делегуємо в спільний parseName (той самий, що на сайті й у матриці цін вище) —
+     власна регулярка тут раніше не розпізнавала "(Експерт)", тож послуги цього
+     рівня не зв'язувались із власними блог-статтями/сторінками. */
   function svcCleanKey(name) {
-    return String(name).replace(/\s*\((?:Топ\s+)?Майстер\)\s*/gi, ' ').replace(/\s+\d+\s*хв\s*$/i, '').replace(/\s{2,}/g, ' ').trim();
+    var SG = window.OlivaServiceGroups;
+    return SG ? SG.parseName(String(name)).cat : String(name).trim();
   }
   function loadServiceKeys() {
     if (svcKeysLoaded) return;

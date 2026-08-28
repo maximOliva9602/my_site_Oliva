@@ -1224,19 +1224,24 @@ CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
 
 /* ---------------- Міграція: синхронізація master_services за рівнем ---------------- */
 /*
- * Запускається щоразу при старті. Додає відсутні послуги майстрам згідно їхнього рівня.
+ * Запускається щоразу при старті. Приводить master_services у відповідність
+ * до поточного рівня кожного майстра: додає бракуючі послуги його рівня і
+ * прибирає зв'язки з послугами ІНШОГО рівня (лишились би, напр., від зміни
+ * рівня майстра до того, як з'явився autoAssignServicesByLevel — без
+ * видалення старих рядків майстер продовжував би "пропонувати" ціну
+ * колишнього рівня поруч із новим).
  * Рівні:
  *   "Топ Майстер"        → послуги з "(Топ Майстер)" + спільні (без мітки)
  *   "Майстер"            → послуги з "(Майстер)" (НЕ Топ) + спільні
+ *   "Експерт"            → послуги з "(Експерт)" + спільні
  *   Решта                → лише спільні
- *
- * Існуючі зв'язки не видаляються (використовується INSERT OR IGNORE).
  */
 (function syncMasterServices() {
   var masters = db.prepare("SELECT id, level FROM masters WHERE active=1").all();
   var allSvcs = db.prepare("SELECT id, name FROM services WHERE active=1").all();
   var ins = db.prepare("INSERT OR IGNORE INTO master_services (master_id, service_id) VALUES (?,?)");
-  var added = 0;
+  var del = db.prepare("DELETE FROM master_services WHERE master_id=? AND service_id=?");
+  var added = 0, removed = 0;
 
   var tx = db.transaction(function() {
     masters.forEach(function(m) {
@@ -1244,6 +1249,7 @@ CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
       var isTop = lvl === "Топ Майстер";
       var isMaster = lvl === "Майстер";
       var isExpert = lvl === "Експерт";
+      var fitIds = {};
 
       allSvcs.forEach(function(s) {
         var hasExpert = s.name.indexOf("(Експерт)")     !== -1;
@@ -1257,14 +1263,27 @@ CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
                    (isExpert && hasExpert);
 
         if (fits) {
+          fitIds[s.id] = true;
           var r = ins.run(m.id, s.id);
           if (r.changes) added++;
+        }
+      });
+
+      // Прибрати зв'язки з активними послугами чужого рівня (неактивні не чіпаємо).
+      var existing = db.prepare("SELECT service_id FROM master_services WHERE master_id=?").all(m.id);
+      existing.forEach(function(row) {
+        var isActiveSvc = allSvcs.some(function(s) { return s.id === row.service_id; });
+        if (isActiveSvc && !fitIds[row.service_id]) {
+          del.run(m.id, row.service_id);
+          removed++;
         }
       });
     });
   });
   tx();
-  if (added > 0) console.log("[db] syncMasterServices: додано " + added + " нових зв'язків майстер–послуга.");
+  if (added > 0 || removed > 0) {
+    console.log("[db] syncMasterServices: додано " + added + ", прибрано " + removed + " зв'язків майстер–послуга.");
+  }
 })();
 
 /* ---- Популярні послуги: встановлюємо featured=1 ---- */

@@ -92,6 +92,16 @@ function serviceMatchesMasterLevel(serviceName, masterLevel) {
   if (isTop) return masterLevel === "Топ Майстер";
   return masterLevel === "Майстер";
 }
+/* Рівень, зашитий у назву послуги ("" — спільна, без рівня). Використовується,
+   щоб при перейменуванні заборонити випадково стерти чи підмінити позначку
+   рівня — від неї залежить, кому з master_services ця послуга дістанеться. */
+function serviceLevelTag(serviceName) {
+  const name = String(serviceName || "");
+  if (name.includes("(Експерт)")) return "Експерт";
+  if (name.includes("(Топ Майстер)")) return "Топ Майстер";
+  if (name.includes("(Майстер)")) return "Майстер";
+  return "";
+}
 
 /* ---------- спільне: повна картка запису ---------- */
 function apptRow(id) {
@@ -868,7 +878,6 @@ router.put("/masters/:id", owner, function (req, res) {
   );
   // Посада визначає прайс — міняється рівень, перерахувати список послуг.
   if (d.level !== undefined && clean(d.level, 50) !== m.level) autoAssignServicesByLevel(id, clean(d.level, 50));
-  if (Array.isArray(d.service_ids)) setMasterServices(id, d.service_ids);
   res.json({ ok: true });
 });
 router.delete("/masters/:id", owner, function (req, res) {
@@ -1058,12 +1067,6 @@ function autoAssignServicesByLevel(masterId, level) {
   ).all();
   setMasterServices(masterId, tagged.concat(shared).map(function (r) { return r.id; }));
 }
-router.put("/masters/:id/services", owner, function (req, res) {
-  const ids = (req.body && req.body.service_ids) || [];
-  setMasterServices(parseInt(req.params.id, 10), Array.isArray(ids) ? ids : []);
-  res.json({ ok: true });
-});
-
 /* ---- Графік + перерви ---- */
 router.get("/masters/:id/schedule", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
@@ -1245,8 +1248,17 @@ router.put("/services/:id", owner, function (req, res) {
   const s = db.prepare("SELECT * FROM services WHERE id=?").get(id);
   if (!s) return res.status(404).json({ ok: false });
   const d = req.body || {};
+  const newName = d.name !== undefined ? clean(d.name, 150) : s.name;
+  /* Ця вкладка — вільне текстове поле для назви, на відміну від матриці в
+     адмінці, де рівень дописується автоматично. Випадкове стирання чи
+     спотворення "(Топ Майстер)"/"(Майстер)"/"(Експерт)" в назві миттєво
+     й непомітно перетворює послугу зі свого рівня на "спільну" — саме
+     цей рядок прив'язує майстра до ціни через master_services. */
+  if (serviceLevelTag(newName) !== serviceLevelTag(s.name)) {
+    return res.status(400).json({ ok: false, error: "level_tag_mismatch" });
+  }
   db.prepare("UPDATE services SET name=?, duration_min=?, price=?, sort_order=?, description=? WHERE id=?").run(
-    d.name !== undefined ? clean(d.name, 150) : s.name,
+    newName,
     d.duration_min !== undefined ? (parseInt(d.duration_min, 10) || s.duration_min) : s.duration_min,
     d.price !== undefined ? (parseInt(d.price, 10) || 0) : s.price,
     d.sort_order !== undefined ? parseInt(d.sort_order, 10) || 0 : s.sort_order,
