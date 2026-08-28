@@ -192,10 +192,17 @@
         display: flex;
         grid-template-columns: none;
         overflow-x: auto;
+        /* overflow-x:auto змушує браузер порахувати overflow-y як auto
+           теж (сам overflow-x без сусіда "visible" по обох осях
+           неможливий) — той самий скрол-контейнер обрізав бейдж
+           "Найпопулярніший", який навмисно стирчить над карткою
+           (top:-12px). Компенсуємо відступом зверху, щоб бейджу було
+           куди стирчати, а не ховатись за межею скролу. */
+        overflow-y: visible;
         scroll-snap-type: x mandatory;
         gap: 14px;
         margin: 0 -4px;
-        padding: 4px 4px 10px;
+        padding: 20px 4px 10px;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
       }
@@ -690,6 +697,21 @@
 
     content.innerHTML = html;
 
+    /* На мобільному картки абонементів — карусель; за замовчуванням видно
+       першу (5 сеансів), а саме "Найпопулярніший" (зазвичай середній,
+       10 сеансів) має бути головним, з рештою по боках. Центруємо його
+       в межах ЙОГО карусельного контейнера (inline:center), не чіпаючи
+       вертикальний скрол сторінки (block:nearest). На десктопі (grid,
+       не скрол-контейнер) виклик нешкідливий, але й не потрібен. */
+    function centerPopularCard(box) {
+      if (!box || window.matchMedia('(min-width: 781px)').matches) return;
+      var popular = box.querySelector('.abon-card--popular');
+      if (popular) popular.scrollIntoView({ inline: 'center', block: 'nearest' });
+    }
+    content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
+      if (box.style.display !== 'none') centerPopularCard(box);
+    });
+
     // Перемикачі тривалості й рівня майстра для абонементів — обидва
     // впливають на велику цифру "Ціна за візит" зверху блока.
     function updateAbonPrice(){
@@ -702,7 +724,9 @@
         activeDurIdx = parseInt(btn.getAttribute('data-abon-dur'), 10);
         content.querySelectorAll('.abon-duration-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
         content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
-          box.style.display = (parseInt(box.getAttribute('data-abon-group'), 10) === activeDurIdx) ? '' : 'none';
+          var isActive = parseInt(box.getAttribute('data-abon-group'), 10) === activeDurIdx;
+          box.style.display = isActive ? '' : 'none';
+          if (isActive) centerPopularCard(box);
         });
         updateAbonPrice();
       });
