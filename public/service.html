@@ -357,24 +357,6 @@
     });
     return groups.filter(function(g){ return g.items.length; });
   }
-  /* Найменша ціна за візит серед карток однієї групи тривалості — щоб велика
-     цифра "Ціна за візит" зверху блока абонементів перемикалась разом з
-     тумблером 90/130 хв і тумблером рівня майстра, а не показувала одне й
-     те саме число завжди. Без level враховує всі рівні (як і раніше); з
-     level — лише рядки цього рівня (рядки без рівня взагалі йдуть завжди,
-     бо це послуги, де рівнів немає). */
-  function groupMinPerVisit(items, level) {
-    var nums = [];
-    items.forEach(function(a){
-      a.totals.forEach(function(t){
-        if (level && t.level && t.level !== level) return;
-        var raw = t.perSession || t.price;
-        var num = parseFloat(String(raw).replace(/[^\d.,]/g, '').replace(',', '.'));
-        if (!isNaN(num)) nums.push(num);
-      });
-    });
-    return nums.length ? Math.min.apply(null, nums) : null;
-  }
   var LEVEL_ORDER = ['Майстер', 'Топ Майстер', 'Експерт'];
   /* Рівні, які реально зустрічаються в абонементах цієї послуги — щоб
      тумблер рівня показувати лише тоді, коли послуга справді ділиться на
@@ -423,7 +405,35 @@
     var abonLevels = collectAbonLevels(abonGroups);
     var activeLevel = abonLevels.length ? abonLevels[0] : null;
     var activeDurIdx = 0;
-    var abonMinByGroup = abonGroups.map(function(g){ return groupMinPerVisit(g.items, activeLevel); });
+    /* "Ціна за візит" зверху блока абонементів має показувати РЕАЛЬНУ ціну
+       з прайсу послуги (той самий рядок у "Послугах" в адмінці), а не
+       розрахунок "разом / кількість сеансів" з абонемента — власник
+       спеціально задає абонементні пакети з дисконтом, і та розрахункова
+       цифра виходила іншою за фактичну ціну відвідування. Підбираємо
+       варіант із variants за тривалістю поточної групи (якщо групу явно
+       вказано, напр. "[90 хв]") і обраним рівнем. */
+    function parseDurNum(s) { var m = String(s || '').match(/\d+/); return m ? parseInt(m[0], 10) : null; }
+    function realPriceFor(groupIdx, level) {
+      var durNum = parseDurNum((abonGroups[groupIdx] || {}).duration);
+      var pool = variants;
+      /* Абонементи інколи мають рівневі пакети (Майстер/Топ Майстер/Експерт)
+         навіть для послуг, де в самому прайсі рівнів немає (одна ціна на
+         всіх) — тоді фільтр за рівнем не знайшов би жодного варіанту.
+         У такому разі не показуємо порожньо, а беремо ціну без урахування
+         рівня — вона однакова для всіх, тож перемикач рівня просто не
+         впливає на цифру. */
+      if (level) {
+        var byLevel = pool.filter(function(v){ return v.level === level; });
+        if (byLevel.length) pool = byLevel;
+      }
+      if (durNum != null) {
+        var exact = pool.filter(function(v){ return v.dur === durNum; });
+        if (exact.length) pool = exact;
+      }
+      if (!pool.length) return null;
+      return Math.round(Math.min.apply(null, pool.map(function(v){ return v.price; })) / 100);
+    }
+    var abonMinByGroup = abonGroups.map(function(g, i){ return realPriceFor(i, activeLevel); });
 
     var title = p.hero_title || key;
     document.title = title + ' — Студія масажу Oliva';
@@ -633,7 +643,7 @@
     // впливають на велику цифру "Ціна за візит" зверху блока.
     function updateAbonPrice(){
       var big = content.querySelector('#abonPriceBig');
-      var price = groupMinPerVisit(abonGroups[activeDurIdx].items, activeLevel);
+      var price = realPriceFor(activeDurIdx, activeLevel);
       if (big && price != null) big.innerHTML = '<span>від </span>' + price + ' грн';
     }
     content.querySelectorAll('.abon-duration-btn').forEach(function(btn){
