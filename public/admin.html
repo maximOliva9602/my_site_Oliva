@@ -1114,64 +1114,98 @@
       svcList.innerHTML = '<div style="color:var(--text-dim);padding:32px;text-align:center;grid-column:1/-1">Послуг немає. Натисніть "+ Нова послуга"</div>';
       return;
     }
+    /* Кожен рівень майстра й кожна тривалість — окремий рядок у БД, але
+       редагуються вони вже давно одним спільним редактором (матриця
+       тривалість×рівень). Список досі показував їх окремими картками —
+       та сама послуга дублювалась 5-10 разів. Групуємо за базовою назвою
+       (тим самим parseName, що й скрізь на сайті), лишаючи одну картку
+       на послугу; дії (популярне/карусель/видалити) застосовуємо одразу
+       до всіх варіантів — так само, як їх уже читає публічний сайт
+       (booking.html і карусель на головній групують featured/in_carousel
+       по базовій назві, а не по рядку). */
+    var SG = window.OlivaServiceGroups;
+    var groups = {}, order = [];
     items.forEach(function (s) {
+      var base = SG ? SG.parseName(s.name).cat : s.name;
+      if (!groups[base]) { groups[base] = []; order.push(base); }
+      groups[base].push(s);
+    });
+    order.forEach(function (base) {
+      var sibs = groups[base];
+      var rep = sibs[0];
+      var imgRow = sibs.filter(function (s) { return s.image_url; })[0];
+      var prices = sibs.map(function (s) { return s.price; }).filter(function (p) { return p; });
+      var durs = sibs.map(function (s) { return s.duration_min; }).filter(function (d) { return d; })
+        .filter(function (d, i, a) { return a.indexOf(d) === i; }).sort(function (a, b) { return a - b; });
+      var anyFeatured = sibs.some(function (s) { return s.featured; });
+      var anyCarousel = sibs.some(function (s) { return s.in_carousel; });
+      var anyNoPhoto  = sibs.some(function (s) { return !s.image_url; });
+      var anyNoPrice  = sibs.some(function (s) { return !s.price; });
+
       var card = document.createElement("div");
-      card.className = "svc-card" + (s.featured ? " is-featured" : "") + (s.in_carousel ? " is-carousel" : "");
-      var imgHtml = s.image_url
-        ? '<img class="svc-card-img" src="' + s.image_url + '" />'
+      card.className = "svc-card" + (anyFeatured ? " is-featured" : "") + (anyCarousel ? " is-carousel" : "");
+      var imgHtml = imgRow
+        ? '<img class="svc-card-img" src="' + imgRow.image_url + '" />'
         : '<div class="svc-card-img-placeholder">💆</div>';
-      var priceGrn = s.price ? Math.round(s.price / 100) + ' грн' : 'Ціна не вказана';
-      var catHtml = s.category ? '<div class="svc-card-cat">' + s.category + '</div>' : '';
-      var descHtml = s.description ? '<div class="svc-card-desc">' + s.description + '</div>' : '';
-      /* Мітки неповних даних — щоб таке видно було одразу в списку,
-         а не тільки після відкриття редагування кожної картки. */
+      var priceHtml = prices.length
+        ? (Math.min.apply(null, prices) === Math.max.apply(null, prices)
+            ? Math.round(prices[0] / 100) + ' грн'
+            : 'від ' + Math.round(Math.min.apply(null, prices) / 100) + ' грн')
+        : 'Ціна не вказана';
+      var durHtml = durs.length ? durs.join('/') + ' хв' : '—';
+      var catHtml = rep.category ? '<div class="svc-card-cat">' + rep.category + '</div>' : '';
+      var descHtml = rep.description ? '<div class="svc-card-desc">' + rep.description + '</div>' : '';
       var warns = [];
-      if (!s.image_url) warns.push('⚠ без фото');
-      if (!s.price) warns.push('⚠ без ціни');
+      if (anyNoPhoto) warns.push('⚠ без фото');
+      if (anyNoPrice) warns.push('⚠ без ціни (не для всіх варіантів)');
       var warnHtml = warns.length ? '<div class="svc-card-warn">' + warns.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>' : '';
       card.innerHTML = imgHtml +
         '<div class="svc-card-body">' +
           catHtml +
-          '<div class="svc-card-name">' + s.name + '</div>' +
-          '<div class="svc-card-meta"><span>⏱ ' + s.duration_min + ' хв</span><span>💰 ' + priceGrn + '</span></div>' +
+          '<div class="svc-card-name">' + base + '</div>' +
+          '<div class="svc-card-meta"><span>⏱ ' + durHtml + '</span><span>💰 ' + priceHtml + '</span></div>' +
           warnHtml +
           descHtml +
           '<div class="svc-card-actions">' +
             '<button data-edit>✏️ Редагувати</button>' +
-            '<button class="btn-feat-svc" data-feat title="Показувати у вкладці Популярні">' + (s.featured ? '⭐ Популярне' : '☆ Популярне') + '</button>' +
-            '<button class="btn-carousel-svc" data-carousel title="Показувати у каруселі на головній">' + (s.in_carousel ? '🎠 В каруселі' : '○ В карусель') + '</button>' +
+            '<button class="btn-feat-svc" data-feat title="Показувати у вкладці Популярні">' + (anyFeatured ? '⭐ Популярне' : '☆ Популярне') + '</button>' +
+            '<button class="btn-carousel-svc" data-carousel title="Показувати у каруселі на головній">' + (anyCarousel ? '🎠 В каруселі' : '○ В карусель') + '</button>' +
             '<button class="btn-del-svc" data-del>🗑 Видалити</button>' +
           '</div>' +
         '</div>';
-      card.querySelector('[data-edit]').addEventListener('click', function () { openSvcEditor(s); });
+      card.querySelector('[data-edit]').addEventListener('click', function () { openSvcEditor(rep); });
       card.querySelector('[data-feat]').addEventListener('click', function () {
         var btn = this;
-        var newVal = s.featured ? 0 : 1;
-        fetch('/api/admin/services/' + s.id, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ featured: newVal })
-        }).then(function () {
-          s.featured = newVal;
+        /* Читаємо стан наживо з sibs, а не із замкненої на момент рендера
+           anyFeatured — інакше другий клік завжди повторював би перший
+           (перемикач не перемикався б назад). */
+        var newVal = sibs.some(function (s) { return s.featured; }) ? 0 : 1;
+        Promise.all(sibs.map(function (s) {
+          return fetch('/api/admin/services/' + s.id, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ featured: newVal })
+          }).then(function () { s.featured = newVal; });
+        })).then(function () {
           btn.textContent = newVal ? '⭐ Популярне' : '☆ Популярне';
           card.classList.toggle('is-featured', !!newVal);
         });
       });
       card.querySelector('[data-carousel]').addEventListener('click', function () {
         var btn = this;
-        var newVal = s.in_carousel ? 0 : 1;
-        fetch('/api/admin/services/' + s.id, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ in_carousel: newVal })
-        }).then(function () {
-          s.in_carousel = newVal;
+        var newVal = sibs.some(function (s) { return s.in_carousel; }) ? 0 : 1;
+        Promise.all(sibs.map(function (s) {
+          return fetch('/api/admin/services/' + s.id, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ in_carousel: newVal })
+          }).then(function () { s.in_carousel = newVal; });
+        })).then(function () {
           btn.textContent = newVal ? '🎠 В каруселі' : '○ В карусель';
           card.classList.toggle('is-carousel', !!newVal);
         });
       });
       card.querySelector('[data-del]').addEventListener('click', function () {
-        if (confirm('Видалити послугу "' + s.name + '"?')) deleteSvc(s.id);
+        var msg = sibs.length > 1
+          ? 'Видалити послугу "' + base + '" — усі ' + sibs.length + ' варіантів (тривалість/рівень)?'
+          : 'Видалити послугу "' + base + '"?';
+        if (confirm(msg)) Promise.all(sibs.map(function (s) { return fetch('/api/admin/services/' + s.id, { method: 'DELETE' }); })).then(function () { loadServices(); });
       });
       svcList.appendChild(card);
     });
