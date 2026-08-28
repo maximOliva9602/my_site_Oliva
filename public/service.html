@@ -158,6 +158,8 @@
     .abon-price-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-light); font-weight: 700; margin-bottom: 10px; }
     .abon-price-big { font-family: 'Playfair Display', serif; font-size: 3.1rem; color: var(--cream); font-weight: 700; line-height: 1; margin-bottom: 18px; white-space: nowrap; }
     .abon-price-big span { font-size: 1.1rem; color: var(--text-dim); font-family: 'Inter', sans-serif; font-weight: 400; }
+    .abon-cards-wrap { position: relative; }
+    .abon-carousel-arrow { display: none; }
     .abon-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .abon-card { position: relative; background: var(--black); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
     .abon-card--popular { border-color: var(--olive-light); }
@@ -210,6 +212,20 @@
       .abon-card { scroll-snap-align: center; flex: 0 0 82%; }
       .abon-price-col { border-right: none; padding-right: 0; padding-bottom: 24px; border-bottom: 2px solid rgba(122,145,86,0.35); margin-bottom: 24px; }
       .abon-duration-switch-wrap, .abon-level-switch-wrap { justify-content: center; }
+      /* Підказка, що карток більше однієї й можна гортати — самого
+         "підгляду" країв сусідніх карток виявилось недостатньо, власник
+         попросив явні стрілки. */
+      .abon-carousel-arrow {
+        display: flex; align-items: center; justify-content: center;
+        position: absolute; top: 50%; transform: translateY(-50%);
+        width: 34px; height: 34px; border-radius: 50%;
+        background: rgba(8,10,7,0.75); border: 1px solid rgba(122,145,86,0.5);
+        color: var(--cream); font-size: 20px; line-height: 1; cursor: pointer;
+        z-index: 6; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+      }
+      .abon-carousel-arrow--prev { left: -2px; }
+      .abon-carousel-arrow--next { right: -2px; }
+      .abon-carousel-arrow[disabled] { opacity: .35; pointer-events: none; }
     }
 
     .contacts-section { padding: 72px 24px; background: rgba(14,18,12,0.9); border-top: 1px solid var(--line); }
@@ -572,9 +588,13 @@
         '<div class="abon-info-box">' +
         '<div class="abon-info-title">Абонементи</div>' +
         '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
+        '<div class="abon-cards-wrap">' +
         abonGroups.map(function(g, i){
           return '<div class="abon-cards" data-abon-group="' + i + '"' + (i === 0 ? '' : ' style="display:none;"') + '>' + renderAbonCards(g.items) + '</div>';
         }).join('') +
+        '<button type="button" class="abon-carousel-arrow abon-carousel-arrow--prev" data-abon-dir="-1" aria-label="Попередній пакет">&#8249;</button>' +
+        '<button type="button" class="abon-carousel-arrow abon-carousel-arrow--next" data-abon-dir="1" aria-label="Наступний пакет">&#8250;</button>' +
+        '</div>' +
         '</div>' +
         '</div>' +
       '</div></div>';
@@ -712,6 +732,41 @@
       if (box.style.display !== 'none') centerPopularCard(box);
     });
 
+    /* Стрілки-підказка, що можна гортати картки абонементів (мобільна
+       карусель) — самого "підгляду" країв сусідніх карток виявилось
+       недостатньо. Одна пара стрілок працює з тим блоком .abon-cards,
+       що зараз видимий (activeDurIdx). */
+    function activeAbonBox() {
+      return content.querySelector('.abon-cards[data-abon-group="' + activeDurIdx + '"]');
+    }
+    function updateArrowState() {
+      var box = activeAbonBox();
+      var prev = content.querySelector('.abon-carousel-arrow--prev');
+      var next = content.querySelector('.abon-carousel-arrow--next');
+      if (!box || !prev || !next) return;
+      var maxScroll = box.scrollWidth - box.clientWidth;
+      prev.disabled = box.scrollLeft <= 1;
+      next.disabled = box.scrollLeft >= maxScroll - 1;
+    }
+    content.querySelectorAll('.abon-carousel-arrow').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var box = activeAbonBox();
+        if (!box) return;
+        var card = box.querySelector('.abon-card');
+        var cardWidth = card ? card.getBoundingClientRect().width : box.clientWidth * 0.82;
+        var dir = parseInt(btn.getAttribute('data-abon-dir'), 10);
+        /* behavior:'smooth' тут ненадійний — у поєднанні зі
+           scroll-snap-type:x mandatory деякі рушії просто ігнорують
+           виклик і скрол не відбувається взагалі. 'instant' завжди
+           спрацьовує; сам снеп все одно згладжує позицію картки. */
+        box.scrollBy({ left: dir * (cardWidth + 14), behavior: 'instant' });
+      });
+    });
+    content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
+      box.addEventListener('scroll', updateArrowState, { passive: true });
+    });
+    updateArrowState();
+
     // Перемикачі тривалості й рівня майстра для абонементів — обидва
     // впливають на велику цифру "Ціна за візит" зверху блока.
     function updateAbonPrice(){
@@ -729,6 +784,7 @@
           if (isActive) centerPopularCard(box);
         });
         updateAbonPrice();
+        updateArrowState();
       });
     });
     content.querySelectorAll('.abon-level-btn').forEach(function(btn){
