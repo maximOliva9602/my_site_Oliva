@@ -1070,9 +1070,26 @@ function autoAssignServicesByLevel(masterId, level) {
 /* ---- Графік + перерви ---- */
 router.get("/masters/:id/schedule", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
+  /* Без ?branch — старий режим: усі рядки майстра одразу (потрібно
+     календарю-огляду, де графік будується одним запитом на всі філії).
+     З ?branch=N — рядки саме цієї філії, а якщо для неї ще нічого не
+     задавали персонально, повертаємо спільний (branch_id=0) графік —
+     той самий фолбек, що й у day-override та в crm/slots.js. */
+  let schedule;
+  if (req.query.branch !== undefined) {
+    const br = parseInt(req.query.branch, 10) || 0;
+    schedule = br
+      ? db.prepare("SELECT weekday, work_start, work_end, branch_id FROM master_schedule WHERE master_id=? AND branch_id=? ORDER BY weekday").all(id, br)
+      : [];
+    if (!schedule.length) {
+      schedule = db.prepare("SELECT weekday, work_start, work_end, branch_id FROM master_schedule WHERE master_id=? AND branch_id=0 ORDER BY weekday").all(id);
+    }
+  } else {
+    schedule = db.prepare("SELECT weekday, work_start, work_end, branch_id FROM master_schedule WHERE master_id=? ORDER BY weekday").all(id);
+  }
   res.json({
     ok: true,
-    schedule: db.prepare("SELECT weekday, work_start, work_end, branch_id FROM master_schedule WHERE master_id=? ORDER BY weekday").all(id),
+    schedule: schedule,
     breaks: db.prepare("SELECT id, weekday, break_start, break_end FROM master_breaks WHERE master_id=? ORDER BY weekday, break_start").all(id),
   });
 });
@@ -1159,9 +1176,11 @@ router.post("/masters/:id/schedule-period", any, function (req, res) {
   const weekdays = Array.isArray(b.weekdays) ? b.weekdays.map(Number) : [];
   const work_start = parseInt(b.work_start, 10);
   const work_end   = parseInt(b.work_end,   10);
+  const br = parseInt(b.branch, 10) || 0;
   if (!tz.isDate(date_from) || !tz.isDate(date_to)) return res.status(400).json({ ok: false, error: "bad dates" });
-  const upsert = db.prepare("INSERT OR REPLACE INTO master_day_overrides (master_id,date,is_off,work_start,work_end) VALUES (?,?,?,?,?)");
-  const del    = db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=?");
+  const upsert = db.prepare("INSERT OR REPLACE INTO master_day_overrides (master_id,date,branch_id,is_off,work_start,work_end) VALUES (?,?,?,?,?,?)");
+  const del    = db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=? AND branch_id=?");
+  const del0   = db.prepare("DELETE FROM master_day_overrides WHERE master_id=? AND date=? AND branch_id=0");
   db.transaction(function () {
     /* Дати рахуємо через Date.UTC (не new Date(date+"T00:00:00")) — сервер
        працює в Europe/Kyiv (UTC+3 влітку), тому локальний парсинг опівночі
@@ -1174,16 +1193,21 @@ router.post("/masters/:id/schedule-period", any, function (req, res) {
       const dObj = new Date(dUtc);
       const ds = dObj.getUTCFullYear() + "-" + String(dObj.getUTCMonth() + 1).padStart(2, "0") + "-" + String(dObj.getUTCDate()).padStart(2, "0");
       const jsDay = dObj.getUTCDay();
-      if (mode === "reset")       { del.run(id, ds); }
-      else if (mode === "day_off"){ upsert.run(id, ds, 1, null, null); }
+      /* Щойно діапазон виставили для конкретної філії, спільний запис
+         «усі філії» на ці дати більше не діє — той самий принцип, що й
+         у одноденному day-override вище (інакше день і далі світився б
+         по фолбеку в інших філіях). */
+      if (br) del0.run(id, ds);
+      if (mode === "reset")       { del.run(id, ds, br); }
+      else if (mode === "day_off"){ upsert.run(id, ds, br, 1, null, null); }
       else if (mode === "by_weekday") {
         // Позначені пігулки — робочі дні; решта днів тижня в діапазоні —
         // вихідні. Раніше невибрані дні просто пропускались (жодного
         // запису в базу), тому зняття всіх позначок нічого не зберігало.
-        if (weekdays.indexOf(jsDay) !== -1) upsert.run(id, ds, 0, work_start, work_end);
-        else upsert.run(id, ds, 1, null, null);
+        if (weekdays.indexOf(jsDay) !== -1) upsert.run(id, ds, br, 0, work_start, work_end);
+        else upsert.run(id, ds, br, 1, null, null);
       }
-      else if (mode === "all_days") { upsert.run(id, ds, 0, work_start, work_end); }
+      else if (mode === "all_days") { upsert.run(id, ds, br, 0, work_start, work_end); }
     }
   })();
   res.json({ ok: true });
@@ -1194,13 +1218,19 @@ router.put("/masters/:id/schedule", any, function (req, res) {
   if (!canEditSchedule(req.session, id)) return res.status(403).json({ ok: false, error: "forbidden" });
   const sched = (req.body && req.body.schedule) || []; // [{weekday,work_start,work_end}]
   const breaks = (req.body && req.body.breaks) || [];   // [{weekday,break_start,break_end}]
+  /* branch=0 — старий спільний графік («усі філії»). branch=N — власний
+     тижневий графік саме цієї філії: пишемо/чистимо лише рядки з
+     branch_id=N, не чіпаючи branch_id=0 чи графіки інших філій — та лишає
+     їм чинним спільний фолбек, доки для них теж не задали окремий графік
+     (той самий принцип, що й у crm/slots.js workWindow()). */
+  const br = parseInt((req.body && req.body.branch), 10) || 0;
   const txn = db.transaction(function () {
-    db.prepare("DELETE FROM master_schedule WHERE master_id=?").run(id);
+    db.prepare("DELETE FROM master_schedule WHERE master_id=? AND branch_id=?").run(id, br);
     db.prepare("DELETE FROM master_breaks WHERE master_id=?").run(id);
-    const si = db.prepare("INSERT INTO master_schedule (master_id,weekday,work_start,work_end) VALUES (?,?,?,?)");
+    const si = db.prepare("INSERT INTO master_schedule (master_id,weekday,work_start,work_end,branch_id) VALUES (?,?,?,?,?)");
     sched.forEach(function (r) {
       const wd = parseInt(r.weekday, 10), ws = parseInt(r.work_start, 10), we = parseInt(r.work_end, 10);
-      if (wd >= 0 && wd <= 6 && ws >= 0 && we > ws) si.run(id, wd, ws, we);
+      if (wd >= 0 && wd <= 6 && ws >= 0 && we > ws) si.run(id, wd, ws, we, br);
     });
     const bi = db.prepare("INSERT INTO master_breaks (master_id,weekday,break_start,break_end) VALUES (?,?,?,?)");
     breaks.forEach(function (r) {

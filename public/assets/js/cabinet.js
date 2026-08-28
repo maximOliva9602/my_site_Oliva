@@ -3763,12 +3763,26 @@
             return { master: m, sched: r.j.schedule || [] };
           });
         })).then(function(masterRows) {
+          /* masterSchedMap[masterId][branchId][weekday] — тепер, коли
+             тижневий графік може бути окремим для кожної філії, плоска
+             мапа "лише за днем тижня" мішала б рядки різних філій в один
+             (останній прочитаний з БД просто перезаписував би решту).
+             Філія без власного графіку падає на спільний (branch_id=0). */
           var masterSchedMap = {};
           masterRows.forEach(function(row) {
-            var sm = {};
-            row.sched.forEach(function(s) { sm[s.weekday] = s; });
-            masterSchedMap[row.master.id] = sm;
+            var byBranch = {};
+            row.sched.forEach(function(s) {
+              var br = s.branch_id || 0;
+              if (!byBranch[br]) byBranch[br] = {};
+              byBranch[br][s.weekday] = s;
+            });
+            masterSchedMap[row.master.id] = byBranch;
           });
+          function schedFor(masterId, branchId, weekday) {
+            var byBranch = masterSchedMap[masterId] || {};
+            var br = branchId || 0;
+            return (br && byBranch[br] && byBranch[br][weekday]) || (byBranch[0] && byBranch[0][weekday]) || null;
+          }
 
           var totalCols = days.length + 1;
 
@@ -3810,7 +3824,6 @@
             // Редагувати може власник, або сам майстер — лише свій рядок і
             // лише якщо власник надав право (can_edit_own_schedule).
             var canEdit = ME.role === "owner" || (m.id === ME.masterId && !!m.can_edit_own_schedule);
-            var schedMap = masterSchedMap[m.id] || {};
             var tr = document.createElement("tr");
             tr.style.cssText = "border-bottom:1px solid #e8ece4;";
             var tdAv = document.createElement("td");
@@ -3832,7 +3845,7 @@
               if (ov) {
                 s = ov.is_off ? null : { work_start: ov.work_start, work_end: ov.work_end };
               } else {
-                s = schedMap[day.jsDay] || null;
+                s = schedFor(m.id, rowBranch, day.jsDay);
               }
               var td = document.createElement("td");
               td.style.cssText = "padding:3px;text-align:center;" + (canEdit ? "cursor:pointer;" : "");
@@ -6182,6 +6195,7 @@
   function scheduleEditPage(m, startDate, backTabId, defaultTab, branchId) {
     var schedBranch = parseInt(branchId, 10) || 0;
     var brQ = schedBranch ? "&branch=" + schedBranch : "";
+    var brQ0 = schedBranch ? "?branch=" + schedBranch : "";
     var main2 = $("main"); main2.innerHTML = "";
     var _topbarH = (document.querySelector(".topbar") || {offsetHeight:0}).offsetHeight || 0;
     main2.style.cssText = "padding:50px 0 0;";
@@ -6232,6 +6246,21 @@
       '<div style="font-size:.8rem;color:#6a7a60;">' + (m.level||'') + '</div></div>';
     main2.appendChild(mInfo);
 
+    /* Тижневий і "на період" графіки тепер персональні для філії —
+       без явної підказки, яку саме філію редагують, легко переплутати
+       й записати графік не туди. */
+    if (schedBranch) {
+      var brBadge = document.createElement("div");
+      brBadge.style.cssText = "padding:6px 16px;font-size:.75rem;color:#5a7a48;background:#eef2e8;border-bottom:1px solid #e8ece4;";
+      brBadge.textContent = "Філія…";
+      main2.appendChild(brBadge);
+      api("GET", "/api/crm/branches").then(function(r) {
+        var list = (r.j && r.j.branches) || [];
+        var b = list.find(function(x) { return x.id === schedBranch; });
+        brBadge.textContent = "Філія: " + (b ? b.name : "#" + schedBranch);
+      });
+    }
+
     // Tab bar
     var tabBar = document.createElement("div");
     tabBar.style.cssText = "display:flex;border-bottom:1.5px solid #e8ece4;background:#fff;";
@@ -6269,14 +6298,16 @@
       var oldSave = document.getElementById("scheEditSave");
       if (oldSave) oldSave.remove();
       content.innerHTML = '<div style="color:#aaa;font-size:.85rem;padding:8px 0;">Завантаження…</div>';
-      api("GET", "/api/crm/masters/" + m.id + "/schedule").then(function(r) {
+      api("GET", "/api/crm/masters/" + m.id + "/schedule" + brQ0).then(function(r) {
         var existSched = r.j.schedule || [];
         content.innerHTML = "";
         var DOW_NAMES = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
         var schedRows = {};
         existSched.forEach(function(s) { schedRows[s.weekday] = { ws: fmtMin(s.work_start), we: fmtMin(s.work_end) }; });
         var infoLbl = document.createElement("div");
-        infoLbl.textContent = "Базовий тижневий графік. Якщо поля порожні — вихідний.";
+        infoLbl.textContent = schedBranch
+          ? "Тижневий графік для цієї філії. Якщо поля порожні — вихідний. Доки не збережено — діє спільний графік."
+          : "Базовий тижневий графік (усі філії). Якщо поля порожні — вихідний.";
         infoLbl.style.cssText = "font-size:.75rem;color:#6a7a60;margin-bottom:14px;line-height:1.4;";
         content.appendChild(infoLbl);
         var schedGrid = document.createElement("div");
@@ -6309,7 +6340,7 @@
             if (ws2 != null && we2 != null && we2 > ws2) schedule.push({ weekday: wd2, work_start: ws2, work_end: we2 });
           });
           saveBtn.textContent = "Збереження…"; saveBtn.disabled = true;
-          api("PUT", "/api/crm/masters/" + m.id + "/schedule", { schedule: schedule }).then(function(r2) {
+          api("PUT", "/api/crm/masters/" + m.id + "/schedule", { schedule: schedule, branch: schedBranch }).then(function(r2) {
             saveBtn.disabled = false;
             if (r2.j && r2.j.ok) {
               saveBtn.textContent = "Збережено ✓"; saveBtn.style.background = "#3d5430";
@@ -6528,7 +6559,7 @@
         saveBtn2.textContent = "Збереження…"; saveBtn2.disabled = true;
         api("POST", "/api/crm/masters/" + m.id + "/schedule-period", {
           date_from: rfI.value, date_to: reI.value, mode: mode3,
-          weekdays: selDays,
+          weekdays: selDays, branch: schedBranch,
           work_start: toMin(wsI2.value), work_end: toMin(weI2.value)
         }).then(function(r) {
           saveBtn2.disabled = false;
