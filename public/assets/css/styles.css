@@ -273,11 +273,27 @@ section { padding: 100px 0; }
 /* 24px замість 56px: вкладки переїхали звідси у .srv-sticky, тож відступ
    до них тепер задає сам заголовок. Загальна картина не змінилась. */
 .services-header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 24px; gap: 24px; }
-/* Спільний блок керування (вкладки + рівень майстра). На мобільному —
-   липкий, тому обидві панелі лишаються під рукою, поки гортаєш ціни. */
+/* Спільний блок керування (вкладки + рівень майстра) — липкий скрізь,
+   не лише на мобільному: тримається під навігацією, поки гортаєш ціни,
+   і сам відпускає, коли блок послуг закінчується (природна поведінка
+   position:sticky — межа задається батьківським .container). */
 /* Вкладки й перемикач рівня — в один рядок. Тісно стає лише на вузьких
    екранах, там переносимо в стовпчик (див. медіазапит нижче). */
-.srv-sticky { margin-bottom: 32px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.srv-sticky {
+  position: sticky;
+  top: var(--srv-tier-top, 60px);
+  z-index: 60;
+  margin-bottom: 32px;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  background: rgba(8,10,7,0.94);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
 .srv-tabs { display: flex; gap: 4px; background: rgba(46,61,34,0.3); border: 1px solid var(--line); border-radius: 50px; padding: 5px; overflow-x: auto; scrollbar-width: none; }
 .srv-tabs::-webkit-scrollbar { display: none; }
 .srv-tab { padding: 8px 12px; border-radius: 50px; font-size: 0.72rem; color: var(--text-dim); transition: all .25s; white-space: nowrap; flex-shrink: 0; }
@@ -633,14 +649,10 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
     font-size: 0.65rem;
     padding: 6px 10px;
   }
-  /* Вкладки + рівень майстра тримаються під шапкою, поки гортаєш ціни:
-     інакше при довгому списку не видно, який це розділ і чиї це ціни, і
-     треба скролити вгору. Відпускає сам, коли блок послуг закінчився
-     (межа .container). --srv-tier-top рахує JS за висотою навігації. */
+  /* Липкість (position:sticky) і фон з блюром — уже в базовому правилі
+     вище, спільні для всіх екранів. Тут лишились тільки мобільні
+     переносити-в-стовпчик і фон на всю ширину екрана, а не контейнера. */
   .srv-sticky {
-    position: sticky;
-    top: var(--srv-tier-top, 60px);
-    z-index: 60;
     /* на телефоні в один рядок не влазить — лишаємо в стовпчик */
     flex-direction: column;
     align-items: stretch;
@@ -648,9 +660,5 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
     /* на всю ширину екрана, щоб фон перекривав картки під ним */
     margin: 0 -24px 24px;
     padding: 10px 24px;
-    background: rgba(8,10,7,0.94);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--line);
   }
 }
