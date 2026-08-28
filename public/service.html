@@ -268,7 +268,10 @@
     .chat-form input::placeholder { color: var(--text-dim); }
     .chat-form button { width: 40px; height: 40px; border-radius: 50%; background: var(--olive-light); color: var(--black); font-size: 1.1rem; flex-shrink: 0; border: none; cursor: pointer; }
     @media (max-width: 780px) {
-      .floating-actions { right: 14px; gap: 10px; }
+      /* На мобільному кнопки записи/дзвінка/чату тримались по вертикальному
+         центру екрана — власник попросив прибити їх до нижнього правого
+         кута замість центру. */
+      .floating-actions { top: auto; bottom: 24px; right: 14px; transform: none; gap: 10px; }
       .book-fab, .chat-launcher { width: 52px; height: 52px; }
       /* На вузькому екрані панель не поміщається збоку від кнопки (вилазила
          за лівий край) — розкриваємо її НАД стовпчиком кнопок на всю ширину
@@ -281,7 +284,7 @@
       .symptoms-grid, .detail-grid { grid-template-columns: 1fr; }
       .symptoms-photo { order: -1; }
       .benefits-grid { grid-template-columns: 1fr; }
-      .hero { min-height: 60vh; }
+      .hero { min-height: 60vh; padding-top: 130px; }
       /* Мобільне кадрування фото не лишає темної ділянки під текстом —
          затемнюємо низ, де сидять заголовок і кнопки, градієнтом. */
       .hero-overlay { display: block; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(5,7,4,0.05) 0%, rgba(5,7,4,0.55) 45%, rgba(5,7,4,0.85) 100%); }
