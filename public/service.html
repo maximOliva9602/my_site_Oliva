@@ -358,12 +358,15 @@
     return groups.filter(function(g){ return g.items.length; });
   }
   var LEVEL_ORDER = ['Майстер', 'Топ Майстер', 'Експерт'];
-  /* Рівні, які реально зустрічаються в абонементах цієї послуги — щоб
-     тумблер рівня показувати лише тоді, коли послуга справді ділиться на
-     категорії майстрів (а не для послуг з однією ціною на всіх). */
-  function collectAbonLevels(groups) {
+  /* Рівні, за якими послуга РЕАЛЬНО поділена в прайсі (variants) — а не
+     ті, що просто трапились у тексті абонементів. Власник міг завести
+     абонементні пакети "Майстер/Топ Майстер/Експерт" для послуги, в якої
+     в самому прайсі одна ціна на всіх (SPA-ритуали тощо) — тоді тумблер
+     рівня лише плутає, бо на ціну він не впливає. Показуємо тумблер лише
+     коли хоч один рядок послуги в базі справді має рівень у назві. */
+  function collectRealLevels(vs) {
     var set = {};
-    groups.forEach(function(g){ g.items.forEach(function(a){ a.totals.forEach(function(t){ if (t.level) set[t.level] = true; }); }); });
+    vs.forEach(function(v){ if (v.realLevel) set[v.realLevel] = true; });
     return LEVEL_ORDER.filter(function(l){ return set[l]; });
   }
   /* Текст уже виводиться курсивом/у визначеному стилі через CSS, тож зайві
@@ -397,12 +400,12 @@
       return SG.parseName(s.name).cat === key;
     }).map(function (s) {
       var parsed = SG.parseName(s.name);
-      return { level: parsed.level || 'Майстер', dur: parsed.dur, price: s.price };
+      return { level: parsed.level || 'Майстер', realLevel: parsed.level || null, dur: parsed.dur, price: s.price };
     }).filter(function (v) { return v.dur; }).sort(function (a, b) { return a.dur - b.dur; });
 
     var minPrice = variants.length ? Math.min.apply(null, variants.map(function(v){ return v.price; })) : null;
     var abonGroups = parseAbonemenItems(p.abonement_items);
-    var abonLevels = collectAbonLevels(abonGroups);
+    var abonLevels = collectRealLevels(variants);
     var activeLevel = abonLevels.length ? abonLevels[0] : null;
     var activeDurIdx = 0;
     /* "Ціна за візит" зверху блока абонементів має показувати РЕАЛЬНУ ціну
