@@ -502,7 +502,10 @@ section { padding: 100px 0; }
 
 /* ── CONTACTS ── */
 .contacts-section { background: rgba(14,18,12,0.9); border-top: 1px solid var(--line); }
-.contacts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; margin-top: 56px; }
+/* Ліва колонка (адреса/телефон/графік) фіксована й вужча за замовчуванням
+   1fr — контенту там мало, а решту простору віддаємо картам, щоб вони
+   були помітно більші, а не тиснулись у половину ширини навпіл. */
+.contacts-grid { display: grid; grid-template-columns: 340px 1fr; gap: 48px; align-items: start; margin-top: 56px; }
 .contact-block { margin-bottom: 32px; }
 .contact-label { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 8px; }
 .contact-value { font-size: 1.1rem; color: var(--cream); text-decoration: none; transition: color .25s; }
