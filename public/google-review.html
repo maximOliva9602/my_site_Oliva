@@ -64,6 +64,15 @@
     .google-g { width: 22px; height: 22px; flex-shrink: 0; }
     .google-note { font-size: 12px; color: rgba(242,237,228,0.4); text-align: center; margin-top: 12px; line-height: 1.6; }
 
+    /* Підказка після кліку: клієнт уже на вкладці Google, тому останній
+       крок треба показати максимально явно — вставити й підтвердити. */
+    .paste-hint { display: none; margin-top: 14px; border: 1px solid var(--olive-light); background: rgba(122,145,86,0.12); border-radius: 14px; padding: 16px 18px; text-align: center; }
+    .paste-hint.show { display: block; }
+    .paste-hint-title { font-size: 14px; color: var(--cream); font-weight: 500; margin-bottom: 8px; }
+    .paste-hint-steps { font-size: 13px; color: var(--text-dim); line-height: 1.9; }
+    .paste-hint-steps b { color: var(--olive-light); }
+    .kbd { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; font-size: 12px; color: var(--cream); }
+
     .thanks { margin-top: 24px; border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; font-size: 13.5px; color: var(--text-dim); line-height: 1.6; }
     .thanks-heart { font-size: 1.3rem; flex-shrink: 0; }
 
@@ -130,7 +139,15 @@
       </svg>
       Опублікувати відгук у Google
     </a>
-    <div class="google-note">Ви перейдете на сторінку студії в Google Картах — текст уже скопійовано, залишиться натиснути «Написати відгук» і вставити його (Ctrl/Cmd+V)</div>
+    <div class="google-note" id="googleNote">Відкриється форма відгуку Google — ваш текст уже буде скопійовано, залишиться вставити його та підтвердити</div>
+
+    <div class="paste-hint" id="pasteHint">
+      <div class="paste-hint-title">✅ Текст скопійовано</div>
+      <div class="paste-hint-steps">
+        У вікні Google, що відкрилось:<br>
+        <b>1.</b> поставте зірочки &nbsp;<b>2.</b> вставте текст — <span class="kbd" id="pasteKeys">Ctrl+V</span> &nbsp;<b>3.</b> натисніть «Опублікувати»
+      </div>
+    </div>
 
     <div class="thanks">
       <div class="thanks-heart">🤍</div>
@@ -141,19 +158,21 @@
 </div>
 
 <script>
-  /* Короткі посилання g.page/r/.../review (офіційно згенеровані в Google
-     Business Profile — "Отримати більше відгуків") зараз самі редиректять
-     на голу google.com замість форми відгуку — перевірено напряму на
-     сервері Google (302 → .../review/ → 302 → https://www.google.com),
-     це поточна проблема на боці Google, не в нашому коді. Тому ведемо
-     клієнта напряму на сторінку студії в Google Картах за CID (номер
-     профілю з посилання "Поділитися" у Google Картах) — це відкриває
-     правильну картку студії, і там лишається натиснути "Написати відгук".
-     Google не дає публічного API для вставки готового тексту в свою
-     форму — тому текст все одно копіюємо в буфер обміну заздалегідь. */
+  /* Пряме посилання на ФОРМУ відгуку (а не просто на картку студії):
+     search.google.com/local/writereview відкриває одразу діалог із
+     зірочками й полем тексту. Йому потрібен Place ID у форматі ChIJ…,
+     а не CID з адресного рядка Карт — із CID цей URL дає 404, а короткі
+     g.page/r/…/review зараз редиректять на голу google.com. Place ID
+     виведено з пари hex-ідентифікаторів (ftid) профілю в Картах і
+     перевірено: обидва відкривають правильну філію.
+
+     Вставити текст у форму за клієнта неможливо (браузер забороняє
+     сайту чіпати вміст чужого домену, і в Google немає API публікації
+     відгуку від імені користувача) — тому кладемо текст у буфер обміну,
+     щоб лишилось тільки Ctrl/Cmd+V та «Опублікувати». */
   var GOOGLE_REVIEW_LINK = {
-    borshchahivska: 'https://www.google.com/maps?cid=12081224360740103721',
-    uspishna: 'https://www.google.com/maps?cid=4677521314753451752'
+    borshchahivska: 'https://search.google.com/local/writereview?placeid=ChIJTQzX8Ow38GYRKaa1CYwhqac',
+    uspishna: 'https://search.google.com/local/writereview?placeid=ChIJL48te7DJ1EAR6JYya9rk6UA'
   };
   var branch = 'borshchahivska';
 
@@ -209,18 +228,26 @@
     document.getElementById("charNum").textContent = this.value.length;
   });
 
-  async function publishToGoogle(e) {
+  /* На Mac вставка — Cmd+V, на решті — Ctrl+V. */
+  if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
+    document.getElementById('pasteKeys').textContent = '⌘+V';
+  }
+
+  function publishToGoogle(e) {
     e.preventDefault();
     var text = textarea.value.trim();
     if (text.length < 5) {
       textarea.focus();
       return false;
     }
-    var fullText = (rating ? "⭐".repeat(rating) + "\n" : "") + text;
 
+    /* Без await: і копіювання, і window.open мають стартувати в тому ж
+       такті, що й клік — інакше браузер вважає вкладку не-користувацькою
+       і блокує її як спливаюче вікно. У буфер кладемо лише текст:
+       зірочки в формі Google виставляються окремим селектором. */
     try {
-      await navigator.clipboard.writeText(fullText);
-    } catch (err) { /* буфер обміну недоступний — клієнт просто набере текст сам */ }
+      navigator.clipboard.writeText(text).catch(function () {});
+    } catch (err) { /* буфер недоступний — клієнт набере текст сам */ }
 
     // Внутрішня фіксація (щоб власник теж бачив відгук, навіть якщо
     // клієнт передумає публікувати його на Google).
@@ -231,6 +258,9 @@
     }).catch(function () {});
 
     window.open(GOOGLE_REVIEW_LINK[branch], '_blank');
+
+    document.getElementById('googleNote').style.display = 'none';
+    document.getElementById('pasteHint').classList.add('show');
     return false;
   }
 </script>
