@@ -679,6 +679,10 @@
         <div style="font-size:12.5px;color:var(--text-dim);">Тривалість і ціни підтягуються з «Послуги» автоматично — вписувати їх окремо не треба.</div>
         <div>
           <label>Абонементи <span class="field-hint">(пакети сеансів зі знижкою — необов'язково; оберіть послугу вгорі, щоб з'явились колонки рівнів майстра)</span></label>
+          <div style="display:flex;align-items:center;gap:8px;margin:2px 0 12px;">
+            <input type="checkbox" id="spAbonNoCategory" style="width:18px;height:18px;cursor:pointer;accent-color:var(--olive-light);" />
+            <label for="spAbonNoCategory" style="margin:0;font-weight:400;text-transform:none;letter-spacing:normal;font-size:13px;color:var(--text-dim);cursor:pointer;">Без категорії — одна ціна для всіх майстрів (ціна однакова, не залежить від рівня)</label>
+          </div>
           <div id="spAbonBuilder" class="abon-builder"></div>
           <button type="button" class="svc-variant-add-btn" id="spAbonAddGroupBtn">+ Додати тривалість <span class="field-hint">(якщо ціна абонемента залежить від тривалості послуги)</span></button>
           <textarea id="spAbonementItems" style="display:none;"></textarea>
@@ -1954,7 +1958,26 @@
      (який service.html і далі парсить без змін) відбувається лише в
      момент збереження, у serializeAbonState(). */
   var ABON_LEVEL_ORDER = LEVELS.slice(1); // ['Майстер','Топ Майстер','Експерт']
-  var abonState = { groups: [{ duration: '', packages: [] }] };
+  var abonState = { groups: [{ duration: '', packages: [] }], noCategory: false };
+  var spAbonNoCategory = document.getElementById('spAbonNoCategory');
+  spAbonNoCategory.addEventListener('change', function () {
+    abonState.noCategory = spAbonNoCategory.checked;
+    renderAbonBuilder();
+  });
+
+  /* Пакети, збережені раніше без рівневих цін (лише спільна ціна) —
+     ознака того, що власник свідомо обрав "без категорії", а не просто
+     ще не заповнив рівні. Явного прапорця в даних нема, тож визначаємо
+     це за фактом: жоден пакет не містить рівневого ключа. */
+  function abonHasAnyLevel(state) {
+    var found = false;
+    state.groups.forEach(function (g) {
+      g.packages.forEach(function (pkg) {
+        Object.keys(pkg.totals).concat(Object.keys(pkg.originals)).forEach(function (lv) { if (lv) found = true; });
+      });
+    });
+    return found;
+  }
 
   function abonEmptyPackage() { return { sessions: 5, totals: {}, originals: {}, badge: '', popular: false }; }
 
@@ -2056,7 +2079,7 @@
   }
 
   function renderAbonBuilder() {
-    var levels = abonLevelsForCurrentKey();
+    var levels = abonState.noCategory ? [] : abonLevelsForCurrentKey();
     var cols = levels.length ? levels : [''];
     var builder = document.getElementById('spAbonBuilder');
     builder.innerHTML = '';
@@ -2148,7 +2171,8 @@
     document.getElementById('spPublished').checked = false;
     spPreviewLink.style.display = 'none';
     if (!key) {
-      abonState = { groups: [{ duration: '', packages: [] }] };
+      abonState = { groups: [{ duration: '', packages: [] }], noCategory: false };
+      spAbonNoCategory.checked = false;
       renderAbonBuilder();
       svcPageEditor.scrollIntoView({ behavior: 'smooth' });
       return;
@@ -2167,13 +2191,15 @@
       spPreviewLink.href = '/service/' + encodeURIComponent(key);
       spPreviewLink.style.display = p.published ? 'inline-block' : 'none';
       abonState = abonParseRaw(p.abonement_items);
+      abonState.noCategory = !abonHasAnyLevel(abonState);
+      spAbonNoCategory.checked = abonState.noCategory;
       renderAbonBuilder();
     });
     svcPageEditor.scrollIntoView({ behavior: 'smooth' });
   }
 
   document.getElementById('spSaveBtn').addEventListener('click', function () {
-    var levels = abonLevelsForCurrentKey();
+    var levels = abonState.noCategory ? [] : abonLevelsForCurrentKey();
     document.getElementById('spAbonementItems').value = serializeAbonState(abonState, levels);
   });
   document.getElementById('spSaveBtn').addEventListener('click', function () {
