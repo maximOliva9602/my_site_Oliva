@@ -613,6 +613,10 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
   .hero-center { position: relative; left: auto; top: auto; transform: none; padding: 100px 24px 60px 24px; width: 100%; max-width: 100%; text-align: left; align-items: flex-start; }
   .hero-btns { justify-content: flex-start; }
   .hero-badge { bottom: 14px; left: 16px; right: 16px; transform: none; padding: 8px 14px; gap: 8px; font-size: 0.65rem; flex-wrap: wrap; justify-content: center; white-space: normal; }
+  /* Адреси — окремим рядком зверху, під ними графік роботи й телефон —
+     інакше все зливалось в один тісний рядок і обрізалось на екрані. */
+  .hero-badge-item:first-child { flex: 0 0 100%; justify-content: center; }
+  .hero-badge-item:first-child + .hero-badge-sep { display: none; }
   section { padding: 64px 0; }
   .services-header { flex-direction: column; align-items: flex-start; }
   .services-grid { grid-template-columns: 1fr; }
