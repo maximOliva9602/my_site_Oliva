@@ -141,14 +141,15 @@
 </div>
 
 <script>
-  /* Google Place ID для кожної філії різний — у студії два окремих
-     профілі в Google (Борщагівська і Успішна/Теремки). Google не дає
+  /* Готові короткі посилання "Отримати більше відгуків" з Google Business
+     Profile для кожної філії (Борщагівська і Успішна/Теремки — це два
+     окремих профілі в Google, не один із вибором адреси). Google не дає
      публічного API для вставки готового тексту відгуку в свою форму —
      тому копіюємо текст у буфер обміну і відкриваємо форму, щоб
      клієнту лишилось тільки вставити (Ctrl/Cmd+V). */
-  var GOOGLE_PLACE_ID = {
-    borshchahivska: '12081224360740103721',
-    uspishna: '4677521314753451752'
+  var GOOGLE_REVIEW_LINK = {
+    borshchahivska: 'https://g.page/r/CSmmtQmMlamnEBM/review',
+    uspishna: 'https://g.page/r/CeiWMmva5OIAEBM/review'
   };
   var branch = 'borshchahivska';
 
@@ -225,8 +226,7 @@
       body: JSON.stringify({ rating: rating, master: master, text: text, channel: 'google', branch: branch })
     }).catch(function () {});
 
-    var placeId = GOOGLE_PLACE_ID[branch];
-    window.open('https://search.google.com/local/writereview?placeid=' + placeId, '_blank');
+    window.open(GOOGLE_REVIEW_LINK[branch], '_blank');
     return false;
   }
 </script>
