@@ -346,6 +346,9 @@ app.get("/admin", function (req, res) {
 app.get("/share", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "share.html"));
 });
+app.get("/google-review", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "google-review.html"));
+});
 app.get("/tips", function (req, res) {
   res.redirect(301, "/share?tab=tips");
 });
@@ -453,11 +456,16 @@ app.post("/api/review", async function (req, res) {
   var rating  = parseInt(d.rating)  || 0;
   var master  = String(d.master  || "").slice(0, 100).trim();
   var text    = String(d.text    || "").slice(0, 1000).trim();
+  var channel = String(d.channel || "").slice(0, 20).trim();
+  var branch  = String(d.branch  || "").slice(0, 40).trim();
   if (!text || rating < 1 || rating > 5) {
     return res.status(400).json({ ok: false, error: "missing fields" });
   }
   var stars = "⭐".repeat(rating);
-  var msg = `✍️ <b>Новий анонімний відгук</b> #відгук\n\n${stars}\n` +
+  var isGoogle = channel === "google";
+  var msg = (isGoogle
+    ? `✍️ <b>Новий відгук (${branch === "uspishna" ? "Успішна" : "Борщагівська"}, публікує в Google)</b> #відгук\n\n`
+    : `✍️ <b>Новий анонімний відгук</b> #відгук\n\n`) + `${stars}\n` +
     (master ? `💆 <b>Майстер:</b> ${master}\n` : "") +
     `📝 ${text}`;
   try {

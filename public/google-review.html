@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Поділіться враженнями — Студія масажу Oliva</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="assets/img/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #0a0c08; --olive: #4a5e2e; --olive-light: #7a9156;
+      --olive-mid: #2e3d22; --cream: #f2ede4;
+      --text-dim: rgba(242,237,228,0.55); --line: rgba(122,145,86,0.18);
+    }
+    html, body { min-height: 100vh; background: var(--black); color: var(--cream); font-family: 'Inter', sans-serif; }
+
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--line); }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .nav-logo span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); }
+    .nav-back { font-size: 13px; color: var(--olive-light); text-decoration: none; }
+    .nav-back:hover { color: var(--cream); }
+
+    .hero { text-align: center; padding: 48px 24px 8px; }
+    .eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 14px; }
+    .title { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 5.5vw, 2.6rem); color: var(--cream); margin-bottom: 12px; }
+    .hero-sub { font-size: 14px; color: var(--text-dim); max-width: 400px; margin: 0 auto; line-height: 1.7; }
+
+    .wrap { max-width: 560px; margin: 0 auto; padding: 32px 24px 80px; }
+    .card { background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 20px; padding: 28px 24px; }
+
+    .branch-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 28px; }
+    .branch-btn { background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 50px; padding: 8px 16px; font-size: 12.5px; color: var(--text-dim); cursor: pointer; transition: all .2s; font-family: inherit; }
+    .branch-btn.active { background: rgba(122,145,86,0.18); border-color: var(--olive-light); color: var(--cream); }
+
+    .step { margin-bottom: 28px; }
+    .step-label { font-size: 15px; color: var(--cream); margin-bottom: 16px; display: flex; align-items: baseline; gap: 8px; }
+    .step-label b { color: var(--olive-light); font-weight: 600; }
+    .step-hint { font-size: 11px; letter-spacing: 0.05em; color: rgba(242,237,228,0.35); margin-top: 8px; }
+
+    .stars-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 6px; }
+    .star-btn { font-size: 2.1rem; cursor: pointer; transition: transform .15s; background: none; border: none; line-height: 1; padding: 0; filter: grayscale(1) opacity(0.4); }
+    .star-btn.active, .star-btn:hover { filter: none; transform: scale(1.15); }
+
+    .review-textarea { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 14px; color: var(--cream); font-family: 'Inter', sans-serif; resize: none; outline: none; transition: border-color .2s; margin-bottom: 8px; }
+    .review-textarea:focus { border-color: var(--olive-light); }
+    .review-textarea::placeholder { color: rgba(242,237,228,0.2); }
+    .char-count { font-size: 11px; color: var(--text-dim); text-align: right; }
+
+    .masters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .master-chip { background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 50px; padding: 8px 16px; font-size: 13px; color: var(--text-dim); cursor: pointer; transition: all .2s; }
+    .master-chip:hover { border-color: var(--olive-light); color: var(--cream); }
+    .master-chip.active { background: rgba(122,145,86,0.15); border-color: var(--olive-light); color: var(--cream); }
+
+    .lock-note { font-size: 12px; color: var(--text-dim); text-align: center; margin: 8px 0 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+    .google-btn { width: 100%; background: var(--olive-light); border: none; border-radius: 14px; padding: 17px; font-size: 15px; font-weight: 500; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: background .2s; text-decoration: none; }
+    .google-btn:hover { background: #8fa868; }
+    .google-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .google-g { width: 22px; height: 22px; flex-shrink: 0; }
+    .google-note { font-size: 12px; color: rgba(242,237,228,0.4); text-align: center; margin-top: 12px; line-height: 1.6; }
+
+    .thanks { margin-top: 24px; border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; font-size: 13.5px; color: var(--text-dim); line-height: 1.6; }
+    .thanks-heart { font-size: 1.3rem; flex-shrink: 0; }
+
+    .footer-link { text-align: center; margin-top: 28px; font-size: 12px; color: rgba(242,237,228,0.3); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="assets/img/logo.png" alt="Oliva" />
+    <span>Oliva.</span>
+  </a>
+  <a href="/" class="nav-back">← На сайт</a>
+</nav>
+
+<div class="hero">
+  <div class="eyebrow">Студія масажу · Київ</div>
+  <h1 class="title">Поділіться враженнями 🤍</h1>
+  <p class="hero-sub">Ваші відгуки надихають нас ставати ще кращими та дарувати вам найкращий сервіс 🤍</p>
+</div>
+
+<div class="wrap">
+  <div class="card">
+
+    <div class="branch-row" id="branchRow">
+      <button type="button" class="branch-btn active" data-branch="borshchahivska">Борщагівська, 145</button>
+      <button type="button" class="branch-btn" data-branch="uspishna">Успішна, 8</button>
+    </div>
+
+    <div class="step">
+      <div class="step-label"><b>1.</b> Ваша оцінка</div>
+      <div class="stars-row" id="starsRow">
+        <button class="star-btn" data-val="1" type="button">⭐</button>
+        <button class="star-btn" data-val="2" type="button">⭐</button>
+        <button class="star-btn" data-val="3" type="button">⭐</button>
+        <button class="star-btn" data-val="4" type="button">⭐</button>
+        <button class="star-btn" data-val="5" type="button">⭐</button>
+      </div>
+      <div class="step-hint" style="text-align:center;">Натисніть на зірочки, щоб оцінити</div>
+    </div>
+
+    <div class="step">
+      <div class="step-label"><b>2.</b> Ваш відгук</div>
+      <textarea class="review-textarea" id="reviewText" rows="4" maxlength="1000" placeholder="Розкажіть про свій досвід..."></textarea>
+      <div class="char-count"><span id="charNum">0</span>/1000</div>
+    </div>
+
+    <div class="step" style="margin-bottom:20px;">
+      <div class="step-label"><b>3.</b> Ваш майстер <span style="color:var(--text-dim);font-size:12px;">(необов'язково)</span></div>
+      <div class="masters" id="mastersRow">
+        <div class="master-chip active" data-name="">Не вказувати</div>
+      </div>
+    </div>
+
+    <div class="lock-note">🔒 Відгук публікується на Google та є публічним</div>
+
+    <a href="#" class="google-btn" id="googleBtn" onclick="return publishToGoogle(event)">
+      <svg class="google-g" viewBox="0 0 48 48">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 12.5 24 12.5c3.1 0 5.8 1.1 8 3l6-6C34.5 5.5 29.5 4 24 4 16 4 9.2 8.7 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.7 13.6-4.5l-6.3-5.3c-2 1.4-4.7 2.3-7.3 2.3-5.2 0-9.6-3.4-11.2-8.1l-6.5 5C9.1 39.4 16 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.8-2.8 5.1-5.1 6.6l6.3 5.3C39.8 37.2 44 31.4 44 24c0-1.2-.1-2.4-.4-3.5z"/>
+      </svg>
+      Опублікувати відгук у Google
+    </a>
+    <div class="google-note">Ви перейдете на сторінку Google Карт з готовою формою відгуку</div>
+
+    <div class="thanks">
+      <div class="thanks-heart">🤍</div>
+      <div>Дякуємо, що обираєте Oliva!<br>Ваші враження дуже цінні для нас 🤍</div>
+    </div>
+  </div>
+  <div class="footer-link">massage-oliva.com</div>
+</div>
+
+<script>
+  /* Google Place ID для кожної філії різний — у студії два окремих
+     профілі в Google (Борщагівська і Успішна/Теремки). Google не дає
+     публічного API для вставки готового тексту відгуку в свою форму —
+     тому копіюємо текст у буфер обміну і відкриваємо форму, щоб
+     клієнту лишилось тільки вставити (Ctrl/Cmd+V). */
+  var GOOGLE_PLACE_ID = {
+    borshchahivska: '12081224360740103721',
+    uspishna: '4677521314753451752'
+  };
+  var branch = 'borshchahivska';
+
+  document.querySelectorAll('.branch-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.branch-btn').forEach(function (b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      branch = this.dataset.branch;
+    });
+  });
+
+  var rating = 0;
+  var master = "";
+
+  document.querySelectorAll(".star-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      rating = parseInt(this.dataset.val);
+      document.querySelectorAll(".star-btn").forEach(function (b, i) {
+        b.classList.toggle("active", i < rating);
+      });
+    });
+  });
+
+  function bindChips() {
+    document.querySelectorAll(".master-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        document.querySelectorAll(".master-chip").forEach(function (c) { c.classList.remove("active"); });
+        this.classList.add("active");
+        master = this.dataset.name;
+      });
+    });
+  }
+  bindChips();
+
+  fetch('/api/masters')
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j.ok || !j.masters) return;
+      var row = document.getElementById('mastersRow');
+      j.masters.forEach(function (m) {
+        var chip = document.createElement('div');
+        chip.className = 'master-chip';
+        chip.dataset.name = m.name;
+        chip.textContent = m.name;
+        row.appendChild(chip);
+      });
+      bindChips();
+    })
+    .catch(function () {});
+
+  var textarea = document.getElementById("reviewText");
+  textarea.addEventListener("input", function () {
+    document.getElementById("charNum").textContent = this.value.length;
+  });
+
+  async function publishToGoogle(e) {
+    e.preventDefault();
+    var text = textarea.value.trim();
+    if (text.length < 5) {
+      textarea.focus();
+      return false;
+    }
+    var fullText = (rating ? "⭐".repeat(rating) + "\n" : "") + text;
+
+    try {
+      await navigator.clipboard.writeText(fullText);
+    } catch (err) { /* буфер обміну недоступний — клієнт просто набере текст сам */ }
+
+    // Внутрішня фіксація (щоб власник теж бачив відгук, навіть якщо
+    // клієнт передумає публікувати його на Google).
+    fetch("/api/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: rating, master: master, text: text, channel: 'google', branch: branch })
+    }).catch(function () {});
+
+    var placeId = GOOGLE_PLACE_ID[branch];
+    window.open('https://search.google.com/local/writereview?placeid=' + placeId, '_blank');
+    return false;
+  }
+</script>
+</body>
+</html>
