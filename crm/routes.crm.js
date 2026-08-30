@@ -278,8 +278,16 @@ function createAppointment(d, session) {
   try {
     const extras = d.extra_services ? JSON.parse(d.extra_services) : null;
     if (Array.isArray(extras) && extras.length) {
-      extraServices = JSON.stringify(extras);
-      extras.forEach(function(ex) {
+      /* За наявності id тривалість/ціну беремо з бази — щоб запис не
+         зберіг застарілий прайс, якщо власник змінив його в адмінці. */
+      const stmtEx = db.prepare("SELECT id, name, duration_min, price FROM services WHERE id=? AND active=1");
+      const list = extras.map(function(ex) {
+        const row = (parseInt(ex && ex.id, 10) || 0) ? stmtEx.get(parseInt(ex.id, 10)) : null;
+        if (!row) return ex;
+        return { id: row.id, name: ex.name || row.name, duration_min: row.duration_min, price: row.price };
+      });
+      extraServices = JSON.stringify(list);
+      list.forEach(function(ex) {
         totalDuration += (parseInt(ex.duration_min, 10) || 0);
         totalPrice    += (parseInt(ex.price, 10) || 0);
       });

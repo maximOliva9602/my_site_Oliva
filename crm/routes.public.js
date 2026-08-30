@@ -223,12 +223,28 @@ router.post("/book", function (req, res) {
   const svc = db.prepare("SELECT id, duration_min, price FROM services WHERE id = ? AND active = 1").get(serviceId);
   if (!svc) return res.status(404).json({ ok: false, error: "service not found" });
 
-  // Додаткові послуги (add-on'и): [{name, duration_min, price(коп)}] — додають час і ціну
+  /* Додаткові послуги (add-on'и): [{id, name, duration_min, price(коп)}].
+     Якщо прийшов id — тривалість і ціну беремо З БАЗИ, а не з того, що
+     прислав браузер: інакше сторінка запису з застарілим прайсом (або
+     підроблений запит) записує клієнта за неправильною сумою, і CRM
+     розходиться з адмінкою. Без id лишаємо надіслані значення — так
+     створюються ручні позиції з CRM. */
+  const stmtExtraSvc = db.prepare("SELECT id, name, duration_min, price FROM services WHERE id = ? AND active = 1");
   let extraServices = null, extraMin = 0, extraPrice = 0;
   try {
     const extras = d.extra_services ? JSON.parse(d.extra_services) : null;
     if (Array.isArray(extras) && extras.length) {
       const list = extras.slice(0, 20).map(function (ex) {
+        const exId = parseInt(ex && ex.id, 10) || 0;
+        const row = exId ? stmtExtraSvc.get(exId) : null;
+        if (row) {
+          return {
+            id: row.id,
+            name: clean(String(ex && ex.name != null ? ex.name : row.name), 120),
+            duration_min: Math.max(0, Math.min(600, row.duration_min || 0)),
+            price: Math.max(0, row.price || 0),
+          };
+        }
         return {
           name: clean(String(ex && ex.name != null ? ex.name : ""), 120),
           duration_min: Math.max(0, Math.min(600, parseInt(ex && ex.duration_min, 10) || 0)),

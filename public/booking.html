@@ -1565,30 +1565,54 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 
   /* ---------- Крок 4b: Додаткові послуги (add-on'и) ---------- */
   // Ціни в копійках (як s.price), щоб узгоджуватися з money() і сумами.
-  var ADDONS = [
-    { key: "kinesio", name: "Кінезіотейпування", badge: "Рекомендуємо", img: "kinezioteipuvannia-kyiv.jpg",
-      desc: "Накладання кінезіологічних тейпів для підтримки м'язів і суглобів.", variants: [{ min: 30, price: 50000 }] },
-    { key: "sauna",   name: "Глибоке прогрівання у ІЧ Сауні", badge: "Хіт", img: "spa-sauna-kyiv.jpg",
-      desc: "Глибоке прогрівання організму, виведення токсинів і релакс.", variants: [{ min: 30, price: 65000 }] },
-    { key: "stones",  name: "Гаряче каміння", badge: "Популярно", img: "stoun-terapiia-kyiv.jpg",
-      desc: "Локальне прогрівання м'язів, глибоке розслаблення.", variants: [{ min: 15, price: 35000 }] },
-    { key: "barrel",  name: "Паріння у фітобочці", badge: "Популярно", img: "parinnia-u-fitobochtsi-kyiv.jpg",
-      desc: "Прогрівання тіла на цілющих травах перед масажем.", variants: [{ min: 30, price: 80000 }, { min: 45, price: 90000 }] },
-    { key: "head",    name: "Масаж голови", img: "head_massage.jpg",
-      desc: "Зняття напруги, покращення сну та концентрації.", variants: [{ min: 15, price: 35000 }, { min: 30, price: 70000 }] },
-    { key: "neck",    name: "Шийно-комірцева зона", img: "masazh-shyino-komirtsevoi-zony-shuliavska-kyiv.jpg",
-      desc: "Розслаблення шиї та плечей, зняття напруги.", variants: [{ min: 15, price: 35000 }, { min: 30, price: 70000 }] },
-    { key: "hands",   name: "Масаж долонь", img: "relaks-masazh-shuliavska-kyiv.jpg",
-      desc: "Зняття напруги в кистях і передпліччях.", variants: [{ min: 15, price: 35000 }] },
-    { key: "feet",    name: "Масаж стоп", img: "masazh-shuliavska-kyiv.jpg",
-      desc: "Розслаблення втомлених ніг і стоп.", variants: [{ min: 15, price: 35000 }] },
-    { key: "cream",   name: "Масаж зі зволожувальним кремом", img: "antystresovyi-masazh-kyiv.jpg",
-      desc: "Живлення шкіри та ніжний догляд під час сеансу.", variants: [{ min: 0, price: 10000 }] },
-    { key: "candles", name: "Композиція зі свічок", img: "relaks-spa-programa-kyiv.jpg",
-      desc: "Атмосфера спокою з ароматом теплих свічок.", variants: [{ min: 0, price: 15000 }] },
-    { key: "shower",  name: "Душ", img: "dush-oliva.png",
-      desc: "У вартість входять: рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.", variants: [{ min: 10, price: 15000 }] },
-  ];
+  /* Список НЕ хардкодиться: раніше він жив тут копією, і будь-яка зміна
+     ціни в адмінці до онлайн-запису не доїжджала (фітобочка показувалась
+     на 200 грн дорожче, а «масаж стоп 15 хв» узагалі не існував у базі).
+     Тепер джерело правди одне — категорія «Додаткові послуги» з бази,
+     та сама, що бачать адмінка й CRM. */
+  var ADDON_CATEGORY = "Додаткові послуги";
+  var ADDONS = [];
+
+  function buildAddons() {
+    var lvl = (state.master && state.master.level) || null;
+    var byKey = {}, order = [];
+    availServices().forEach(function(s) {
+      if (s.category !== ADDON_CATEGORY) return;
+      var p = parseName(s.name);
+      /* Позиції з рівнем (Майстер/Топ Майстер/Експерт) показуємо лише за
+         прайсом обраного майстра — інакше в списку були б три однакові
+         картки, а клієнт міг заплатити за чужим рівнем. */
+      if (p.level && p.level !== lvl) return;
+      var key = p.cat;
+      if (!byKey[key]) {
+        byKey[key] = { key: key, name: key, desc: "", img: "", badge: "", variants: [] };
+        order.push(key); // порядок появи = sort_order, бо API вже так сортує
+      }
+      var g = byKey[key];
+      if (!g.desc && s.description) g.desc = s.description;
+      if (!g.img && s.image_url) g.img = s.image_url;
+      if (s.featured) g.badge = "Хіт";
+      g.variants.push({ id: s.id, min: (p.dur != null ? p.dur : (s.duration_min || 0)), price: s.price });
+    });
+    ADDONS = order.map(function(k) { return byKey[k]; });
+    ADDONS.forEach(function(g) {
+      g.variants.sort(function(a, b) { return a.min - b.min; });
+    });
+
+    /* Майстер (а з ним і прайс) міг змінитись після вибору add-on'ів —
+       переносимо вибране на актуальні варіанти, а зниклі прибираємо,
+       щоб у записі не лишилась ціна від попереднього рівня. */
+    state.extras = state.extras.map(function(e) {
+      var g = byKey[e.key];
+      if (!g) return null;
+      var v = g.variants.filter(function(vv) { return vv.min === e.duration_min; })[0] || g.variants[0];
+      return { key: g.key, id: v.id, name: g.name + (v.min ? " (" + v.min + " хв)" : ""), duration_min: v.min, price: v.price };
+    }).filter(Boolean);
+
+    Object.keys(addonVarIdx).forEach(function(k) {
+      if (!byKey[k] || addonVarIdx[k] >= byKey[k].variants.length) delete addonVarIdx[k];
+    });
+  }
   var addonVarIdx = {}; // обраний варіант для кожного add-on
   function isAddonOn(key) { return state.extras.some(function(e){ return e.key === key; }); }
 
@@ -1596,7 +1620,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     state.extras = state.extras.filter(function(e){ return e.key !== a.key; });
     if (on) {
       var v = a.variants[addonVarIdx[a.key] || 0];
-      state.extras.push({ key: a.key, name: a.name + (v.min ? " (" + v.min + " хв)" : ""), duration_min: v.min, price: v.price });
+      state.extras.push({ key: a.key, id: v.id, name: a.name + (v.min ? " (" + v.min + " хв)" : ""), duration_min: v.min, price: v.price });
     }
     updateAddonSummary();
   }
@@ -1607,6 +1631,12 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     var baseMin = state.service ? state.service.duration_min : 0;
     var basePrice = state.service ? state.service.price : 0;
     el.textContent = tr((baseMin + extrasTotalMin()) + " хв · " + money(basePrice + extrasTotalPrice()));
+  }
+
+  /* image_url з бази вже абсолютний ("/assets/img/…"), а старі значення
+     зберігались просто іменем файлу — підтримуємо обидва. */
+  function addonImg(src) {
+    return /^(https?:)?\//.test(src) ? src : "assets/img/" + src;
   }
 
   var ADDON_PLUS  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
@@ -1632,6 +1662,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 
   function renderExtras() {
     var box = $("addonList"); if (!box) return;
+    buildAddons();
     box.innerHTML = "";
     var hint = $("addonAvail");
     if (hint) {
@@ -1660,7 +1691,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         ? '<span class="addon-nofit">' + tr("Недостатньо вільного часу") + '</span>'
         : '<span class="ic">' + CLOCK + '</span><span>' + tr(v.min > 0 ? v.min + " хв" : "без часу") + '</span><span class="sep">|</span><span class="price">+' + tr(money(v.price)) + '</span>';
       card.innerHTML =
-        '<div class="addon-photo"' + (a.img ? ' style="background-image:url(\'assets/img/' + a.img + '\')"' : '') + '>' + (a.img ? '' : '<span class="addon-photo-ph">🚿</span>') + '</div>' +
+        '<div class="addon-photo"' + (a.img ? ' style="background-image:url(\'' + addonImg(a.img) + '\')"' : '') + '>' + (a.img ? '' : '<span class="addon-photo-ph">🚿</span>') + '</div>' +
         '<div class="addon-body">' +
           '<div class="addon-titlerow"><span class="addon-name">' + tr(a.name) + '</span>' +
             (a.badge ? '<span class="addon-badge ' + badgeCls + '">' + tr(a.badge) + '</span>' : '') +
@@ -1858,6 +1889,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
      вільним часом майстра; підсумок і ціна оновлюються одразу. */
   function renderAddSvcList() {
     var box = $("addSvcList"); if (!box) return;
+    buildAddons();
     box.innerHTML = "";
     var any = false;
     ADDONS.forEach(function(a) {
@@ -1977,7 +2009,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     fetch("/api/public/book", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ service: state.service.id, master: state.master.id, branch: state.branch, date: state.date, start_min: state.start_min, name: name, phone: phone, comment: $("commentInput").value.trim(),
-        extra_services: state.extras.length ? JSON.stringify(state.extras.map(function(e){ return { name: e.name, duration_min: e.duration_min, price: e.price }; })) : null })
+        extra_services: state.extras.length ? JSON.stringify(state.extras.map(function(e){ return { id: e.id, name: e.name, duration_min: e.duration_min, price: e.price }; })) : null })
     }).then(function(r) { return r.json().then(function(j) { return { code: r.status, j: j }; }); })
       .then(function(res) {
         btn.disabled = false; btn.textContent = tr("Підтвердити запис");
