@@ -1857,7 +1857,7 @@
               html += '<div style="font-size:.62rem;color:#ffe08a;font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🎟 ' +
                 (a.sub_index || a.sub_used || 1) + '/' + a.sub_total + '</div>';
             }
-            if (heightPx >= 60 && a.price) html += '<div style="font-size:.64rem;color:rgba(255,255,255,.82);margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
+            if (heightPx >= 60 && a.price) html += '<div style="font-size:.72rem;font-weight:600;color:#fff;margin-top:1px;">' + a.duration_min + ' хв · ' + Math.round(a.price/100) + ' ₴</div>';
             if (heightPx >= 72 && a.extra_services) {
               try {
                 var _exs = JSON.parse(a.extra_services);
