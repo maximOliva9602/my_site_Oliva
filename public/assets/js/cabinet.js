@@ -874,18 +874,59 @@
     // Власник: "" = усі майстри (дефолт). Майстер: власний id = тільки свої
     // записи (дефолт), "all" = усі майстри (щоб бачити накладки).
     var activeMasterFilter = ME.role === "owner" ? "" : String(ME.masterId);
+    // "" = усі філії. При кількох філіях записи різних локацій змішувались
+    // в одному розкладі без жодного способу подивитись окремо кожну.
+    var activeBranchFilter = "";
+    function masterBelongsToBranch(m, branchId) {
+      if (!branchId) return true;
+      var ids = Array.isArray(m.branch_ids) ? m.branch_ids : (m.branch_id ? [m.branch_id] : []);
+      return ids.indexOf(parseInt(branchId, 10)) !== -1;
+    }
 
     if (ME.role === "owner") {
-      api("GET", "/api/crm/masters").then(function (res) {
-        var sel = el("select");
-        sel.style.cssText = "flex:1 1 auto;min-width:0;";
-        sel.appendChild(new Option("Усі майстри", ""));
-        (res.j.masters || []).forEach(function (m) { sel.appendChild(new Option(m.name + (m.level ? " · " + m.level : ""), m.id)); });
-        sel.addEventListener("change", function () { activeMasterFilter = sel.value; reloadView(sel.value); });
+      Promise.all([api("GET", "/api/crm/masters"), api("GET", "/api/crm/branches")]).then(function (res) {
+        var allMastersForFilter = res[0].j.masters || [];
+        var branchesForFilter = res[1].j.branches || [];
+
+        var masterSel = el("select");
+        masterSel.style.cssText = "flex:1 1 auto;min-width:0;";
+
+        function renderMasterOptions() {
+          masterSel.innerHTML = "";
+          masterSel.appendChild(new Option("Усі майстри", ""));
+          allMastersForFilter.forEach(function (m) {
+            if (!masterBelongsToBranch(m, activeBranchFilter)) return;
+            masterSel.appendChild(new Option(m.name + (m.level ? " · " + m.level : ""), m.id));
+          });
+          // Обраний майстер зник зі списку (не працює в цій філії) — скидаємо на "усі".
+          if (activeMasterFilter && !masterBelongsToBranch({ id: parseInt(activeMasterFilter, 10), branch_ids: (allMastersForFilter.filter(function(m){return String(m.id)===String(activeMasterFilter);})[0]||{}).branch_ids }, activeBranchFilter)) {
+            activeMasterFilter = "";
+          }
+          masterSel.value = activeMasterFilter;
+        }
+        renderMasterOptions();
+        masterSel.addEventListener("change", function () { activeMasterFilter = masterSel.value; reloadView(masterSel.value); });
+
+        if (branchesForFilter.length > 1) {
+          var branchSel = el("select");
+          branchSel.style.cssText = "flex:1 1 auto;min-width:0;";
+          branchSel.appendChild(new Option("Усі філії", ""));
+          branchesForFilter.forEach(function (b) { branchSel.appendChild(new Option(b.name, b.id)); });
+          branchSel.addEventListener("change", function () {
+            activeBranchFilter = branchSel.value;
+            renderMasterOptions();
+            reloadView();
+          });
+          var bLbl = el("span", "muted", "Філія:");
+          bLbl.style.flexShrink = "0";
+          masterFilterWrap.appendChild(bLbl);
+          masterFilterWrap.appendChild(branchSel);
+        }
+
         var mLbl = el("span", "muted", "Майстер:");
         mLbl.style.flexShrink = "0";
         masterFilterWrap.appendChild(mLbl);
-        masterFilterWrap.appendChild(sel);
+        masterFilterWrap.appendChild(masterSel);
         if (calFitBtn) masterFilterWrap.appendChild(calFitBtn);
         masterFilterWrap.appendChild(newBtn);
         reloadView();
@@ -962,6 +1003,7 @@
       // Завантажити к-ть записів і відрендерити (з урахуванням фільтра майстра)
       var mcUrl = "/api/crm/appointments/month-counts?month=" + apptMonth;
       if (activeMasterFilter && activeMasterFilter !== "all") mcUrl += "&master=" + activeMasterFilter;
+      if (activeBranchFilter) mcUrl += "&branch=" + activeBranchFilter;
       api("GET", mcUrl).then(function(res) {
         var counts = (res.j && res.j.counts) || {};
         var today = todayStr();
@@ -1023,7 +1065,7 @@
       var ae = $("app"); if (ae) ae.style.cssText = "";
       contentEl.innerHTML = '<div class="empty">Завантаження…</div>';
       var url = ME.role === "owner"
-        ? "/api/crm/appointments?date=" + apptDate + (masterId ? "&master=" + masterId : "")
+        ? "/api/crm/appointments?date=" + apptDate + (masterId ? "&master=" + masterId : "") + (activeBranchFilter ? "&branch=" + activeBranchFilter : "")
         : "/api/crm/me/appointments?from=" + apptDate + "&to=" + apptDate + (masterId ? "&master=" + masterId : "");
       api("GET", url).then(function (res) {
         /* Скасовані ховаємо зі списку — вони й так порахуються в
@@ -1296,7 +1338,7 @@
       var TOTAL_H = (TOTAL_MIN / STEP) * SLOT_H;
       var wd = new Date(apptDate + "T00:00:00").getDay();
       var apptUrl = ME.role === "owner"
-        ? "/api/crm/appointments?date=" + apptDate + (masterFilter ? "&master=" + masterFilter : "")
+        ? "/api/crm/appointments?date=" + apptDate + (masterFilter ? "&master=" + masterFilter : "") + (activeBranchFilter ? "&branch=" + activeBranchFilter : "")
         : "/api/crm/schedule?date=" + apptDate;
 
       Promise.all([
@@ -1316,6 +1358,7 @@
         var masters = (masterFilter && masterFilter !== "all")
           ? allMasters.filter(function(m) { return String(m.id) === String(masterFilter); })
           : allMasters;
+        if (activeBranchFilter) masters = masters.filter(function(m) { return masterBelongsToBranch(m, activeBranchFilter); });
 
         var schedMap = {};
         dayScheds.forEach(function(s) { schedMap[s.master_id] = { ws: s.work_start, we: s.work_end, bks: [] }; });

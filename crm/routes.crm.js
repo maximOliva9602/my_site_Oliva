@@ -741,9 +741,16 @@ router.get("/appointments/month-counts", any, function (req, res) {
   // бейджі кількості записів у календарі мають рахувати саме його,
   // а не всіх, інакше цифри не змінюються при перемиканні фільтра.
   const filterMasterId = req.session.role === "owner" ? parseInt(req.query.master, 10) || null : req.session.masterId;
-  const rows = filterMasterId
-    ? db.prepare("SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled') AND master_id=? GROUP BY date").all(from, to, filterMasterId)
-    : db.prepare("SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled') GROUP BY date").all(from, to);
+  // Власник також може обрати філію («Філія: …») — бейджі мають рахувати
+  // лише записи цієї філії, незалежно від фільтра майстра.
+  const filterBranchId = req.session.role === "owner" ? parseInt(req.query.branch, 10) || null : null;
+  let sql = "SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled')";
+  const args = [from, to];
+  if (filterMasterId) { sql += " AND master_id=?"; args.push(filterMasterId); }
+  if (filterBranchId) { sql += " AND branch_id=?"; args.push(filterBranchId); }
+  sql += " GROUP BY date";
+  const stmtMc = db.prepare(sql);
+  const rows = stmtMc.all.apply(stmtMc, args);
   const counts = {};
   rows.forEach(function(r) { counts[r.date] = r.n; });
   res.json({ ok: true, counts: counts });
@@ -752,12 +759,14 @@ router.get("/appointments/month-counts", any, function (req, res) {
 router.get("/appointments", owner, function (req, res) {
   const date = clean(req.query.date, 10), from = clean(req.query.from, 10), to = clean(req.query.to, 10);
   const master = parseInt(req.query.master, 10);
+  const branch = parseInt(req.query.branch, 10);
   let sql = "SELECT a.*, c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name, cert.code cert_code FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id LEFT JOIN masters m2 ON m2.id=a.second_master_id LEFT JOIN certificates cert ON cert.used_by_appointment_id=a.id WHERE 1=1";
   const args = [];
   if (tz.isDate(date)) { sql += " AND a.date=?"; args.push(date); }
   if (tz.isDate(from)) { sql += " AND a.date>=?"; args.push(from); }
   if (tz.isDate(to)) { sql += " AND a.date<=?"; args.push(to); }
   if (master) { sql += " AND a.master_id=?"; args.push(master); }
+  if (branch) { sql += " AND a.branch_id=?"; args.push(branch); }
   sql += " ORDER BY a.date, a.start_min";
   const stmt = db.prepare(sql);
   res.json({ ok: true, appointments: stmt.all.apply(stmt, args).map(viewAppt) });
