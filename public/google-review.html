@@ -90,14 +90,31 @@
        "Ні, дякую" просто ховає її, форма під нею вже готова. */
     .tip-modal-overlay { position: fixed; inset: 0; background: rgba(5,7,4,0.82); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
     .tip-modal-overlay.show { display: flex; }
-    .tip-modal { background: var(--black); border: 1px solid var(--line); border-radius: 22px; max-width: 380px; width: 100%; padding: 32px 26px 26px; text-align: center; }
+    .tip-modal { background: var(--black); border: 1px solid var(--line); border-radius: 22px; max-width: 380px; width: 100%; padding: 32px 26px 26px; text-align: center; max-height: 90vh; overflow-y: auto; }
     .tip-modal-icon { font-size: 2.4rem; margin-bottom: 14px; }
     .tip-modal-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--cream); margin-bottom: 10px; line-height: 1.3; }
     .tip-modal-sub { font-size: 13px; color: var(--text-dim); line-height: 1.6; margin-bottom: 24px; }
     .tip-modal-yes { display: block; width: 100%; background: var(--olive-light); border: none; border-radius: 14px; padding: 15px; font-size: 14.5px; font-weight: 500; color: #fff; cursor: pointer; text-decoration: none; margin-bottom: 10px; font-family: inherit; }
     .tip-modal-yes:hover { background: #8fa868; }
+    .tip-modal-yes:disabled { opacity: .45; cursor: not-allowed; }
     .tip-modal-no { display: block; width: 100%; background: none; border: none; padding: 10px; font-size: 13px; color: var(--text-dim); cursor: pointer; font-family: inherit; }
     .tip-modal-no:hover { color: var(--cream); }
+
+    /* Пікер суми чайових прямо в модалці — майстер уже відомий з ?m=,
+       не треба ще раз вибирати його на окремій сторінці /share. */
+    .tip-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 10px; }
+    .tip-amt-btn { background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 10px; padding: 10px 4px; text-align: center; cursor: pointer; transition: all .2s; font-family: inherit; }
+    .tip-amt-btn:hover { border-color: var(--olive-light); }
+    .tip-amt-btn.active { background: rgba(122,145,86,0.18); border-color: var(--olive-light); }
+    .tip-amt-num { font-size: 15px; font-weight: 600; color: var(--cream); }
+    .tip-amt-uah { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+    .tip-custom-wrap { margin-bottom: 20px; }
+    .tip-custom-input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; font-size: 14px; color: var(--cream); font-family: 'Inter', sans-serif; outline: none; text-align: center; }
+    .tip-custom-input:focus { border-color: var(--olive-light); }
+    .tip-custom-input::placeholder { color: rgba(242,237,228,0.25); }
+
+    .tip-modal-step { display: none; }
+    .tip-modal-step.show { display: block; }
 
     .footer-link { text-align: center; margin-top: 28px; font-size: 12px; color: rgba(242,237,228,0.3); }
   </style>
@@ -188,11 +205,33 @@
 
 <div class="tip-modal-overlay" id="tipModalOverlay">
   <div class="tip-modal">
-    <div class="tip-modal-icon">☕</div>
-    <div class="tip-modal-title" id="tipModalTitle">Сподобався сеанс?</div>
-    <div class="tip-modal-sub">Можна подякувати майстру чайовими особисто — це займе хвилину. Якщо ні, просто закрийте це вікно й переходьте до відгуку.</div>
-    <a href="#" class="tip-modal-yes" id="tipModalYes">🤍 Так, залишити чайові</a>
-    <button type="button" class="tip-modal-no" id="tipModalNo">Ні, дякую</button>
+
+    <!-- Крок 1: вибір суми — майстер уже відомий з ?m=, вибирати його вдруге не треба -->
+    <div class="tip-modal-step show" id="tipStepAmount">
+      <div class="tip-modal-icon">☕</div>
+      <div class="tip-modal-title" id="tipModalTitle">Сподобався сеанс?</div>
+      <div class="tip-modal-sub">Можна подякувати майстру чайовими особисто — оберіть суму й оплатіть через Monobank.</div>
+      <div class="tip-amounts" id="tipAmounts">
+        <div class="tip-amt-btn" data-amt="50"><div class="tip-amt-num">50</div><div class="tip-amt-uah">грн</div></div>
+        <div class="tip-amt-btn active" data-amt="150"><div class="tip-amt-num">150</div><div class="tip-amt-uah">грн</div></div>
+        <div class="tip-amt-btn" data-amt="300"><div class="tip-amt-num">300</div><div class="tip-amt-uah">грн</div></div>
+        <div class="tip-amt-btn" data-amt="500"><div class="tip-amt-num">500</div><div class="tip-amt-uah">грн</div></div>
+      </div>
+      <div class="tip-custom-wrap">
+        <input type="number" class="tip-custom-input" id="tipCustomAmt" min="10" max="10000" placeholder="Або своя сума, грн..." />
+      </div>
+      <button type="button" class="tip-modal-yes" id="tipModalPay">🤍 Оплатити <span id="tipPayAmt">150</span> грн</button>
+      <button type="button" class="tip-modal-no" id="tipModalNo">Ні, дякую — одразу до відгуку</button>
+    </div>
+
+    <!-- Крок 2: після переходу на оплату — повертаємось сюди, щоб написати відгук -->
+    <div class="tip-modal-step" id="tipStepDone">
+      <div class="tip-modal-icon">🤍</div>
+      <div class="tip-modal-title">Дякуємо!</div>
+      <div class="tip-modal-sub">Сторінка оплати відкрилась в новій вкладці. Повертайтесь сюди, коли завершите — і, будь ласка, поділіться враженнями від сеансу.</div>
+      <button type="button" class="tip-modal-yes" id="tipModalToReview">✍️ Написати відгук</button>
+    </div>
+
   </div>
 </div>
 
@@ -275,16 +314,66 @@
         if (ownChip) ownChip.classList.add('active');
         master = urlMaster.name;
 
-        // І показуємо модалку про чайові саме з його ім'ям.
         document.getElementById('tipModalTitle').textContent = 'Сподобався сеанс у ' + urlMaster.name + '?';
-        document.getElementById('tipModalYes').href = '/share?tab=tips&m=' + encodeURIComponent(urlMaster.id);
+        setupTipModal(urlMaster);
         document.getElementById('tipModalOverlay').classList.add('show');
       }
     })
     .catch(function () {});
 
+  /* Сума чайових обирається одразу в модалці (майстер уже відомий з
+     ?m=, повторно вибирати його на /share не треба). "Оплатити" відкриває
+     Monobank у новій вкладці — сама модалка сторінку не лишає, щоб
+     клієнт міг повернутись і написати відгук. */
+  function setupTipModal(urlMaster) {
+    var payBtn = document.getElementById('tipModalPay');
+    if (!urlMaster.mono_link) {
+      // Немає підключеного Monobank-банки — показуємо лише запрошення до відгуку.
+      document.getElementById('tipStepAmount').querySelector('.tip-modal-sub').textContent =
+        'Дякуємо за візит! Поділіться, будь ласка, враженнями від сеансу.';
+      document.getElementById('tipAmounts').style.display = 'none';
+      document.querySelector('.tip-custom-wrap').style.display = 'none';
+      payBtn.style.display = 'none';
+      return;
+    }
+
+    var amt = 150;
+    var amtBtns = document.querySelectorAll('#tipAmounts .tip-amt-btn');
+    var customInput = document.getElementById('tipCustomAmt');
+    var payAmtLbl = document.getElementById('tipPayAmt');
+
+    function selectAmt(btn, value) {
+      amtBtns.forEach(function (b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      amt = value;
+      payAmtLbl.textContent = value;
+      payBtn.disabled = !(value > 0);
+    }
+    amtBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        customInput.value = '';
+        selectAmt(btn, parseInt(btn.dataset.amt, 10));
+      });
+    });
+    customInput.addEventListener('input', function () {
+      amtBtns.forEach(function (b) { b.classList.remove('active'); });
+      selectAmt(null, parseInt(customInput.value, 10) || 0);
+    });
+
+    payBtn.addEventListener('click', function () {
+      if (!(amt > 0)) return;
+      window.open(urlMaster.mono_link + '?a=' + amt, '_blank');
+      document.getElementById('tipStepAmount').classList.remove('show');
+      document.getElementById('tipStepDone').classList.add('show');
+    });
+  }
+
   document.getElementById('tipModalNo').addEventListener('click', function () {
     document.getElementById('tipModalOverlay').classList.remove('show');
+  });
+  document.getElementById('tipModalToReview').addEventListener('click', function () {
+    document.getElementById('tipModalOverlay').classList.remove('show');
+    document.getElementById('reviewText').focus();
   });
   document.getElementById('tipModalOverlay').addEventListener('click', function (e) {
     if (e.target === this) this.classList.remove('show');
