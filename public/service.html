@@ -720,13 +720,19 @@
     /* На мобільному картки абонементів — карусель; за замовчуванням видно
        першу (5 сеансів), а саме "Найпопулярніший" (зазвичай середній,
        10 сеансів) має бути головним, з рештою по боках. Центруємо його
-       в межах ЙОГО карусельного контейнера (inline:center), не чіпаючи
-       вертикальний скрол сторінки (block:nearest). На десктопі (grid,
-       не скрол-контейнер) виклик нешкідливий, але й не потрібен. */
+       в межах ЙОГО карусельного контейнера вручну через scrollLeft —
+       scrollIntoView({block:'nearest'}) тут не підходить: якщо картка ще
+       не потрапляє у вертикальну область перегляду (секція абонементів
+       нижче середини сторінки), браузер сам вирішує прокрутити НАЙБЛИЖЧОГО
+       скрольованого предка і за вертикаллю теж — а найближчий вертикально
+       скрольований предок це сама сторінка, тому вона стрибала на кількасот
+       пікселів вниз одразу при завантаженні, ховаючи шапку й опис. */
     function centerPopularCard(box) {
       if (!box || window.matchMedia('(min-width: 781px)').matches) return;
       var popular = box.querySelector('.abon-card--popular');
-      if (popular) popular.scrollIntoView({ inline: 'center', block: 'nearest' });
+      if (!popular) return;
+      var target = popular.offsetLeft - (box.clientWidth - popular.offsetWidth) / 2;
+      box.scrollLeft = Math.max(0, target);
     }
     content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
       if (box.style.display !== 'none') centerPopularCard(box);
