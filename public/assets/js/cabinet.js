@@ -1343,6 +1343,24 @@
             schedMap[ov.master_id] = { ws: ov.work_start, we: ov.work_end, bks: (schedMap[ov.master_id] || {}).bks || [] };
           }
         });
+        /* Яка філія майстра діє САМЕ ЦЬОГО ДНЯ — а не статичний перелік
+           усіх філій, до яких його колись прикріпили (це давало абсурдний
+           напис на кшталт "Борщагівська, Успішна" одночасно). Пріоритет:
+           override з конкретною філією на цю дату → графік дня тижня з
+           конкретною філією → якщо збігів кілька різних філій, це
+           реальний конфлікт даних (той самий майстер із годинами в двох
+           філіях того самого дня), і про нього треба сказати прямо,
+           а не мовчки показати випадкову. */
+        var todayBranchByMaster = {};
+        function noteBranch(masterId, branchId) {
+          if (!branchId) return;
+          var cur = todayBranchByMaster[masterId];
+          if (!cur) { todayBranchByMaster[masterId] = { ids: [branchId] }; return; }
+          if (cur.ids.indexOf(branchId) === -1) cur.ids.push(branchId);
+        }
+        dayScheds.forEach(function(s) { noteBranch(s.master_id, s.branch_id); });
+        dayOvs.forEach(function(ov) { if (!ov.is_off) noteBranch(ov.master_id, ov.branch_id); });
+
         // Показуємо лише майстрів, що працюють цього дня за графіком
         // (schedMap заповнюється з денного графіка з урахуванням override'ів),
         // а також тих, у кого вже є записи цього дня — щоб не ховати наявні брони.
@@ -1549,24 +1567,37 @@
           var avHtml = m.photo
             ? '<img src="' + m.photo + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
             : '<div style="width:30px;height:30px;border-radius:50%;background:#3d5430;display:flex;align-items:center;justify-content:center;color:#8aA462;font-weight:700;font-size:.72rem;flex-shrink:0;">' + initials + '</div>';
-          /* Вулиця філії майстра — замість окремого перемикача "Філія:" над
-             календарем (він ховав майстрів інших локацій без діла: власник
-             однаково хоче бачити всіх одразу). Праворуч у шапці колонки,
-             повним текстом, без обрізання. У полі "Адреса філії" власник
-             часто вписує довший текст ("OLIVA за адресою вул. Успішна, 8"),
-             тому виокремлюємо саме назву вулиці після "вул." — якщо шаблон
-             не збігається, показуємо як є (краще повний нерозпізнаний текст,
-             ніж порожньо). */
-          var mBranchAddrs = (Array.isArray(m.branch_ids) ? m.branch_ids : [])
-            .map(function(bid) { return branchAddrById[bid]; })
-            .filter(Boolean)
-            .map(function(addr) {
-              var mm = addr.match(/вул(?:иця|\.)?\s*([^,]+)/i);
-              return mm ? mm[1].trim() : addr;
-            });
-          var addrBadge = mBranchAddrs.length
-            ? '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + mBranchAddrs.join(', ') + '</div>'
-            : '';
+          /* Вулиця філії майстра САМЕ НА ЦЮ ДАТУ (todayBranchByMaster,
+             рахується вище з денного графіка й override'ів) — а не
+             статичний перелік усіх філій, до яких його колись
+             прикріпили. Той перелік давав абсурд типу "Борщагівська,
+             Успішна" одночасно, хоча реально того дня майстер працює
+             тільки в одній. Якщо графік дня показує дві РІЗНІ філії —
+             це не помилка відображення, а справжній конфлікт даних
+             (комусь заповнили години в obох філіях на той самий день),
+             і про нього треба сказати прямо жовтим попередженням, а не
+             мовчки обрати одну з них. */
+          function streetName(addr) {
+            var mm = addr.match(/вул(?:иця|\.)?\s*([^,]+)/i);
+            return mm ? mm[1].trim() : addr;
+          }
+          var todayIds = (todayBranchByMaster[m.id] || {}).ids || null;
+          var addrBadge = '';
+          if (todayIds && todayIds.length === 1) {
+            var addr1 = branchAddrById[todayIds[0]];
+            if (addr1) addrBadge = '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + streetName(addr1) + '</div>';
+          } else if (todayIds && todayIds.length > 1) {
+            var conflictNames = todayIds.map(function(bid) { return branchAddrById[bid] ? streetName(branchAddrById[bid]) : ''; }).filter(Boolean).join(' і ');
+            addrBadge = '<div title="У майстра заведені робочі години одразу в кількох філіях цього дня — перевірте графік" style="flex-shrink:0;margin-left:auto;background:rgba(224,112,80,0.18);color:#a03f1f;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">⚠ ' + conflictNames + '</div>';
+          } else {
+            // Немає денних даних (day-off чи графік ще не заведений) — якщо
+            // майстер узагалі закріплений лише за однією філією, це й так
+            // однозначно, навіть без графіка на конкретний день.
+            var onlyBranches = Array.isArray(m.branch_ids) ? m.branch_ids : [];
+            if (onlyBranches.length === 1 && branchAddrById[onlyBranches[0]]) {
+              addrBadge = '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + streetName(branchAddrById[onlyBranches[0]]) + '</div>';
+            }
+          }
           hCell.innerHTML = avHtml +
             '<div style="text-align:left;line-height:1.15;min-width:0;flex-shrink:1;">' +
             '<div style="font-size:.72rem;font-weight:600;color:#1a2016;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +

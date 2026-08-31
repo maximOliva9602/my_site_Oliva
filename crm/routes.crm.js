@@ -1114,8 +1114,11 @@ router.get("/masters/:id/schedule", any, function (req, res) {
 router.get("/day-schedules", any, function (req, res) {
   const wd = parseInt(req.query.weekday, 10);
   if (isNaN(wd) || wd < 0 || wd > 6) return res.status(400).json({ ok: false });
+  /* branch_id тут потрібен клієнту, щоб визначити, у якій саме філії
+     майстер працює цього дня (для позначки філії в шапці розкладу) —
+     раніше поле не віддавалось, і клієнт не міг відрізнити філію. */
   const schedules = db.prepare(
-    "SELECT ms.master_id, ms.work_start, ms.work_end FROM master_schedule ms JOIN masters m ON m.id=ms.master_id WHERE ms.weekday=? AND m.active=1"
+    "SELECT ms.master_id, ms.branch_id, ms.work_start, ms.work_end FROM master_schedule ms JOIN masters m ON m.id=ms.master_id WHERE ms.weekday=? AND m.active=1"
   ).all(wd);
   const breaks = db.prepare(
     "SELECT mb.master_id, mb.break_start, mb.break_end FROM master_breaks mb JOIN masters m ON m.id=mb.master_id WHERE mb.weekday=? AND m.active=1"
