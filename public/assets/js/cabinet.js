@@ -821,7 +821,7 @@
         } else {
           var scroller = document.querySelector("#cal-overlay > div");
           if (!scroller) return;
-          var CAL_HOUR_START = 8, CAL_HOUR_END = 22, CAL_STEP = 10, CAL_HEADER_H = 60;
+          var CAL_HOUR_START = 8, CAL_HOUR_END = 22, CAL_STEP = 10, CAL_HEADER_H = 48;
           var totalSteps = ((CAL_HOUR_END - CAL_HOUR_START) * 60) / CAL_STEP;
           var fitH = (scroller.clientHeight - CAL_HEADER_H) / totalSteps;
           calFitPrevH = calSlotH;
@@ -1052,8 +1052,9 @@
       var HOUR_START = 8, HOUR_END = 22;
       var STEP = 10;
       var TIME_COL_W = 44;
-      var MASTER_COL_W = window.innerWidth < 600 ? 160 : 170;
-      var HEADER_H = 60;
+      // +30px проти попереднього: тепер у шапці ще й бейджик адреси праворуч.
+      var MASTER_COL_W = window.innerWidth < 600 ? 190 : 200;
+      var HEADER_H = 48;
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
       var WEEK_STRIP_H = 66;
       var DAY_UA = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
@@ -1543,28 +1544,35 @@
 
         masters.forEach(function(m) {
           var hCell = document.createElement("div");
-          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;padding:4px 6px;overflow:hidden;background:#fff;cursor:pointer;";
+          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;overflow:hidden;background:#fff;cursor:pointer;";
           var initials = (m.name||'?').charAt(0).toUpperCase() + (m.last_name ? m.last_name.charAt(0).toUpperCase() : '');
           var avHtml = m.photo
             ? '<img src="' + m.photo + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
             : '<div style="width:30px;height:30px;border-radius:50%;background:#3d5430;display:flex;align-items:center;justify-content:center;color:#8aA462;font-weight:700;font-size:.72rem;flex-shrink:0;">' + initials + '</div>';
-          /* Адреса(и) філії майстра — замість окремого перемикача "Філія:"
-             над календарем (він ховав майстрів інших локацій без діла:
-             власник однаково хоче бачити всіх одразу). Окремим підсвіченим
-             бейджиком під рівнем — так адреси легше "зчитати" одним
-             поглядом по всіх колонках, ніж читати текстом у підпису. */
+          /* Вулиця філії майстра — замість окремого перемикача "Філія:" над
+             календарем (він ховав майстрів інших локацій без діла: власник
+             однаково хоче бачити всіх одразу). Праворуч у шапці колонки,
+             повним текстом, без обрізання. У полі "Адреса філії" власник
+             часто вписує довший текст ("OLIVA за адресою вул. Успішна, 8"),
+             тому виокремлюємо саме назву вулиці після "вул." — якщо шаблон
+             не збігається, показуємо як є (краще повний нерозпізнаний текст,
+             ніж порожньо). */
           var mBranchAddrs = (Array.isArray(m.branch_ids) ? m.branch_ids : [])
             .map(function(bid) { return branchAddrById[bid]; })
-            .filter(Boolean);
+            .filter(Boolean)
+            .map(function(addr) {
+              var mm = addr.match(/вул(?:иця|\.)?\s*([^,]+)/i);
+              return mm ? mm[1].trim() : addr;
+            });
           var addrBadge = mBranchAddrs.length
-            ? '<div style="display:inline-block;margin-top:2px;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.56rem;font-weight:600;padding:1px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:106px;">📍 ' + mBranchAddrs.join(', ') + '</div>'
+            ? '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + mBranchAddrs.join(', ') + '</div>'
             : '';
           hCell.innerHTML = avHtml +
-            '<div style="text-align:left;line-height:1.15;min-width:0;">' +
+            '<div style="text-align:left;line-height:1.15;min-width:0;flex-shrink:1;">' +
             '<div style="font-size:.72rem;font-weight:600;color:#1a2016;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
             '<div style="font-size:.58rem;color:#5a7a48;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + (m.level||'') + '</div>' +
-            addrBadge +
-            '</div>';
+            '</div>' +
+            addrBadge;
           header.appendChild(hCell);
         });
 
