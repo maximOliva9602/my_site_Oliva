@@ -85,6 +85,20 @@
     .tips-teaser-text { flex: 1; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
     .tips-teaser-arrow { color: var(--olive-light); font-size: 1rem; flex-shrink: 0; }
 
+    /* Модалка "чайові?" — показується одразу при переході з персональної
+       СМС (є ?m=), перш ніж клієнт бачить форму відгуку. Не блокує назавжди:
+       "Ні, дякую" просто ховає її, форма під нею вже готова. */
+    .tip-modal-overlay { position: fixed; inset: 0; background: rgba(5,7,4,0.82); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .tip-modal-overlay.show { display: flex; }
+    .tip-modal { background: var(--black); border: 1px solid var(--line); border-radius: 22px; max-width: 380px; width: 100%; padding: 32px 26px 26px; text-align: center; }
+    .tip-modal-icon { font-size: 2.4rem; margin-bottom: 14px; }
+    .tip-modal-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--cream); margin-bottom: 10px; line-height: 1.3; }
+    .tip-modal-sub { font-size: 13px; color: var(--text-dim); line-height: 1.6; margin-bottom: 24px; }
+    .tip-modal-yes { display: block; width: 100%; background: var(--olive-light); border: none; border-radius: 14px; padding: 15px; font-size: 14.5px; font-weight: 500; color: #fff; cursor: pointer; text-decoration: none; margin-bottom: 10px; font-family: inherit; }
+    .tip-modal-yes:hover { background: #8fa868; }
+    .tip-modal-no { display: block; width: 100%; background: none; border: none; padding: 10px; font-size: 13px; color: var(--text-dim); cursor: pointer; font-family: inherit; }
+    .tip-modal-no:hover { color: var(--cream); }
+
     .footer-link { text-align: center; margin-top: 28px; font-size: 12px; color: rgba(242,237,228,0.3); }
   </style>
 </head>
@@ -172,6 +186,16 @@
   <div class="footer-link">massage-oliva.com</div>
 </div>
 
+<div class="tip-modal-overlay" id="tipModalOverlay">
+  <div class="tip-modal">
+    <div class="tip-modal-icon">☕</div>
+    <div class="tip-modal-title" id="tipModalTitle">Сподобався сеанс?</div>
+    <div class="tip-modal-sub">Можна подякувати майстру чайовими особисто — це займе хвилину. Якщо ні, просто закрийте це вікно й переходьте до відгуку.</div>
+    <a href="#" class="tip-modal-yes" id="tipModalYes">🤍 Так, залишити чайові</a>
+    <button type="button" class="tip-modal-no" id="tipModalNo">Ні, дякую</button>
+  </div>
+</div>
+
 <script>
   /* Пряме посилання на ФОРМУ відгуку (а не просто на картку студії):
      search.google.com/local/writereview відкриває одразу діалог із
@@ -222,21 +246,54 @@
   }
   bindChips();
 
+  /* ?m=<masterId> — приходить із персональної СМС після завершеного
+     візиту (див. crm/notify.js). Дає змогу одразу показати модалку про
+     чайові з іменем саме цього майстра й підставити його в форму
+     відгуку, а не змушувати клієнта шукати його в списку самому. */
+  var masterIdFromUrl = new URLSearchParams(window.location.search).get('m');
+
   fetch('/api/masters')
     .then(function (r) { return r.json(); })
     .then(function (j) {
       if (!j.ok || !j.masters) return;
       var row = document.getElementById('mastersRow');
+      var urlMaster = null;
       j.masters.forEach(function (m) {
         var chip = document.createElement('div');
         chip.className = 'master-chip';
         chip.dataset.name = m.name;
         chip.textContent = m.name;
         row.appendChild(chip);
+        if (masterIdFromUrl && String(m.id) === String(masterIdFromUrl)) urlMaster = m;
       });
       bindChips();
+
+      if (urlMaster) {
+        // Підставляємо майстра у форму відгуку одразу — не треба шукати самому.
+        row.querySelectorAll('.master-chip').forEach(function (c) { c.classList.remove('active'); });
+        var ownChip = row.querySelector('[data-name="' + urlMaster.name.replace(/"/g, '\\"') + '"]');
+        if (ownChip) ownChip.classList.add('active');
+        master = urlMaster.name;
+
+        // І показуємо модалку про чайові саме з його ім'ям.
+        document.getElementById('tipModalTitle').textContent = 'Сподобався сеанс у ' + urlMaster.name + '?';
+        document.getElementById('tipModalYes').href = '/share?tab=tips&m=' + encodeURIComponent(urlMaster.id);
+        document.getElementById('tipModalOverlay').classList.add('show');
+      }
     })
     .catch(function () {});
+
+  document.getElementById('tipModalNo').addEventListener('click', function () {
+    document.getElementById('tipModalOverlay').classList.remove('show');
+  });
+  document.getElementById('tipModalOverlay').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('show');
+  });
+
+  if (masterIdFromUrl) {
+    var teaser = document.querySelector('.tips-teaser');
+    if (teaser) teaser.href = '/share?tab=tips&m=' + encodeURIComponent(masterIdFromUrl);
+  }
 
   var textarea = document.getElementById("reviewText");
   textarea.addEventListener("input", function () {

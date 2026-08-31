@@ -300,6 +300,11 @@
   var selectedMasterId = null;
   var selectedAmt = 150;
 
+  /* ?m=<masterId> — приходить із персональної СМС/сторінки відгуку, щоб
+     одразу відкрити чайові саме тому майстру, а не змушувати клієнта
+     шукати його в сітці самому. */
+  var urlMasterId = parseInt(new URLSearchParams(window.location.search).get('m'), 10) || null;
+
   function renderTipsGrid(list) {
     mastersData = list;
     var grid = document.getElementById('tipsGrid');
@@ -316,9 +321,11 @@
         '<div class="master-role">' + (m.level || 'Майстер') + '</div>' +
       '</div>';
     }).join('');
-    if (firstActive) {
-      selectedMasterId = firstActive;
-      var el = grid.querySelector('[data-mid="' + firstActive + '"]');
+    var preselect = firstActive;
+    if (urlMasterId && list.some(function(m) { return m.id === urlMasterId && m.mono_link; })) preselect = urlMasterId;
+    if (preselect) {
+      selectedMasterId = preselect;
+      var el = grid.querySelector('[data-mid="' + preselect + '"]');
       if (el) el.classList.add('active');
     }
     updatePayBtn();

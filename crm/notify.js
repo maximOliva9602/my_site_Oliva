@@ -14,6 +14,7 @@ const STUDIO_ADDRESS = process.env.STUDIO_ADDRESS || "м. Київ, вул. Бо
    кожен зайвий символ наближає текст до межі 70 символів (2-га частина =
    подвійна ціна). Тому стискаємо незалежно від того, як записано в env. */
 const STUDIO_PHONE = (process.env.STUDIO_PHONE || "+380974340112").replace(/[^\d+]/g, "");
+const SITE_URL = String(process.env.SITE_URL || "https://massage-oliva.com").replace(/\/+$/, "");
 
 let driver;
 try {
@@ -58,11 +59,12 @@ function renderTemplate(kind, v) {
     return `Відміна запису. А ми так чекали вас :( До зустрічі!`;
   }
   if (kind === "review_request") {
-    /* Окремого шаблону поки немає (і публічної сторінки відгуку теж).
-       Раніше цей kind провалювався в гілку нагадування і слав клієнту
-       ХИБНИЙ текст після кожного завершеного візиту (зайві витрати).
-       null = не ставити в чергу взагалі. */
-    return null;
+    /* Посилання на /google-review з master_id — сторінка сама одразу
+       пропонує подякувати саме цьому майстру чайовими (модалка), перш
+       ніж перейти до форми відгуку. Без id, якщо майстра не знайдено
+       (не мало б статись, m.id тут завжди є). */
+    const link = SITE_URL + "/google-review" + (v.master_id ? "?m=" + v.master_id : "");
+    return `Дякуємо, що обрали Oliva! 🤍\nПоділіться враженнями: ${link}`;
   }
   // reminder_24h / reminder_2h
   return `Нагадування від Oliva 💆\n` +
