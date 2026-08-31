@@ -463,9 +463,10 @@ app.post("/api/review", async function (req, res) {
   }
   var stars = "⭐".repeat(rating);
   var isGoogle = channel === "google";
+  var branchLabel = branch === "teremky" || branch === "uspishna" ? "Теремки" : "Борщагівська";
   var msg = (isGoogle
-    ? `✍️ <b>Новий відгук (${branch === "uspishna" ? "Успішна" : "Борщагівська"}, публікує в Google)</b> #відгук\n\n`
-    : `✍️ <b>Новий анонімний відгук</b> #відгук\n\n`) + `${stars}\n` +
+    ? `✍️ <b>Новий відгук (${branchLabel}, публікує в Google)</b> #відгук\n\n`
+    : `✍️ <b>Новий внутрішній відгук (${branchLabel})</b> #відгук\n\n`) + `${stars}\n` +
     (master ? `💆 <b>Майстер:</b> ${master}\n` : "") +
     `📝 ${text}`;
   try {
