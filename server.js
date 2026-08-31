@@ -463,7 +463,7 @@ app.post("/api/review", async function (req, res) {
   }
   var stars = "⭐".repeat(rating);
   var isGoogle = channel === "google";
-  var branchLabel = branch === "teremky" || branch === "uspishna" ? "Теремки" : "Борщагівська";
+  var branchLabel = branch === "teremky" || branch === "uspishna" ? "Успішна, 8" : "Борщагівська, 145";
   var msg = (isGoogle
     ? `✍️ <b>Новий відгук (${branchLabel}, публікує в Google)</b> #відгук\n\n`
     : `✍️ <b>Новий внутрішній відгук (${branchLabel})</b> #відгук\n\n`) + `${stars}\n` +
