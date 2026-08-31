@@ -821,7 +821,7 @@
         } else {
           var scroller = document.querySelector("#cal-overlay > div");
           if (!scroller) return;
-          var CAL_HOUR_START = 8, CAL_HOUR_END = 22, CAL_STEP = 10, CAL_HEADER_H = 48;
+          var CAL_HOUR_START = 8, CAL_HOUR_END = 22, CAL_STEP = 10, CAL_HEADER_H = 60;
           var totalSteps = ((CAL_HOUR_END - CAL_HOUR_START) * 60) / CAL_STEP;
           var fitH = (scroller.clientHeight - CAL_HEADER_H) / totalSteps;
           calFitPrevH = calSlotH;
@@ -874,15 +874,15 @@
     // Власник: "" = усі майстри (дефолт). Майстер: власний id = тільки свої
     // записи (дефолт), "all" = усі майстри (щоб бачити накладки).
     var activeMasterFilter = ME.role === "owner" ? "" : String(ME.masterId);
-    /* Замість окремого перемикача філії — назва філії прямо біля імені
-       майстра в шапці денного календаря (loadCalendar). branchNameById
+    /* Замість окремого перемикача філії — адреса філії прямо біля імені
+       майстра в шапці денного календаря (loadCalendar). branchAddrById
        заповнюється нижче для власника й читається звідти по m.branch_ids. */
-    var branchNameById = {};
+    var branchAddrById = {};
 
     if (ME.role === "owner") {
       Promise.all([api("GET", "/api/crm/masters"), api("GET", "/api/crm/branches")]).then(function (res) {
         var allMastersForFilter = res[0].j.masters || [];
-        (res[1].j.branches || []).forEach(function (b) { branchNameById[b.id] = b.name; });
+        (res[1].j.branches || []).forEach(function (b) { branchAddrById[b.id] = b.address || b.name; });
 
         var masterSel = el("select");
         masterSel.style.cssText = "flex:1 1 auto;min-width:0;";
@@ -1053,7 +1053,7 @@
       var STEP = 10;
       var TIME_COL_W = 44;
       var MASTER_COL_W = window.innerWidth < 600 ? 160 : 170;
-      var HEADER_H = 48;
+      var HEADER_H = 60;
       var TOTAL_MIN = (HOUR_END - HOUR_START) * 60;
       var WEEK_STRIP_H = 66;
       var DAY_UA = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
@@ -1548,18 +1548,22 @@
           var avHtml = m.photo
             ? '<img src="' + m.photo + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
             : '<div style="width:30px;height:30px;border-radius:50%;background:#3d5430;display:flex;align-items:center;justify-content:center;color:#8aA462;font-weight:700;font-size:.72rem;flex-shrink:0;">' + initials + '</div>';
-          /* Філія(ї) майстра — замість окремого перемикача "Філія:" над
-             календарем (він ховав майстрів інших локацій без діла: власник
-             однаково хоче бачити всіх одразу), просто дописуємо назву(и)
-             філії до підпису рівня. */
-          var mBranchNames = (Array.isArray(m.branch_ids) ? m.branch_ids : [])
-            .map(function(bid) { return branchNameById[bid]; })
+          /* Адреса(и) філії майстра — замість окремого перемикача "Філія:"
+             над календарем (він ховав майстрів інших локацій без діла:
+             власник однаково хоче бачити всіх одразу). Окремим підсвіченим
+             бейджиком під рівнем — так адреси легше "зчитати" одним
+             поглядом по всіх колонках, ніж читати текстом у підпису. */
+          var mBranchAddrs = (Array.isArray(m.branch_ids) ? m.branch_ids : [])
+            .map(function(bid) { return branchAddrById[bid]; })
             .filter(Boolean);
-          var levelLine = [m.level || '', mBranchNames.join(', ')].filter(Boolean).join(' · ');
+          var addrBadge = mBranchAddrs.length
+            ? '<div style="display:inline-block;margin-top:2px;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.56rem;font-weight:600;padding:1px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:106px;">📍 ' + mBranchAddrs.join(', ') + '</div>'
+            : '';
           hCell.innerHTML = avHtml +
             '<div style="text-align:left;line-height:1.15;min-width:0;">' +
             '<div style="font-size:.72rem;font-weight:600;color:#1a2016;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + (m.name||'') + (m.last_name ? ' ' + m.last_name : '') + '</div>' +
-            '<div style="font-size:.58rem;color:#5a7a48;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + levelLine + '</div>' +
+            '<div style="font-size:.58rem;color:#5a7a48;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + (m.level||'') + '</div>' +
+            addrBadge +
             '</div>';
           header.appendChild(hCell);
         });
