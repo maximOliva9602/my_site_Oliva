@@ -7244,7 +7244,14 @@
     remHint.textContent = "Тексти короткі й фіксовані (1 SMS-частина). День народження клієнта вводиться в його картці (⋮ → Редагувати).";
     remCard.appendChild(remHint);
 
-    function togRow(title, whenTxt, smsTxt) {
+    /* Текст кожного шаблону — редагований textarea (не просто прев'ю):
+       власник може переписати SMS під себе, а плейсхолдери у фігурних
+       дужках підставляються на сервері (crm/notify.js, customTemplate).
+       defaultTxt лишається як текст-заготовка, коли ще нічого не
+       збережено — саме він і зашитий у notify.js, тож "не чіпати" й
+       "типовий" — одне й те саме. */
+    var templateFields = {}; // kind -> textarea
+    function togRow(title, whenTxt, defaultTxt, templateKind, hint) {
       var row = el("div", "");
       row.style.cssText = "border-top:1px solid var(--line);padding:10px 0 12px;";
       var top = document.createElement("label");
@@ -7257,11 +7264,20 @@
         '<div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">' + whenTxt + '</div>';
       top.appendChild(cb); top.appendChild(tt);
       row.appendChild(top);
-      if (smsTxt) {
-        var pv = el("div", "");
-        pv.style.cssText = "margin:8px 0 0 29px;padding:8px 10px;background:var(--panel-2);border-radius:8px;font-size:.74rem;color:var(--text);white-space:pre-line;line-height:1.4;";
-        pv.textContent = smsTxt;
-        row.appendChild(pv);
+      if (defaultTxt !== null) {
+        var ta = document.createElement("textarea");
+        ta.value = defaultTxt;
+        ta.rows = defaultTxt.split("\n").length;
+        ta.maxLength = 280;
+        ta.style.cssText = "display:block;margin:8px 0 0 29px;padding:8px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;font-size:.74rem;color:var(--text);line-height:1.4;font-family:inherit;width:calc(100% - 29px);box-sizing:border-box;resize:vertical;";
+        row.appendChild(ta);
+        if (hint) {
+          var hintEl = el("div", "");
+          hintEl.style.cssText = "margin:5px 0 0 29px;font-size:.68rem;color:var(--text-dim);";
+          hintEl.textContent = "Змінні: " + hint;
+          row.appendChild(hintEl);
+        }
+        templateFields[templateKind] = ta;
       }
       remCard.appendChild(row);
       return cb;
@@ -7269,7 +7285,8 @@
 
     var cbConfirm = togRow("Підтвердження запису",
       "Коли майстер підтверджує запис у CRM",
-      "Ваш запис 27.07.2026 о 14:10 підтверджений. До зустрічі!\n{телефон студії}");
+      "Ваш запис 27.07.2026 о 14:10 підтверджений. До зустрічі!\n{телефон студії}",
+      "confirmation", "{дата}, {час}, {телефон студії}");
 
     /* Нагадування — з полями часу */
     var remRow = el("div", "");
@@ -7295,25 +7312,33 @@
     hrWrap.appendChild(hrLine("Перше:", rem1));
     hrWrap.appendChild(hrLine("Друге:", rem2));
     remRow.appendChild(hrWrap);
-    /* На відміну від інших тригерів вище — тут не було жодного прев'ю
-       самого тексту, тільки поля з годинами. Текст точно як у
-       crm/notify.js (renderTemplate, гілка reminder_24h/reminder_2h) —
-       якщо шаблон там зміниться, поправити і тут. */
-    var remPv = el("div", "");
-    remPv.style.cssText = "margin:10px 0 0;padding:8px 10px;background:var(--panel-2);border-radius:8px;font-size:.74rem;color:var(--text);white-space:pre-line;line-height:1.4;";
-    remPv.textContent = "Нагадування від Oliva 💆\nМайстер: {ім'я майстра}\nДата: {дата}\nЧас: {час}\nАдреса: {адреса філії візиту}\nПитання? {телефон студії}";
-    remRow.appendChild(remPv);
+    /* Обидва тайминги (перше/друге нагадування) діляться ОДНИМ текстом —
+       відрізняються лише годинами вище, не змістом повідомлення. */
+    var remTa = document.createElement("textarea");
+    remTa.value = "Нагадування від Oliva 💆\nМайстер: {ім'я майстра}\nДата: {дата}\nЧас: {час}\nАдреса: {адреса філії візиту}\nПитання? {телефон студії}";
+    remTa.rows = 6;
+    remTa.maxLength = 280;
+    remTa.style.cssText = "display:block;margin:10px 0 0;padding:8px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;font-size:.74rem;color:var(--text);line-height:1.4;font-family:inherit;width:100%;box-sizing:border-box;resize:vertical;";
+    remRow.appendChild(remTa);
+    var remHintEl = el("div", "");
+    remHintEl.style.cssText = "margin:5px 0 0;font-size:.68rem;color:var(--text-dim);";
+    remHintEl.textContent = "Змінні: {ім'я майстра}, {дата}, {час}, {адреса філії візиту}, {телефон студії}";
+    remRow.appendChild(remHintEl);
+    templateFields.reminder = remTa;
     remCard.appendChild(remRow);
 
     var cbResched = togRow("Перенесення візиту",
       "Одразу після зміни дати або часу запису",
-      "Ваш візит перенесено на 27.07.2026 о 14:10. Чекаємо!\n{телефон студії}");
+      "Ваш візит перенесено на 27.07.2026 о 14:10. Чекаємо!\n{телефон студії}",
+      "reschedule", "{дата}, {час}, {телефон студії}");
     var cbCancel = togRow("Скасування візиту",
       "Одразу після скасування запису",
-      "Відміна запису. А ми так чекали вас :( До зустрічі!");
+      "Відміна запису. А ми так чекали вас :( До зустрічі!",
+      "cancellation", "{телефон студії}");
     var cbBday = togRow("Привітання з днем народження",
       "О 10:00 у день народження, раз на рік (потрібна дата в картці клієнта; не шлеться відмовникам від розсилок)",
-      "З Днем народження! Чекаємо на вас.\n{телефон студії}");
+      "З Днем народження! Чекаємо на вас.\n{телефон студії}",
+      "birthday", "{телефон студії}");
 
     var remActs = el("div", "acts"); remActs.style.marginTop = "4px";
     var remSave = el("button", "btn btn-primary btn-sm", "Зберегти налаштування");
@@ -7330,14 +7355,23 @@
       cbResched.checked      = !!r.j.notif_reschedule;
       cbCancel.checked       = !!r.j.notif_cancel;
       cbBday.checked         = !!r.j.notif_birthday;
+      // Збережений (переписаний власником) текст — якщо є; інакше textarea
+      // лишає заготовку типового тексту, яку вже підставили вище.
+      var savedTpl = r.j.templates || {};
+      Object.keys(templateFields).forEach(function (k) {
+        if (savedTpl[k]) templateFields[k].value = savedTpl[k];
+      });
     });
     remSave.addEventListener("click", function () {
       remSave.disabled = true;
+      var templates = {};
+      Object.keys(templateFields).forEach(function (k) { templates[k] = templateFields[k].value; });
       api("PATCH", "/api/crm/notify-settings", {
         reminder1_hours: rem1.value, reminder2_hours: rem2.value,
         notif_confirm: cbConfirm.checked,
         notif_reschedule: cbResched.checked, notif_cancel: cbCancel.checked,
         notif_birthday: cbBday.checked,
+        templates: templates,
       }).then(function (r) {
         remSave.disabled = false;
         if (r.j && r.j.ok) { remMsg.style.color = "var(--ok)"; remMsg.textContent = "✓ Збережено — діє одразу."; }

@@ -44,17 +44,37 @@ function apptView(appointmentId) {
 function ddmm(date) { const p = date.split("-"); return p[2] + "." + p[1]; }
 function ddmmyyyy(date) { const p = date.split("-"); return p[2] + "." + p[1] + "." + p[0]; }
 
+/* Власник міг переписати шаблон у CRM → Сповіщення (app_settings,
+   ключ tpl_<templateKind>). Якщо задано — підставляємо {плейсхолдери} і
+   використовуємо ЙОГО текст замість зашитого нижче; якщо ні (типовий
+   випадок) — null, і renderTemplate() рахує текст сама, як і раніше. */
+function customTemplate(templateKind, placeholders) {
+  const row = db.prepare("SELECT value FROM app_settings WHERE key=?").get("tpl_" + templateKind);
+  if (!row || !row.value) return null;
+  let text = row.value;
+  Object.keys(placeholders).forEach(function (key) {
+    text = text.split(key).join(placeholders[key]);
+  });
+  return text;
+}
+
 function renderTemplate(kind, v) {
   if (kind === "confirmation") {
+    const custom = customTemplate("confirmation", { "{дата}": ddmmyyyy(v.date), "{час}": tz.fmtMin(v.start_min), "{телефон студії}": STUDIO_PHONE });
+    if (custom) return custom;
     /* Коротко і в 1 SMS-частину (кирилиця: ліміт 70 символів — цей текст
        рівно вкладається). Надсилається ПІСЛЯ підтвердження майстром у CRM. */
     return `Ваш запис ${ddmmyyyy(v.date)} о ${tz.fmtMin(v.start_min)} підтверджений. До зустрічі!\n${STUDIO_PHONE}`;
   }
   if (kind === "reschedule") {
+    const custom = customTemplate("reschedule", { "{дата}": ddmmyyyy(v.date), "{час}": tz.fmtMin(v.start_min), "{телефон студії}": STUDIO_PHONE });
+    if (custom) return custom;
     /* Перенесення візиту (66 символів = 1 SMS-частина). */
     return `Ваш візит перенесено на ${ddmmyyyy(v.date)} о ${tz.fmtMin(v.start_min)}. Чекаємо!\n${STUDIO_PHONE}`;
   }
   if (kind === "cancellation") {
+    const custom = customTemplate("cancellation", { "{телефон студії}": STUDIO_PHONE });
+    if (custom) return custom;
     /* Скасування візиту (51 символ = 1 SMS-частина). */
     return `Відміна запису. А ми так чекали вас :( До зустрічі!`;
   }
@@ -66,7 +86,15 @@ function renderTemplate(kind, v) {
        Повернути рядок вище, коли будемо готові вмикати. */
     return null;
   }
-  // reminder_24h / reminder_2h
+  // reminder_24h / reminder_2h — обидва тайминги діляться ОДНИМ шаблоном.
+  const customRem = customTemplate("reminder", {
+    "{ім'я майстра}": v.master_name,
+    "{дата}": ddmm(v.date),
+    "{час}": tz.fmtMin(v.start_min),
+    "{адреса філії візиту}": v.branch_address || STUDIO_ADDRESS,
+    "{телефон студії}": STUDIO_PHONE,
+  });
+  if (customRem) return customRem;
   return `Нагадування від Oliva 💆\n` +
     `Майстер: ${v.master_name}\n` +
     `Дата: ${ddmm(v.date)}\nЧас: ${tz.fmtMin(v.start_min)}\n` +
@@ -228,6 +256,8 @@ async function sendDirect(phone, text) {
 
 /* Текст SMS-привітання з днем народження (48 символів = 1 частина). */
 function birthdayText() {
+  const custom = customTemplate("birthday", { "{телефон студії}": STUDIO_PHONE });
+  if (custom) return custom;
   return `З Днем народження! Чекаємо на вас.\n${STUDIO_PHONE}`;
 }
 

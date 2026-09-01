@@ -2324,11 +2324,18 @@ router.get("/notify-balance", owner, async function (req, res) {
   }
 });
 
+/* Ключі текстів шаблонів SMS (app_settings, "tpl_"+kind) — власник може
+   переписати їх у CRM → Сповіщення; порожньо/не задано = типовий текст,
+   зашитий у crm/notify.js (renderTemplate). Той самий список тут і там. */
+const TEMPLATE_KINDS = ["confirmation", "reschedule", "cancellation", "birthday", "reminder"];
+
 router.get("/notify-settings", owner, function (req, res) {
   function get(k, dflt) {
     const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(k);
     return r ? r.value : dflt;
   }
+  const templates = {};
+  TEMPLATE_KINDS.forEach(function (k) { templates[k] = get("tpl_" + k, "") || null; });
   res.json({
     ok: true,
     reminder1_hours: parseFloat(get("reminder1_hours", "24")) || 0,
@@ -2338,6 +2345,7 @@ router.get("/notify-settings", owner, function (req, res) {
     notif_reschedule:    get("notif_reschedule", "0") === "1",
     notif_cancel:        get("notif_cancel", "0") === "1",
     notif_birthday:      get("notif_birthday", "1") === "1",
+    templates: templates,
   });
 });
 router.patch("/notify-settings", owner, function (req, res) {
@@ -2351,6 +2359,21 @@ router.patch("/notify-settings", owner, function (req, res) {
   ["notif_confirm", "notif_confirm_staff", "notif_reschedule", "notif_cancel", "notif_birthday"].forEach(function (k) {
     if (d[k] !== undefined) up.run(k, d[k] ? "1" : "0");
   });
+  /* Тексти шаблонів — порожній рядок від клієнта означає "скинути на
+     типовий", тому видаляємо ключ замість запису порожнього значення
+     (інакше customTemplate() у notify.js сплутав би "" з переписаним
+     текстом і однаково повернув би порожню SMS). Ліміт 1 SMS-частини —
+     280 симв. з запасом (кирилиця йде по 70 симв./частину, довший
+     текст просто піде кількома частинами, але без обмеження хтось міг
+     би випадково вставити цілий абзац). */
+  if (d.templates && typeof d.templates === "object") {
+    const del = db.prepare("DELETE FROM app_settings WHERE key=?");
+    TEMPLATE_KINDS.forEach(function (k) {
+      if (!(k in d.templates)) return;
+      const text = String(d.templates[k] || "").slice(0, 280).trim();
+      if (text) up.run("tpl_" + k, text); else del.run("tpl_" + k);
+    });
+  }
   res.json({ ok: true, reminder1_hours: h1, reminder2_hours: h2 });
 });
 
