@@ -927,6 +927,14 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   // Той самий майстер, що й pendingServiceId, але для банера "немає вільних
   // віконець" на кроці 3 — обнуляється одразу після показу/перевірки.
   var preferredMasterId = null;
+  // Deep-link (?service=ID) стрибав одразу на крок майстра, минаючи крок
+  // філії — state.branch лишався null, і сервер підставляв застарілу
+  // master.branch_id (одна філія на майстра "за замовчуванням", яка не
+  // обов'язково збігається з тим, де він реально працює того дня). Клієнт
+  // міг обрати філію на картці послуги подумки, але запис ішов не туди.
+  // Прапорець нижче каже: після вибору філії — не йти на крок 2, а
+  // одразу продовжити deep-link туди, де він мав завершитись (крок 3).
+  var deepLinkPendingBranch = false;
   var branches = [], branchStepEnabled = false;
   /* Послуги, доступні в обраній філії. Порожній service_ids у філії
      означає «філія надає всі послуги» — тоді нічого не фільтруємо,
@@ -1240,7 +1248,15 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       var prev = card.querySelector(".br-map-prev");
       if (prev) prev.addEventListener("click", function(e) { e.stopPropagation(); openBranchMap(b); });
 
-      function chooseBranch() { state.branch = b.id; renderCats(); goStep(2); }
+      function chooseBranch() {
+        state.branch = b.id;
+        if (deepLinkPendingBranch) {
+          deepLinkPendingBranch = false;
+          renderMasters(); goStep(3);
+        } else {
+          renderCats(); goStep(2);
+        }
+      }
       card.querySelector(".br-choose").addEventListener("click", chooseBranch);
       /* На мобільному кнопку сховано (економимо висоту), тож обирати можна
          тапом по самій картці. Кліки по карті/кнопці карти сюди не доходять —
@@ -1447,6 +1463,16 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     pendingServiceId = sid;
     var matching = allMasters.filter(function(m) { return (m.service_ids || []).indexOf(sid) !== -1; });
     preferredMasterId = matching.length === 1 ? matching[0].id : null;
+    /* Якщо філій кілька — спершу крок філії (як і зі звичайного вибору
+       групи послуг), інакше state.branch лишається null і сервер сам
+       вгадує філію за застарілим полем — саме так запис "на Успішну"
+       міг піти в Борщагівську. chooseBranch() продовжить звідси сама. */
+    if (branchStepEnabled && branches.length > 1) {
+      deepLinkPendingBranch = true;
+      renderBranches();
+      goStep("branch");
+      return;
+    }
     renderMasters();
     goStep(3);
   }

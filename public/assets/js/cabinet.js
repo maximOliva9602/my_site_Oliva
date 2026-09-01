@@ -7295,6 +7295,14 @@
     hrWrap.appendChild(hrLine("Перше:", rem1));
     hrWrap.appendChild(hrLine("Друге:", rem2));
     remRow.appendChild(hrWrap);
+    /* На відміну від інших тригерів вище — тут не було жодного прев'ю
+       самого тексту, тільки поля з годинами. Текст точно як у
+       crm/notify.js (renderTemplate, гілка reminder_24h/reminder_2h) —
+       якщо шаблон там зміниться, поправити і тут. */
+    var remPv = el("div", "");
+    remPv.style.cssText = "margin:10px 0 0;padding:8px 10px;background:var(--panel-2);border-radius:8px;font-size:.74rem;color:var(--text);white-space:pre-line;line-height:1.4;";
+    remPv.textContent = "Нагадування від Oliva 💆\nМайстер: {ім'я майстра}\nДата: {дата}\nЧас: {час}\nАдреса: {адреса філії візиту}\nПитання? {телефон студії}";
+    remRow.appendChild(remPv);
     remCard.appendChild(remRow);
 
     var cbResched = togRow("Перенесення візиту",

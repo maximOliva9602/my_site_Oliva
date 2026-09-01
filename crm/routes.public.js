@@ -269,7 +269,19 @@ router.post("/book", function (req, res) {
     masterId = parseInt(master, 10);
     const m = db.prepare("SELECT id,branch_id FROM masters WHERE id = ? AND active = 1").get(masterId);
     if (!m) return res.status(404).json({ ok: false, error: "master not found" });
-    if (!branchId) branchId = m.branch_id || null;
+    if (!branchId) {
+      /* Клієнт не надіслав філію (напр. дуже старий кеш сторінки запису
+         без кроку вибору філії). masters.branch_id — застаріле поле
+         "одна філія за замовчуванням", яке для майстра з кількома
+         реальними філіями (branch_masters) могло вказувати не туди, куди
+         клієнт розраховував. Якщо майстер закріплений рівно за однією
+         філією — це однозначно вона; якщо за кількома — філія
+         невідома, і краще лишити запис "без філії" (branch_id=0,
+         спільний графік), ніж мовчки вгадати неправильну. */
+      const ownBranches = db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=?").all(masterId);
+      if (ownBranches.length === 1) branchId = ownBranches[0].branch_id;
+      else if (!ownBranches.length) branchId = m.branch_id || null;
+    }
     /* Захист від розсинхрону клієнта (напр. перемикання майстра на кроці
        дати без переобрання послуги) — майстер і послуга мають різні рядки
        на кожен рівень, тож без цієї перевірки запис міг піти з ціною
