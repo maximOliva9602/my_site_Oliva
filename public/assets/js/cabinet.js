@@ -408,6 +408,47 @@
       tabsEl.appendChild(b);
     });
 
+    /* Стрілки прокрутки рядка вкладок на десктопі — з прихованим
+       нативним скролбаром (scrollbar-width:none) рядок виглядав як
+       "нема куди скролити", хоча технічно scroll-x працював. Стрілки
+       дають видиму підказку й керування мишкою без трекпада. */
+    (function setupTabsArrows() {
+      var leftBtn = document.getElementById("tabsArrowLeft");
+      var rightBtn = document.getElementById("tabsArrowRight");
+      if (!leftBtn || !rightBtn) return;
+      function sync() {
+        var overflow = tabsEl.scrollWidth > tabsEl.clientWidth + 1;
+        leftBtn.classList.toggle("show", overflow);
+        rightBtn.classList.toggle("show", overflow);
+        if (!overflow) return;
+        leftBtn.disabled = tabsEl.scrollLeft <= 1;
+        rightBtn.disabled = tabsEl.scrollLeft >= tabsEl.scrollWidth - tabsEl.clientWidth - 1;
+      }
+      /* scrollBy({behavior:"smooth"}) деінде в коді нормально працює, але
+         саме тут — під фіксованим topbar, куди клік по стрілці приходить
+         без жодного природного скролу-жесту — в частині браузерів друга
+         й наступні анімації просто не стартують (задача завмирає на
+         першому кроці). Клеймо scrollLeft напряму: миттєво, завжди
+         спрацьовує, а плавність для трекпада/колеса миші лишає CSS
+         scroll-behavior:smooth на самому контейнері (це inline не чіпає). */
+      function step(delta) {
+        var max = tabsEl.scrollWidth - tabsEl.clientWidth;
+        var prevBehavior = tabsEl.style.scrollBehavior;
+        tabsEl.style.scrollBehavior = "auto"; // миттєво, не покладаємось на CSS-анімацію
+        tabsEl.scrollLeft = Math.max(0, Math.min(max, tabsEl.scrollLeft + delta));
+        tabsEl.style.scrollBehavior = prevBehavior;
+        sync(); // не покладаємось на подію "scroll" — вона іноді спізнюється
+      }
+      leftBtn.addEventListener("click", function() { step(-160); });
+      rightBtn.addEventListener("click", function() { step(160); });
+      tabsEl.addEventListener("scroll", sync);
+      window.addEventListener("resize", sync);
+      // Кількість/ширина вкладок відома вже зараз, але шрифти/іконки
+      // можуть домалюватись на такт пізніше — звіряємо ще раз у наступному фреймі.
+      sync();
+      requestAnimationFrame(sync);
+    })();
+
     /* Мобільна нижня панель — перші BOTTOM_COUNT вкладок */
     var mobBadgeHtml = '<span id="mobBadge-podii" style="display:none;position:absolute;top:2px;right:calc(50% - 22px);background:#c0392b;color:#fff;font-size:.62rem;font-weight:700;border-radius:9px;padding:1px 5px;line-height:1.4;"></span>';
     TABS.slice(0, BOTTOM_COUNT).forEach(function(t, i) {

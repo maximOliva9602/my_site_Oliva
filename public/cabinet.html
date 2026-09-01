@@ -49,10 +49,18 @@
   .topbar img { width:26px; height:26px; object-fit:contain; flex-shrink:0; }
   .topbar .pf { color:var(--cream); font-size:.95rem; white-space:nowrap; flex-shrink:0; }
   .topbar .role { font-size:.68rem; color:var(--olive-light); background:rgba(122,145,86,.12); padding:2px 8px; border-radius:20px; flex-shrink:0; }
-  .topbar .tabs-inline { display:flex; gap:2px; overflow-x:auto; flex:1; scrollbar-width:none; }
+  .topbar .tabs-inline { display:flex; gap:2px; overflow-x:auto; flex:1; scrollbar-width:none; scroll-behavior:smooth; }
   .topbar .tabs-inline::-webkit-scrollbar { display:none; }
   .topbar button.logout { background:none; border:1px solid var(--line); color:var(--text-dim); border-radius:8px; padding:6px 12px; font-size:.78rem; flex-shrink:0; }
   .topbar button.logout:hover { color:var(--cream); border-color:var(--olive-light); }
+  /* Стрілки прокрутки вкладок — з'являються, лише коли рядок вкладок
+     реально не влазить по ширині (toggle через JS, клас .show). На
+     мобільному topbar .tabs-inline й так display:none, тому стрілки
+     ховаємо разом із ним нижче. */
+  .topbar .tabs-arrow { display:none; align-items:center; justify-content:center; flex-shrink:0; width:22px; height:26px; background:none; border:none; color:var(--text-dim); font-size:1.1rem; line-height:1; cursor:pointer; border-radius:6px; }
+  .topbar .tabs-arrow.show { display:flex; }
+  .topbar .tabs-arrow:hover { color:var(--cream); background:rgba(122,145,86,.12); }
+  .topbar .tabs-arrow:disabled { opacity:.3; cursor:default; pointer-events:none; }
   .tab { background:none; border:none; color:var(--text-dim); padding:6px 12px; border-radius:7px; font-size:.82rem; white-space:nowrap; cursor:pointer; }
   .tab.on { background:rgba(122,145,86,.16); color:var(--cream); }
 
@@ -141,6 +149,7 @@
   @media(max-width:680px){
     /* Шапка: прибрати вкладки та кнопку виходу */
     .topbar .tabs-inline { display:none !important; }
+    .topbar .tabs-arrow { display:none !important; }
     .topbar .logout { display:none !important; }
     .topbar { padding:max(8px, env(safe-area-inset-top, 8px)) 12px 8px; gap:8px; }
     /* Головний контент: відступ знизу для nav-bar */
@@ -241,7 +250,9 @@
     <img src="assets/img/logo.png" alt="" />
     <span class="pf">Oliva CRM</span>
     <span class="role" id="roleTag"></span>
+    <button class="tabs-arrow tabs-arrow--left" id="tabsArrowLeft" type="button" aria-label="Прокрутити вкладки ліворуч">‹</button>
     <div class="tabs-inline" id="tabs"></div>
+    <button class="tabs-arrow tabs-arrow--right" id="tabsArrowRight" type="button" aria-label="Прокрутити вкладки праворуч">›</button>
     <button class="logout" id="logoutBtn">Вийти</button>
   </div>
   <div class="main" id="main"></div>
@@ -251,7 +262,7 @@
 <div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
 <script src="assets/js/service-groups.js?v=4"></script>
-<script src="assets/js/cabinet.js?v=181"></script>
+<script src="assets/js/cabinet.js?v=182"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(){});
