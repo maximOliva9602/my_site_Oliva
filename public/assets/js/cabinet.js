@@ -5706,8 +5706,14 @@
       var PAGE_NAMES = { "/": "Головна", "/booking.html": "Запис", "/blog.html": "Блог",
         "/shop.html": "Магазин", "/training.html": "Навчання", "/tips.html": "Чайові",
         "/certificate.html": "Сертифікати", "/share.html": "Поділитись" };
+      /* Шляхи на кшталт /service/SPA%20Ритуал... зберігаються в лозі
+         трафіку URL-кодованими — без decodeURIComponent кирилиця
+         показувалась як %D0%A0... замість тексту. */
+      function decodedPath(path) {
+        try { return decodeURIComponent(path); } catch (e) { return path; }
+      }
       topPages.forEach(function(p) {
-        var nm = PAGE_NAMES[p.path] || p.path;
+        var nm = PAGE_NAMES[p.path] || decodedPath(p.path);
         var pct = Math.round((p.total||0)/maxP*100);
         pgHtml += '<div style="margin-bottom:9px;">'+
           '<div style="display:flex;justify-content:space-between;margin-bottom:3px;">'+
