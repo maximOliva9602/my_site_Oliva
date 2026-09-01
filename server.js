@@ -244,7 +244,12 @@ app.post("/api/track", function (req, res) {
     var ua = (req.headers["user-agent"] || "").toLowerCase();
     var uaType = /mobile|android|iphone|ipad/.test(ua) ? "mobile" : "desktop";
 
-    var path    = String(b.path    || "/").slice(0, 200);
+    /* 200 було затісно: довша кирилична назва послуги ("Вогняний масаж
+       бамбуковими банками" → /service/...) у URL-кодуванні вже сама по
+       собі під 200+ символів (кожна кирилична літера — 6 символів
+       "%XX%XX"), тож обрізка регулярно падала прямо всередину %XX-послідовності
+       — виходив непридатний для decodeURIComponent рядок. */
+    var path    = String(b.path    || "/").slice(0, 400);
     var referrer= String(b.referrer|| "").slice(0, 500);
     var utmSrc  = String(b.utm_source  || "").slice(0, 100);
     var utmMed  = String(b.utm_medium  || "").slice(0, 100);

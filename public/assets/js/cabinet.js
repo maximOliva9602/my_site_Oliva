@@ -5749,9 +5749,18 @@
         "/certificate.html": "Сертифікати", "/share.html": "Поділитись" };
       /* Шляхи на кшталт /service/SPA%20Ритуал... зберігаються в лозі
          трафіку URL-кодованими — без decodeURIComponent кирилиця
-         показувалась як %D0%A0... замість тексту. */
+         показувалась як %D0%A0... замість тексту. Старі записи в базі
+         (до підняття ліміту довжини на сервері) могли обрізатись прямо
+         всередині %XX-послідовності — decodeURIComponent на такому падає.
+         Замість сирого тексту відрізаємо по символу з кінця, доки рядок
+         знову не стане валідним — читабельний (можливо, трохи коротший)
+         початок кращий за суцільне '%D0%92%D0%BE...'. */
       function decodedPath(path) {
-        try { return decodeURIComponent(path); } catch (e) { return path; }
+        var s = path;
+        for (var i = 0; i < 6 && s; i++) {
+          try { return decodeURIComponent(s); } catch (e) { s = s.slice(0, -1); }
+        }
+        return path;
       }
       topPages.forEach(function(p) {
         var nm = PAGE_NAMES[p.path] || decodedPath(p.path);
