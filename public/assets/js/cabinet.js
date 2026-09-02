@@ -1602,9 +1602,16 @@
           }, 50);
         }
 
+        /* Майстер із записами у 2 різних філіях того самого дня отримує
+           удвічі ширшу колонку (flex:2 замість flex:1), щоб картки цих
+           записів можна було розташувати пліч-о-пліч по половинах — це
+           наочно розмежовує філії, а не просто підписує кожну картку. */
+        function colWeight(mid) { return ((masterApptBranches[mid] || []).length > 1) ? 2 : 1; }
+        var totalColW = masters.reduce(function(sum, mm) { return sum + colWeight(mm.id) * MASTER_COL_W; }, 0);
+
         var inner = document.createElement("div");
         inner.setAttribute("data-cal-inner", "1");
-        inner.style.cssText = "display:inline-flex;flex-direction:column;min-width:" + (TIME_COL_W + masters.length * MASTER_COL_W) + "px;width:100%;";
+        inner.style.cssText = "display:inline-flex;flex-direction:column;min-width:" + (TIME_COL_W + totalColW) + "px;width:100%;";
         scroller.appendChild(inner);
 
         // ── Липкий заголовок ──
@@ -1631,8 +1638,9 @@
         header.appendChild(corner);
 
         masters.forEach(function(m) {
+          var hw = colWeight(m.id);
           var hCell = document.createElement("div");
-          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;overflow:hidden;background:#fff;cursor:pointer;";
+          hCell.style.cssText = "flex:" + hw + ";min-width:" + (MASTER_COL_W * hw) + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;overflow:hidden;background:#fff;cursor:pointer;";
           var initials = (m.name||'?').charAt(0).toUpperCase() + (m.last_name ? m.last_name.charAt(0).toUpperCase() : '');
           var avHtml = m.photo
             ? '<img src="' + m.photo + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
@@ -1702,8 +1710,9 @@
 
         // Колонки майстрів
         masters.forEach(function(master) {
+          var mw = colWeight(master.id);
           var mCol = document.createElement("div");
-          mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;touch-action:pan-x pan-y;";
+          mCol.style.cssText = "flex:" + mw + ";min-width:" + (MASTER_COL_W * mw) + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;touch-action:pan-x pan-y;";
           mCol.dataset.masterId = master.id;
           mCol.dataset.masterName = master.name || "";
 
@@ -1906,6 +1915,16 @@
             var nLanes = laneMap["_n" + a.id] || 1;
             var pct = 100 / nLanes;
             var leftPct = aLane * pct;
+            /* Колонка вже подвоєна (colWeight вище) саме тому, що в цього
+               майстра записи у 2 різних філіях сьогодні — розкладаємо їх
+               по половинах колонки по філії, а не по черзі перекриття
+               часу: так одразу видно межу між філіями, а не тільки колір
+               мітки на картці. */
+            var branchList = masterApptBranches[master.id] || null;
+            if (branchList && branchList.length === 2 && a.branch_id) {
+              var half = branchList.indexOf(a.branch_id);
+              if (half !== -1) { pct = 50; leftPct = half * 50; }
+            }
 
             // Завершений візит — завжди зелений, незалежно від маркера:
             // так одразу видно, хто вже відпрацьований, серед іще майбутніх.
