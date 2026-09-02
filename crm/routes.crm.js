@@ -242,6 +242,36 @@ function getOrCreateGuestClient() {
   return c.id;
 }
 
+/* Філія для запису, який CRM створює сама (кнопка "+ Новий запис" не
+   питає філію — на відміну від публічного /booking, де клієнт її
+   обирає). Раніше тут просто брали masters.branch_id — застаріле поле
+   "одна філія на майстра за замовчуванням", яке для майстра з кількома
+   реальними філіями (branch_masters) могло вказувати не туди, де він
+   того дня фактично працює (саме так тестовий запис пішов у
+   Борщагівську замість Успішної). Тепер дивимось у РЕАЛЬНИЙ графік на
+   цю дату — той самий пріоритет override→графік дня тижня, що й у
+   "Графік роботи" та в слотах бронювання (crm/slots.js workWindow). */
+function resolveBranchForNewAppt(masterId, date, masterBranchIdColumn) {
+  const weekday = tz.weekdayOf(date);
+  const ovRows = db.prepare(
+    "SELECT branch_id FROM master_day_overrides WHERE master_id=? AND date=? AND is_off=0 AND branch_id!=0"
+  ).all(masterId, date);
+  let ids = ovRows.map(function (r) { return r.branch_id; });
+  if (!ids.length) {
+    const schRows = db.prepare(
+      "SELECT DISTINCT branch_id FROM master_schedule WHERE master_id=? AND weekday=? AND branch_id!=0"
+    ).all(masterId, weekday);
+    ids = schRows.map(function (r) { return r.branch_id; });
+  }
+  const uniq = Array.from(new Set(ids));
+  if (uniq.length === 1) return uniq[0];
+  if (uniq.length > 1) return null; // конфлікт — не вгадуємо, лишаємо "без філії"
+  // Немає даних на цю дату: якщо майстер узагалі лише в одній філії — це вона.
+  const ownBranches = db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=?").all(masterId);
+  if (ownBranches.length === 1) return ownBranches[0].branch_id;
+  return masterBranchIdColumn || null;
+}
+
 function createAppointment(d, session) {
   const serviceId = parseInt(d.service, 10);
   let masterId = parseInt(d.master, 10);
@@ -326,7 +356,7 @@ function createAppointment(d, session) {
            сайту лишається 'pending': його підтверджують вручну. */
         `INSERT INTO appointments (public_id,client_id,master_id,branch_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,extra_services,created_at,updated_at)
          VALUES (?,?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?,?)`
-      ).run(publicId, client.id, masterId, m.branch_id || null, serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
+      ).run(publicId, client.id, masterId, resolveBranchForNewAppt(masterId, date, m.branch_id), serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
       appointmentId = info.lastInsertRowid;
     })();
   } catch (e) {
@@ -824,7 +854,7 @@ router.post("/appointments/bulk-import", owner, function (req, res) {
       const info = db.prepare(
         `INSERT INTO appointments (public_id,client_id,master_id,branch_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,created_at,updated_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,?, 'staff',?,?,?)`
-      ).run(publicId, client.id, masterId, m.branch_id || null, serviceId, date, startMin, startMin + svc.duration_min, svc.duration_min, svc.price, status, comment, now, now);
+      ).run(publicId, client.id, masterId, resolveBranchForNewAppt(masterId, date, m.branch_id), serviceId, date, startMin, startMin + svc.duration_min, svc.duration_min, svc.price, status, comment, now, now);
       results.push({ idx, ok: true, id: info.lastInsertRowid, client_id: client.id });
     } catch (e) {
       results.push({ idx, ok: false, error: e.message });
