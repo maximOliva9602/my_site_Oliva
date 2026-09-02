@@ -1402,6 +1402,35 @@
         dayScheds.forEach(function(s) { noteBranch(s.master_id, s.branch_id); });
         dayOvs.forEach(function(ov) { if (!ov.is_off) noteBranch(ov.master_id, ov.branch_id); });
 
+        function streetName(addr) {
+          var s = addr;
+          // Якщо є "вул./вулиця" — беремо все, що після (включно з номером
+          // будинку, а не тільки до першої коми).
+          var mm = s.match(/вул(?:иця|\.)?\s*(.+)$/i);
+          if (mm) s = mm[1];
+          // Прибираємо згадку міста "м. Київ"/"Київ" — де б вона не була:
+          // на початку, в кінці чи всередині. \b тут не годиться — в JS
+          // \w (а отже й \b) не бачить кирилицю, тому межу слова не шукаємо,
+          // просто вирізаємо підрядок і прибираємо осиротілі коми/пробіли.
+          s = s.replace(/(?:м\.?\s*)?ки[їі]в/gi, '');
+          return s.replace(/,\s*,/g, ',').replace(/^[,\s]+|[,\s]+$/g, '').replace(/\s{2,}/g, ' ');
+        }
+
+        /* Майстер може мати реальні записи в ДВОХ різних філіях того самого
+           дня (не гіпотетичний конфлікт графіка, а фактичні брони) — тоді
+           одна спільна колонка стає неоднозначною: незрозуміло, який запис
+           де. Розрізняємо не колонками (це зламало б drag&drop і решту
+           логіки, зав'язану на "один майстер = одна колонка"), а міткою
+           філії прямо на картці запису — тільки коли в майстра справді є
+           записи в різних філіях цього дня, щоб не захаращувати звичайний
+           випадок. */
+        var masterApptBranches = {};
+        appts.forEach(function(a) {
+          if (!a.branch_id) return;
+          var list = masterApptBranches[a.master_id] || (masterApptBranches[a.master_id] = []);
+          if (list.indexOf(a.branch_id) === -1) list.push(a.branch_id);
+        });
+
         // Показуємо лише майстрів, що працюють цього дня за графіком
         // (schedMap заповнюється з денного графіка з урахуванням override'ів),
         // а також тих, у кого вже є записи цього дня — щоб не ховати наявні брони.
@@ -1617,20 +1646,8 @@
              це не помилка відображення, а справжній конфлікт даних
              (комусь заповнили години в obох філіях на той самий день),
              і про нього треба сказати прямо жовтим попередженням, а не
-             мовчки обрати одну з них. */
-          function streetName(addr) {
-            var s = addr;
-            // Якщо є "вул./вулиця" — беремо все, що після (включно з номером
-            // будинку, а не тільки до першої коми).
-            var mm = s.match(/вул(?:иця|\.)?\s*(.+)$/i);
-            if (mm) s = mm[1];
-            // Прибираємо згадку міста "м. Київ"/"Київ" — де б вона не була:
-            // на початку, в кінці чи всередині. \b тут не годиться — в JS
-            // \w (а отже й \b) не бачить кирилицю, тому межу слова не шукаємо,
-            // просто вирізаємо підрядок і прибираємо осиротілі коми/пробіли.
-            s = s.replace(/(?:м\.?\s*)?ки[їі]в/gi, '');
-            return s.replace(/,\s*,/g, ',').replace(/^[,\s]+|[,\s]+$/g, '').replace(/\s{2,}/g, ' ');
-          }
+             мовчки обрати одну з них. streetName() тепер визначена вище,
+             спільна для шапки й карток записів. */
           var todayIds = (todayBranchByMaster[m.id] || {}).ids || null;
           var addrBadge = '';
           if (todayIds && todayIds.length === 1) {
@@ -1919,6 +1936,13 @@
                 '</div>';
             }
             html += '<div style="font-size:.76rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
+            /* Мітка філії на самій картці — тільки коли в цього майстра
+               сьогодні є записи в РІЗНИХ філіях (masterApptBranches вище):
+               інакше зрозуміло й без мітки, куди записаний клієнт, і вона
+               була б просто шумом. */
+            if (heightPx >= 34 && a.branch_id && (masterApptBranches[a.master_id] || []).length > 1 && branchAddrById[a.branch_id]) {
+              html += '<div style="display:inline-block;margin-top:1px;background:rgba(255,255,255,.22);color:#fff;font-size:.6rem;font-weight:600;padding:1px 5px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">📍 ' + streetName(branchAddrById[a.branch_id]) + '</div>';
+            }
             if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
             /* Просто номер цього візиту в абонементі: 5/10. sub_index для
                завершених — зафіксований номер, для решти — черга. */
