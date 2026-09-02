@@ -2557,6 +2557,8 @@
       '</div>' +
       // Майстер
       '<div id="eMasterRow"><label>Майстер</label><select id="eMaster"></select></div>' +
+      // Філія — тільки коли в майстра їх кілька (інакше однозначно й без вибору)
+      '<div id="eBranchRow" style="display:none;"><label>Філія</label><select id="eBranch"></select></div>' +
       // Дата
       '<label>Дата</label>' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
@@ -2838,12 +2840,34 @@
       });
     }
 
+    var allBranchesE = [];
+    /* Філію показуємо на вибір лише коли в поточного майстра їх кілька —
+       для одно-філіального майстра це й так однозначно, а поле було б
+       просто шумом. Той самий випадок, що й "⚠"-бейдж у Розкладі. */
+    function renderEBranch() {
+      var row = $("eBranchRow"), sel2 = $("eBranch");
+      if (!row || !sel2) return;
+      var m = allMastersE.find(function(mm) { return String(mm.id) === $("eMaster").value; });
+      var ids = (m && m.branch_ids) || [];
+      if (ids.length < 2) { row.style.display = "none"; sel2.innerHTML = ""; return; }
+      sel2.innerHTML = "";
+      sel2.appendChild(new Option("— не вказано —", ""));
+      ids.forEach(function(bid) {
+        var b = allBranchesE.find(function(bb) { return bb.id === bid; });
+        sel2.appendChild(new Option(b ? (b.address || b.name) : ("Філія #" + bid), bid));
+      });
+      sel2.value = String(a.branch_id || "");
+      row.style.display = "";
+    }
+
     Promise.all([
       api("GET", "/api/crm/masters"),
-      api("GET", "/api/crm/services")
+      api("GET", "/api/crm/services"),
+      api("GET", "/api/crm/branches")
     ]).then(function(rs) {
       allMastersE = rs[0].j.masters || [];
       allServicesE = rs[1].j.services || [];
+      allBranchesE = rs[2].j.branches || [];
       if (ME.role !== "owner") {
         var ownMasterE = allMastersE.find(function(m) { return m.id === ME.masterId; });
         allServicesE = allServicesE.filter(function(s) { return serviceMatchesMasterLevel(s, ownMasterE); });
@@ -2857,10 +2881,11 @@
       });
       sel.value = String(a.master_id);
       if (ME.role !== "owner") $("eMasterRow").style.display = "none";
+      renderEBranch();
 
       rebuildEServiceOptions(a.service_id);
 
-      sel.addEventListener("change", function() { markSubUsed = false; newSubIntent = null; rebuildEServiceOptions($("eService").value); loadESlots(); refreshSubSectionE(); });
+      sel.addEventListener("change", function() { markSubUsed = false; newSubIntent = null; rebuildEServiceOptions($("eService").value); loadESlots(); refreshSubSectionE(); renderEBranch(); });
       $("eService").addEventListener("change", function() { markSubUsed = false; newSubIntent = null; loadESlots(); refreshSubSectionE(); });
 
       loadESlots();
@@ -2872,6 +2897,7 @@
       if (chosenMin == null) { err.textContent = "Оберіть час"; return; }
       api("PATCH", "/api/crm/appointments/" + a.id, {
         master: $("eMaster").value,
+        branch: $("eBranchRow") && $("eBranchRow").style.display !== "none" ? $("eBranch").value : undefined,
         service: $("eService").value,
         date: $("eDate").value,
         start_min: chosenMin,
@@ -3004,6 +3030,8 @@
 
       // 2. МАЙСТЕР — його кваліфікація визначає доступний прайс
       '<div id="mMasterRow"><label style="margin-top:14px;display:block;">Майстер</label><select id="mMaster"></select></div>' +
+      // Філія — тільки коли в майстра їх кілька
+      '<div id="mBranchRow" style="display:none;"><label style="margin-top:14px;display:block;">Філія</label><select id="mBranch"></select></div>' +
 
       // 3. ПОСЛУГА
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:4px;">' +
@@ -3530,11 +3558,33 @@
     // Майстер (не власник) обирає лише зі своїх послуг — інакше в
     // пошуку/списку висвічувались варіанти й "Майстер", і "Топ Майстер"
     // одразу, незалежно від власної кваліфікації.
+    var allBranchesM = [];
+    /* Той самий принцип, що й у модалці редагування: поле філії видно
+       лише коли в обраного майстра їх кілька. */
+    function renderMBranch() {
+      var row = $("mBranchRow"), sel2 = $("mBranch");
+      if (!row || !sel2) return;
+      var m = selectedAppointmentMaster();
+      var ids = (m && m.branch_ids) || [];
+      if (ids.length < 2) { row.style.display = "none"; sel2.innerHTML = ""; return; }
+      var prevVal = sel2.value;
+      sel2.innerHTML = "";
+      sel2.appendChild(new Option("— не вказано —", ""));
+      ids.forEach(function(bid) {
+        var b = allBranchesM.find(function(bb) { return bb.id === bid; });
+        sel2.appendChild(new Option(b ? (b.address || b.name) : ("Філія #" + bid), bid));
+      });
+      sel2.value = ids.indexOf(parseInt(prevVal, 10)) !== -1 ? prevVal : "";
+      row.style.display = "";
+    }
+
     Promise.all([
       api("GET", "/api/crm/services"),
-      api("GET", "/api/crm/masters")
+      api("GET", "/api/crm/masters"),
+      api("GET", "/api/crm/branches")
     ]).then(function (results) {
       var svcRes = results[0], mstRes = results[1];
+      allBranchesM = (results[2].j && results[2].j.branches) || [];
       var sel = $("mService");
       appointmentMasters = mstRes.j.masters || [];
       allServices = svcRes.j.services || [];
@@ -3572,6 +3622,7 @@
         } else if (prefill.masterId) {
           sel.value = String(prefill.masterId);
         }
+        renderMBranch();
         if (!prefill.serviceId) renderSvcCategories();
         loadSlots();
       }
@@ -3591,6 +3642,7 @@
       $("mSvcWrap").style.display = "none";
       $("mSvcCategories").style.display = "grid";
       renderSvcCategories();
+      renderMBranch();
       loadSlots();
     });
     $("mDate").addEventListener("change", loadSlots);
@@ -3712,7 +3764,9 @@
       var url = ME.role === "owner" ? "/api/crm/appointments" : "/api/crm/me/appointments";
       var extras = selectedServices.slice(1);
       api("POST", url, {
-        service: $("mService").value, master: $("mMaster").value, date: $("mDate").value,
+        service: $("mService").value, master: $("mMaster").value,
+        branch: $("mBranchRow") && $("mBranchRow").style.display !== "none" ? $("mBranch").value : undefined,
+        date: $("mDate").value,
         start_min: chosen.start_min, name: name, phone: phone,
         client_id: selectedClient ? selectedClient.id : null,
         guest: isGuestBooking || undefined,

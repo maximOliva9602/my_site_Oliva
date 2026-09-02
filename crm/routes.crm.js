@@ -285,6 +285,9 @@ function createAppointment(d, session) {
   const clientId = isGuest ? null : (parseInt(d.client_id, 10) || null);
   const comment = clean(d.comment, 500);
   const colorMarker = clean(d.color_marker, 20) || null;
+  // Явно обрана філія з форми (потрібна, коли графік майстра того дня
+  // конфліктний і resolveBranchForNewAppt() не може вгадати сам).
+  const explicitBranch = d.branch !== undefined && d.branch !== "" ? (parseInt(d.branch, 10) || null) : null;
 
   // майстер може створювати лише собі
   if (session.role !== "owner") masterId = session.masterId;
@@ -356,7 +359,7 @@ function createAppointment(d, session) {
            сайту лишається 'pending': його підтверджують вручну. */
         `INSERT INTO appointments (public_id,client_id,master_id,branch_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,extra_services,created_at,updated_at)
          VALUES (?,?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?,?)`
-      ).run(publicId, client.id, masterId, resolveBranchForNewAppt(masterId, date, m.branch_id), serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
+      ).run(publicId, client.id, masterId, explicitBranch || resolveBranchForNewAppt(masterId, date, m.branch_id), serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
       appointmentId = info.lastInsertRowid;
     })();
   } catch (e) {
@@ -626,6 +629,9 @@ router.patch("/appointments/:id", any, function (req, res) {
   const startMin = d.start_min !== undefined ? parseInt(d.start_min, 10) : a.start_min;
   const masterId = (d.master !== undefined && req.session.role === "owner") ? parseInt(d.master, 10) : a.master_id;
   const comment = d.comment !== undefined ? clean(d.comment, 500) : a.comment;
+  // Ручний вибір філії (форма показує це поле, лише коли в майстра їх
+  // кілька) — інакше лишаємо, що вже було збережено.
+  const branchId = d.branch !== undefined ? (parseInt(d.branch, 10) || null) : a.branch_id;
   if (!tz.isDate(date) || !(startMin >= 0)) return res.status(400).json({ ok: false, error: "bad params" });
 
   // Зміна послуги — перераховуємо базову тривалість і ціну під нову послугу.
@@ -664,9 +670,9 @@ router.patch("/appointments/:id", any, function (req, res) {
       return res.status(403).json({ ok: false, error: "service_level_forbidden" });
     }
   }
-  if (timeChanged || masterId !== a.master_id || serviceChanged || totalsChanged) {
-    db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, service_id=?, duration_min=?, price=?, extra_services=?, comment=?, updated_at=? WHERE id=?")
-      .run(date, startMin, startMin + durationMin, masterId, serviceId, durationMin, price, extraServicesJson, comment, Date.now(), id);
+  if (timeChanged || masterId !== a.master_id || serviceChanged || totalsChanged || branchId !== a.branch_id) {
+    db.prepare("UPDATE appointments SET date=?, start_min=?, end_min=?, master_id=?, branch_id=?, service_id=?, duration_min=?, price=?, extra_services=?, comment=?, updated_at=? WHERE id=?")
+      .run(date, startMin, startMin + durationMin, masterId, branchId, serviceId, durationMin, price, extraServicesJson, comment, Date.now(), id);
     /* SMS про перенесення (типово вимкнено; вмикається у Сповіщеннях).
        Лише коли реально змінились дата/час активного запису. Попереднє
        reschedule-сповіщення видаляємо, щоб UNIQUE не блокував повторне
