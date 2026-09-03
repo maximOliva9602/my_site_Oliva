@@ -213,15 +213,15 @@
         <input type="number" class="tip-custom-input" id="tipCustomAmt" min="10" max="10000" placeholder="Або своя сума, грн..." />
       </div>
       <button type="button" class="tip-modal-yes" id="tipModalPay">🤍 Оплатити <span id="tipPayAmt">150</span> грн</button>
-      <button type="button" class="tip-modal-no" id="tipModalNo">Ні, дякую — одразу до відгуку</button>
+      <button type="button" class="tip-modal-no" id="tipModalNo">Ні, дякую</button>
     </div>
 
-    <!-- Крок 2: після переходу на оплату — повертаємось сюди, щоб написати відгук -->
+    <!-- Крок 2: після переходу на оплату -->
     <div class="tip-modal-step" id="tipStepDone">
       <div class="tip-modal-icon">🤍</div>
       <div class="tip-modal-title">Дякуємо!</div>
-      <div class="tip-modal-sub">Сторінка оплати відкрилась в новій вкладці. Повертайтесь сюди, коли завершите — і, будь ласка, поділіться враженнями від сеансу.</div>
-      <button type="button" class="tip-modal-yes" id="tipModalToReview">✍️ Написати відгук</button>
+      <div class="tip-modal-sub">Сторінка оплати відкрилась в новій вкладці. Дякуємо, що ви з нами!</div>
+      <button type="button" class="tip-modal-yes" id="tipModalToReview">Гаразд, дякую 🤍</button>
     </div>
 
   </div>
@@ -247,6 +247,8 @@
   var master = "";
   var feedbackFields = document.getElementById('feedbackFields');
   var submitReviewBtn = document.getElementById('submitReviewBtn');
+  var TIP_PENDING_KEY = 'olivaTipPending';
+  var lastUrlMaster = null; // майстер із ?m=, для повторної перевірки при поверненні з bfcache
 
   document.querySelectorAll(".star-btn").forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -256,6 +258,12 @@
       });
       if (rating === 5) {
         feedbackFields.classList.remove('show');
+        /* Чайові не пропонуємо просто зараз (клієнт іще не в Google) — а
+           лишаємо позначку "чекає на чайові", яку перевіримо, коли він
+           поверне сюди сторінку кнопкою "Назад" після відгуку. */
+        if (masterIdFromUrl) {
+          try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {}
+        }
         window.location.assign(GOOGLE_REVIEW_LINK[branch]);
         return;
       }
@@ -276,9 +284,9 @@
   bindChips();
 
   /* ?m=<masterId> — приходить із персональної СМС після завершеного
-     візиту (див. crm/notify.js). Дає змогу одразу показати модалку про
-     чайові з іменем саме цього майстра й підставити його в форму
-     відгуку, а не змушувати клієнта шукати його в списку самому. */
+     візиту (див. crm/notify.js). Дає змогу підставити майстра у форму
+     відгуку заздалегідь (не шукати його в списку самому) і знати, кому
+     запропонувати чайові, якщо клієнт повернеться сюди після Google. */
   var masterIdFromUrl = new URLSearchParams(window.location.search).get('m');
 
   fetch('/api/masters')
@@ -304,23 +312,46 @@
         if (ownChip) ownChip.classList.add('active');
         master = urlMaster.name;
 
-        document.getElementById('tipModalTitle').textContent = 'Сподобався сеанс у ' + urlMaster.name + '?';
+        document.getElementById('tipModalTitle').textContent = 'Дякуємо за відгук, ' + urlMaster.name + '!';
         setupTipModal(urlMaster);
-        document.getElementById('tipModalOverlay').classList.add('show');
       }
+      lastUrlMaster = urlMaster;
+      maybeShowPendingTip(urlMaster);
     })
     .catch(function () {});
 
+  /* Чайові пропонуємо не одразу при відкритті СМС-посилання, а лише коли
+     клієнт повертається на цю сторінку після 5-зіркового відгуку в Google
+     (позначку лишає обробник зірочок вище) — це і є момент, коли доречно
+     запропонувати подякувати ще й особисто. */
+  function maybeShowPendingTip(urlMaster) {
+    var pendingId;
+    try { pendingId = sessionStorage.getItem(TIP_PENDING_KEY); } catch (e) { pendingId = null; }
+    if (!pendingId || !urlMaster || String(urlMaster.id) !== String(pendingId)) return;
+    try { sessionStorage.removeItem(TIP_PENDING_KEY); } catch (e) {}
+    if (!urlMaster.mono_link) return; // нема куди платити — пропонувати нічого
+
+    rating = 5;
+    document.querySelectorAll(".star-btn").forEach(function (b, i) { b.classList.toggle("active", i < 5); });
+    feedbackFields.classList.remove('show');
+
+    document.getElementById('tipModalOverlay').classList.add('show');
+  }
+
+  /* Повернення кнопкою "Назад" іноді відновлює сторінку з bfcache — тоді
+     весь код вище просто НЕ виконується заново (сторінка "заморожена"),
+     і pageshow — єдиний спосіб дізнатись про повернення. */
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) maybeShowPendingTip(lastUrlMaster);
+  });
+
   /* Сума чайових обирається одразу в модалці (майстер уже відомий з
      ?m=, повторно вибирати його на /share не треба). "Оплатити" відкриває
-     Monobank у новій вкладці — сама модалка сторінку не лишає, щоб
-     клієнт міг повернутись і написати відгук. */
+     Monobank у новій вкладці, сама модалка сторінку не лишає. */
   function setupTipModal(urlMaster) {
     var payBtn = document.getElementById('tipModalPay');
     if (!urlMaster.mono_link) {
-      // Немає підключеного Monobank-банки — показуємо лише запрошення до відгуку.
-      document.getElementById('tipStepAmount').querySelector('.tip-modal-sub').textContent =
-        'Дякуємо за візит! Поділіться, будь ласка, враженнями від сеансу.';
+      // Немає підключеного Monobank-банки — модалку взагалі не показуємо.
       document.getElementById('tipAmounts').style.display = 'none';
       document.querySelector('.tip-custom-wrap').style.display = 'none';
       payBtn.style.display = 'none';
@@ -363,7 +394,6 @@
   });
   document.getElementById('tipModalToReview').addEventListener('click', function () {
     document.getElementById('tipModalOverlay').classList.remove('show');
-    document.getElementById('reviewText').focus();
   });
   document.getElementById('tipModalOverlay').addEventListener('click', function (e) {
     if (e.target === this) this.classList.remove('show');
