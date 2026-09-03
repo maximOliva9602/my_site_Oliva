@@ -34,6 +34,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "oliva-admin";
 const IS_PROD = process.env.NODE_ENV === "production";
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+const OWNER_VIBER_PHONE = process.env.OWNER_VIBER_PHONE || "";
 const PRIMARY_SITE_URL = "https://massage-oliva.com";
 const LEGACY_SITE_HOST = "massage-solomyanskyi.com.ua";
 
@@ -45,15 +46,37 @@ if (!TG_TOKEN || !TG_CHAT_ID) {
 }
 
 /* ---------------- Telegram-сповіщення ---------------- */
+/* Повертає true/false (а не кидає), щоб виклик міг зреагувати на
+   недоступність Telegram — напр. переслати те саме повідомлення
+   резервним каналом (див. sendOwnerViberFallback нижче). */
 async function sendTelegram(text) {
-  if (!TG_TOKEN || !TG_CHAT_ID) return;
+  if (!TG_TOKEN || !TG_CHAT_ID) return false;
   try {
     const url = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
     const body = JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: "HTML" });
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
-    if (!res.ok) console.error("[telegram] Помилка:", await res.text());
+    if (!res.ok) { console.error("[telegram] Помилка:", await res.text()); return false; }
+    return true;
   } catch (e) {
     console.error("[telegram] fetch error:", e.message);
+    return false;
+  }
+}
+
+/* Резервний канал, коли Telegram недоступний (бот заблокований, немає
+   мережі тощо) — той самий turbosms-драйвер, що й нагадування клієнтам
+   (каскад Viber → SMS), лише адресований власнику на OWNER_VIBER_PHONE.
+   Без TURBOSMS_TOKEN/OWNER_VIBER_PHONE просто нічого не робить — щоб не
+   ламати проєкти, де ще немає TurboSMS-акаунта. */
+async function sendOwnerViberFallback(text) {
+  if (!OWNER_VIBER_PHONE) { console.warn("[review] OWNER_VIBER_PHONE не задано — Viber-фолбек пропущено."); return false; }
+  try {
+    const turbosms = require("./crm/drivers/turbosms");
+    await turbosms.sendMessage({ phone: OWNER_VIBER_PHONE, text: text, transactional: true });
+    return true;
+  } catch (e) {
+    console.error("[review] Viber-фолбек не вдався:", e.message);
+    return false;
   }
 }
 
@@ -474,13 +497,15 @@ app.post("/api/review", async function (req, res) {
     : `✍️ <b>Новий внутрішній відгук (${branchLabel})</b> #відгук\n\n`) + `${stars}\n` +
     (master ? `💆 <b>Майстер:</b> ${master}\n` : "") +
     `📝 ${text}`;
-  try {
-    await sendTelegram(msg);
-    res.json({ ok: true });
-  } catch (e) {
-    console.error("[review]", e.message);
-    res.status(500).json({ ok: false });
+  var tgOk = await sendTelegram(msg);
+  // Telegram недоступний (бот заблокований / не налаштований) — той самий
+  // текст, без HTML-тегів, пробуємо резервним каналом.
+  var viberOk = tgOk ? true : await sendOwnerViberFallback(msg.replace(/<[^>]+>/g, ""));
+  if (!tgOk && !viberOk) {
+    console.error("[review] відгук не надіслано жодним каналом (Telegram і Viber)");
+    return res.status(500).json({ ok: false });
   }
+  res.json({ ok: true });
 });
 
 app.get("/review", function (req, res) {
