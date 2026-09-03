@@ -452,7 +452,8 @@ function settingOn(key, dfltOn) {
 }
 
 /* ---------- зміна статусу ---------- */
-function setStatus(id, status, session) {
+function setStatus(id, status, session, options) {
+  options = options || {};
   if (STATUSES.indexOf(status) === -1) return { status: 400, body: { ok: false, error: "bad status" } };
   const a = db.prepare("SELECT id, master_id, client_id, public_id, status, service_id, subscription_used FROM appointments WHERE id=?").get(id);
   if (!a) return { status: 404, body: { ok: false, error: "not found" } };
@@ -546,8 +547,11 @@ function setStatus(id, status, session) {
        chat_id. UNIQUE по appointment_id захищає від повторних повідомлень. */
     try {
       const clientTelegram = require("./client-telegram");
-      const q = clientTelegram.queueReviewRequest(id);
-      if (q && q.ok && !q.duplicate) {
+      const sendNow = !options.automated;
+      const q = clientTelegram.queueReviewRequest(id, { sendNow: sendNow });
+      /* При ручному завершенні flush потрібен і для вже наявного запису:
+         queueReviewRequest переносить його send_after на поточний час. */
+      if (q && q.ok && (!q.duplicate || sendNow)) {
         setImmediate(function () {
           clientTelegram.flushQueued().catch(function (e) {
             console.error("[review-telegram] flush:", e.message);

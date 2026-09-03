@@ -67,7 +67,8 @@ function unlinkChat(chatId) {
   ).run(String(chatId)).changes;
 }
 
-function queueReviewRequest(appointmentId) {
+function queueReviewRequest(appointmentId, options) {
+  options = options || {};
   const a = db.prepare(
     `SELECT a.id, a.client_id, a.master_id, a.date, a.end_min,
             c.name AS client_name, m.name AS master_name
@@ -81,7 +82,10 @@ function queueReviewRequest(appointmentId) {
   const reviewUrl = `${SITE_URL}/google-review?m=${a.master_id}`;
   const text = `Дякуємо${a.client_name ? ", " + a.client_name : ""}, що завітали до Oliva 💚\n\n` +
     `Будемо вдячні, якщо ви поділитеся враженнями про сеанс у майстра ${a.master_name}.`;
-  const sendAfter = tz.apptInstant(a.date, a.end_min);
+  /* Ручне «Завершено» означає, що візит фактично вже закінчився — у
+     цьому випадку власник очікує відправлення одразу. Автозавершення
+     передає sendNow=false і продовжує чекати планового кінця сеансу. */
+  const sendAfter = options.sendNow ? Date.now() : tz.apptInstant(a.date, a.end_min);
   try {
     const info = db.prepare(
       `INSERT INTO client_telegram_messages
@@ -90,7 +94,17 @@ function queueReviewRequest(appointmentId) {
     ).run(a.id, a.client_id, text, reviewUrl, sendAfter, Date.now());
     return { ok: true, id: info.lastInsertRowid };
   } catch (e) {
-    if (String(e.message).includes("UNIQUE")) return { ok: true, duplicate: true };
+    if (String(e.message).includes("UNIQUE")) {
+      /* Запит міг уже стояти в черзі до майбутнього планового кінця.
+         Повторне ручне завершення робить його доступним зараз, але не
+         відновлює вже надіслане/скасоване повідомлення і не створює дубль. */
+      if (options.sendNow) {
+        db.prepare(
+          "UPDATE client_telegram_messages SET send_after=? WHERE appointment_id=? AND status IN ('queued','failed')"
+        ).run(Date.now(), a.id);
+      }
+      return { ok: true, duplicate: true };
+    }
     return { ok: false, error: e.message };
   }
 }

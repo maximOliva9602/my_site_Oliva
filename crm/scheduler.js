@@ -121,7 +121,7 @@ function autoCompleteDue(now) {
       const startMs = tz.apptInstant(a.date, a.start_min);
       const midMs = startMs + (a.duration_min / 2) * 60000;
       if (now < midMs) continue;
-      const r = routes.setStatus(a.id, "completed", { role: "owner" });
+      const r = routes.setStatus(a.id, "completed", { role: "owner" }, { automated: true });
       if (r && r.status === 200) completed++;
     }
   } catch (e) { console.error("[auto-complete]", e.message); }
