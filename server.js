@@ -48,7 +48,7 @@ if (!TG_TOKEN || !TG_CHAT_ID) {
 /* ---------------- Telegram-сповіщення ---------------- */
 /* Повертає true/false (а не кидає), щоб виклик міг зреагувати на
    недоступність Telegram — напр. переслати те саме повідомлення
-   резервним каналом (див. sendOwnerViberFallback нижче). */
+   резервним каналом (див. sendOwnerSmsFallback нижче). */
 async function sendTelegram(text) {
   if (!TG_TOKEN || !TG_CHAT_ID) return false;
   try {
@@ -64,21 +64,21 @@ async function sendTelegram(text) {
 }
 
 /* Резервний канал, коли Telegram недоступний (бот заблокований, немає
-   мережі тощо) — той самий turbosms-драйвер, що й нагадування клієнтам
-   (каскад Viber → SMS), лише адресований власнику на OWNER_VIBER_PHONE.
-   Без TURBOSMS_TOKEN/OWNER_VIBER_PHONE просто нічого не робить — щоб не
-   ламати проєкти, де ще немає TurboSMS-акаунта. */
-async function sendOwnerViberFallback(text) {
-  if (!OWNER_VIBER_PHONE) { console.warn("[review] OWNER_VIBER_PHONE не задано — Viber-фолбек пропущено."); return false; }
+   мережі тощо) — той самий alphasms-драйвер, що й нагадування клієнтам,
+   лише адресований власнику на OWNER_VIBER_PHONE. Спершу пробували
+   TurboSMS/Viber, але комерційний Viber-відправник там не затверджений
+   (NOT_ALLOWED_MESSAGE_SENDER) і коштує від ~10 000 грн/міс — тоді як
+   AlphaSMS вже активний, з балансом і затвердженим ім'ям "Oliva", тож
+   просте SMS сюди — робочий безкоштовний (понад те, що вже є) фолбек.
+   Без ALPHASMS_KEY/OWNER_VIBER_PHONE просто нічого не робить. */
+async function sendOwnerSmsFallback(text) {
+  if (!OWNER_VIBER_PHONE) { console.warn("[review] OWNER_VIBER_PHONE не задано — SMS-фолбек пропущено."); return false; }
   try {
-    const turbosms = require("./crm/drivers/turbosms");
-    const tz = require("./crm/tz");
-    // normPhone: дозволяє задати номер у будь-якому форматі (з пробілами,
-    // дужками, 0XX...) — та сама нормалізація, що й для номерів клієнтів.
-    await turbosms.sendMessage({ phone: tz.normPhone(OWNER_VIBER_PHONE), text: text, transactional: true });
+    const alphasms = require("./crm/drivers/alphasms");
+    await alphasms.sendMessage({ phone: OWNER_VIBER_PHONE, text: text });
     return true;
   } catch (e) {
-    console.error("[review] Viber-фолбек не вдався:", e.message);
+    console.error("[review] SMS-фолбек не вдався:", e.message);
     return false;
   }
 }
@@ -501,11 +501,13 @@ app.post("/api/review", async function (req, res) {
     (master ? `💆 <b>Майстер:</b> ${master}\n` : "") +
     `📝 ${text}`;
   var tgOk = await sendTelegram(msg);
-  // Telegram недоступний (бот заблокований / не налаштований) — той самий
-  // текст, без HTML-тегів, пробуємо резервним каналом.
-  var viberOk = tgOk ? true : await sendOwnerViberFallback(msg.replace(/<[^>]+>/g, ""));
-  if (!tgOk && !viberOk) {
-    console.error("[review] відгук не надіслано жодним каналом (Telegram і Viber)");
+  // Telegram недоступний (бот заблокований / не налаштований) — коротший
+  // SMS-варіант того самого (без HTML, з обмеженням довжини — SMS
+  // тарифікується по частинах 160 симв.).
+  var smsText = `Новий відгук (${branchLabel}): ${stars}` + (master ? `, майстер ${master}` : "") + `. ${text}`.slice(0, 300);
+  var smsOk = tgOk ? true : await sendOwnerSmsFallback(smsText);
+  if (!tgOk && !smsOk) {
+    console.error("[review] відгук не надіслано жодним каналом (Telegram і SMS)");
     return res.status(500).json({ ok: false });
   }
   res.json({ ok: true });
