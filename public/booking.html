@@ -242,6 +242,11 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .done-cal-btn:hover { border-color: var(--gold); }
 .done-cal-btn .dc-ico { display: inline-flex; color: var(--gold); }
 .done-cal-btn .dc-ico svg { width: 18px; height: 18px; }
+.done-tg-copy { color: var(--text-dim); font-size: .84rem; line-height: 1.55; margin: -2px 0 12px; }
+.done-tg-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 13px 14px; border-radius: 12px; border: 1.5px solid rgba(34,158,217,.55); background: rgba(34,158,217,.12); color: #8bd8fa; font-size: .9rem; font-weight: 600; text-decoration: none; transition: all .15s; }
+.done-tg-btn:hover { background: rgba(34,158,217,.2); border-color: #229ed9; }
+.done-tg-btn svg { width: 20px; height: 20px; }
+.done-tg-ok { color: #9fbd73; font-size: .88rem; line-height: 1.5; padding: 10px 12px; border: 1px solid rgba(159,189,115,.3); background: rgba(86,112,57,.14); border-radius: 12px; }
 .done-help-cards { display: flex; gap: 10px; }
 .done-help-card { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 8px; border-radius: 12px; border: 1px solid var(--line); background: rgba(46,61,34,0.14); text-decoration: none; transition: border-color .15s; }
 .done-help-card:hover { border-color: rgba(217,185,120,0.4); }
@@ -691,6 +696,18 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <div class="done-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
       <h2 data-i18n="book.done.title">Запис прийнято!</h2>
       <p id="doneText"></p>
+    </div>
+
+    <!-- Одноразова прив'язка Telegram клієнта. Без натискання Start бот не
+         отримає chat_id і технічно не зможе написати людині після візиту. -->
+    <div class="done-card hide" id="doneTelegramCard">
+      <div class="done-card-h" data-i18n="book.tg.title">Отримати повідомлення після візиту</div>
+      <p class="done-tg-copy" id="doneTelegramCopy" data-i18n="book.tg.copy">Підключіть Telegram один раз — після завершення масажу ми надішлемо персональне посилання для відгуку.</p>
+      <a class="done-tg-btn hide" id="doneTelegramBtn" href="#" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.56 7.1-1.97 9.29c-.15.66-.54.82-1.09.51l-3-2.21-1.45 1.4c-.16.16-.3.3-.61.3l.21-3.05 5.56-5.02c.24-.21-.05-.33-.37-.12l-6.87 4.33-2.96-.92c-.64-.2-.66-.64.14-.95l11.57-4.46c.54-.19 1.01.13.84.9z"/></svg>
+        <span data-i18n="book.tg.button">Підключити Telegram</span>
+      </a>
+      <div class="done-tg-ok hide" id="doneTelegramOk" data-i18n="book.tg.connected">✓ Telegram уже підключено. Повідомлення прийде сюди після завершення візиту.</div>
     </div>
 
     <!-- Додати в календар -->
@@ -2044,6 +2061,11 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         var p = parseName(state.service.name);
         var h = Math.floor(state.start_min/60), m = state.start_min%60;
         $("doneText").innerHTML = "<b>" + tr(p.cat) + "</b> · " + state.master.name + "<br>" + state.date.split("-").reverse().slice(0,2).join(".") + ", " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+        var tgCard = $("doneTelegramCard"), tgBtn = $("doneTelegramBtn"), tgOk = $("doneTelegramOk");
+        tgCard.classList.toggle("hide", !res.j.telegram_url && !res.j.telegram_connected);
+        tgBtn.classList.toggle("hide", !res.j.telegram_url || res.j.telegram_connected);
+        tgOk.classList.toggle("hide", !res.j.telegram_connected);
+        if (res.j.telegram_url) tgBtn.href = res.j.telegram_url;
         buildCalendar();
         goStep("done");
       }).catch(function() { btn.disabled = false; btn.textContent = tr("Підтвердити запис"); err.textContent = tr("Помилка з'єднання."); });

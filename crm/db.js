@@ -352,6 +352,41 @@ try { db.exec("ALTER TABLE masters ADD COLUMN experience_years INTEGER NOT NULL 
 try { db.exec("ALTER TABLE clients ADD COLUMN no_marketing INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 /* Вимкнення SMS-нагадувань для ОКРЕМОГО клієнта (типово всім увімкнено). */
 try { db.exec("ALTER TABLE clients ADD COLUMN no_reminders INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+/* Telegram клієнта не можна визначити за номером телефону. Клієнт один раз
+   запускає бота за персональним посиланням, після чого зберігаємо chat_id у
+   його картці. Одноразовий код живе недовго й видаляється після прив'язки. */
+try { db.exec("ALTER TABLE clients ADD COLUMN tg_chat_id TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE clients ADD COLUMN tg_link_code TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE clients ADD COLUMN tg_code_expires INTEGER"); } catch(e) {}
+try { db.exec("ALTER TABLE clients ADD COLUMN tg_linked_at INTEGER"); } catch(e) {}
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_tg_chat ON clients(tg_chat_id) WHERE tg_chat_id IS NOT NULL");
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_tg_code ON clients(tg_link_code) WHERE tg_link_code IS NOT NULL");
+
+/* Окрема надійна черга Telegram-запитів на відгук. Вона не залежить від
+   SMS/Viber-драйвера notifications: один запис = не більш як одне
+   повідомлення, а відправка чекає фактичного завершення запланованого часу. */
+db.exec(`
+CREATE TABLE IF NOT EXISTS client_telegram_messages (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  appointment_id INTEGER NOT NULL UNIQUE,
+  client_id      INTEGER NOT NULL,
+  text           TEXT NOT NULL,
+  review_url     TEXT NOT NULL,
+  send_after     INTEGER NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'queued', -- queued|sending|sent|failed|cancelled
+  attempts       INTEGER NOT NULL DEFAULT 0,
+  locked_at      INTEGER,
+  provider_msg_id TEXT,
+  last_error     TEXT,
+  created_at     INTEGER NOT NULL,
+  sent_at        INTEGER,
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_client_tg_msg_due
+  ON client_telegram_messages(status, send_after);
+`);
+try { db.exec("ALTER TABLE client_telegram_messages ADD COLUMN locked_at INTEGER"); } catch(e) {}
 
 /* ---------------- Налаштування (key-value) ----------------
    Напр. reminder1_hours / reminder2_hours — за скільки годин до візиту

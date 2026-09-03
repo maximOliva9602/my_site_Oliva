@@ -541,10 +541,20 @@ function setStatus(id, status, session) {
           .run(sub.used_sessions + 1, sub.total_sessions, id);
       }
     }
+    /* Запит відгуку йде клієнту в Telegram, а не через SMS-драйвер.
+       Черга сама дочекається кінця запланованого сеансу та збереженого
+       chat_id. UNIQUE по appointment_id захищає від повторних повідомлень. */
     try {
-      const notify = require("./notify");
-      notify.queueNotification(id, "review_request");
-    } catch(e) { /* review_request — необов'язково */ }
+      const clientTelegram = require("./client-telegram");
+      const q = clientTelegram.queueReviewRequest(id);
+      if (q && q.ok && !q.duplicate) {
+        setImmediate(function () {
+          clientTelegram.flushQueued().catch(function (e) {
+            console.error("[review-telegram] flush:", e.message);
+          });
+        });
+      }
+    } catch(e) { console.error("[review-telegram] queue:", e.message); }
   }
   return { status: 200, body: { ok: true, appointment: viewAppt(protectAppointmentPhone(apptRow(id), session)) } };
 }

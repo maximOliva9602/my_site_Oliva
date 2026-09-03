@@ -9,12 +9,18 @@ const express = require("express");
 const notify = require("./notify");
 const db = require("./db");
 const adminNotify = require("./admin-notify");
+const clientTelegram = require("./client-telegram");
 
 const router = express.Router();
 const SECRET = process.env.TURBOSMS_WEBHOOK_SECRET || "";
 const TG_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
 if (!TG_WEBHOOK_SECRET) {
   console.warn("[webhook] TELEGRAM_WEBHOOK_SECRET не задано — /api/webhooks/telegram приймає запити без перевірки підпису.");
+}
+function escHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>]/g, function (ch) {
+    return ch === "&" ? "&amp;" : (ch === "<" ? "&lt;" : "&gt;");
+  });
 }
 
 router.post("/turbosms", function (req, res) {
@@ -60,13 +66,36 @@ router.post("/telegram", function (req, res) {
       const code = text.replace(/^\/start\b/, "").trim();
       if (!code) {
         adminNotify.sendTg(
-          "Вітаю! Це бот студії Oliva для майстрів.\n\n" +
-          "Щоб отримувати сповіщення про свої записи, відкрийте CRM → " +
-          "вкладка «Сповіщення» → «Підключити Telegram».",
+          "Вітаю! Це бот студії Oliva.\n\n" +
+          "Клієнти можуть підключити повідомлення після онлайн-запису, " +
+          "а майстри — у CRM на вкладці «Сповіщення».",
           chatId
         );
         return res.json({ ok: true });
       }
+
+      if (code.startsWith("client-")) {
+        const client = clientTelegram.linkClient(code, chatId);
+        if (!client) {
+          adminNotify.sendTg(
+            "Посилання недійсне або застаріло. Зробіть новий онлайн-запис і натисніть кнопку підключення Telegram ще раз.",
+            chatId
+          );
+          return res.json({ ok: true });
+        }
+        adminNotify.sendTg(
+          `✅ Готово, ${escHtml(client.name)}! Telegram підключено. Після завершення візиту ми надішлемо сюди посилання, щоб поділитися враженнями.\n\n` +
+          "Щоб вимкнути повідомлення — надішліть /stop",
+          chatId
+        );
+        setImmediate(function () {
+          clientTelegram.flushQueued(client.id).catch(function (e) {
+            console.error("[webhook] client telegram flush:", e.message);
+          });
+        });
+        return res.json({ ok: true });
+      }
+
       const m = db.prepare(
         "SELECT id, name FROM masters WHERE tg_link_code=? AND tg_code_expires > ?"
       ).get(code, Date.now());
@@ -93,10 +122,13 @@ router.post("/telegram", function (req, res) {
     }
 
     if (/^\/stop\b/.test(text)) {
-      db.prepare("UPDATE masters SET tg_chat_id=NULL, tg_linked_at=NULL WHERE tg_chat_id=?")
-        .run(String(chatId));
+      const masters = db.prepare("UPDATE masters SET tg_chat_id=NULL, tg_linked_at=NULL WHERE tg_chat_id=?")
+        .run(String(chatId)).changes;
+      const clients = clientTelegram.unlinkChat(chatId);
       adminNotify.sendTg(
-        "Сповіщення вимкнено. Увімкнути знову — CRM → «Сповіщення» → «Підключити Telegram».",
+        masters || clients
+          ? "Сповіщення вимкнено. Підключити їх знову можна через CRM або після наступного онлайн-запису."
+          : "Для цього Telegram-акаунта активних сповіщень не знайдено.",
         chatId
       );
       return res.json({ ok: true });

@@ -11,6 +11,7 @@ const db = require("./db");
 const tz = require("./tz");
 const slots = require("./slots");
 const notify = require("./notify");
+const clientTelegram = require("./client-telegram");
 
 const router = express.Router();
 const clean = function (s, max) { return String(s == null ? "" : s).slice(0, max || 200).trim(); };
@@ -302,7 +303,7 @@ router.post("/book", function (req, res) {
   }
 
   const now = Date.now();
-  let appointmentId, publicId;
+  let appointmentId, publicId, clientId;
   try {
     const txn = db.transaction(function () {
       // повторна перевірка накладок усередині транзакції
@@ -327,6 +328,7 @@ router.post("/book", function (req, res) {
       } else {
         db.prepare("UPDATE clients SET name = COALESCE(NULLIF(?,''), name) WHERE id = ?").run(name, client.id);
       }
+      clientId = client.id;
       publicId = crypto.randomBytes(8).toString("hex");
       const endMin = startMin + totalDur;
       const ai = db.prepare(
@@ -381,7 +383,19 @@ router.post("/book", function (req, res) {
     }
   } catch(e) { console.warn("[book] master notify err:", e.message); }
 
-  res.json({ ok: true, public_id: publicId });
+  /* Telegram не дозволяє боту знайти людину лише за номером. Видаємо
+     одноразове deep-link посилання саме після успішного запису: клієнт
+     натисне Start, а webhook збереже його chat_id у картці клієнта. */
+  let telegram = null;
+  try { telegram = clientTelegram.createLink(clientId); }
+  catch (e) { console.warn("[book] client telegram link:", e.message); }
+
+  res.json({
+    ok: true,
+    public_id: publicId,
+    telegram_url: telegram && telegram.url,
+    telegram_connected: !!(telegram && telegram.connected),
+  });
 });
 
 /* Статус брони за public_id (для сторінки підтвердження). */

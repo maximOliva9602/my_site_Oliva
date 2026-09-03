@@ -9,6 +9,7 @@
 const db = require("./db");
 const tz = require("./tz");
 const notify = require("./notify");
+const clientTelegram = require("./client-telegram");
 
 const TICK_MS = 60 * 1000;
 const REMINDER2_HOURS = parseFloat(process.env.REMINDER2_HOURS || "0"); // env-фолбек для 2-го нагадування
@@ -136,6 +137,7 @@ async function tick() {
     autoCompleteDue(now);
     sendBirthdaysDue();
     await notify.flushQueued();
+    await clientTelegram.flushQueued();
     await notify.flushBroadcasts();
     if (now - lastPoll > 5 * 60 * 1000) { // опитування статусів ~раз на 5 хв
       lastPoll = now;
