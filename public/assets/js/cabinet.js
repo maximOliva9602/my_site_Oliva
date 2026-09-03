@@ -1488,7 +1488,7 @@
         // Стан touch/long-press для всіх колонок
         var calTouchMoved = false, calTX = 0, calTY = 0, calLpHandled = false;
         var lpActive = false, lpTimer = null, lpInd = null, lpAbsMin = 0, lpMasterRef = null;
-        var dragState = { active: false, ghost: null, dropZone: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+        var dragState = { active: false, ghost: null, dropZone: null, apptId: null, origMasterId: null, targetMasterId: null, targetMasterName: null, targetBranchId: null, targetStartMin: null };
         var desktopMouseDragEnabled = ME.role === "owner" && window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
         var desktopDragState = null;
         var desktopDragSuppressClick = false;
@@ -1507,16 +1507,19 @@
           }
         }
 
-        function confirmDesktopAppointmentTransfer(appt, targetMaster, targetStartMin) {
+        function confirmDesktopAppointmentTransfer(appt, targetMaster, targetStartMin, targetBranchId) {
           if (!appt || !targetMaster || targetStartMin == null) return;
           var masterChanged = String(appt.master_id) !== String(targetMaster.id);
+          var branchChanged = targetBranchId != null && String(targetBranchId) !== String(appt.branch_id || "");
           var timeChanged = targetStartMin !== appt.start_min;
-          if (!masterChanged && !timeChanged) return;
+          if (!masterChanged && !branchChanged && !timeChanged) return;
           var targetEndMin = targetStartMin + appt.duration_min;
+          var targetBranchAddr = targetBranchId ? branchAddrById[targetBranchId] : null;
           openModal(
             '<h3 style="margin:0 0 10px;">Перенести запис?</h3>' +
             '<div style="font-size:.92rem;color:#222;font-weight:600;margin-bottom:6px;">' + appt.client_name + '</div>' +
             (masterChanged ? '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Новий майстер: <strong>' + (targetMaster.name || '') + '</strong></div>' : '') +
+            (branchChanged && targetBranchAddr ? '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Філія: <strong>' + streetName(targetBranchAddr) + '</strong></div>' : '') +
             '<div style="font-size:.85rem;color:#555;margin-bottom:18px;">Новий час: <strong>' + fmtMin(targetStartMin) + ' – ' + fmtMin(targetEndMin) + '</strong></div>' +
             '<div class="modal-foot">' +
             '<button id="desktopDragConfirmBtn" class="btn btn-primary">Перенести</button>' +
@@ -1525,11 +1528,13 @@
           );
           document.getElementById("desktopDragCancelBtn").addEventListener("click", closeModal);
           document.getElementById("desktopDragConfirmBtn").addEventListener("click", function() {
-            api("PATCH", "/api/crm/appointments/" + appt.id, {
+            var payload = {
               master: parseInt(targetMaster.id, 10),
               date: apptDate,
               start_min: targetStartMin
-            }).then(function(r) {
+            };
+            if (targetBranchId != null) payload.branch = targetBranchId;
+            api("PATCH", "/api/crm/appointments/" + appt.id, payload).then(function(r) {
               if (!r.j || !r.j.ok) return;
               closeModal();
               loadCalendar(activeMasterFilter, { zoomOnly: true });
@@ -1562,7 +1567,7 @@
         }
 
         // Вміст контекстного меню (спільний для click і long-press)
-        function openCalCtx(master, absMin, screenX, screenY) {
+        function openCalCtx(master, absMin, screenX, screenY, ctxBranchId) {
           var oldCtx = document.getElementById("cal-ctx");
           if (oldCtx) { oldCtx.remove(); return; }
           // Майстер може взаємодіяти тільки з власною колонкою
@@ -1594,7 +1599,7 @@
           if (document.getElementById("ctx-appt")) {
             document.getElementById("ctx-appt").addEventListener("click", function() {
               closeCtx();
-              apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: absMin } });
+              apptModal({ prefill: { masterId: master.id, date: apptDate, startMin: absMin, branchId: ctxBranchId } });
             });
           }
           document.getElementById("ctx-break").addEventListener("click", function() {
@@ -1633,16 +1638,26 @@
           }, 50);
         }
 
-        /* Майстер із записами у 2 різних філіях того самого дня отримує
-           удвічі ширшу колонку (flex:2 замість flex:1), щоб картки цих
-           записів можна було розташувати пліч-о-пліч по половинах — це
-           наочно розмежовує філії, а не просто підписує кожну картку. */
-        function colWeight(mid) { return ((masterApptBranches[mid] || []).length > 1) ? 2 : 1; }
-        var totalColW = masters.reduce(function(sum, mm) { return sum + colWeight(mm.id) * MASTER_COL_W; }, 0);
+        /* Майстер із реальними записами у 2 різних філіях того самого дня —
+           показуємо як ДВІ окремі колонки (так само, як два різні майстри),
+           кожна зі своєю чистою філією в шапці. Раніше пробували просто
+           розширювати одну спільну колонку й ділити картки навпіл — вийшло
+           заплутано; власник попросив саме окремі колонки, як у майстра
+           з однією філією, тільки двічі. dataset.branchId на колонці нижче
+           каже перетягуванню й "+Новий запис", у яку філію записувати. */
+        var columns = [];
+        masters.forEach(function(m) {
+          var bl = masterApptBranches[m.id];
+          if (bl && bl.length === 2) {
+            bl.forEach(function(bid) { columns.push({ master: m, branchId: bid }); });
+          } else {
+            columns.push({ master: m, branchId: null });
+          }
+        });
 
         var inner = document.createElement("div");
         inner.setAttribute("data-cal-inner", "1");
-        inner.style.cssText = "display:inline-flex;flex-direction:column;min-width:" + (TIME_COL_W + totalColW) + "px;width:100%;";
+        inner.style.cssText = "display:inline-flex;flex-direction:column;min-width:" + (TIME_COL_W + columns.length * MASTER_COL_W) + "px;width:100%;";
         scroller.appendChild(inner);
 
         // ── Липкий заголовок ──
@@ -1668,40 +1683,43 @@
         }
         header.appendChild(corner);
 
-        masters.forEach(function(m) {
-          var hw = colWeight(m.id);
+        columns.forEach(function(col) {
+          var m = col.master;
           var hCell = document.createElement("div");
-          hCell.style.cssText = "flex:" + hw + ";min-width:" + (MASTER_COL_W * hw) + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;overflow:hidden;background:#fff;cursor:pointer;";
+          hCell.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;height:" + HEADER_H + "px;border-right:1px solid #d8ddd4;display:flex;flex-direction:row;align-items:center;gap:6px;padding:4px 8px;overflow:hidden;background:#fff;cursor:pointer;";
           var initials = (m.name||'?').charAt(0).toUpperCase() + (m.last_name ? m.last_name.charAt(0).toUpperCase() : '');
           var avHtml = m.photo
             ? '<img src="' + m.photo + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #8aA462;flex-shrink:0;" alt="">'
             : '<div style="width:30px;height:30px;border-radius:50%;background:#3d5430;display:flex;align-items:center;justify-content:center;color:#8aA462;font-weight:700;font-size:.72rem;flex-shrink:0;">' + initials + '</div>';
-          /* Вулиця філії майстра САМЕ НА ЦЮ ДАТУ (todayBranchByMaster,
-             рахується вище з денного графіка й override'ів) — а не
-             статичний перелік усіх філій, до яких його колись
-             прикріпили. Той перелік давав абсурд типу "Борщагівська,
-             Успішна" одночасно, хоча реально того дня майстер працює
-             тільки в одній. Якщо графік дня показує дві РІЗНІ філії —
-             це не помилка відображення, а справжній конфлікт даних
-             (комусь заповнили години в obох філіях на той самий день),
-             і про нього треба сказати прямо жовтим попередженням, а не
-             мовчки обрати одну з них. streetName() тепер визначена вище,
-             спільна для шапки й карток записів. */
-          var todayIds = (todayBranchByMaster[m.id] || {}).ids || null;
           var addrBadge = '';
-          if (todayIds && todayIds.length === 1) {
-            var addr1 = branchAddrById[todayIds[0]];
-            if (addr1) addrBadge = '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + streetName(addr1) + '</div>';
-          } else if (todayIds && todayIds.length > 1) {
-            var conflictNames = todayIds.map(function(bid) { return branchAddrById[bid] ? streetName(branchAddrById[bid]) : ''; }).filter(Boolean).join(' і ');
-            addrBadge = '<div title="У майстра заведені робочі години одразу в кількох філіях цього дня — перевірте графік" style="flex-shrink:0;margin-left:auto;background:rgba(224,112,80,0.18);color:#a03f1f;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">⚠ ' + conflictNames + '</div>';
+          if (col.branchId) {
+            /* Колонка вже розділена по конкретній філії (columns вище) —
+               тут однозначно, показуємо чистий бейдж без жодного ⚠. */
+            var splitAddr = branchAddrById[col.branchId];
+            if (splitAddr) addrBadge = '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + streetName(splitAddr) + '</div>';
           } else {
-            // Немає денних даних (day-off чи графік ще не заведений) — якщо
-            // майстер узагалі закріплений лише за однією філією, це й так
-            // однозначно, навіть без графіка на конкретний день.
-            var onlyBranches = Array.isArray(m.branch_ids) ? m.branch_ids : [];
-            if (onlyBranches.length === 1 && branchAddrById[onlyBranches[0]]) {
-              addrBadge = '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + streetName(branchAddrById[onlyBranches[0]]) + '</div>';
+            /* Вулиця філії майстра САМЕ НА ЦЮ ДАТУ (todayBranchByMaster,
+               рахується вище з денного графіка й override'ів) — а не
+               статичний перелік усіх філій, до яких його колись
+               прикріпили. Якщо графік дня показує дві РІЗНІ філії, але
+               реальних записів у двох філіях ще нема (тому й не
+               розділили на колонки вище) — це справжній конфлікт даних,
+               і про нього треба сказати прямо жовтим попередженням. */
+            var todayIds = (todayBranchByMaster[m.id] || {}).ids || null;
+            if (todayIds && todayIds.length === 1) {
+              var addr1 = branchAddrById[todayIds[0]];
+              if (addr1) addrBadge = '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + streetName(addr1) + '</div>';
+            } else if (todayIds && todayIds.length > 1) {
+              var conflictNames = todayIds.map(function(bid) { return branchAddrById[bid] ? streetName(branchAddrById[bid]) : ''; }).filter(Boolean).join(' і ');
+              addrBadge = '<div title="У майстра заведені робочі години одразу в кількох філіях цього дня — перевірте графік" style="flex-shrink:0;margin-left:auto;background:rgba(224,112,80,0.18);color:#a03f1f;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">⚠ ' + conflictNames + '</div>';
+            } else {
+              // Немає денних даних (day-off чи графік ще не заведений) — якщо
+              // майстер узагалі закріплений лише за однією філією, це й так
+              // однозначно, навіть без графіка на конкретний день.
+              var onlyBranches = Array.isArray(m.branch_ids) ? m.branch_ids : [];
+              if (onlyBranches.length === 1 && branchAddrById[onlyBranches[0]]) {
+                addrBadge = '<div style="flex-shrink:0;margin-left:auto;background:rgba(122,145,86,0.16);color:#3d5430;font-size:.62rem;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;">📍 ' + streetName(branchAddrById[onlyBranches[0]]) + '</div>';
+              }
             }
           }
           hCell.innerHTML = avHtml +
@@ -1739,13 +1757,16 @@
         }
         body.appendChild(tCol);
 
-        // Колонки майстрів
-        masters.forEach(function(master) {
-          var mw = colWeight(master.id);
+        // Колонки майстрів (одна на майстра, або дві — по одній на філію,
+        // якщо в майстра сьогодні реальні записи у 2 різних філіях)
+        columns.forEach(function(col) {
+          var master = col.master;
+          var colBranchId = col.branchId;
           var mCol = document.createElement("div");
-          mCol.style.cssText = "flex:" + mw + ";min-width:" + (MASTER_COL_W * mw) + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;touch-action:pan-x pan-y;";
+          mCol.style.cssText = "flex:1;min-width:" + MASTER_COL_W + "px;border-right:1px solid #d8ddd4;position:relative;height:" + TOTAL_H + "px;background:#fff;touch-action:pan-x pan-y;";
           mCol.dataset.masterId = master.id;
           mCol.dataset.masterName = master.name || "";
+          if (colBranchId) mCol.dataset.branchId = colBranchId;
 
           // ПК, кабінет власника: запис можна перетягнути в колонку іншого майстра.
           if (desktopMouseDragEnabled) {
@@ -1760,7 +1781,7 @@
                   col.style.boxShadow = "";
                 }
               });
-              if (String(draggedAppointment.master_id) !== String(master.id)) {
+              if (String(draggedAppointment.master_id) !== String(master.id) || (colBranchId != null && String(colBranchId) !== String(draggedAppointment.branch_id || ""))) {
                 mCol.classList.add("cal-desktop-drag-hl");
                 mCol.style.boxShadow = "inset 0 0 0 3px rgba(110,145,69,.65)";
               }
@@ -1807,7 +1828,7 @@
                 ? desktopDragState.targetStartMin
                 : droppedAppointment.start_min;
               finishDesktopDrag(true);
-              confirmDesktopAppointmentTransfer(droppedAppointment, master, droppedStartMin);
+              confirmDesktopAppointmentTransfer(droppedAppointment, master, droppedStartMin, colBranchId);
             });
           }
 
@@ -1897,7 +1918,7 @@
               calLpHandled = true;
               setTimeout(function() { calLpHandled = false; }, 600);
               var t = e.changedTouches[0];
-              openCalCtx(master, lpAbsMin, t.clientX, t.clientY);
+              openCalCtx(master, lpAbsMin, t.clientX, t.clientY, colBranchId);
             }
           });
 
@@ -1912,12 +1933,15 @@
             var rect = mCol.getBoundingClientRect();
             var relMin = Math.floor((e.clientY - rect.top) / SLOT_H) * STEP;
             var clickAbsMin = HOUR_START * 60 + relMin;
-            openCalCtx(master, clickAbsMin, e.clientX, e.clientY);
+            openCalCtx(master, clickAbsMin, e.clientX, e.clientY, colBranchId);
           });
 
-          // Блоки записів — lane-assignment для відображення записів що накладаються
-          var masterAppts = appts.filter(function(a) { return a.master_id === master.id; })
-            .sort(function(a, b) { return a.start_min - b.start_min; });
+          // Блоки записів — lane-assignment для відображення записів що накладаються.
+          // Коли колонка розділена по філії (colBranchId), показуємо лише
+          // записи ЦІЄЇ філії — решта в сусідній колонці цього ж майстра.
+          var masterAppts = appts.filter(function(a) {
+            return a.master_id === master.id && (colBranchId == null || a.branch_id === colBranchId);
+          }).sort(function(a, b) { return a.start_min - b.start_min; });
           var laneEnd = [];
           var laneMap = {};
           masterAppts.forEach(function(a) {
@@ -1946,16 +1970,6 @@
             var nLanes = laneMap["_n" + a.id] || 1;
             var pct = 100 / nLanes;
             var leftPct = aLane * pct;
-            /* Колонка вже подвоєна (colWeight вище) саме тому, що в цього
-               майстра записи у 2 різних філіях сьогодні — розкладаємо їх
-               по половинах колонки по філії, а не по черзі перекриття
-               часу: так одразу видно межу між філіями, а не тільки колір
-               мітки на картці. */
-            var branchList = masterApptBranches[master.id] || null;
-            if (branchList && branchList.length === 2 && a.branch_id) {
-              var half = branchList.indexOf(a.branch_id);
-              if (half !== -1) { pct = 50; leftPct = half * 50; }
-            }
 
             // Завершений візит — завжди зелений, незалежно від маркера:
             // так одразу видно, хто вже відпрацьований, серед іще майбутніх.
@@ -1966,6 +1980,11 @@
 
             var block = document.createElement("div");
             block.id = "cal-block-" + a.id;
+            // Колонка вже підписана своєю філією (columns вище) — картці
+            // окрема мітка не потрібна. Коли філію визначено автоматично
+            // за графіком (inferredApptIds), а не збережено напряму —
+            // лишаємо непомітну підказку в title, без візуального шуму.
+            if (inferredApptIds[a.id]) block.title = "Філію визначено автоматично за графіком майстра — запис зроблений до збереження філії напряму";
             block.style.cssText = "position:absolute;left:calc(" + leftPct + "% + 2px);width:calc(" + pct + "% - 4px);top:" + topPx + "px;height:" + heightPx + "px;" +
               "background:" + markerHex + ";border-radius:5px;" +
               "padding:3px 5px 2px 5px;overflow:hidden;cursor:pointer;z-index:3;" +
@@ -1986,14 +2005,6 @@
                 '</div>';
             }
             html += '<div style="font-size:.76rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
-            /* Мітка філії на самій картці — тільки коли в цього майстра
-               сьогодні є записи в РІЗНИХ філіях (masterApptBranches вище):
-               інакше зрозуміло й без мітки, куди записаний клієнт, і вона
-               була б просто шумом. */
-            if (heightPx >= 34 && a.branch_id && (masterApptBranches[a.master_id] || []).length > 1 && branchAddrById[a.branch_id]) {
-              var inferredTitle = inferredApptIds[a.id] ? ' title="Філію визначено автоматично за графіком майстра — запис зроблений до збереження філії напряму"' : '';
-              html += '<div' + inferredTitle + ' style="display:inline-block;margin-top:1px;background:rgba(255,255,255,.22);color:#fff;font-size:.6rem;font-weight:600;padding:1px 5px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">📍 ' + (inferredApptIds[a.id] ? '~' : '') + streetName(branchAddrById[a.branch_id]) + '</div>';
-            }
             if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
             /* Просто номер цього візиту в абонементі: 5/10. sub_index для
                завершених — зафіксований номер, для решти — черга. */
@@ -2122,6 +2133,7 @@
               if (el2 && el2.dataset.masterId) {
                 dragState.targetMasterId   = el2.dataset.masterId;
                 dragState.targetMasterName = el2.dataset.masterName;
+                dragState.targetBranchId   = el2.dataset.branchId ? parseInt(el2.dataset.branchId, 10) : null;
                 // calc new start time from ghost vertical position within column
                 var mColR = el2.getBoundingClientRect();
                 var blockTopInCol = (blkDragRect.top + dy) - mColR.top;
@@ -2131,7 +2143,7 @@
                 // update time label in ghost
                 var tLbl = dragState.ghost.querySelector("[data-drag-time]");
                 if (tLbl) tLbl.textContent = fmtMin(snapped) + " – " + fmtMin(snapped + a.duration_min);
-                if (String(el2.dataset.masterId) !== String(master.id)) {
+                if (String(el2.dataset.masterId) !== String(master.id) || (dragState.targetBranchId != null && String(dragState.targetBranchId) !== String(a.branch_id || ""))) {
                   el2.classList.add("cal-drag-hl");
                   el2.style.background = "rgba(110,145,69,.12)";
                 }
@@ -2155,6 +2167,7 @@
               } else {
                 dragState.targetMasterId = null;
                 dragState.targetMasterName = null;
+                dragState.targetBranchId = null;
                 dragState.targetStartMin = a.start_min;
                 if (dragState.dropZone) { dragState.dropZone.remove(); dragState.dropZone = null; }
               }
@@ -2163,23 +2176,27 @@
             block.addEventListener("touchend", function() {
               if (dragState.apptId !== a.id || !dragState.active) {
                 finishBlockDrag();
-                dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+                dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetBranchId: null, targetStartMin: null };
                 return;
               }
               var targetId      = dragState.targetMasterId;
               var targetName    = dragState.targetMasterName;
+              var targetBranchId = dragState.targetBranchId;
               var newStartMin   = dragState.targetStartMin != null ? dragState.targetStartMin : a.start_min;
               finishBlockDrag();
-              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetBranchId: null, targetStartMin: null };
 
               var masterChanged = targetId && String(targetId) !== String(a.master_id);
+              var branchChanged = targetBranchId != null && String(targetBranchId) !== String(a.branch_id || "");
               var timeChanged   = newStartMin !== a.start_min;
-              if (!targetId || (!masterChanged && !timeChanged)) return;
+              if (!targetId || (!masterChanged && !branchChanged && !timeChanged)) return;
 
+              var targetBranchAddr = targetBranchId ? branchAddrById[targetBranchId] : null;
               openModal(
                 '<h3 style="margin:0 0 10px;">Перенести запис?</h3>' +
                 '<div style="font-size:.92rem;color:#222;font-weight:600;margin-bottom:6px;">' + a.client_name + '</div>' +
                 (masterChanged ? '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Майстер: <strong>' + targetName + '</strong></div>' : '') +
+                (branchChanged && targetBranchAddr ? '<div style="font-size:.85rem;color:#555;margin-bottom:4px;">Філія: <strong>' + streetName(targetBranchAddr) + '</strong></div>' : '') +
                 '<div style="font-size:.85rem;color:#555;margin-bottom:18px;">Час: <strong>' + fmtMin(newStartMin) + ' – ' + fmtMin(newStartMin + a.duration_min) + '</strong></div>' +
                 '<div class="modal-foot">' +
                 '<button id="dragConfirmBtn" class="btn btn-primary">Перенести</button>' +
@@ -2188,14 +2205,16 @@
               );
               document.getElementById("dragCancelBtn").addEventListener("click", closeModal);
               document.getElementById("dragConfirmBtn").addEventListener("click", function() {
-                api("PATCH", "/api/crm/appointments/" + a.id, { master: parseInt(targetId, 10), date: apptDate, start_min: newStartMin })
+                var payload = { master: parseInt(targetId, 10), date: apptDate, start_min: newStartMin };
+                if (targetBranchId != null) payload.branch = targetBranchId;
+                api("PATCH", "/api/crm/appointments/" + a.id, payload)
                   .then(function(r) { closeModal(); if (r.j && r.j.ok) loadCalendar(activeMasterFilter, { zoomOnly: true }); });
               });
             });
 
             block.addEventListener("touchcancel", function() {
               finishBlockDrag();
-              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetStartMin: null };
+              dragState = { active: false, ghost: null, dropZone: null, apptId: null, targetMasterId: null, targetMasterName: null, targetBranchId: null, targetStartMin: null };
             });
 
             block.addEventListener("click", function(e) {
@@ -3606,7 +3625,11 @@
         var b = allBranchesM.find(function(bb) { return bb.id === bid; });
         sel2.appendChild(new Option(b ? (b.address || b.name) : ("Філія #" + bid), bid));
       });
-      sel2.value = ids.indexOf(parseInt(prevVal, 10)) !== -1 ? prevVal : "";
+      // При першому рендері (prevVal ще порожній) підставляємо філію,
+      // з якої відкрили "+ Новий запис" (клік у розділеній колонці) —
+      // далі, якщо власник уже щось обрав сам, її не перебиваємо.
+      var wantBranch = prevVal || (prefill.branchId != null ? String(prefill.branchId) : "");
+      sel2.value = ids.indexOf(parseInt(wantBranch, 10)) !== -1 ? wantBranch : "";
       row.style.display = "";
     }
 
