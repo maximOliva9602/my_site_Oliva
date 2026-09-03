@@ -1402,6 +1402,37 @@
         dayScheds.forEach(function(s) { noteBranch(s.master_id, s.branch_id); });
         dayOvs.forEach(function(ov) { if (!ov.is_off) noteBranch(ov.master_id, ov.branch_id); });
 
+        /* Старі записи (зроблені до фіксу, який почав зберігати branch_id)
+           не мають філії в базі. Замість змушувати власника вручну
+           виправляти кожен — вгадуємо за часом: якщо в майстра того дня
+           справді дві філії з РІЗНИМИ віконцями роботи (ранок в одній,
+           день в іншій — типовий випадок), і час запису вкладається рівно
+           в одне з них, це і є та філія. Лише для показу в Розкладі, у
+           БД нічого не пишемо — якщо непереконливо (0 або 2+ збігів),
+           лишаємо як є (без філії), а не гадаємо навмання. */
+        var branchWindowsByMaster = {};
+        function noteWindow(masterId, branchId, ws, we) {
+          if (!branchId || ws == null || we == null) return;
+          (branchWindowsByMaster[masterId] || (branchWindowsByMaster[masterId] = [])).push({ id: branchId, ws: ws, we: we });
+        }
+        dayScheds.forEach(function(s) { noteWindow(s.master_id, s.branch_id, s.work_start, s.work_end); });
+        dayOvs.forEach(function(ov) { if (!ov.is_off) noteWindow(ov.master_id, ov.branch_id, ov.work_start, ov.work_end); });
+        function inferBranch(a) {
+          var wins = branchWindowsByMaster[a.master_id];
+          if (!wins || wins.length < 2) return null;
+          var hitIds = [];
+          wins.forEach(function(w) {
+            if (a.start_min >= w.ws && a.start_min < w.we && hitIds.indexOf(w.id) === -1) hitIds.push(w.id);
+          });
+          return hitIds.length === 1 ? hitIds[0] : null;
+        }
+        var inferredApptIds = {};
+        appts.forEach(function(a) {
+          if (a.branch_id) return;
+          var b = inferBranch(a);
+          if (b) { a.branch_id = b; inferredApptIds[a.id] = true; }
+        });
+
         function streetName(addr) {
           var s = addr;
           // Якщо є "вул./вулиця" — беремо все, що після (включно з номером
@@ -1960,7 +1991,8 @@
                інакше зрозуміло й без мітки, куди записаний клієнт, і вона
                була б просто шумом. */
             if (heightPx >= 34 && a.branch_id && (masterApptBranches[a.master_id] || []).length > 1 && branchAddrById[a.branch_id]) {
-              html += '<div style="display:inline-block;margin-top:1px;background:rgba(255,255,255,.22);color:#fff;font-size:.6rem;font-weight:600;padding:1px 5px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">📍 ' + streetName(branchAddrById[a.branch_id]) + '</div>';
+              var inferredTitle = inferredApptIds[a.id] ? ' title="Філію визначено автоматично за графіком майстра — запис зроблений до збереження філії напряму"' : '';
+              html += '<div' + inferredTitle + ' style="display:inline-block;margin-top:1px;background:rgba(255,255,255,.22);color:#fff;font-size:.6rem;font-weight:600;padding:1px 5px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">📍 ' + (inferredApptIds[a.id] ? '~' : '') + streetName(branchAddrById[a.branch_id]) + '</div>';
             }
             if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
             /* Просто номер цього візиту в абонементі: 5/10. sub_index для
