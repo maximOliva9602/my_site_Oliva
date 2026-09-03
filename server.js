@@ -32,6 +32,14 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "oliva-admin";
 const IS_PROD = process.env.NODE_ENV === "production";
+/* Railway не гарантує користувацьку NODE_ENV у списку Variables, зате
+   завжди додає службові RAILWAY_* змінні. Для мережевих інтеграцій
+   розпізнаємо обидва варіанти, не послаблюючи локальне середовище. */
+const IS_RAILWAY = !!(
+  process.env.RAILWAY_ENVIRONMENT_ID ||
+  process.env.RAILWAY_ENVIRONMENT_NAME ||
+  process.env.RAILWAY_PROJECT_ID
+);
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 const OWNER_VIBER_PHONE = process.env.OWNER_VIBER_PHONE || "";
@@ -926,10 +934,10 @@ app.get("*", function (req, res) {
    Раніше це була ручна curl-команда, і поки її не виконали, Telegram
    складав апдейти в чергу й прив'язка майстрів мовчки не працювала.
    Виклик ідемпотентний, тож просто робимо його на кожному старті.
-   ЛИШЕ в проді: інакше локальний сервер перевів би вебхук бойового бота
-   на localhost, і сповіщення зникли б у всіх. */
+   ЛИШЕ в проді/Railway: інакше локальний сервер перевів би вебхук
+   бойового бота на localhost, і сповіщення зникли б у всіх. */
 async function registerTelegramWebhook() {
-  if (!IS_PROD || !TG_TOKEN) return;
+  if ((!IS_PROD && !IS_RAILWAY) || !TG_TOKEN) return;
   /* Після перенесення домену в Railway могла лишитися стара SITE_URL.
      Telegram приймає її без перевірки доступності, але тоді всі /start
      ідуть на вже відключений домен і бот мовчить. Канонізуємо адресу так
