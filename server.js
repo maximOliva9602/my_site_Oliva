@@ -72,7 +72,10 @@ async function sendOwnerViberFallback(text) {
   if (!OWNER_VIBER_PHONE) { console.warn("[review] OWNER_VIBER_PHONE не задано — Viber-фолбек пропущено."); return false; }
   try {
     const turbosms = require("./crm/drivers/turbosms");
-    await turbosms.sendMessage({ phone: OWNER_VIBER_PHONE, text: text, transactional: true });
+    const tz = require("./crm/tz");
+    // normPhone: дозволяє задати номер у будь-якому форматі (з пробілами,
+    // дужками, 0XX...) — та сама нормалізація, що й для номерів клієнтів.
+    await turbosms.sendMessage({ phone: tz.normPhone(OWNER_VIBER_PHONE), text: text, transactional: true });
     return true;
   } catch (e) {
     console.error("[review] Viber-фолбек не вдався:", e.message);
