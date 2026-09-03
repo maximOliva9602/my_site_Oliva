@@ -13,7 +13,8 @@ const tz = require("./tz");
 
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TG_BOT_USERNAME = String(process.env.TELEGRAM_BOT_USERNAME || "Oliva_menedger_bot").replace(/^@/, "");
-const SITE_URL = String(process.env.SITE_URL || "https://massage-oliva.com").replace(/\/+$/, "");
+const SITE_URL = String(process.env.SITE_URL || "https://massage-oliva.com")
+  .replace("massage-solomyanskyi.com.ua", "massage-oliva.com").replace(/\/+$/, "");
 const LINK_TTL_MS = 24 * 60 * 60 * 1000;
 const MESSAGE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_ATTEMPTS = 5;

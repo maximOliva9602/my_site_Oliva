@@ -930,7 +930,12 @@ app.get("*", function (req, res) {
    на localhost, і сповіщення зникли б у всіх. */
 async function registerTelegramWebhook() {
   if (!IS_PROD || !TG_TOKEN) return;
-  const base = String(process.env.SITE_URL || PRIMARY_SITE_URL).replace(/\/+$/, "");
+  /* Після перенесення домену в Railway могла лишитися стара SITE_URL.
+     Telegram приймає її без перевірки доступності, але тоді всі /start
+     ідуть на вже відключений домен і бот мовчить. Канонізуємо адресу так
+     само, як для посилань адмін-чату вище. */
+  const base = String(process.env.SITE_URL || PRIMARY_SITE_URL)
+    .replace(LEGACY_SITE_HOST, "massage-oliva.com").replace(/\/+$/, "");
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
   if (!secret) {
     console.warn("[telegram] TELEGRAM_WEBHOOK_SECRET не задано — вебхук реєструється без підпису.");

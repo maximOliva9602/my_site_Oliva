@@ -14,7 +14,8 @@ const STUDIO_ADDRESS = process.env.STUDIO_ADDRESS || "м. Київ, вул. Бо
    кожен зайвий символ наближає текст до межі 70 символів (2-га частина =
    подвійна ціна). Тому стискаємо незалежно від того, як записано в env. */
 const STUDIO_PHONE = (process.env.STUDIO_PHONE || "+380974340112").replace(/[^\d+]/g, "");
-const SITE_URL = String(process.env.SITE_URL || "https://massage-oliva.com").replace(/\/+$/, "");
+const SITE_URL = String(process.env.SITE_URL || "https://massage-oliva.com")
+  .replace("massage-solomyanskyi.com.ua", "massage-oliva.com").replace(/\/+$/, "");
 
 let driver;
 try {
