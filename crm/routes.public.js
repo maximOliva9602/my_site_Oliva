@@ -402,14 +402,23 @@ router.post("/book", function (req, res) {
 router.get("/booking/:publicId", function (req, res) {
   const v = db.prepare(
     `SELECT a.public_id, a.date, a.start_min, a.status, a.duration_min,
-            s.name AS service, m.name AS master
+            s.name AS service, m.name AS master,
+            CASE WHEN c.tg_chat_id IS NOT NULL THEN 1 ELSE 0 END AS telegram_connected
        FROM appointments a
+       JOIN clients  c ON c.id = a.client_id
        JOIN services s ON s.id = a.service_id
        JOIN masters  m ON m.id = a.master_id
       WHERE a.public_id = ?`
   ).get(clean(req.params.publicId, 40));
   if (!v) return res.status(404).json({ ok: false });
-  res.json({ ok: true, booking: { ...v, time: tz.fmtMin(v.start_min) } });
+  res.json({
+    ok: true,
+    booking: {
+      ...v,
+      telegram_connected: !!v.telegram_connected,
+      time: tz.fmtMin(v.start_min),
+    },
+  });
 });
 
 module.exports = router;

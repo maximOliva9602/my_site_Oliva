@@ -2045,6 +2045,46 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   }
 
   // Бронювання
+  var telegramStatusTimer = null;
+  var bookedPublicId = null;
+
+  function showTelegramConnected() {
+    var tgBtn = $("doneTelegramBtn"), tgOk = $("doneTelegramOk");
+    tgBtn.classList.add("hide");
+    tgOk.classList.remove("hide");
+    if (telegramStatusTimer) {
+      clearInterval(telegramStatusTimer);
+      telegramStatusTimer = null;
+    }
+  }
+
+  function checkTelegramConnected() {
+    if (!bookedPublicId) return;
+    fetch("/api/public/booking/" + encodeURIComponent(bookedPublicId), { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.ok && j.booking && j.booking.telegram_connected) showTelegramConnected();
+      }).catch(function () {});
+  }
+
+  function watchTelegramConnection() {
+    checkTelegramConnected();
+    if (telegramStatusTimer) clearInterval(telegramStatusTimer);
+    telegramStatusTimer = setInterval(checkTelegramConnected, 1500);
+    setTimeout(function () {
+      if (telegramStatusTimer) {
+        clearInterval(telegramStatusTimer);
+        telegramStatusTimer = null;
+      }
+    }, 2 * 60 * 1000);
+  }
+
+  $("doneTelegramBtn").addEventListener("click", watchTelegramConnection);
+  window.addEventListener("focus", checkTelegramConnected);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) checkTelegramConnected();
+  });
+
   $("bookBtn").addEventListener("click", function() {
     var name = $("nameInput").value.trim(), phone = $("phoneInput").value.trim();
     var err = $("bookErr"); err.textContent = "";
@@ -2060,6 +2100,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         btn.disabled = false; btn.textContent = tr("Підтвердити запис");
         if (res.code === 409) { err.textContent = tr("Це віконце щойно зайняли. Оберіть інший час."); setTimeout(function() { renderDateStep(); goStep(5); }, 1000); return; }
         if (!res.j.ok) { err.textContent = tr("Помилка. Спробуйте ще раз."); return; }
+        bookedPublicId = res.j.public_id || null;
         var p = parseName(state.service.name);
         var h = Math.floor(state.start_min/60), m = state.start_min%60;
         $("doneText").innerHTML = "<b>" + tr(p.cat) + "</b> · " + state.master.name + "<br>" + state.date.split("-").reverse().slice(0,2).join(".") + ", " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
@@ -2069,6 +2110,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
            перевірки: вона оновить застарілий chat_id через того самого бота. */
         tgBtn.classList.toggle("hide", !res.j.telegram_url);
         tgOk.classList.toggle("hide", !res.j.telegram_connected);
+        if (res.j.telegram_connected) showTelegramConnected();
         if (res.j.telegram_url) {
           tgBtn.href = res.j.telegram_url;
           var tgBtnText = $("doneTelegramBtnText");
