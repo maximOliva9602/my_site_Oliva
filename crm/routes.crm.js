@@ -140,89 +140,17 @@ function viewAppt(a) {
     }
     out.is_new_client = isNew;
   }
-  // Абонемент клієнта за цією послугою (для позначки «по абонементу» + лічильника в календарі)
-  try {
-    /* Скасований візит і неявка сеанс не займають — не даємо їм номера,
-       інакше поруч із наступним активним записом світився б той самий. */
-    if (a.status === "cancelled" || a.status === "no_show") return out;
-    /* Завершений візит, за яким сеанс НЕ списувався (був до оформлення
-       абонемента або вже після його вичерпання), теж не нумеруємо. */
-    if (a.status === "completed" && !a.subscription_used) return out;
-    const svcIds = subServiceIds(a.service_id);
-    const sub = db.prepare(
-      `SELECT id, used_sessions, total_sessions, created_at FROM subscriptions
-        WHERE client_id=? AND service_id IN (${inList(svcIds.length)})
-        ORDER BY (used_sessions < total_sessions) DESC, id DESC LIMIT 1`
-    ).get(a.client_id, ...svcIds);
-    if (sub) {
-      /* Номер сеансу рахуємо ЗА ХРОНОЛОГІЄЮ візитів, а не за порядком, у
-         якому їх позначали «Завершено».
-
-         Раніше було два різні механізми: завершеним візитам номер
-         ЗАМОРОЖУВАВСЯ (used_sessions+1 у момент завершення), а незавершеним
-         рахувався від дати. Щойно візит завершували не по порядку (напр.
-         спершу клацнули той, що 27-го, а запис на 25-те ще висів
-         підтвердженим), нумерація перекидалась: ранішому візиту діставався
-         БІЛЬШИЙ номер (25-те → 3/5, 27-ме → 2/5). Ті самі заморожені номери
-         могли й дублюватись: при знятті «Завершено» лічильник відкочувався,
-         а номери інших візитів лишались старими.
-
-         Тепер номер — це просто позиція візиту в часі серед візитів, які
-         абонемент покриває, тож він завжди узгоджений, без дублів і
-         сам виправляється після скасування чи перенесення. */
-
-      /* Візит "покритий" абонементом, якщо сеанс за ним уже списано
-         (subscription_used=1) або він ще попереду (pending/confirmed).
-         Скасовані, неявки та завершені ДО оформлення абонемента (за ними
-         нічого не списувалось) у нумерацію не потрапляють.
-
-         Але pending/confirmed сам собою не доказ зв'язку з АБОНЕМЕНТОМ —
-         це може бути стара зависла pending-бронь тієї ж послуги, заведена
-         ще ДО того, як абонемент оформили (напр. онлайн-запис, який ніхто
-         не підтвердив і не скасував). Така бронь не мала жодного стосунку
-         до абонемента, але рахувалась "попередньою" й зсувала нумерацію
-         наступних сеансів на 1 (сеанс 1/10 показувало як 2/10). Тому
-         pending/confirmed рахуємо покритими лише від моменту створення
-         абонемента — раніші такі візити ігноруємо. */
-      const subCreatedWall = tz.nowKyiv(null, sub.created_at);
-      const COVERED = `(a2.subscription_used = 1 OR (a2.status IN ('pending','confirmed') AND (a2.date > ? OR (a2.date = ? AND a2.start_min >= ?))))`;
-
-      /* Скільки сеансів списано без прив'язки до візиту — кнопкою
-         «✓ Списати сеанс» на картці клієнта або перенесено зі старого
-         абонемента (used_sessions на старті). Такі сеанси реальних записів
-         не мають, тож зсувають нумерацію решти. */
-      const withAppt = db.prepare(
-        `SELECT COUNT(*) c FROM appointments a2
-          WHERE a2.client_id=? AND a2.service_id IN (${inList(svcIds.length)})
-            AND a2.subscription_used = 1`
-      ).get(a.client_id, ...svcIds).c;
-      const phantom = Math.max(0, sub.used_sessions - withAppt);
-
-      /* Позиція цього візиту серед покритих — строго за датою/часом,
-         id як стабільний тайбрейкер для двох записів в одну хвилину. */
-      const before = db.prepare(
-        `SELECT COUNT(*) c FROM appointments a2
-          WHERE a2.client_id=? AND a2.service_id IN (${inList(svcIds.length)})
-            AND ${COVERED} AND a2.id <> ?
-            AND (a2.date < ?
-              OR (a2.date = ? AND a2.start_min < ?)
-              OR (a2.date = ? AND a2.start_min = ? AND a2.id < ?))`
-      ).get(
-        a.client_id, ...svcIds,
-        subCreatedWall.date, subCreatedWall.date, subCreatedWall.min,
-        a.id, a.date, a.date, a.start_min, a.date, a.start_min, a.id
-      ).c;
-
-      const subIndex = phantom + before + 1;
-      /* Візити понад обсяг абонемента (6-й із 5) до нього не належать —
-         номера не показуємо взагалі, щоб не було «сеанс 6 з 5». */
-      if (subIndex <= sub.total_sessions) {
-        out.sub_used = sub.used_sessions;
-        out.sub_total = sub.total_sessions;
-        out.sub_index = subIndex;
-      }
-    }
-  } catch (e) { /* абонементів може не бути */ }
+  /* Номер сеансу в абонементі — раніше рахувався автоматично (хронологія
+     покритих візитів), але евристика раз у раз давала збій на нетипових
+     випадках (стара зависла pending-бронь тощо) і плутала номери. Власник
+     попросив натомість просто показувати те, що ЗБЕРЕЖЕНО на записі
+     (subscription_session_no/_total) — його виставляє автоматика в момент
+     списання сеансу (як розумний дефолт), а персонал може вручну
+     виправити через PATCH /appointments/:id, якщо номер все ж не той. */
+  if (a.status !== "cancelled" && a.status !== "no_show" && a.subscription_used && a.subscription_session_no) {
+    out.sub_index = a.subscription_session_no;
+    out.sub_total = a.subscription_session_total;
+  }
   return out;
 }
 
@@ -731,6 +659,19 @@ router.patch("/appointments/:id", any, function (req, res) {
       db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
       db.prepare("UPDATE appointments SET subscription_used=1, subscription_session_no=?, subscription_session_total=? WHERE id=?")
         .run(sub.used_sessions + 1, sub.total_sessions, id);
+    }
+  }
+
+  /* Ручне виправлення номера сеансу в абонементі — автоматика виставляє
+     розумний дефолт у момент списання, але персонал міг помітити
+     розбіжність (напр. клієнт насправді пропустив один сеанс поза
+     записом) і виправляє номер прямо на картці візиту. Лише для візитів,
+     уже прив'язаних до абонемента — щоб не плодити номер там, де його
+     взагалі не мало бути. */
+  if (d.subscription_session_no !== undefined && (a.subscription_used || d.subscription_used === true)) {
+    const n = parseInt(d.subscription_session_no, 10);
+    if (n >= 1) {
+      db.prepare("UPDATE appointments SET subscription_session_no=? WHERE id=?").run(n, id);
     }
   }
 

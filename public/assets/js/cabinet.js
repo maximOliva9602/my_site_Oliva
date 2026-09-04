@@ -2463,15 +2463,37 @@
              поза абонементом. */
           var idx = a.sub_index;
           var covered = idx != null;
-          /* Показуємо тільки те, який це візит з якої кількості. Рядок про
-             «спишеться при завершенні / зараз списано» прибрано — власнику
-             важливий номер сеансу, а не стан внутрішнього лічильника. */
-          var head = covered
-            ? "Абонемент: сеанс " + idx + " з " + total
-            : (rem > 0 ? "Цей візит не за абонементом" : "Абонемент вичерпано");
-          box.innerHTML = '<div style="margin-top:10px;background:' + (covered?"#e8f5e9":"#fde8e8") + ';border:1px solid ' + (covered?"#a5d6a7":"#ef9a9a") + ';border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;">' +
-            '<span>🎟</span>' +
-            '<div style="font-weight:600;color:' + (covered?"#2e7d32":"#c04040") + ';">' + head + '</div></div>';
+          /* Номер сеансу — це збережене на записі значення, яке
+             автоматика виставляє дефолтом у момент списання. Персонал
+             може виправити його вручну прямо тут (номер часом розходиться
+             з реальністю — напр. клієнт відвідав ще один сеанс поза
+             записом), не заходячи в повне редагування запису. */
+          if (covered) {
+            box.innerHTML = '<div style="margin-top:10px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;flex-wrap:wrap;">' +
+              '<span>🎟</span>' +
+              '<div style="font-weight:600;color:#2e7d32;display:flex;align-items:center;gap:5px;">Абонемент: сеанс' +
+                '<input id="dSubIdxInput" type="number" min="1" max="' + total + '" value="' + idx + '" style="width:44px;padding:2px 4px;border:1px solid #a5d6a7;border-radius:5px;font-weight:600;color:#2e7d32;text-align:center;">' +
+                'з ' + total +
+              '</div>' +
+              '<button id="dSubIdxSave" type="button" style="display:none;background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:.76rem;font-weight:600;cursor:pointer;">Зберегти</button>' +
+              '</div>';
+            var input = $("dSubIdxInput"), saveBtn = $("dSubIdxSave");
+            input.addEventListener("input", function() { saveBtn.style.display = (parseInt(input.value, 10) !== idx) ? "inline-block" : "none"; });
+            saveBtn.addEventListener("click", function() {
+              var n = parseInt(input.value, 10);
+              if (!(n >= 1)) return;
+              saveBtn.disabled = true;
+              api("PATCH", "/api/crm/appointments/" + a.id, { subscription_session_no: n }).then(function(r) {
+                saveBtn.disabled = false;
+                if (r.j && r.j.ok) { idx = n; a.sub_index = n; saveBtn.style.display = "none"; }
+              });
+            });
+          } else {
+            var head = rem > 0 ? "Цей візит не за абонементом" : "Абонемент вичерпано";
+            box.innerHTML = '<div style="margin-top:10px;background:#fde8e8;border:1px solid #ef9a9a;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:.82rem;">' +
+              '<span>🎟</span>' +
+              '<div style="font-weight:600;color:#c04040;">' + head + '</div></div>';
+          }
         }
       });
     }
