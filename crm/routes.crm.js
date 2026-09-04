@@ -174,8 +174,18 @@ function viewAppt(a) {
       /* Візит "покритий" абонементом, якщо сеанс за ним уже списано
          (subscription_used=1) або він ще попереду (pending/confirmed).
          Скасовані, неявки та завершені ДО оформлення абонемента (за ними
-         нічого не списувалось) у нумерацію не потрапляють. */
-      const COVERED = `(a2.subscription_used = 1 OR a2.status IN ('pending','confirmed'))`;
+         нічого не списувалось) у нумерацію не потрапляють.
+
+         Але pending/confirmed сам собою не доказ зв'язку з АБОНЕМЕНТОМ —
+         це може бути стара зависла pending-бронь тієї ж послуги, заведена
+         ще ДО того, як абонемент оформили (напр. онлайн-запис, який ніхто
+         не підтвердив і не скасував). Така бронь не мала жодного стосунку
+         до абонемента, але рахувалась "попередньою" й зсувала нумерацію
+         наступних сеансів на 1 (сеанс 1/10 показувало як 2/10). Тому
+         pending/confirmed рахуємо покритими лише від моменту створення
+         абонемента — раніші такі візити ігноруємо. */
+      const subCreatedWall = tz.nowKyiv(null, sub.created_at);
+      const COVERED = `(a2.subscription_used = 1 OR (a2.status IN ('pending','confirmed') AND (a2.date > ? OR (a2.date = ? AND a2.start_min >= ?))))`;
 
       /* Скільки сеансів списано без прив'язки до візиту — кнопкою
          «✓ Списати сеанс» на картці клієнта або перенесено зі старого
@@ -197,7 +207,11 @@ function viewAppt(a) {
             AND (a2.date < ?
               OR (a2.date = ? AND a2.start_min < ?)
               OR (a2.date = ? AND a2.start_min = ? AND a2.id < ?))`
-      ).get(a.client_id, ...svcIds, a.id, a.date, a.date, a.start_min, a.date, a.start_min, a.id).c;
+      ).get(
+        a.client_id, ...svcIds,
+        subCreatedWall.date, subCreatedWall.date, subCreatedWall.min,
+        a.id, a.date, a.date, a.start_min, a.date, a.start_min, a.id
+      ).c;
 
       const subIndex = phantom + before + 1;
       /* Візити понад обсяг абонемента (6-й із 5) до нього не належать —
