@@ -12,7 +12,10 @@ const db = require("./db");
 const tz = require("./tz");
 
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
-const TG_BOT_USERNAME = String(process.env.TELEGRAM_BOT_USERNAME || "Oliva_menedger_bot").replace(/^@/, "");
+/* У профілі Telegram великим текстом показується display name
+   "Oliva_menedger_bot", але посилання t.me будується лише зі справжнього
+   username, вказаного нижче в профілі: @oliva_massage_bot. */
+const TG_BOT_USERNAME = String(process.env.TELEGRAM_BOT_USERNAME || "oliva_massage_bot").replace(/^@/, "");
 const SITE_URL = String(process.env.SITE_URL || "https://massage-oliva.com")
   .replace("massage-solomyanskyi.com.ua", "massage-oliva.com").replace(/\/+$/, "");
 const LINK_TTL_MS = 24 * 60 * 60 * 1000;

@@ -1510,7 +1510,7 @@ router.post("/clients/import", owner, function (req, res) {
    Юзернейм бота — не секрет (він і так видимий у посиланні t.me/…), тому
    тримаємо робоче значення тут: інакше фіча мовчки не працює, доки хтось
    не додасть змінну на Railway. Змінною можна перевизначити. */
-const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || "Oliva_menedger_bot";
+const TG_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || "oliva_massage_bot";
 function tgTargetMaster(req) {
   if (req.session.role === "owner") {
     const id = parseInt(req.query.master || req.body.master, 10);
