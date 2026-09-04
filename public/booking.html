@@ -705,7 +705,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <p class="done-tg-copy" id="doneTelegramCopy" data-i18n="book.tg.copy">Підключіть Telegram один раз — після завершення масажу ми надішлемо персональне посилання для відгуку.</p>
       <a class="done-tg-btn hide" id="doneTelegramBtn" href="#" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.56 7.1-1.97 9.29c-.15.66-.54.82-1.09.51l-3-2.21-1.45 1.4c-.16.16-.3.3-.61.3l.21-3.05 5.56-5.02c.24-.21-.05-.33-.37-.12l-6.87 4.33-2.96-.92c-.64-.2-.66-.64.14-.95l11.57-4.46c.54-.19 1.01.13.84.9z"/></svg>
-        <span data-i18n="book.tg.button">Підключити Telegram</span>
+        <span id="doneTelegramBtnText" data-i18n="book.tg.button">Підключити Telegram</span>
       </a>
       <div class="done-tg-ok hide" id="doneTelegramOk" data-i18n="book.tg.connected">✓ Telegram уже підключено. Повідомлення прийде сюди після завершення візиту.</div>
     </div>
@@ -1059,6 +1059,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     /* Картка філії. Довші фрази — першими, бо заміна послідовна
        (інакше "Студія масажу" зʼїла б частину "Кабінет студії масажу"). */
     ["Кабінет студії масажу", "Massage studio room"],
+    ["Перепідключити Telegram", "Reconnect Telegram"],
+    ["Підключити Telegram", "Connect Telegram"],
     ["Переглянути на карті", "View on map"],
     ["Обрати цю філію", "Choose this location"],
     ["Студія масажу", "Massage studio"],
@@ -2063,9 +2065,17 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         $("doneText").innerHTML = "<b>" + tr(p.cat) + "</b> · " + state.master.name + "<br>" + state.date.split("-").reverse().slice(0,2).join(".") + ", " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
         var tgCard = $("doneTelegramCard"), tgBtn = $("doneTelegramBtn"), tgOk = $("doneTelegramOk");
         tgCard.classList.toggle("hide", !res.j.telegram_url && !res.j.telegram_connected);
-        tgBtn.classList.toggle("hide", !res.j.telegram_url || res.j.telegram_connected);
+        /* Навіть для вже підключеного клієнта лишаємо кнопку повторної
+           перевірки: вона оновить застарілий chat_id через того самого бота. */
+        tgBtn.classList.toggle("hide", !res.j.telegram_url);
         tgOk.classList.toggle("hide", !res.j.telegram_connected);
-        if (res.j.telegram_url) tgBtn.href = res.j.telegram_url;
+        if (res.j.telegram_url) {
+          tgBtn.href = res.j.telegram_url;
+          var tgBtnText = $("doneTelegramBtnText");
+          tgBtnText.textContent = res.j.telegram_connected
+            ? tr("Перепідключити Telegram")
+            : tr("Підключити Telegram");
+        }
         buildCalendar();
         goStep("done");
       }).catch(function() { btn.disabled = false; btn.textContent = tr("Підтвердити запис"); err.textContent = tr("Помилка з'єднання."); });

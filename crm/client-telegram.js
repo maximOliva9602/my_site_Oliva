@@ -24,7 +24,6 @@ function createLink(clientId) {
     "SELECT id, tg_chat_id, tg_link_code, tg_code_expires FROM clients WHERE id=?"
   ).get(clientId);
   if (!client) return null;
-  if (client.tg_chat_id) return { connected: true, url: null };
 
   const now = Date.now();
   let code = client.tg_link_code;
@@ -34,7 +33,7 @@ function createLink(clientId) {
       .run(code, now + LINK_TTL_MS, client.id);
   }
   return {
-    connected: false,
+    connected: !!client.tg_chat_id,
     url: TG_BOT_USERNAME ? `https://t.me/${TG_BOT_USERNAME}?start=${code}` : null,
   };
 }
@@ -47,9 +46,10 @@ function linkClient(code, chatId) {
   if (!client) return null;
 
   const tx = db.transaction(function () {
-    /* Один Telegram-чат відповідає одній картці клієнта. Наявну прив'язку
-       самого клієнта не можна перехопити іншим кодом: createLink() не видає
-       новий код уже підключеній картці. */
+    /* Один Telegram-чат відповідає одній картці клієнта. Повторний код
+       навмисно дозволений: після заміни токена бота або старого chat_id
+       клієнт може без звернення до адміністратора перевірити прив'язку й
+       перезаписати її актуальним Telegram-акаунтом. */
     db.prepare(
       "UPDATE clients SET tg_chat_id=NULL, tg_linked_at=NULL WHERE tg_chat_id=? AND id<>?"
     ).run(String(chatId), client.id);
