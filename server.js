@@ -529,10 +529,21 @@ app.get("/review", function (req, res) {
    BLOG
    Статті зберігаються в SQLite (та сама DB що і CRM) — на Railway Volume.
    ============================================================ */
+/* Мапа кирилиця -> латиниця для читабельних URL. Раніше тут два масиви
+   ('аáбвгд...'.split('') і 'aabvgd...'.split('')) зіставлялись по індексу,
+   але split('') розбиває багатобуквені заміни ("zh", "ch", "shch") на
+   окремі символи — індекси з'їжджали, і slug виходив нечитабельним сміттям
+   (напр. "zagalno-ozdorovchiy-masazh" ставало "zagayhlm-mzdmomvhhz-kapae").
+   Об'єкт-словник із рядковими значеннями цієї проблеми не має. */
+var CYRILLIC_TO_LATIN = {
+  а:'a', б:'b', в:'v', г:'h', ґ:'g', д:'d', е:'e', є:'ie', ж:'zh', з:'z',
+  и:'y', і:'i', ї:'i', й:'i', к:'k', л:'l', м:'m', н:'n', о:'o', п:'p',
+  р:'r', с:'s', т:'t', у:'u', ф:'f', х:'kh', ц:'ts', ч:'ch', ш:'sh',
+  щ:'shch', ъ:'', ы:'y', ь:'', э:'e', ю:'iu', я:'ia', ё:'e'
+};
 function slugify(text) {
   return text.toLowerCase()
-    .replace(/[іїєґ]/g, function(c){ return {і:'i',ї:'i',є:'e',ґ:'g'}[c]||c; })
-    .replace(/[а-яёА-ЯЁ]/g, function(c){ var m='аáбвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'.split('');var t='aabvgdeyezhziyklmnoprstufhcchshschyieya'.split('');var i=m.indexOf(c);return i>=0?t[i]||'':c;})
+    .replace(/[а-яёіїєґ]/g, function(c){ return CYRILLIC_TO_LATIN[c] != null ? CYRILLIC_TO_LATIN[c] : c; })
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
