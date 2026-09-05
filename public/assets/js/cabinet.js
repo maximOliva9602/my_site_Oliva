@@ -2392,7 +2392,7 @@
           '<a id="dAskViber" class="btn btn-ghost btn-sm" style="text-decoration:none;">💜 Viber</a>' +
           '<button class="btn btn-ghost btn-sm" id="dAskCopy" type="button">📋 Скопіювати текст</button>' +
         '</div>' +
-        '<div style="font-size:.7rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">Відкриє чат саме з цим клієнтом. У WhatsApp і Telegram текст підставиться сам (у Telegram — лише якщо клієнт дозволив пошук за номером), у Viber — вставте скопійований.</div>' +
+        '<div style="font-size:.7rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">Відкриє чат саме з цим клієнтом. У WhatsApp текст підставиться сам; у Telegram і Viber текст одразу копіюється в буфер — лишається вставити (Ctrl/Cmd+V).</div>' +
         '<textarea id="dAskManual" readonly rows="3" style="display:none;width:100%;margin-top:6px;font-size:.78rem;"></textarea>' +
       '</div>';
     }
@@ -2435,53 +2435,66 @@
          вдалося знайти користувача", без жодної шкоди чи помилки для нас. */
       var tgLink = $("dAskTg");
       if (tgLink) tgLink.href = "https://t.me/+" + reviewPhone + "?text=" + encodeURIComponent(reviewMsg);
-      /* Viber своїм deep-link'ом текст не підставляє (на відміну від
-         wa.me) — відкриваємо чат із номером, текст персонал вставляє
-         кнопкою «Скопіювати». */
+      /* navigator.clipboard є не всюди (стара вебв'ю, PWA без фокусу,
+         http-контекст) і мовчки відхиляється — тоді копіюємо старим
+         execCommand через тимчасовий textarea, інакше текст просто не
+         потрапляв би в буфер без жодного попередження. */
+      function copyReviewMsg() {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(reviewMsg);
+        }
+        return Promise.reject(new Error("no clipboard api"));
+      }
+      function copyFallback() {
+        var ta = document.createElement("textarea");
+        ta.value = reviewMsg;
+        ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        ta.remove();
+        return ok;
+      }
+      /* Якщо жоден зі способів не спрацював — показуємо сам текст готовим
+         до виділення, замість того щоб персонал лишився без тексту, який
+         саме й треба вставити в чат. */
+      function showManualFallback() {
+        var manual = $("dAskManual");
+        if (manual) {
+          manual.style.display = "block";
+          manual.value = reviewMsg;
+          manual.focus(); manual.select();
+        }
+      }
+      /* Viber і Telegram-web не завжди підставляють текст самі (Telegram —
+         лише якщо клієнт дозволив пошук за номером; Viber — узагалі не
+         вміє через deep-link) — тому перед відкриттям чату одразу копіюємо
+         текст у буфер, щоб персоналу залишилось тільки Cmd/Ctrl+V, без
+         окремого натискання «Скопіювати». */
+      function copySilently() {
+        copyReviewMsg().catch(function() { if (!copyFallback()) showManualFallback(); });
+      }
       var vbLink = $("dAskViber");
-      if (vbLink) vbLink.href = "viber://chat?number=" + encodeURIComponent("+" + reviewPhone);
+      if (vbLink) {
+        vbLink.href = "viber://chat?number=" + encodeURIComponent("+" + reviewPhone);
+        vbLink.addEventListener("click", copySilently);
+      }
+      if (tgLink) tgLink.addEventListener("click", copySilently);
       var copyBtn = $("dAskCopy");
       if (copyBtn) {
-        /* navigator.clipboard є не всюди (стара вебв'ю, PWA без фокусу,
-           http-контекст) і мовчки відхиляється — тоді копіюємо старим
-           execCommand через тимчасовий textarea, інакше кнопка виглядала б
-           робочою, а текст у буфер не потрапляв. */
-        function copyReviewMsg() {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            return navigator.clipboard.writeText(reviewMsg);
-          }
-          return Promise.reject(new Error("no clipboard api"));
-        }
-        function copyFallback() {
-          var ta = document.createElement("textarea");
-          ta.value = reviewMsg;
-          ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
-          document.body.appendChild(ta);
-          ta.focus(); ta.select();
-          var ok = false;
-          try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
-          ta.remove();
-          return ok;
-        }
-        function copyDone(ok) {
-          copyBtn.textContent = ok ? "✓ Скопійовано" : "✕ Не вдалося";
-          setTimeout(function() { copyBtn.textContent = "📋 Скопіювати текст"; }, 1800);
-          /* Якщо жоден зі способів не спрацював — показуємо сам текст
-             готовим до виділення. Інакше персонал лишився б із кнопкою
-             «не вдалося» і без тексту, який саме й треба вставити у Viber. */
-          if (!ok) {
-            var manual = $("dAskManual");
-            if (manual) {
-              manual.style.display = "block";
-              manual.value = reviewMsg;
-              manual.focus(); manual.select();
-            }
-          }
-        }
         copyBtn.addEventListener("click", function() {
           copyReviewMsg()
-            .then(function() { copyDone(true); })
-            .catch(function() { copyDone(copyFallback()); });
+            .then(function() {
+              copyBtn.textContent = "✓ Скопійовано";
+              setTimeout(function() { copyBtn.textContent = "📋 Скопіювати текст"; }, 1800);
+            })
+            .catch(function() {
+              var ok = copyFallback();
+              copyBtn.textContent = ok ? "✓ Скопійовано" : "✕ Не вдалося";
+              setTimeout(function() { copyBtn.textContent = "📋 Скопіювати текст"; }, 1800);
+              if (!ok) showManualFallback();
+            });
         });
       }
     }
