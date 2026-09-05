@@ -80,11 +80,10 @@ function renderTemplate(kind, v) {
     return `Відміна запису. А ми так чекали вас :( До зустрічі!`;
   }
   if (kind === "review_request") {
-    /* Шаблон готовий (лінк на /google-review?m=<masterId> — сторінка сама
-       пропонує чайові, потім відгук), але власник ще тестує саму
-       сторінку і просив ПОКИ НЕ вмикати реальну розсилку клієнтам.
-       null = ставити в чергу, але текст не рендерити — SMS не піде.
-       Повернути рядок вище, коли будемо готові вмикати. */
+    /* Автоматичну чергу (queueNotification) досі не вмикаємо — лишається
+       null, щоб масова розсилка нікому не пішла без нагляду. Ручну
+       відправку (кнопки WhatsApp/Telegram/SMS у картці завершеного
+       візиту) обслуговує окрема reviewRequestText() нижче. */
     return null;
   }
   // reminder_24h / reminder_2h — обидва тайминги діляться ОДНИМ шаблоном.
@@ -262,9 +261,20 @@ function birthdayText() {
   return `З Днем народження! Чекаємо на вас.\n${STUDIO_PHONE}`;
 }
 
+/* Текст запиту на відгук — єдине джерело правди для всіх каналів
+   (WhatsApp/Telegram/Viber/SMS/«Скопіювати» у картці завершеного візиту):
+   власник редагує його один раз у CRM → Сповіщення, і зміна одразу
+   застосовується всюди. */
+function reviewRequestText(masterId) {
+  const link = `${SITE_URL}/google-review?m=${masterId}`;
+  const custom = customTemplate("review_request", { "{посилання}": link });
+  if (custom) return custom;
+  return `Дякуємо, що завітали до Oliva 💚 Будемо вдячні, якщо поділитесь враженнями: ${link}`;
+}
+
 module.exports = {
   driver, DRIVER_NAME, STUDIO_ADDRESS,
   apptView, renderTemplate, queueNotification,
   flushQueued, flushBroadcasts, recordStatus, pollStatuses, sendDirect,
-  birthdayText,
+  birthdayText, reviewRequestText,
 };

@@ -2390,9 +2390,10 @@
           '<a id="dAskWa" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">💬 WhatsApp</a>' +
           '<a id="dAskTg" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">✈️ Telegram</a>' +
           '<a id="dAskViber" class="btn btn-ghost btn-sm" style="text-decoration:none;">💜 Viber</a>' +
+          '<button class="btn btn-ghost btn-sm" id="dAskSms" type="button">📩 SMS</button>' +
           '<button class="btn btn-ghost btn-sm" id="dAskCopy" type="button">📋 Скопіювати текст</button>' +
         '</div>' +
-        '<div style="font-size:.7rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">Відкриє чат саме з цим клієнтом. У WhatsApp текст підставиться сам; у Telegram і Viber текст одразу копіюється в буфер — лишається вставити (Ctrl/Cmd+V).</div>' +
+        '<div style="font-size:.7rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">Відкриє чат саме з цим клієнтом. У WhatsApp текст підставиться сам; у Telegram і Viber текст одразу копіюється в буфер — лишається вставити (Ctrl/Cmd+V). «SMS» — надішле реальне платне повідомлення напряму, без месенджера. Текст можна змінити в CRM → Сповіщення.</div>' +
         '<textarea id="dAskManual" readonly rows="3" style="display:none;width:100%;margin-top:6px;font-size:.78rem;"></textarea>' +
       '</div>';
     }
@@ -2423,8 +2424,19 @@
     openModal(html);
 
     if (canAskReview) {
+      /* Текст-заготовка — рівно те, що поверне сервер, якщо власник ще
+         нічого не переписав у CRM → Сповіщення (crm/notify.js,
+         reviewRequestText). Підставляємо одразу, щоб кнопки не чекали
+         мережі, і тихо оновлюємо, якщо сервер поверне переписаний текст. */
       var reviewMsg = "Дякуємо, що завітали до Oliva 💚 Будемо вдячні, якщо поділитесь враженнями: " +
         location.origin + "/google-review?m=" + a.master_id;
+      api("GET", "/api/crm/appointments/" + a.id + "/review-text").then(function (r) {
+        if (r.j && r.j.ok && r.j.text) {
+          reviewMsg = r.j.text;
+          if (waLink) waLink.href = "https://wa.me/" + reviewPhone + "?text=" + encodeURIComponent(reviewMsg);
+          if (tgLink) tgLink.href = "https://t.me/+" + reviewPhone + "?text=" + encodeURIComponent(reviewMsg);
+        }
+      });
       var waLink = $("dAskWa");
       if (waLink) waLink.href = "https://wa.me/" + reviewPhone + "?text=" + encodeURIComponent(reviewMsg);
       /* Офіційна Telegram-схема "phone number links" (core.telegram.org/api/links):
@@ -2495,6 +2507,27 @@
               setTimeout(function() { copyBtn.textContent = "📋 Скопіювати текст"; }, 1800);
               if (!ok) showManualFallback();
             });
+        });
+      }
+      /* На відміну від WhatsApp/Telegram/Viber (click-to-chat: людина
+         сама тисне «Надіслати» у месенджері), ця кнопка одразу відправляє
+         реальну платну СМС через AlphaSMS/TurboSMS — без проміжного
+         підтвердження в іншому застосунку. Тому власне підтвердження. */
+      var smsBtn = $("dAskSms");
+      if (smsBtn) {
+        smsBtn.addEventListener("click", function () {
+          if (!confirm("Надіслати SMS із запитом відгуку клієнту " + a.client_name + "?")) return;
+          smsBtn.disabled = true;
+          smsBtn.textContent = "…";
+          api("POST", "/api/crm/appointments/" + a.id + "/ask-review-sms").then(function (r) {
+            if (r.j && r.j.ok) {
+              smsBtn.textContent = "✓ Надіслано";
+            } else {
+              smsBtn.disabled = false;
+              smsBtn.textContent = "📩 SMS";
+              alert("Не вдалося надіслати SMS: " + ((r.j && r.j.error) || "невідома помилка"));
+            }
+          });
         });
       }
     }
@@ -7612,6 +7645,27 @@
       "З Днем народження! Чекаємо на вас.\n{телефон студії}",
       "birthday", "{телефон студії}");
 
+    /* Запит на відгук — не автоматична розсилка (тому без чекбоксу-тригера,
+       на відміну від togRow вище): персонал сам тисне кнопку SMS/WhatsApp/
+       Telegram у картці завершеного візиту. Тут лише редагування ЄДИНОГО
+       тексту, який іде в усі ці канали (crm/notify.js, reviewRequestText). */
+    var reviewRow = el("div", "");
+    reviewRow.style.cssText = "border-top:1px solid var(--line);padding:10px 0 12px;";
+    reviewRow.innerHTML = '<div style="font-size:.9rem;font-weight:600;color:var(--cream);">⭐ Запит на відгук</div>' +
+      '<div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">Персонал надсилає вручну (кнопки WhatsApp/Telegram/Viber/SMS у картці завершеного візиту) — тут лише текст, спільний для всіх цих кнопок</div>';
+    var reviewTa = document.createElement("textarea");
+    reviewTa.value = "Дякуємо, що завітали до Oliva 💚 Будемо вдячні, якщо поділитесь враженнями: {посилання}";
+    reviewTa.rows = 3;
+    reviewTa.maxLength = 280;
+    reviewTa.style.cssText = "display:block;margin:10px 0 0;padding:8px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;font-size:.74rem;color:var(--text);line-height:1.4;font-family:inherit;width:100%;box-sizing:border-box;resize:vertical;";
+    reviewRow.appendChild(reviewTa);
+    var reviewHintEl = el("div", "");
+    reviewHintEl.style.cssText = "margin:5px 0 0;font-size:.68rem;color:var(--text-dim);";
+    reviewHintEl.textContent = "Змінні: {посилання} (лінк на сторінку відгуку)";
+    reviewRow.appendChild(reviewHintEl);
+    templateFields.review_request = reviewTa;
+    remCard.appendChild(reviewRow);
+
     var remActs = el("div", "acts"); remActs.style.marginTop = "4px";
     var remSave = el("button", "btn btn-primary btn-sm", "Зберегти налаштування");
     remActs.appendChild(remSave);
@@ -7719,7 +7773,7 @@
     });
 
     var listEl = el("div", "list"); main.appendChild(listEl);
-    var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 1", reminder_2h: "Нагадування 2", reschedule: "Перенесення", cancellation: "Скасування візиту" };
+    var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 1", reminder_2h: "Нагадування 2", reschedule: "Перенесення", cancellation: "Скасування візиту", review_request: "Запит відгуку" };
     var ST = { queued: "у черзі", sent: "відправлено", delivered: "доставлено", undelivered: "не доставлено", failed: "помилка", cancelled: "скасовано" };
     listEl.innerHTML = '<div class="empty">Завантаження…</div>';
     api("GET", "/api/crm/notifications").then(function (res) {

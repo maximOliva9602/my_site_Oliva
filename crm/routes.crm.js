@@ -551,6 +551,62 @@ router.get("/appointments/:id(\\d+)", any, function (req, res) {
   res.json({ ok: true, appointment: viewAppt(out) });
 });
 
+/* Текст запиту на відгук — той самий, що піде у WhatsApp/Telegram/SMS
+   (єдине джерело правди, редагується в CRM → Сповіщення). Окремий
+   ендпоінт, а не поле в GET /appointments/:id, бо картку візиту
+   відкривають з даних, уже завантажених списком (без цього поля), а
+   рендерити текст для КОЖНОГО запису в тому списку — зайве. */
+router.get("/appointments/:id(\\d+)/review-text", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = id ? apptRow(id) : null;
+  if (!a) return res.status(404).json({ ok: false, error: "not found" });
+  if (req.session.role !== "owner" && a.master_id !== req.session.masterId) {
+    return res.status(403).json({ ok: false, error: "forbidden" });
+  }
+  res.json({ ok: true, text: require("./notify").reviewRequestText(a.master_id) });
+});
+
+/* Надіслати запит на відгук СМС-кою напряму клієнту (без черги, за
+   кліком персоналу — аналог кнопок WhatsApp/Telegram, тільки замість
+   переходу в месенджер одразу йде реальна платна СМС). */
+router.post("/appointments/:id(\\d+)/ask-review-sms", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = id ? apptRow(id) : null;
+  if (!a) return res.status(404).json({ ok: false, error: "not found" });
+  if (req.session.role !== "owner" && a.master_id !== req.session.masterId) {
+    return res.status(403).json({ ok: false, error: "forbidden" });
+  }
+  if (a.status !== "completed") return res.status(400).json({ ok: false, error: "not completed" });
+  if (a.client_name === "Гість") return res.status(400).json({ ok: false, error: "guest client" });
+  const phone = tz.normPhone(a.client_phone);
+  if (!phone || phone.replace(/\D/g, "").length < 11) {
+    return res.status(400).json({ ok: false, error: "bad phone" });
+  }
+  const notify = require("./notify");
+  const text = notify.reviewRequestText(a.master_id);
+  notify.sendDirect(phone, text)
+    .then(function () {
+      /* Пишемо в журнал сповіщень (CRM → Сповіщення → Журнал), щоб було
+         видно, кому і коли вже надсилали — і не сплутати з чергою
+         (queueNotification), яку review_request свідомо оминає. Повторний
+         запит перезаписує попередній рядок (ON CONFLICT), а не плодить
+         дублі — унікальність тут (appointment_id, kind). */
+      try {
+        db.prepare(
+          `INSERT INTO notifications (appointment_id, kind, phone, text, provider, status, created_at, sent_at)
+           VALUES (?, 'review_request', ?, ?, ?, 'sent', ?, ?)
+           ON CONFLICT(appointment_id, kind) DO UPDATE SET
+             phone=excluded.phone, text=excluded.text, provider=excluded.provider,
+             status='sent', provider_msg_id=NULL, final_channel=NULL, status_at=NULL, sent_at=excluded.sent_at`
+        ).run(id, phone, text, notify.driver.name, Date.now(), Date.now());
+      } catch (e) { /* журнал не критичний — SMS вже пішла */ }
+      res.json({ ok: true });
+    })
+    .catch(function (e) {
+      res.status(500).json({ ok: false, error: String((e && e.message) || e) });
+    });
+});
+
 router.get("/me/clients", any, function (req, res) {
   const s = req.session;
   let rows;
@@ -2332,7 +2388,7 @@ router.get("/notify-balance", owner, async function (req, res) {
 /* Ключі текстів шаблонів SMS (app_settings, "tpl_"+kind) — власник може
    переписати їх у CRM → Сповіщення; порожньо/не задано = типовий текст,
    зашитий у crm/notify.js (renderTemplate). Той самий список тут і там. */
-const TEMPLATE_KINDS = ["confirmation", "reschedule", "cancellation", "birthday", "reminder"];
+const TEMPLATE_KINDS = ["confirmation", "reschedule", "cancellation", "birthday", "reminder", "review_request"];
 
 router.get("/notify-settings", owner, function (req, res) {
   function get(k, dflt) {
