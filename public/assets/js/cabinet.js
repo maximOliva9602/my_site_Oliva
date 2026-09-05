@@ -2376,6 +2376,26 @@
     }
 
     html += '<div id="dSubInfo"></div>';
+
+    /* Запит на відгук у месенджер клієнта. НЕ автоматична розсилка —
+       WhatsApp/Viber таке забороняють і банять номер відправника. Тут
+       офіційний click-to-chat: відкриваємо чат саме з цим клієнтом із уже
+       набраним текстом, персоналу лишається натиснути «Надіслати». */
+    var reviewPhone = String(a.client_phone || "").replace(/\D/g, "");
+    var canAskReview = a.status === "completed" && reviewPhone.length >= 10 && a.client_name !== "Гість";
+    if (canAskReview) {
+      html += '<div style="margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;">' +
+        '<div style="font-size:.82rem;font-weight:600;color:var(--cream);margin-bottom:8px;">⭐ Запросити відгук</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+          '<a id="dAskWa" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">💬 WhatsApp</a>' +
+          '<a id="dAskViber" class="btn btn-ghost btn-sm" style="text-decoration:none;">💜 Viber</a>' +
+          '<button class="btn btn-ghost btn-sm" id="dAskCopy" type="button">📋 Скопіювати текст</button>' +
+        '</div>' +
+        '<div style="font-size:.7rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">Відкриє чат саме з цим клієнтом. У WhatsApp текст підставиться сам, у Viber — вставте скопійований.</div>' +
+        '<textarea id="dAskManual" readonly rows="3" style="display:none;width:100%;margin-top:6px;font-size:.78rem;"></textarea>' +
+      '</div>';
+    }
+
     html += '<div class="err" id="dErr"></div><div class="modal-foot">';
 
     if (a.status === "pending") html += '<button class="btn btn-primary btn-sm" id="dConfirm">Підтвердити</button>';
@@ -2400,6 +2420,62 @@
     html += '<button class="btn btn-ghost" id="dClose">Закрити</button></div>';
 
     openModal(html);
+
+    if (canAskReview) {
+      var reviewMsg = "Дякуємо, що завітали до Oliva 💚 Будемо вдячні, якщо поділитесь враженнями: " +
+        location.origin + "/google-review?m=" + a.master_id;
+      var waLink = $("dAskWa");
+      if (waLink) waLink.href = "https://wa.me/" + reviewPhone + "?text=" + encodeURIComponent(reviewMsg);
+      /* Viber своїм deep-link'ом текст не підставляє (на відміну від
+         wa.me) — відкриваємо чат із номером, текст персонал вставляє
+         кнопкою «Скопіювати». */
+      var vbLink = $("dAskViber");
+      if (vbLink) vbLink.href = "viber://chat?number=" + encodeURIComponent("+" + reviewPhone);
+      var copyBtn = $("dAskCopy");
+      if (copyBtn) {
+        /* navigator.clipboard є не всюди (стара вебв'ю, PWA без фокусу,
+           http-контекст) і мовчки відхиляється — тоді копіюємо старим
+           execCommand через тимчасовий textarea, інакше кнопка виглядала б
+           робочою, а текст у буфер не потрапляв. */
+        function copyReviewMsg() {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(reviewMsg);
+          }
+          return Promise.reject(new Error("no clipboard api"));
+        }
+        function copyFallback() {
+          var ta = document.createElement("textarea");
+          ta.value = reviewMsg;
+          ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          var ok = false;
+          try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+          ta.remove();
+          return ok;
+        }
+        function copyDone(ok) {
+          copyBtn.textContent = ok ? "✓ Скопійовано" : "✕ Не вдалося";
+          setTimeout(function() { copyBtn.textContent = "📋 Скопіювати текст"; }, 1800);
+          /* Якщо жоден зі способів не спрацював — показуємо сам текст
+             готовим до виділення. Інакше персонал лишився б із кнопкою
+             «не вдалося» і без тексту, який саме й треба вставити у Viber. */
+          if (!ok) {
+            var manual = $("dAskManual");
+            if (manual) {
+              manual.style.display = "block";
+              manual.value = reviewMsg;
+              manual.focus(); manual.select();
+            }
+          }
+        }
+        copyBtn.addEventListener("click", function() {
+          copyReviewMsg()
+            .then(function() { copyDone(true); })
+            .catch(function() { copyDone(copyFallback()); });
+        });
+      }
+    }
 
     // Другий майстер на парну процедуру — список усіх активних майстрів,
     // не лише тих, кого вже прив'язано до цієї послуги: обрати можна
