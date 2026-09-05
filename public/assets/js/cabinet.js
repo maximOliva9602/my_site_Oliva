@@ -2388,10 +2388,11 @@
         '<div style="font-size:.82rem;font-weight:600;color:var(--cream);margin-bottom:8px;">⭐ Запросити відгук</div>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
           '<a id="dAskWa" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">💬 WhatsApp</a>' +
+          '<a id="dAskTg" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">✈️ Telegram</a>' +
           '<a id="dAskViber" class="btn btn-ghost btn-sm" style="text-decoration:none;">💜 Viber</a>' +
           '<button class="btn btn-ghost btn-sm" id="dAskCopy" type="button">📋 Скопіювати текст</button>' +
         '</div>' +
-        '<div style="font-size:.7rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">Відкриє чат саме з цим клієнтом. У WhatsApp текст підставиться сам, у Viber — вставте скопійований.</div>' +
+        '<div style="font-size:.7rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">Відкриє чат саме з цим клієнтом. У WhatsApp і Telegram текст підставиться сам (у Telegram — лише якщо клієнт дозволив пошук за номером), у Viber — вставте скопійований.</div>' +
         '<textarea id="dAskManual" readonly rows="3" style="display:none;width:100%;margin-top:6px;font-size:.78rem;"></textarea>' +
       '</div>';
     }
@@ -2426,6 +2427,14 @@
         location.origin + "/google-review?m=" + a.master_id;
       var waLink = $("dAskWa");
       if (waLink) waLink.href = "https://wa.me/" + reviewPhone + "?text=" + encodeURIComponent(reviewMsg);
+      /* Офіційна Telegram-схема "phone number links" (core.telegram.org/api/links):
+         t.me/+<номер>?text=... шукає користувача через contacts.resolvePhone
+         і одразу підставляє текст — так само, як wa.me. Спрацює лише якщо
+         клієнт: (а) зареєстрований у Telegram і (б) дозволив у приватності
+         "Хто може знайти мене за номером" — інакше Telegram покаже "Не
+         вдалося знайти користувача", без жодної шкоди чи помилки для нас. */
+      var tgLink = $("dAskTg");
+      if (tgLink) tgLink.href = "https://t.me/+" + reviewPhone + "?text=" + encodeURIComponent(reviewMsg);
       /* Viber своїм deep-link'ом текст не підставляє (на відміну від
          wa.me) — відкриваємо чат із номером, текст персонал вставляє
          кнопкою «Скопіювати». */
