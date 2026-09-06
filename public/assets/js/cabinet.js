@@ -129,12 +129,50 @@
     return isTop ? level === "Топ Майстер" : level === "Майстер";
   }
 
-  function api(method, url, body) {
+  /* Мережа на телефоні рветься постійно: 4G моргнув, PWA прокинулась із
+     фону з мертвим сокетом. Раніше fetch у такому разі просто відхиляв
+     проміс, а майже жоден виклик api() не має .catch() — ланцюжок тихо
+     вмирав, і екран лишався порожнім (найбільше боліло в розкладі:
+     Promise.all із 5 запитів падав цілком, якщо не доходив ОДИН, і
+     календар не малювався зовсім — виглядало як «у майстра немає графіка,
+     клієнта не записати», аж поки не перезапустиш застосунок).
+     Тепер: GET-и (безпечні до повтору) тихо перезапитуються двічі, а якщо
+     й це не допомогло — повертаємо netError замість відхилення, щоб
+     виклик міг показати помилку, а не вдавати порожні дані. */
+  function api(method, url, body, retriesLeft) {
     var opts = { method: method, headers: {} };
     if (body) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
     return fetch(url, opts).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) { return { code: r.status, j: j }; });
+    }).catch(function (e) {
+      /* Повторюємо лише GET: повтор POST/PATCH міг би створити другий
+         запис або надіслати другу платну SMS. */
+      var left = retriesLeft === undefined ? 2 : retriesLeft;
+      if (String(method).toUpperCase() === "GET" && left > 0) {
+        return new Promise(function (resolve) { setTimeout(resolve, 700); })
+          .then(function () { return api(method, url, body, left - 1); });
+      }
+      return { code: 0, j: {}, netError: true, error: String((e && e.message) || e) };
     });
+  }
+  /* true, якщо хоч один із переданих результатів api() не доїхав. */
+  function anyNetError() {
+    var list = Array.prototype.slice.call(arguments);
+    if (list.length === 1 && Object.prototype.toString.call(list[0]) === "[object Array]") list = list[0];
+    return list.some(function (r) { return r && r.netError; });
+  }
+  /* Однаковий для всіх екранів блок «зв'язок пропав» із кнопкою повтору —
+     замість порожнього екрана, який неможливо відрізнити від «даних немає». */
+  function netErrorBox(retryFn) {
+    var box = el("div", "empty");
+    box.style.cssText = "text-align:center;padding:18px 12px;";
+    var msg = el("div", null, "📡 Не вдалося завантажити дані — схоже, зник зв'язок.");
+    msg.style.cssText = "margin-bottom:10px;line-height:1.45;";
+    box.appendChild(msg);
+    var btn = el("button", "btn btn-primary btn-sm", "Спробувати ще раз");
+    btn.addEventListener("click", function () { retryFn(); });
+    box.appendChild(btn);
+    return box;
   }
 
   /* ---------- modal ---------- */
@@ -1078,6 +1116,11 @@
         ? "/api/crm/appointments?date=" + apptDate + (masterId ? "&master=" + masterId : "")
         : "/api/crm/me/appointments?from=" + apptDate + "&to=" + apptDate + (masterId ? "&master=" + masterId : "");
       api("GET", url).then(function (res) {
+        if (res.netError) {
+          contentEl.innerHTML = "";
+          contentEl.appendChild(netErrorBox(function() { loadAppts(masterId); }));
+          return;
+        }
         /* Скасовані ховаємо зі списку — вони й так порахуються в
            дашборді (окремий запит до БД, цього фільтра не бачить). */
         var list = (res.j.appointments || []).filter(function (a) { return a.status !== "cancelled"; });
@@ -1359,6 +1402,14 @@
         api("GET", "/api/crm/day-blocks?date=" + apptDate),
         api("GET", "/api/crm/masters-overrides?from=" + apptDate + "&to=" + apptDate)
       ]).then(function(rs) {
+        /* Хоч один запит не доїхав — малювати сітку НЕ можна: вона вийде
+           порожньою і виглядатиме як «майстер не працює / записів немає»,
+           хоча насправді просто зник зв'язок. Показуємо помилку з
+           повтором (саме цей випадок і змушував перезапускати застосунок). */
+        if (anyNetError(rs)) {
+          scroller.appendChild(netErrorBox(function() { loadCalendar(masterFilter); }));
+          return;
+        }
         var allMasters = rs[0].j.masters || [];
         var appts = (rs[1].j.appointments || []).filter(function(a) { return a.status !== "cancelled"; });
         var dayScheds = rs[2].j.schedules || [];
@@ -2897,8 +2948,11 @@
       var extraDur = eExtrasMin();
       if (extraDur > 0) url += "&extra=" + extraDur;
       api("GET", url).then(function(r) {
-        var slots = r.j.slots || [];
         box.innerHTML = "";
+        /* «Немає віконець» і «запит не доїхав» — різні речі: перше змушує
+           персонал шукати інший день, друге лікується повтором. */
+        if (r.netError) { box.className = ""; box.appendChild(netErrorBox(loadESlots)); return; }
+        var slots = r.j.slots || [];
         if (!slots.length) { box.className = "muted"; box.textContent = "Вільних віконець немає"; return; }
         var grid = el("div","slots");
         slots.forEach(function(s) {
@@ -3920,9 +3974,14 @@
       var slotsUrl = "/api/public/slots?service=" + sid + "&master=" + mid + "&date=" + date;
       if (totalDur > 0) slotsUrl += "&duration=" + totalDur;
       api("GET", slotsUrl).then(function (res) {
+        box.innerHTML = "";
+        /* Саме тут баг був найпомітніший: при обриві зв'язку список часу
+           лишався порожній, і виглядало, ніби майстер узагалі не працює
+           того дня — записати клієнта було неможливо, аж поки не
+           перезапустиш застосунок. */
+        if (res.netError) { box.className = ""; box.appendChild(netErrorBox(loadSlots)); syncSlotsBox(); return; }
         var slots = res.j.slots || [];
         freeStarts = slots.map(function (s) { return s.start_min; });
-        box.innerHTML = "";
         if (!slots.length) {
           box.className = "muted"; box.textContent = "Вільних віконець немає";
           if (wantStartMin != null) { chosen.start_min = wantStartMin; showChosenTime(wantStartMin, true); }
@@ -3981,6 +4040,13 @@
         comment: $("mComment").value.trim(), color_marker: chosen.color_marker || null,
         extra_services: extras.length ? JSON.stringify(extras) : null
       }).then(function (res) {
+        /* Обрив саме на збереженні: чесно кажемо, що результат невідомий —
+           запит міг і дійти до сервера. Мовчки повторити не можна, бо це
+           ризик другого такого самого запису. */
+        if (res.netError) {
+          err.textContent = "Зв'язок пропав — невідомо, чи створився запис. Закрийте вікно й перевірте розклад, перш ніж створювати ще раз.";
+          return;
+        }
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
         if (res.code === 404 && res.j.error === "CLIENT_NOT_FOUND") { err.textContent = "Клієнта не знайдено. Спробуйте обрати ще раз."; return; }
         if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); return; }
@@ -4046,7 +4112,9 @@
       chosen.start_min = null;
       var box = $("rSlots"); box.className = ""; box.innerHTML = "Завантаження…";
       api("GET", "/api/public/slots?service=" + a.service_id + "&master=" + a.master_id + "&date=" + $("rDate").value).then(function (res) {
-        var slots = res.j.slots || []; box.innerHTML = "";
+        box.innerHTML = "";
+        if (res.netError) { box.className = ""; box.appendChild(netErrorBox(loadSlots)); return; }
+        var slots = res.j.slots || [];
         if (!slots.length) { box.className = "muted"; box.textContent = "Вільних віконець немає"; return; }
         var grid = el("div", "slots");
         slots.forEach(function (s) {
