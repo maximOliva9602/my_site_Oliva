@@ -151,6 +151,17 @@ function viewAppt(a) {
     out.sub_index = a.subscription_session_no;
     out.sub_total = a.subscription_session_total;
   }
+  /* Бейдж ⭐ у календарі — персоналу вже не потрібно пам'ятати чи гортати
+     журнал, щоб з'ясувати, чи цього клієнта вже просили лишити відгук.
+     notifications (kind='review_request') пишеться і реальною SMS-
+     відправкою (ask-review-sms), і кліком по WhatsApp/Telegram/Viber/
+     "Скопіювати" (review-request-mark) — байдуже яким каналом просили. */
+  if (a.status === "completed") {
+    try {
+      const rr = db.prepare("SELECT 1 FROM notifications WHERE appointment_id=? AND kind='review_request' LIMIT 1").get(a.id);
+      out.review_requested = !!rr;
+    } catch (e) { /* не критично — просто не покажемо бейдж */ }
+  }
   return out;
 }
 
@@ -605,6 +616,35 @@ router.post("/appointments/:id(\\d+)/ask-review-sms", any, function (req, res) {
     .catch(function (e) {
       res.status(500).json({ ok: false, error: String((e && e.message) || e) });
     });
+});
+
+/* Позначити "запит на відгук уже надсилали" для кліку по WhatsApp/
+   Telegram/Viber/"Скопіювати" — на відміну від ask-review-sms, тут
+   немає реальної відправки (клік лише відкриває чужий чат чи копіює
+   текст), тому лише пишемо маркер у журнал — щоб у календарі (⭐-бейдж)
+   і в журналі сповіщень було видно, що клієнта вже просили, незалежно
+   від каналу. DO NOTHING на конфлікті: не затираємо статус 'sent' від
+   справжньої SMS-відправки повторним кліком по іншій кнопці. */
+router.post("/appointments/:id(\\d+)/review-request-mark", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = id ? apptRow(id) : null;
+  if (!a) return res.status(404).json({ ok: false, error: "not found" });
+  if (req.session.role !== "owner" && a.master_id !== req.session.masterId) {
+    return res.status(403).json({ ok: false, error: "forbidden" });
+  }
+  if (a.status !== "completed") return res.status(400).json({ ok: false, error: "not completed" });
+  const CHANNELS = ["whatsapp", "telegram", "viber", "copy"];
+  const channel = CHANNELS.indexOf(clean((req.body || {}).channel, 20)) !== -1 ? (req.body || {}).channel : "copy";
+  const notify = require("./notify");
+  const text = notify.reviewRequestText(a.master_id);
+  try {
+    db.prepare(
+      `INSERT INTO notifications (appointment_id, kind, phone, text, provider, status, final_channel, created_at, sent_at)
+       VALUES (?, 'review_request', ?, ?, ?, 'sent', ?, ?, ?)
+       ON CONFLICT(appointment_id, kind) DO NOTHING`
+    ).run(id, a.client_phone || "", text, channel, channel, Date.now(), Date.now());
+  } catch (e) { /* маркер не критичний */ }
+  res.json({ ok: true });
 });
 
 router.get("/me/clients", any, function (req, res) {

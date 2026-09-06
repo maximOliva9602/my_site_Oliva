@@ -2059,6 +2059,7 @@
                 '<span style="display:flex;gap:3px;align-items:center;flex-shrink:0;line-height:1;">' +
                   (a.is_new_client ? '<span title="Новий клієнт — ще не було завершених візитів" style="font-size:.56rem;font-weight:800;color:#1a3d0f;background:#d9ff9f;border-radius:6px;padding:1px 4px;letter-spacing:.02em;">NEW</span>' : '') +
                   (a.status === "confirmed" ? '<span title="Підтверджено" style="font-size:.68rem;font-weight:800;color:#e5ffb9;">✓</span>' : '') +
+                  (a.review_requested ? '<span title="Запит на відгук уже надсилали" style="font-size:.64rem;">⭐</span>' : '') +
                   (hasNote ? '<span style="font-size:.64rem;opacity:.85;">💬</span>' : '') +
                 '</span>' +
                 '</div>';
@@ -2546,15 +2547,37 @@
       function copySilently() {
         copyReviewMsg().catch(function() { if (!copyFallback()) showManualFallback(); });
       }
+      /* Позначаємо в журналі й одразу малюємо ⭐-бейдж на блоці в
+         календарі (щоб не чекати перезавантаження розкладу) — байдуже,
+         яким із чотирьох каналів персонал скористався: важливо лише, що
+         клієнта вже просили лишити відгук. Клік ловимо одразу, не
+         чекаючи підтвердження доставки — так само, як і сама кнопка не
+         може знати, чи клієнт справді відповів у месенджері. */
+      function markReviewRequested(channel) {
+        if (a.review_requested) return;
+        a.review_requested = true;
+        api("POST", "/api/crm/appointments/" + a.id + "/review-request-mark", { channel: channel });
+        var blk = document.getElementById("cal-block-" + a.id);
+        if (blk && !blk.querySelector("[data-review-badge]")) {
+          var badge = document.createElement("span");
+          badge.setAttribute("data-review-badge", "1");
+          badge.textContent = "⭐";
+          badge.title = "Запит на відгук уже надсилали";
+          badge.style.cssText = "position:absolute;top:2px;right:4px;font-size:.62rem;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.4);";
+          blk.appendChild(badge);
+        }
+      }
+      if (waLink) waLink.addEventListener("click", function() { markReviewRequested("whatsapp"); });
       var vbLink = $("dAskViber");
       if (vbLink) {
         vbLink.href = "viber://chat?number=" + encodeURIComponent("+" + reviewPhone);
-        vbLink.addEventListener("click", copySilently);
+        vbLink.addEventListener("click", function() { copySilently(); markReviewRequested("viber"); });
       }
-      if (tgLink) tgLink.addEventListener("click", copySilently);
+      if (tgLink) tgLink.addEventListener("click", function() { copySilently(); markReviewRequested("telegram"); });
       var copyBtn = $("dAskCopy");
       if (copyBtn) {
         copyBtn.addEventListener("click", function() {
+          markReviewRequested("copy");
           copyReviewMsg()
             .then(function() {
               copyBtn.textContent = "✓ Скопійовано";
@@ -2581,6 +2604,7 @@
           api("POST", "/api/crm/appointments/" + a.id + "/ask-review-sms").then(function (r) {
             if (r.j && r.j.ok) {
               smsBtn.textContent = "✓ Надіслано";
+              markReviewRequested("sms");
             } else {
               smsBtn.disabled = false;
               smsBtn.textContent = "📩 SMS";
