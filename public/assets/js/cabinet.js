@@ -373,6 +373,14 @@
     function clearOverlay() {
       var ov = document.getElementById("cal-overlay"); if (ov) ov.remove();
       var ws = document.getElementById("cal-week-strip"); if (ws) ws.remove();
+      /* Редактори графіка й філії чіпляють свою шапку та кнопку «Зберегти»
+         просто до <body> (position:fixed), а прибирали їх лише власною
+         стрілкою «назад». Якщо ж вийти нижньою панеллю вкладок — кнопка
+         лишалася висіти поверх чужого екрана: у «Розкладі» стирчало
+         «Зберегти», хоча зберігати там нічого. */
+      ["scheEditSave", "scheEditHdr", "branchSaveBtn", "branchEditHdr"].forEach(function(id) {
+        var stray = document.getElementById(id); if (stray) stray.remove();
+      });
       document.body.style.overflow = "";
       document.body.style.overscrollBehavior = "";
       var ae = $("app"); if (ae) ae.style.cssText = "";
