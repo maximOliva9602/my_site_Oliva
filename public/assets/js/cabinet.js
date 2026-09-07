@@ -400,6 +400,16 @@
       else { mobSheetHistoryOpen = false; }
     }
     function openMobSheet() {
+      /* .topbar — position:fixed, z-index:80 (вище за шторку, z-index:61) —
+         тому перший пункт шторки не просто обрізався по краю екрана, а
+         ФІЗИЧНО був закритий топбаром зверху: max-height у CSS (навіть зі
+         скролом) не рахує висоту топбара, тому вершина шторки все одно
+         заїжджала під нього, і жоден свайп цього не показував — це не
+         брак прокрутки, а інший елемент поверх. Міряємо топбар щоразу
+         (могла змінитись висота — напр. після повороту екрана) і
+         віднімаємо його разом із запасом. */
+      var topbarH = (document.querySelector(".topbar") || { offsetHeight: 0 }).offsetHeight || 0;
+      mobSheet.style.maxHeight = "calc(100dvh - " + (topbarH + 16) + "px)";
       mobBackdrop.classList.add("open"); mobSheet.classList.add("open");
       mobSheetHistoryOpen = true;
       history.pushState({ mobSheet: true }, "");
