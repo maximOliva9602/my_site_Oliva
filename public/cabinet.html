@@ -196,6 +196,12 @@
     border-radius:18px 18px 0 0;
     padding-bottom:max(16px, env(safe-area-inset-bottom, 16px));
     transform:translateY(100%); transition:transform .28s cubic-bezier(.4,0,.2,1);
+    /* Пунктів у шторці стало більше, ніж влазить на екран (особливо на
+       коротких телефонах) — без обмеження висоти й прокрутки верхні
+       (напр. "Клієнти") вилітали за межі екрана, і прогорнути до них
+       свайпом було нічим: сам блок не скролився, бо overflow не заданий. */
+    max-height:calc(100vh - 32px);
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   #mob-sheet.open { transform:translateY(0); }
   .mob-sheet-handle { width:44px; height:4px; background:var(--line); border-radius:2px; margin:12px auto 8px; }

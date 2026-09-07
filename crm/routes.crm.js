@@ -1632,6 +1632,15 @@ router.get("/dashboard", owner, function (req, res) {
   const wStart = weekStart.toISOString().slice(0, 10);
   const mStart = today.slice(0, 7) + "-01";
 
+  /* Період для карток "Майстри" і "Фінанси" — власник може обрати інший
+     (напр. минулий місяць), щоб подивитись заробіток за нього; типово
+     той самий поточний місяць, що й раніше (без параметрів — поведінка
+     не змінюється). Картки "Записів" і "Клієнтів" свідомо лишаються
+     прив'язані до реального поточного місяця — це швидкоглядні лічильники,
+     а не фінансовий звіт. */
+  const pFrom = clean(req.query.from, 10) || mStart;
+  const pTo   = clean(req.query.to,   10) || today;
+
   function apptStats(from, to) {
     /* total не враховує скасовані — так само, як бейджі кількості записів
        у місячному календарі (GET /appointments/month-counts). Раніше total
@@ -1656,9 +1665,11 @@ router.get("/dashboard", owner, function (req, res) {
   const apptMonth = apptStats(mStart, today);
 
   // --- 2. Майстри ---
-  /* Записи — за той самий період, що й картка «1. Записи»: з початку
-     місяця по сьогодні включно, без скасованих. Інакше числа майстрів
-     не сходяться з підсумком по записах. */
+  /* Дохід/заробіток/навантаження — за обраний період (pFrom..pTo, типово
+     поточний місяць). Кількість бронювань тут навмисно НЕ прив'язана до
+     картки «1. Записи» (та лишається місячною завжди) — інакше вибір
+     іншого періоду плутав би: заголовок картки нижче явно показує, за
+     який період рахунок. */
   const masters = db.prepare(
     `SELECT m.id, m.name, m.photo, m.level,
             COUNT(a.id) bookings,
@@ -1669,12 +1680,16 @@ router.get("/dashboard", owner, function (req, res) {
                                AND a.status<>'cancelled'
       WHERE m.active=1
       GROUP BY m.id ORDER BY bookings DESC`
-  ).all(mStart, today);
+  ).all(pFrom, pTo);
 
-  /* Ємність рахуємо з реального графіка майстра (master_schedule) за
-     дні, що вже минули цього місяця, а не з умовних 12.5 год × 6/7 днів. */
-  const elapsedWeekdays = [];   // список weekday для кожного дня з mStart по today
-  for (let d = new Date(mStart + "T00:00:00"); d <= dt; d.setDate(d.getDate() + 1)) {
+  /* Ємність рахуємо з реального графіка майстра (master_schedule) за дні
+     періоду, що вже минули (майбутні дні періоду ще нема чим заповнити —
+     інакше % завантаження штучно занижувався б). */
+  const pFromDt = new Date(pFrom + "T00:00:00");
+  const pToDt = new Date(pTo + "T00:00:00");
+  const elapsedTo = pToDt < dt ? pToDt : dt;
+  const elapsedWeekdays = [];
+  for (let d = new Date(pFromDt); d <= elapsedTo; d.setDate(d.getDate() + 1)) {
     elapsedWeekdays.push(d.getDay());
   }
   const todayWeekday = dt.getDay();
@@ -1693,13 +1708,12 @@ router.get("/dashboard", owner, function (req, res) {
     const usedMin = db.prepare(
       `SELECT COALESCE(SUM(duration_min),0) s FROM appointments
         WHERE master_id=? AND date>=? AND date<=? AND status IN ('pending','confirmed','completed')`
-    ).get(m.id, mStart, today).s;
+    ).get(m.id, pFrom, pTo).s;
 
     m.workload_pct = capacityMin > 0 ? Math.min(100, Math.round(usedMin / capacityMin * 100)) : 0;
 
-    /* Вільно сьогодні = зміна мінус уже зайняте сьогодні.
-       Раніше сюди йшла вся довжина зміни, тому в усіх майстрів
-       світилось однакове число незалежно від записів. */
+    /* Вільно сьогодні — завжди прив'язане до реального «сьогодні», а не
+       до обраного періоду: це моментальний знімок, а не звіт. */
     const shiftMin = minByWeekday[todayWeekday] || 0;
     if (!shiftMin) {
       m.free_today_h = null;   // сьогодні не працює
@@ -1711,8 +1725,8 @@ router.get("/dashboard", owner, function (req, res) {
       m.free_today_h = Math.max(0, Math.round((shiftMin - busyToday) / 60 * 10) / 10);
     }
 
-    /* Заробіток майстра за місяць (ставки: % або фікс на послугу) */
-    m.earnings = masterEarnings(m.id, mStart, today);
+    /* Заробіток майстра за обраний період (ставки: % або фікс на послугу) */
+    m.earnings = masterEarnings(m.id, pFrom, pTo);
   });
 
   // --- 3. Клієнти ---
@@ -1746,8 +1760,8 @@ router.get("/dashboard", owner, function (req, res) {
     ).get(from, to).s;
   }
   const avgCheck = db.prepare(
-    `SELECT AVG(price) v FROM appointments WHERE status='completed' AND date>=?`
-  ).get(mStart).v || 0;
+    `SELECT AVG(price) v FROM appointments WHERE status='completed' AND date>=? AND date<=?`
+  ).get(pFrom, pTo).v || 0;
 
   // --- Детальна аналітика (клієнти + якість) ---
   const _now = Date.now();
@@ -1826,6 +1840,7 @@ router.get("/dashboard", owner, function (req, res) {
 
   res.json({
     ok: true,
+    period: { from: pFrom, to: pTo },
     appointments: { today: apptToday, week: apptWeek, month: apptMonth },
     masters: masters,
     detailed: detailed,
@@ -1833,15 +1848,15 @@ router.get("/dashboard", owner, function (req, res) {
     finance: {
       today:  { actual: revenue(today, today),  forecast: forecast(today, today) },
       week:   { actual: revenue(wStart, today),  forecast: forecast(wStart, today) },
-      month:  { actual: revenue(mStart, today),  forecast: forecast(mStart, today) },
+      month:  { actual: revenue(pFrom, pTo),  forecast: forecast(pFrom, pTo) },
       by_master: db.prepare(
         `SELECT m.name, SUM(a.price) revenue FROM appointments a JOIN masters m ON m.id=a.master_id
-          WHERE a.status='completed' AND a.date>=? GROUP BY a.master_id ORDER BY revenue DESC`
-      ).all(mStart),
+          WHERE a.status='completed' AND a.date>=? AND a.date<=? GROUP BY a.master_id ORDER BY revenue DESC`
+      ).all(pFrom, pTo),
       by_service: db.prepare(
         `SELECT s.name, COUNT(*) cnt, SUM(a.price) revenue FROM appointments a JOIN services s ON s.id=a.service_id
-          WHERE a.status='completed' AND a.date>=? GROUP BY a.service_id ORDER BY revenue DESC LIMIT 8`
-      ).all(mStart),
+          WHERE a.status='completed' AND a.date>=? AND a.date<=? GROUP BY a.service_id ORDER BY revenue DESC LIMIT 8`
+      ).all(pFrom, pTo),
       avg_check: Math.round(avgCheck),
     },
   });

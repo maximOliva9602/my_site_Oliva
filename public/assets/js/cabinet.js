@@ -587,9 +587,14 @@
   /* ============================================================
      ДАШБОРД
      ============================================================ */
-  function renderDashboard() {
+  /* period = {from,to} (YYYY-MM-DD) для карток "Майстри"/"Фінанси" —
+     звідки заробіток майстра. null = типовий поточний місяць (як і
+     раніше, сервер сам підставляє дефолт). Картки "Записів" і "Клієнтів"
+     на це не зважають — лишаються прив'язані до реального місяця. */
+  function renderDashboard(period) {
     var main = $("main"); main.innerHTML = '<div class="empty">Завантаження…</div>';
-    api("GET", "/api/crm/dashboard").then(function (res) {
+    var url = "/api/crm/dashboard" + (period ? "?from=" + period.from + "&to=" + period.to : "");
+    api("GET", url).then(function (res) {
       if (!res.j.ok) { main.innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
       var d = res.j;
       main.innerHTML = "";
@@ -715,7 +720,46 @@
           '</details>' +
         '</div>';
       }).join("");
-      main.appendChild(card("3. Майстри (місяць)", mHtml));
+
+      /* ---- Фільтр періоду для карток 3 і 5 (дохід і заробіток майстра) ----
+         Раніше він завжди був "з початку місяця по сьогодні" без жодного
+         керування — власник не міг подивитись, скажімо, минулий місяць. */
+      var per = d.period || { from: todayStr().slice(0,7) + "-01", to: todayStr() };
+      var pf = el("div", "");
+      pf.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 10px;";
+      function mkQuickBtn(label, from, to) {
+        var active = per.from === from && per.to === to;
+        var b = el("button", "btn btn-sm " + (active ? "btn-primary" : "btn-ghost"), label);
+        b.addEventListener("click", function() { renderDashboard({ from: from, to: to }); });
+        return b;
+      }
+      /* Формат локальної дати вручну, БЕЗ toISOString(): воно переводить у
+         UTC і в Києві (UTC+2/+3) зсуває північ 1-го числа на 31-е/30-е
+         попереднього дня — рівно те, що ламало "Минулий місяць" при
+         першому тесті. */
+      function ymdLocal(dt) {
+        return dt.getFullYear() + "-" + String(dt.getMonth()+1).padStart(2,"0") + "-" + String(dt.getDate()).padStart(2,"0");
+      }
+      var _today = new Date(todayStr() + "T00:00:00");
+      var _dow = _today.getDay() === 0 ? 6 : _today.getDay() - 1;
+      var _weekStart = new Date(_today); _weekStart.setDate(_today.getDate() - _dow);
+      var _thisMonthStart = todayStr().slice(0,7) + "-01";
+      var _prevMonthStart = ymdLocal(new Date(_today.getFullYear(), _today.getMonth() - 1, 1));
+      var _prevMonthEnd = ymdLocal(new Date(_today.getFullYear(), _today.getMonth(), 0));
+      pf.appendChild(mkQuickBtn("Цей тиждень", ymdLocal(_weekStart), todayStr()));
+      pf.appendChild(mkQuickBtn("Цей місяць", _thisMonthStart, todayStr()));
+      pf.appendChild(mkQuickBtn("Минулий місяць", _prevMonthStart, _prevMonthEnd));
+      var pFromInp = document.createElement("input"); pFromInp.type = "date"; pFromInp.value = per.from; pFromInp.style.width = "132px";
+      var pToInp = document.createElement("input"); pToInp.type = "date"; pToInp.value = per.to; pToInp.style.width = "132px";
+      var pApply = el("button", "btn btn-sm btn-ghost", "Застосувати");
+      pApply.addEventListener("click", function() {
+        if (!pFromInp.value || !pToInp.value) return;
+        renderDashboard({ from: pFromInp.value, to: pToInp.value });
+      });
+      pf.appendChild(pFromInp); pf.appendChild(document.createTextNode("–")); pf.appendChild(pToInp); pf.appendChild(pApply);
+      main.appendChild(pf);
+
+      main.appendChild(card("3. Майстри (" + ddmm(per.from) + "–" + ddmm(per.to) + ")", mHtml));
 
       /* ---- 4. Клієнти ---- */
       var cl = d.clients;
@@ -744,16 +788,22 @@
 
       /* ---- 5. Фінанси ---- */
       var f = d.finance;
+      /* "Дохід сьогодні"/"тиждень" лишаються реальними поточними — лише
+         підпис третьої колонки (і прогнозу нижче) залежить від фільтра
+         періоду вище (типово це й є поточний місяць, як і раніше). */
+      var periodFinLbl = ddmm(per.from) + "–" + ddmm(per.to);
       var f1 = row3([
-        { label: "Дохід сьогодні",  val: grn(f.today.actual) },
-        { label: "Дохід тиждень",   val: grn(f.week.actual) },
-        { label: "Дохід місяць",    val: grn(f.month.actual) },
+        { label: "Дохід сьогодні",       val: grn(f.today.actual) },
+        { label: "Дохід тиждень",        val: grn(f.week.actual) },
+        { label: "Дохід (" + periodFinLbl + ")", val: grn(f.month.actual) },
       ]);
       /* Було: forecast(сьогодні)+forecast(тиждень)+forecast(місяць) — періоди
          вкладені один в одного, тому сьогоднішні записи рахувались тричі.
-         Місячний прогноз уже включає і тиждень, і сьогодні. */
+         Місячний прогноз уже включає і тиждень, і сьогодні (справедливо,
+         коли обраний період — поточний місяць; для іншого періоду це
+         просто прогноз по ньому окремо, без накладання). */
       var f2 = row3([
-        { label: "Прогноз (місяць)", val: grn(f.month.forecast || 0) },
+        { label: "Прогноз (" + periodFinLbl + ")", val: grn(f.month.forecast || 0) },
         { label: "Середній чек",     val: grn(f.avg_check) },
         { label: "",                 val: "" },
       ]);
@@ -2059,7 +2109,7 @@
                 '<span style="display:flex;gap:3px;align-items:center;flex-shrink:0;line-height:1;">' +
                   (a.is_new_client ? '<span title="Новий клієнт — ще не було завершених візитів" style="font-size:.56rem;font-weight:800;color:#1a3d0f;background:#d9ff9f;border-radius:6px;padding:1px 4px;letter-spacing:.02em;">NEW</span>' : '') +
                   (a.status === "confirmed" ? '<span title="Підтверджено" style="font-size:.68rem;font-weight:800;color:#e5ffb9;">✓</span>' : '') +
-                  (a.review_requested ? '<span title="Запит на відгук уже надсилали" style="font-size:.64rem;">⭐</span>' : '') +
+                  (a.review_requested ? '<span title="Запит на відгук уже надсилали" style="font-size:.64rem;">✉️</span>' : '') +
                   (hasNote ? '<span style="font-size:.64rem;opacity:.85;">💬</span>' : '') +
                 '</span>' +
                 '</div>';
@@ -2547,7 +2597,7 @@
       function copySilently() {
         copyReviewMsg().catch(function() { if (!copyFallback()) showManualFallback(); });
       }
-      /* Позначаємо в журналі й одразу малюємо ⭐-бейдж на блоці в
+      /* Позначаємо в журналі й одразу малюємо ✉️-бейдж на блоці в
          календарі (щоб не чекати перезавантаження розкладу) — байдуже,
          яким із чотирьох каналів персонал скористався: важливо лише, що
          клієнта вже просили лишити відгук. Клік ловимо одразу, не
@@ -2561,7 +2611,7 @@
         if (blk && !blk.querySelector("[data-review-badge]")) {
           var badge = document.createElement("span");
           badge.setAttribute("data-review-badge", "1");
-          badge.textContent = "⭐";
+          badge.textContent = "✉️";
           badge.title = "Запит на відгук уже надсилали";
           badge.style.cssText = "position:absolute;top:2px;right:4px;font-size:.62rem;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.4);";
           blk.appendChild(badge);
