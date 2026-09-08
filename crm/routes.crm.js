@@ -354,6 +354,13 @@ function createAppointment(d, session) {
    АБОНЕМЕНТ: якщо візит зарахований з абонементу (subscription_used) —
    майстер отримує окрему (типово вищу) ставку з master_subscription_pay /
    pay_percent_subscription замість нової/повторної; завжди у % (без fixed).
+   ДРУГИЙ МАЙСТЕР на парній процедурі (second_master_id — "SPA для двох"
+   тощо): раніше взагалі не враховувався в заробітку — запис і оплата
+   в БД один на двох, а masterEarnings() рахувала лише master_id, тому
+   другий майстер отримував 0 грн за візити, які фізично обслуговував.
+   Тепер рахуємо і second_master_id — за ТІЄЮ Ж власною ставкою майстра
+   (своя типова/по-послузі, своя новий/повторний), від повної ціни
+   запису, незалежно від нарахування первинному майстру.
    Заробіток = сума ставок по завершених візитах за період. */
 function masterEarnings(masterId, from, to) {
   const m = db.prepare("SELECT pay_percent, pay_percent_return, pay_percent_subscription FROM masters WHERE id=?").get(masterId);
@@ -368,11 +375,15 @@ function masterEarnings(masterId, from, to) {
     .all(masterId).forEach(function (r) { subOverrides[r.service_id] = r.value; });
   const rows = db.prepare(
     `SELECT id, client_id, service_id, price, date, start_min, subscription_used
-       FROM appointments WHERE master_id=? AND status='completed' AND date>=? AND date<=?`
-  ).all(masterId, from, to);
+       FROM appointments
+      WHERE (master_id=? OR second_master_id=?) AND status='completed' AND date>=? AND date<=?`
+  ).all(masterId, masterId, from, to);
+  /* "Повторний клієнт" для ЦЬОГО майстра — і якщо він раніше обслуговував
+     цього клієнта як другий майстер на парній процедурі, це теж рахується
+     (його власна історія з клієнтом, незалежно від ролі в записі). */
   const isRetStmt = db.prepare(
     `SELECT 1 FROM appointments
-      WHERE client_id=? AND master_id=? AND status='completed' AND id != ?
+      WHERE client_id=? AND (master_id=? OR second_master_id=?) AND status='completed' AND id != ?
         AND (date < ? OR (date = ? AND start_min < ?)) LIMIT 1`
   );
   let total = 0;
@@ -383,7 +394,7 @@ function masterEarnings(masterId, from, to) {
       if (pct) total += Math.round((a.price || 0) * pct / 100);
       continue;
     }
-    const isReturn = !!isRetStmt.get(a.client_id, masterId, a.id, a.date, a.date, a.start_min);
+    const isReturn = !!isRetStmt.get(a.client_id, masterId, masterId, a.id, a.date, a.date, a.start_min);
     if (o) {
       const val = (isReturn && o.value_return != null) ? o.value_return : o.value;
       total += o.mode === "fixed" ? Math.round(val) : Math.round((a.price || 0) * val / 100);
