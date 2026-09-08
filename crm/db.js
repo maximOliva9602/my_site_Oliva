@@ -444,6 +444,22 @@ db.exec(`CREATE TABLE IF NOT EXISTS master_subscription_pay (
   FOREIGN KEY (master_id)  REFERENCES masters(id)  ON DELETE CASCADE,
   FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 )`);
+
+/* Індивідуальна ставка майстра для КОНКРЕТНОГО клієнта — напр. знайомий,
+   постійний клієнт з окремою домовленістю тощо. Найвищий пріоритет:
+   якщо задано, діє для ВСІХ візитів цього клієнта в цього майстра,
+   незалежно від послуги, нового/повторного статусу чи абонементу —
+   на відміну від master_service_pay, тут немає value_return: сенс
+   client-override саме в тому, що ставка одна на весь зв'язок з клієнтом. */
+db.exec(`CREATE TABLE IF NOT EXISTS master_client_pay (
+  master_id  INTEGER NOT NULL,
+  client_id  INTEGER NOT NULL,
+  mode       TEXT NOT NULL CHECK (mode IN ('percent','fixed')),
+  value      REAL NOT NULL,
+  PRIMARY KEY (master_id, client_id),
+  FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE,
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+)`);
 /* Номер сеансу абонементу, зафіксований НАЗАВЖДИ в момент завершення візиту
    (і загальна к-ть сеансів абонементу на той момент) — щоб бейдж "3/5" на
    картці завершеного візиту показував, яким сеансом БУВ САМЕ ЦЕЙ візит,

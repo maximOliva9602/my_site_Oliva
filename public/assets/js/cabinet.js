@@ -6489,9 +6489,10 @@
         }).join("") + '</div>';
 
       // ── Перемикач вкладок ──
-      html += '<div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line);">' +
+      html += '<div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line);flex-wrap:wrap;">' +
         '<button type="button" class="btn btn-sm" id="payTabBtnRegular" style="border-radius:8px 8px 0 0;">Звичайні візити</button>' +
         '<button type="button" class="btn btn-sm btn-ghost" id="payTabBtnSub" style="border-radius:8px 8px 0 0;">Розрахунок за абонемент</button>' +
+        '<button type="button" class="btn btn-sm btn-ghost" id="payTabBtnClient" style="border-radius:8px 8px 0 0;">Індивідуальні клієнти</button>' +
         '</div>';
 
       // ── Вкладка 1: звичайні візити ──
@@ -6559,18 +6560,48 @@
       });
       html += '</div></div>'; // /paySubServiceList /payTabSub
 
+      // ── Вкладка 3: індивідуальні ставки для конкретних клієнтів ──
+      function payClientRowHtml(row) {
+        var val = row.mode === "fixed" ? Math.round((row.value || 0) / 100) : row.value;
+        var nameHtml = String(row.client_name || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        return '<div data-pc="' + row.client_id + '" style="padding:9px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+          '<div style="font-size:.78rem;color:var(--cream);min-width:0;">' + nameHtml + ' <span class="muted">' + (row.client_phone ? "· " + row.client_phone : "") + '</span></div>' +
+          '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+            '<select data-pc-mode style="font-size:.78rem;padding:5px 6px;">' +
+              '<option value="percent"' + (row.mode !== "fixed" ? " selected" : "") + '>%</option>' +
+              '<option value="fixed"' + (row.mode === "fixed" ? " selected" : "") + '>грн/візит</option>' +
+            '</select>' +
+            '<input data-pc-val type="number" min="0" step="0.5" style="width:78px;font-size:.8rem;padding:6px 8px;" value="' + val + '">' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-pc-remove title="Прибрати">✕</button>' +
+          '</div></div>';
+      }
+      html += '<div id="payTabClient" style="display:none;">';
+      html += '<div class="sub" style="margin-bottom:12px;">Окрема ставка для конкретного клієнта — діє для <b>всіх</b> його візитів у цього майстра (будь-яка послуга, новий чи повторний), замість типового відсотка чи ставки по послузі.</div>';
+      html += '<div style="position:relative;margin-bottom:10px;">' +
+        '<input type="text" id="payClientSearch" placeholder="🔍 Пошук клієнта — ім\'я або телефон…" autocomplete="off">' +
+        '<div id="payClientDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,.14);"></div>' +
+        '</div>';
+      html += '<div id="payClientList" style="border:1px solid var(--line);border-radius:10px;">';
+      html += (d.client_overrides || []).map(payClientRowHtml).join("");
+      html += '</div>';
+      html += '<div class="empty" id="payClientEmpty"' + ((d.client_overrides || []).length ? ' style="display:none;"' : '') + '>Ще немає індивідуальних ставок</div>';
+      html += '</div>'; // /payTabClient
+
       html += '<div class="err" id="payErr"></div>' +
         '<div class="modal-foot"><button class="btn btn-primary" id="paySave">Зберегти</button><button class="btn btn-ghost" id="payClose">Закрити</button></div>';
       $("payBody").innerHTML = html;
 
-      $("payTabBtnRegular").addEventListener("click", function () {
-        $("payTabRegular").style.display = ""; $("payTabSub").style.display = "none";
-        $("payTabBtnRegular").className = "btn btn-sm"; $("payTabBtnSub").className = "btn btn-sm btn-ghost";
-      });
-      $("payTabBtnSub").addEventListener("click", function () {
-        $("payTabRegular").style.display = "none"; $("payTabSub").style.display = "";
-        $("payTabBtnRegular").className = "btn btn-sm btn-ghost"; $("payTabBtnSub").className = "btn btn-sm";
-      });
+      function showPayTab(tab) {
+        $("payTabRegular").style.display = tab === "regular" ? "" : "none";
+        $("payTabSub").style.display = tab === "sub" ? "" : "none";
+        $("payTabClient").style.display = tab === "client" ? "" : "none";
+        $("payTabBtnRegular").className = "btn btn-sm" + (tab === "regular" ? "" : " btn-ghost");
+        $("payTabBtnSub").className = "btn btn-sm" + (tab === "sub" ? "" : " btn-ghost");
+        $("payTabBtnClient").className = "btn btn-sm" + (tab === "client" ? "" : " btn-ghost");
+      }
+      $("payTabBtnRegular").addEventListener("click", function () { showPayTab("regular"); });
+      $("payTabBtnSub").addEventListener("click", function () { showPayTab("sub"); });
+      $("payTabBtnClient").addEventListener("click", function () { showPayTab("client"); });
 
       $("payBody").querySelectorAll("[data-ps]").forEach(function (row) {
         var sel = row.querySelector("[data-mode]"), vals = row.querySelector("[data-vals]");
@@ -6627,6 +6658,65 @@
         });
       }
 
+      // ── Пошук і додавання клієнта для індивідуальної ставки ──
+      var payClientSearchTimer = null;
+      var pcSearch = $("payClientSearch"), pcDrop = $("payClientDrop"), pcList = $("payClientList"), pcEmpty = $("payClientEmpty");
+      function pcAddedIds() {
+        return Array.prototype.map.call(pcList.querySelectorAll("[data-pc]"), function (r) { return String(r.getAttribute("data-pc")); });
+      }
+      function pcWireRow(row) {
+        row.querySelector("[data-pc-remove]").addEventListener("click", function () {
+          row.remove();
+          if (!pcList.querySelector("[data-pc]")) pcEmpty.style.display = "";
+        });
+      }
+      pcList.querySelectorAll("[data-pc]").forEach(pcWireRow);
+      function pcAddClient(c) {
+        if (pcAddedIds().indexOf(String(c.id)) !== -1) return; // вже в списку
+        var div = document.createElement("div");
+        div.innerHTML = payClientRowHtml({ client_id: c.id, client_name: c.name, client_phone: c.phone, mode: "percent", value: "" });
+        var row = div.firstElementChild;
+        pcList.appendChild(row);
+        pcWireRow(row);
+        pcEmpty.style.display = "none";
+        row.querySelector("[data-pc-val]").focus();
+      }
+      if (pcSearch) {
+        pcSearch.addEventListener("input", function () {
+          var q = pcSearch.value.trim();
+          clearTimeout(payClientSearchTimer);
+          if (q.length < 2) { pcDrop.style.display = "none"; pcDrop.innerHTML = ""; return; }
+          payClientSearchTimer = setTimeout(function () {
+            api("GET", "/api/crm/clients?q=" + encodeURIComponent(q)).then(function (r) {
+              var list = (r.j && r.j.clients) || [];
+              var added = pcAddedIds();
+              list = list.filter(function (c) { return added.indexOf(String(c.id)) === -1; }).slice(0, 8);
+              if (!list.length) {
+                pcDrop.innerHTML = '<div style="padding:10px 12px;font-size:.8rem;color:var(--text-dim);">Нічого не знайдено</div>';
+              } else {
+                pcDrop.innerHTML = list.map(function (c) {
+                  var nm = String(c.name || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+                  return '<div data-pc-pick="' + c.id + '" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line);font-size:.82rem;color:var(--cream);">' +
+                    nm + ' <span class="muted" style="font-size:.74rem;">' + (c.phone || "") + '</span></div>';
+                }).join("");
+                var byId = {}; list.forEach(function (c) { byId[c.id] = c; });
+                pcDrop.querySelectorAll("[data-pc-pick]").forEach(function (el) {
+                  el.addEventListener("mousedown", function (ev) {
+                    ev.preventDefault(); // не даємо blur спрацювати раніше кліку
+                    pcAddClient(byId[el.getAttribute("data-pc-pick")]);
+                    pcSearch.value = ""; pcDrop.style.display = "none"; pcDrop.innerHTML = "";
+                  });
+                });
+              }
+              pcDrop.style.display = "block";
+            });
+          }, 250);
+        });
+        pcSearch.addEventListener("blur", function () {
+          setTimeout(function () { pcDrop.style.display = "none"; }, 150);
+        });
+      }
+
       $("paySave").addEventListener("click", function () {
         var overrides = [], bad = null;
         $("payBody").querySelectorAll("[data-ps]").forEach(function (row) {
@@ -6660,6 +6750,19 @@
           subOverrides.push({ service_id: parseInt(row.getAttribute("data-pss"), 10), value: num });
         });
         if (bad) { $("payErr").textContent = bad; return; }
+        var clientOverrides = [];
+        $("payClientList").querySelectorAll("[data-pc]").forEach(function (row) {
+          var mode = row.querySelector("[data-pc-mode]").value === "fixed" ? "fixed" : "percent";
+          var num = parseFloat(row.querySelector("[data-pc-val]").value);
+          if (!isFinite(num) || num < 0) { bad = "Вкажіть коректну індивідуальну ставку для всіх доданих клієнтів"; return; }
+          if (mode === "percent" && num > 100) { bad = "Індивідуальний відсоток не може перевищувати 100"; return; }
+          clientOverrides.push({
+            client_id: parseInt(row.getAttribute("data-pc"), 10),
+            mode: mode,
+            value: mode === "fixed" ? Math.round(num * 100) : num, // фікс — у копійках
+          });
+        });
+        if (bad) { $("payErr").textContent = bad; return; }
         var def = $("payDef").value.trim();
         var defRet = $("payDefRet").value.trim();
         var defSub = $("paySubDef").value.trim();
@@ -6669,6 +6772,7 @@
           pay_percent_subscription: defSub === "" ? null : defSub,
           overrides: overrides,
           sub_overrides: subOverrides,
+          client_overrides: clientOverrides,
         }).then(function (r2) {
           if (!(r2.j && r2.j.ok)) { $("payErr").textContent = (r2.j && r2.j.error) || "Помилка збереження"; return; }
           closeModal();
