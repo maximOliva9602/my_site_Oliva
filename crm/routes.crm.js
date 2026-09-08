@@ -936,7 +936,7 @@ router.post("/appointments/bulk-import", owner, function (req, res) {
 
 /* ---- Розклад (для майстрів — загальний вигляд) ---- */
 router.get("/schedule", any, function (req, res) {
-  const date = clean(req.query.date, 10) || new Date().toISOString().slice(0, 10);
+  const date = clean(req.query.date, 10) || tz.nowKyiv().date;
   const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.service_id, a.client_id, a.price, a.paid, a.color_marker, a.comment, a.extra_services, " +
               "a.subscription_used, a.subscription_session_no, a.subscription_session_total, " +
               "c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, " +
@@ -1627,9 +1627,7 @@ router.get("/dashboard", owner, function (req, res) {
 
   // Межі тижня (Пн) і місяця
   const dt = new Date(today + "T00:00:00");
-  const dow = dt.getDay() === 0 ? 6 : dt.getDay() - 1;
-  const weekStart = new Date(dt); weekStart.setDate(dt.getDate() - dow);
-  const wStart = weekStart.toISOString().slice(0, 10);
+  const wStart = tz.mondayOf(today);
   const mStart = today.slice(0, 7) + "-01";
 
   /* Період для карток "Майстри" і "Фінанси" — власник може обрати інший
@@ -2381,10 +2379,12 @@ router.get("/masters/:id/pay", owner, function (req, res) {
     "SELECT service_id, value FROM master_subscription_pay WHERE master_id=?"
   ).all(id);
   const today = tz.nowKyiv().date;
-  const dt = new Date(today + "T00:00:00");
-  const dow = dt.getDay() === 0 ? 6 : dt.getDay() - 1;
-  const ws = new Date(dt); ws.setDate(dt.getDate() - dow);
-  const wStart = ws.toISOString().slice(0, 10);
+  /* wStart через new Date(...).toISOString() тут і рахувало "Тиждень" на
+     добу раніше, ніж треба (сервер працює в Europe/Kyiv, а toISOString()
+     завжди повертає UTC) — той самий баг, що вже ламав графік майстрів
+     (див. коментар у /masters/:id/schedule-period). tz.mondayOf() рахує
+     через Date.UTC, часовий пояс сервера йому байдужий. */
+  const wStart = tz.mondayOf(today);
   const mStart = today.slice(0, 7) + "-01";
   res.json({
     ok: true, master: m, services: services, overrides: overrides, sub_overrides: subOverrides,

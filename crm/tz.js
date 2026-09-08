@@ -82,6 +82,24 @@ function weekdayOf(date) {
   return new Date(Date.UTC(y, m - 1, d, 12, 0, 0)).getUTCDay();
 }
 
+/* +N (або -N) днів до дати 'YYYY-MM-DD', БЕЗ new Date(date+"T00:00:00")
+   і .toISOString(): та пара трактує рядок як настінний час СЕРВЕРА, а
+   виводить назад — завжди в UTC. На проді (TZ=Europe/Kyiv, UTC+2/3) це
+   зсуває результат на добу назад (вже ламало графік майстрів — див.
+   коментар у /masters/:id/schedule-period). Date.UTC + getUTC* тут
+   узагалі не бачать локального часового поясу — тому безпечні. */
+function addDays(date, n) {
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d) + n * 24 * 3600 * 1000);
+  return dt.getUTCFullYear() + "-" + String(dt.getUTCMonth() + 1).padStart(2, "0") + "-" + String(dt.getUTCDate()).padStart(2, "0");
+}
+/* Понеділок тижня, у якому лежить "date" (0=Пн..6=Нд-зсув через weekdayOf). */
+function mondayOf(date) {
+  const dow = weekdayOf(date); // 0=Нд..6=Сб
+  const isoOffset = dow === 0 ? 6 : dow - 1;
+  return addDays(date, -isoOffset);
+}
+
 /* Нормалізація телефону до ключа +380XXXXXXXXX (де можливо).
    Прибираємо все крім цифр і '+', зводимо укр. формати до +380. */
 function normPhone(raw) {
@@ -117,6 +135,6 @@ function parseMin(s) {
 function isDate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(String(s || "")); }
 
 module.exports = {
-  TZ, tzOffsetMinutes, apptInstant, nowKyiv, todayKyiv, weekdayOf,
+  TZ, tzOffsetMinutes, apptInstant, nowKyiv, todayKyiv, weekdayOf, addDays, mondayOf,
   normPhone, fmtMin, parseMin, isDate,
 };
