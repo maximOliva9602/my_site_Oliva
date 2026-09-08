@@ -1887,9 +1887,15 @@ router.get("/dashboard/analytics", owner, function (req, res) {
 
   /* Сертифікати рахуються по created_at (мс-timestamp, на відміну від
      appointments.date — рядок-дата), тому межі періоду переводимо в
-     епоху: from опівночі "from" до кінця доби "to" включно. */
-  const certFromMs = new Date(from + "T00:00:00").getTime();
-  const certToMs = new Date(to + "T00:00:00").getTime() + 24 * 3600 * 1000;
+     епоху: від київської півночі "from" до київської півночі дня після
+     "to" (тобто "to" включно). ВАЖЛИВО: new Date(str+"T00:00:00") тут
+     не підійде — вона трактує рядок як настінний час СЕРВЕРА (зазвичай
+     UTC на хостингу), а не Києва, тому межа "плаває" на 2-3 години і
+     сертифікат, куплений під північ, потрапляв не в той день. tz.js уже
+     має apptInstant() саме для цього — той самий метод, що і появи
+     записів на UTC-мілісекунди. */
+  const certFromMs = tz.apptInstant(from, 0);
+  const certToMs = tz.apptInstant(to, 0) + 24 * 3600 * 1000;
   const periodCerts = db.prepare(
     `SELECT COUNT(*) cnt, COALESCE(SUM(amount),0) sum FROM certificates
       WHERE created_at>=? AND created_at<?`

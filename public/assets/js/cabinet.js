@@ -98,6 +98,14 @@
   function uahGroup(n) { return String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
   function fmtMin(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
   function ddmm(d) { var p = d.split("-"); return p[2] + "." + p[1]; }
+  /* epoch (мс) -> "YYYY-MM-DD" за ЛОКАЛЬНИМ часом браузера (Kyiv для
+     персоналу, який фізично тут) — на відміну від toISOString(), яка
+     завжди UTC і біля півночі показувала не той день (сертифікат,
+     куплений о 00:30 за Києвом, "їхав" на попередню дату). */
+  function ymdLocal(ms) {
+    var d = new Date(ms);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
   /* Статус номера сертифіката при вводі: free — ще ніде не зʼявлявся,
      нема попередження; available — замовлення з сайту на цей номер,
      ще не використане, можна прийняти (зелена галочка); used/cancelled
@@ -4633,11 +4641,11 @@
         var typeLine = [c.cert_type, c.delivery].filter(Boolean).join(" · ") + (c.address ? " — " + c.address : "");
         if (typeLine) subLines.push(typeLine);
         if (c.wishes) subLines.push("💬 " + c.wishes);
-        subLines.push("Замовлено: " + ddmm(new Date(c.created_at).toISOString().slice(0,10)));
+        subLines.push("Замовлено: " + ddmm(ymdLocal(c.created_at)));
       } else {
         if (c.buyer_name && c.buyer_name !== "—") subLines.push(c.buyer_name + (c.buyer_phone ? " · " + c.buyer_phone : ""));
         if (c.service_label) subLines.push(c.service_label);
-        subLines.push((c.status === "used" ? "Відпрацьовано: " : "Створено: ") + ddmm(new Date(c.used_at || c.created_at).toISOString().slice(0,10)) + (c.used_note ? " · " + c.used_note : ""));
+        subLines.push((c.status === "used" ? "Відпрацьовано: " : "Створено: ") + ddmm(ymdLocal(c.used_at || c.created_at)) + (c.used_note ? " · " + c.used_note : ""));
       }
       subLines.forEach(function(line) { info.appendChild(el("div", "sub", line)); });
       row.appendChild(info); row.appendChild(el("span", "sp"));
