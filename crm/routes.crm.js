@@ -1896,9 +1896,20 @@ router.get("/dashboard/analytics", owner, function (req, res) {
      записів на UTC-мілісекунди. */
   const certFromMs = tz.apptInstant(from, 0);
   const certToMs = tz.apptInstant(to, 0) + 24 * 3600 * 1000;
+  /* "Куплено" ≠ будь-який рядок у таблиці: коли клієнт розраховується
+     кодом сертифіката, якого система раніше не бачила (паперовий,
+     проданий не через сайт), POST /certificates/log заводить рядок
+     заднім числом ІЗ СТАТУСОМ 'used' — і created_at, і used_at ставить
+     на МОМЕНТ РОЗРАХУНКУ (used_at=created_at рівно). Це не покупка "цього
+     дня", а лише факт, що персонал того дня вписав код при оплаті —
+     справжня дата продажу нікому не відома. Без цього винятку такий
+     рядок рахувався як "куплено" саме в день використання, хоча
+     насправді міг бути проданий місяцями раніше. Справжні покупки
+     (онлайн-замовлення чи вручну заведений номер ДО використання) мають
+     used_at IS NULL на момент створення — їх виняток не чіпає. */
   const periodCerts = db.prepare(
     `SELECT COUNT(*) cnt, COALESCE(SUM(amount),0) sum FROM certificates
-      WHERE created_at>=? AND created_at<?`
+      WHERE created_at>=? AND created_at<? AND NOT (used_at IS NOT NULL AND used_at=created_at)`
   ).get(certFromMs, certToMs);
 
   const totalClients = db.prepare("SELECT COUNT(*) v FROM clients").get().v;
