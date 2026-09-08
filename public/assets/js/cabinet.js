@@ -5885,6 +5885,7 @@
         { icon:"👤", val: (d.period_clients||0)+"",    lbl:"К-ть клієнтів" },
         { icon:"🧑‍🤝‍🧑", val: (d.total_clients||0)+"",  lbl:"Всього клієнтів" },
         { icon:"⭐", val: (d.period_reviews||0)+"",    lbl:"Відгуків" },
+        { icon:"🎁", val: (d.period_certificates||0)+"", lbl:"Куплено сертифікатів (" + grn(d.period_certificates_amount||0) + ")" },
       ].forEach(function(k) {
         var c = document.createElement("div");
         c.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 14px;";

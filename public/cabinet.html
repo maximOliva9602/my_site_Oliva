@@ -177,6 +177,14 @@
       position:fixed; bottom:0; left:0; right:0; z-index:50;
       background:var(--panel); border-top:1px solid var(--line);
       padding:6px 0 max(8px, env(safe-area-inset-bottom, 8px));
+      /* iOS Safari: position:fixed без власного GPU-шару на довгій
+         сторінці (напр. "Трафік") під час прокрутки не встигає
+         перемальовуватись і візуально "відстає", ніби панель прилипла
+         десь посередині екрана — і лише щойно скрол зупиняється,
+         панель миттю "доганяє" правильну позицію внизу. translateZ(0)
+         виносить її на окремий композитний шар, і браузер більше не
+         перемальовує її на кожен кадр скролу. */
+      transform:translateZ(0); -webkit-transform:translateZ(0);
     }
   }
   .mob-tab {
@@ -275,7 +283,7 @@
 <div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
 <script src="assets/js/service-groups.js?v=4"></script>
-<script src="assets/js/cabinet.js?v=200"></script>
+<script src="assets/js/cabinet.js?v=201"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(){});

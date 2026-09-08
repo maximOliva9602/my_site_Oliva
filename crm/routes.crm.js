@@ -1885,6 +1885,16 @@ router.get("/dashboard/analytics", owner, function (req, res) {
        JOIN appointments a ON a.id=r.appointment_id WHERE a.date>=? AND a.date<=?`
   ).get(from, to).v;
 
+  /* Сертифікати рахуються по created_at (мс-timestamp, на відміну від
+     appointments.date — рядок-дата), тому межі періоду переводимо в
+     епоху: from опівночі "from" до кінця доби "to" включно. */
+  const certFromMs = new Date(from + "T00:00:00").getTime();
+  const certToMs = new Date(to + "T00:00:00").getTime() + 24 * 3600 * 1000;
+  const periodCerts = db.prepare(
+    `SELECT COUNT(*) cnt, COALESCE(SUM(amount),0) sum FROM certificates
+      WHERE created_at>=? AND created_at<?`
+  ).get(certFromMs, certToMs);
+
   const totalClients = db.prepare("SELECT COUNT(*) v FROM clients").get().v;
 
   // Дохід по днях за вибраний період
@@ -1965,6 +1975,8 @@ router.get("/dashboard/analytics", owner, function (req, res) {
     period_revenue:  periodRevenue,
     period_clients:  periodClients,
     period_reviews:  periodReviews,
+    period_certificates: periodCerts.cnt,
+    period_certificates_amount: periodCerts.sum,
     total_clients:   totalClients,
     clients_period:  clientsPeriod,
     revenue_by_day:  revenueByDay,
