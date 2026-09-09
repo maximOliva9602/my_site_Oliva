@@ -6452,7 +6452,20 @@
           var svcCount = (m.service_ids || []).length;
           var hidden = m.show_on_site != null && !m.show_on_site;
           info.appendChild(el("div", "t", m.name + (m.last_name ? " " + m.last_name : "") + (hidden ? "  🚫 приховано з сайту" : "")));
-          info.appendChild(el("div", "sub", (m.level || "Майстер") + " · " + (m.phone || "—") + " · " + svcCount + " послуг"));
+          /* Позначка на весь список одразу, а не тільки всередині "💰 Зарплата"
+             кожного майстра окремо — саме так довелось шукати розбіжність
+             у Олени: без відкриття кожного майстра поодинці недобір ЗП
+             (порожнє "Новий" чи "Повторний", тихо підмінене іншим полем)
+             ніде не було видно. */
+          var payBoth = m.pay_percent == null && m.pay_percent_return == null;
+          var payGap = !payBoth && (m.pay_percent == null || m.pay_percent_return == null);
+          var subLine = el("div", "sub", (m.level || "Майстер") + " · " + (m.phone || "—") + " · " + svcCount + " послуг");
+          if (payBoth) {
+            var w1 = el("span", null, " · ⚠️ ЗП не задано (0 грн)"); w1.style.color = "var(--err)"; subLine.appendChild(w1);
+          } else if (payGap) {
+            var w2 = el("span", null, " · ⚠️ ЗП: задано лише одну ставку"); w2.style.color = "var(--warn)"; subLine.appendChild(w2);
+          }
+          info.appendChild(subLine);
           row.appendChild(info); row.appendChild(el("span", "sp"));
           var prof = el("button", "btn btn-sm btn-ghost", "Профіль"); prof.addEventListener("click", function () { masterModal(m); });
           var sch = el("button", "btn btn-sm btn-ghost", "Графік"); sch.addEventListener("click", function () {
