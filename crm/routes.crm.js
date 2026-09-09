@@ -368,16 +368,15 @@ function createAppointment(d, session) {
    якщо для пари (майстер, клієнт) задано окрему ставку, вона діє для
    ВСІХ візитів цього клієнта в цього майстра, незалежно від послуги,
    нового/повторного статусу чи абонементу.
-   Заробіток = сума ставок по завершених візитах за період. */
-function masterEarnings(masterId, from, to) {
+   Заробіток = сума ставок по завершених візитах за період.
+
+   masterEarningsDetail() рахує те саме, але повертає рядок на кожен
+   візит (сума, новий/повторний, звідки взялась ставка) — щоб власник
+   міг звірити підсумок вручну, а не вірити цифрі наосліп: звідси й
+   GET /masters/:id/pay/breakdown. masterEarnings() лишається тонкою
+   обгорткою (сума) для існуючих викликів. */
+function masterEarningsDetail(masterId, from, to) {
   const m = db.prepare("SELECT pay_percent, pay_percent_return, pay_percent_subscription FROM masters WHERE id=?").get(masterId);
-  /* pay_percent (новий) і pay_percent_return (повторний) — тепер симетричні
-     фолбеки один одного, а не однобічні. Раніше незаданий pay_percent
-     завжди ставав 0, навіть якщо власник свідомо заповнив ЛИШЕ
-     pay_percent_return, маючи на увазі "ця ставка для всіх клієнтів
-     майстра" — новий клієнт тоді рахувався як 0 грн замість очікуваної
-     ставки (саме так і губилась зарплата: майстер зі "стоїть тільки
-     40%" отримував 0% з кожного нового клієнта). */
   const rawNew = (m && m.pay_percent != null) ? m.pay_percent : null;
   const rawRet = (m && m.pay_percent_return != null) ? m.pay_percent_return : null;
   const defNew = rawNew != null ? rawNew : (rawRet != null ? rawRet : 0);
@@ -393,41 +392,54 @@ function masterEarnings(masterId, from, to) {
   db.prepare("SELECT client_id, mode, value FROM master_client_pay WHERE master_id=?")
     .all(masterId).forEach(function (r) { clientOverrides[r.client_id] = r; });
   const rows = db.prepare(
-    `SELECT id, client_id, service_id, price, date, start_min, subscription_used
-       FROM appointments
-      WHERE (master_id=? OR second_master_id=?) AND status='completed' AND date>=? AND date<=?`
+    `SELECT a.id, a.client_id, a.service_id, a.price, a.date, a.start_min, a.subscription_used,
+            a.master_id, a.second_master_id, c.name client_name, s.name service_name
+       FROM appointments a
+       JOIN clients c ON c.id = a.client_id
+       JOIN services s ON s.id = a.service_id
+      WHERE (a.master_id=? OR a.second_master_id=?) AND a.status='completed' AND a.date>=? AND a.date<=?
+      ORDER BY a.date, a.start_min`
   ).all(masterId, masterId, from, to);
-  /* "Повторний клієнт" для ЦЬОГО майстра — і якщо він раніше обслуговував
-     цього клієнта як другий майстер на парній процедурі, це теж рахується
-     (його власна історія з клієнтом, незалежно від ролі в записі). */
   const isRetStmt = db.prepare(
     `SELECT 1 FROM appointments
       WHERE client_id=? AND (master_id=? OR second_master_id=?) AND status='completed' AND id != ?
         AND (date < ? OR (date = ? AND start_min < ?)) LIMIT 1`
   );
-  let total = 0;
+  const items = [];
   for (const a of rows) {
+    const role = a.master_id === masterId ? "primary" : "second";
     const co = clientOverrides[a.client_id];
     if (co) {
-      total += co.mode === "fixed" ? Math.round(co.value) : Math.round((a.price || 0) * co.value / 100);
+      const amount = co.mode === "fixed" ? Math.round(co.value) : Math.round((a.price || 0) * co.value / 100);
+      items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
+        price: a.price, role: role, kind: "client_override", rate_mode: co.mode, rate_value: co.value, amount: amount });
       continue;
     }
     const o = overrides[a.service_id];
     if (a.subscription_used) {
       const pct = subOverrides[a.service_id] != null ? subOverrides[a.service_id] : defSub;
-      if (pct) total += Math.round((a.price || 0) * pct / 100);
+      const amount = pct ? Math.round((a.price || 0) * pct / 100) : 0;
+      items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
+        price: a.price, role: role, kind: "subscription", rate_mode: "percent", rate_value: pct, amount: amount });
       continue;
     }
     const isReturn = !!isRetStmt.get(a.client_id, masterId, masterId, a.id, a.date, a.date, a.start_min);
     if (o) {
       const val = (isReturn && o.value_return != null) ? o.value_return : o.value;
-      total += o.mode === "fixed" ? Math.round(val) : Math.round((a.price || 0) * val / 100);
+      const amount = o.mode === "fixed" ? Math.round(val) : Math.round((a.price || 0) * val / 100);
+      items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
+        price: a.price, role: role, kind: "service_override", is_return: isReturn, rate_mode: o.mode, rate_value: val, amount: amount });
     } else {
       const pct = isReturn ? defRet : defNew;
-      if (pct) total += Math.round((a.price || 0) * pct / 100);
+      const amount = pct ? Math.round((a.price || 0) * pct / 100) : 0;
+      items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
+        price: a.price, role: role, kind: "default", is_return: isReturn, rate_mode: "percent", rate_value: pct, amount: amount });
     }
   }
-  return total; // копійки
+  return items;
+}
+function masterEarnings(masterId, from, to) {
+  return masterEarningsDetail(masterId, from, to).reduce(function (sum, it) { return sum + it.amount; }, 0);
 }
 
 /* Перемикачі SMS-сповіщень із app_settings ("1"/"0"; dfltOn — типове значення). */
@@ -2426,6 +2438,22 @@ router.get("/masters/:id/pay", owner, function (req, res) {
       month: masterEarnings(id, mStart, today),
     },
   });
+});
+
+/* Детальний розрахунок зарплати по кожному завершеному візиту за період —
+   щоб власник міг звірити підсумок вручну (клієнт, ставка, сума), а не
+   вірити одному числу наосліп. Типово — поточний місяць, як і картка
+   "Місяць"; можна передати свій period через ?from=&to=. */
+router.get("/masters/:id/pay/breakdown", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const m = db.prepare("SELECT id, name FROM masters WHERE id=?").get(id);
+  if (!m) return res.status(404).json({ ok: false });
+  const today = tz.nowKyiv().date;
+  const from = clean(req.query.from, 10) || (today.slice(0, 7) + "-01");
+  const to   = clean(req.query.to,   10) || today;
+  const items = masterEarningsDetail(id, from, to);
+  const total = items.reduce(function (s, it) { return s + it.amount; }, 0);
+  res.json({ ok: true, master: m, period: { from, to }, items: items, total: total });
 });
 
 router.patch("/masters/:id/pay", owner, function (req, res) {

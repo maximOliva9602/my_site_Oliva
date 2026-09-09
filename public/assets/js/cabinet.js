@@ -6490,6 +6490,9 @@
             '<div style="font-weight:700;color:var(--cream);font-size:.92rem;">' + grn(x[1]) + '</div></div>';
         }).join("") + '</div>';
 
+      html += '<button type="button" class="btn btn-ghost btn-sm" id="payBreakdownToggle" style="margin-bottom:14px;">🔍 Детальний розрахунок за місяць — звірити вручну</button>' +
+        '<div id="payBreakdown" style="display:none;margin:-6px 0 14px;"></div>';
+
       // ── Перемикач вкладок ──
       html += '<div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line);flex-wrap:wrap;">' +
         '<button type="button" class="btn btn-sm" id="payTabBtnRegular" style="border-radius:8px 8px 0 0;">Звичайні візити</button>' +
@@ -6724,6 +6727,38 @@
           setTimeout(function () { pcDrop.style.display = "none"; }, 150);
         });
       }
+
+      // ── Детальний розрахунок (звірка вручну) ──
+      $("payBreakdownToggle").addEventListener("click", function () {
+        var box = $("payBreakdown");
+        if (box.style.display !== "none") { box.style.display = "none"; return; }
+        box.style.display = "block";
+        box.innerHTML = '<div class="empty">Завантаження…</div>';
+        api("GET", "/api/crm/masters/" + m.id + "/pay/breakdown").then(function (r) {
+          if (!(r.j && r.j.ok)) { box.innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
+          var items = r.j.items || [];
+          if (!items.length) { box.innerHTML = '<div class="empty">За цей місяць немає завершених візитів</div>'; return; }
+          var KIND_LBL = { default: null, service_override: "своя ставка на послугу", subscription: "абонемент", client_override: "індивідуальна ставка клієнта" };
+          var rows = items.map(function (it) {
+            var rateTxt = it.rate_mode === "fixed" ? "фікс. " + grn(it.rate_value) : (it.rate_value || 0) + "%";
+            var kindTxt = KIND_LBL[it.kind];
+            var whoTxt = it.kind === "default" || it.kind === "service_override"
+              ? (it.is_return ? "повторний" : "новий") + (kindTxt ? " · " + kindTxt : "")
+              : (kindTxt || "");
+            var roleTxt = it.role === "second" ? " · 👥 другий майстер" : "";
+            return '<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:.78rem;">' +
+              '<div style="color:var(--cream);">' + ddmm(it.date) + ' · ' + it.client_name + roleTxt + '</div>' +
+              '<div class="muted" style="margin-top:1px;">' + it.service_name + '</div>' +
+              '<div style="margin-top:2px;display:flex;justify-content:space-between;gap:8px;">' +
+                '<span class="muted">' + whoTxt + ' · ' + rateTxt + ' від ' + grn(it.price) + '</span>' +
+                '<span style="color:var(--cream);font-weight:600;white-space:nowrap;">' + grn(it.amount) + '</span>' +
+              '</div></div>';
+          }).join("");
+          box.innerHTML = '<div style="max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:0 10px;">' + rows + '</div>' +
+            '<div style="display:flex;justify-content:space-between;padding:8px 2px 0;font-size:.85rem;font-weight:700;color:var(--cream);">' +
+              '<span>Разом (' + items.length + ' візит' + (items.length === 1 ? "" : "и") + ')</span><span>' + grn(r.j.total) + '</span></div>';
+        });
+      });
 
       $("paySave").addEventListener("click", function () {
         var overrides = [], bad = null;
