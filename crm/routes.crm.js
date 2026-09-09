@@ -371,8 +371,17 @@ function createAppointment(d, session) {
    Заробіток = сума ставок по завершених візитах за період. */
 function masterEarnings(masterId, from, to) {
   const m = db.prepare("SELECT pay_percent, pay_percent_return, pay_percent_subscription FROM masters WHERE id=?").get(masterId);
-  const defNew = (m && m.pay_percent) || 0;
-  const defRet = (m && m.pay_percent_return != null) ? m.pay_percent_return : defNew;
+  /* pay_percent (новий) і pay_percent_return (повторний) — тепер симетричні
+     фолбеки один одного, а не однобічні. Раніше незаданий pay_percent
+     завжди ставав 0, навіть якщо власник свідомо заповнив ЛИШЕ
+     pay_percent_return, маючи на увазі "ця ставка для всіх клієнтів
+     майстра" — новий клієнт тоді рахувався як 0 грн замість очікуваної
+     ставки (саме так і губилась зарплата: майстер зі "стоїть тільки
+     40%" отримував 0% з кожного нового клієнта). */
+  const rawNew = (m && m.pay_percent != null) ? m.pay_percent : null;
+  const rawRet = (m && m.pay_percent_return != null) ? m.pay_percent_return : null;
+  const defNew = rawNew != null ? rawNew : (rawRet != null ? rawRet : 0);
+  const defRet = rawRet != null ? rawRet : defNew;
   const defSub = (m && m.pay_percent_subscription != null) ? m.pay_percent_subscription : defNew;
   const overrides = {};
   db.prepare("SELECT service_id, mode, value, value_return FROM master_service_pay WHERE master_id=?")

@@ -6500,10 +6500,16 @@
       // ── Вкладка 1: звичайні візити ──
       html += '<div id="payTabRegular">';
       html += '<div class="sub" style="margin-bottom:12px;">Заробіток рахується із <b>завершених</b> візитів. <b>Новий</b> — перший завершений візит клієнта у цього майстра; <b>повторний</b> — усі наступні.</div>';
-      var payNotSet = d.master.pay_percent == null;
+      /* "Новий" і "повторний" — фолбеки один одного (сервер): якщо задано
+         лише один із двох, він діє для ОБОХ типів клієнтів. 0 грн буде,
+         тільки якщо не задано жодного. */
+      var payNotSet = d.master.pay_percent == null && d.master.pay_percent_return == null;
       if (payNotSet) {
         html += '<div style="background:#fff4e0;border:1px solid #e6c789;border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:.8rem;color:#8a6414;">' +
-          '⚠️ Відсоток оплати ще не задано — заробіток рахуватиметься як 0 грн, доки ви не вкажете %.</div>';
+          '⚠️ Відсоток оплати ще не задано — заробіток рахуватиметься як 0 грн, доки ви не вкажете хоча б один %.</div>';
+      } else if (d.master.pay_percent == null || d.master.pay_percent_return == null) {
+        html += '<div style="background:#eef5e6;border:1px solid #c9e0ab;border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:.8rem;color:#4a6b2a;">' +
+          'ℹ️ Задано лише один відсоток — він діє однаково і для нового, і для повторного клієнта.</div>';
       }
       html += '<label>Типовий відсоток від ціни послуги</label>' +
         '<div style="display:flex;flex-direction:column;gap:6px;">' +
