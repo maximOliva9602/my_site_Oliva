@@ -2510,7 +2510,9 @@
        офіційний click-to-chat: відкриваємо чат саме з цим клієнтом із уже
        набраним текстом, персоналу лишається натиснути «Надіслати». */
     var reviewPhone = String(a.client_phone || "").replace(/\D/g, "");
-    var canAskReview = a.status === "completed" && reviewPhone.length >= 10 && a.client_name !== "Гість";
+    /* Лише власник — майстри не повинні самі писати клієнтам від імені
+       студії (в т.ч. платні SMS), це рішення власника, коли й кого просити. */
+    var canAskReview = ME.role === "owner" && a.status === "completed" && reviewPhone.length >= 10 && a.client_name !== "Гість";
     if (canAskReview) {
       html += '<div style="margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;">' +
         '<div style="font-size:.82rem;font-weight:600;color:var(--cream);margin-bottom:8px;">⭐ Запросити відгук</div>' +

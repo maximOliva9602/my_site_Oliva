@@ -590,26 +590,20 @@ router.get("/appointments/:id(\\d+)", any, function (req, res) {
    ендпоінт, а не поле в GET /appointments/:id, бо картку візиту
    відкривають з даних, уже завантажених списком (без цього поля), а
    рендерити текст для КОЖНОГО запису в тому списку — зайве. */
-router.get("/appointments/:id(\\d+)/review-text", any, function (req, res) {
+router.get("/appointments/:id(\\d+)/review-text", owner, function (req, res) {
   const id = parseInt(req.params.id, 10);
   const a = id ? apptRow(id) : null;
   if (!a) return res.status(404).json({ ok: false, error: "not found" });
-  if (req.session.role !== "owner" && a.master_id !== req.session.masterId) {
-    return res.status(403).json({ ok: false, error: "forbidden" });
-  }
   res.json({ ok: true, text: require("./notify").reviewRequestText(a.master_id) });
 });
 
 /* Надіслати запит на відгук СМС-кою напряму клієнту (без черги, за
    кліком персоналу — аналог кнопок WhatsApp/Telegram, тільки замість
    переходу в месенджер одразу йде реальна платна СМС). */
-router.post("/appointments/:id(\\d+)/ask-review-sms", any, function (req, res) {
+router.post("/appointments/:id(\\d+)/ask-review-sms", owner, function (req, res) {
   const id = parseInt(req.params.id, 10);
   const a = id ? apptRow(id) : null;
   if (!a) return res.status(404).json({ ok: false, error: "not found" });
-  if (req.session.role !== "owner" && a.master_id !== req.session.masterId) {
-    return res.status(403).json({ ok: false, error: "forbidden" });
-  }
   if (a.status !== "completed") return res.status(400).json({ ok: false, error: "not completed" });
   if (a.client_name === "Гість") return res.status(400).json({ ok: false, error: "guest client" });
   const phone = tz.normPhone(a.client_phone);
@@ -648,13 +642,10 @@ router.post("/appointments/:id(\\d+)/ask-review-sms", any, function (req, res) {
    і в журналі сповіщень було видно, що клієнта вже просили, незалежно
    від каналу. DO NOTHING на конфлікті: не затираємо статус 'sent' від
    справжньої SMS-відправки повторним кліком по іншій кнопці. */
-router.post("/appointments/:id(\\d+)/review-request-mark", any, function (req, res) {
+router.post("/appointments/:id(\\d+)/review-request-mark", owner, function (req, res) {
   const id = parseInt(req.params.id, 10);
   const a = id ? apptRow(id) : null;
   if (!a) return res.status(404).json({ ok: false, error: "not found" });
-  if (req.session.role !== "owner" && a.master_id !== req.session.masterId) {
-    return res.status(403).json({ ok: false, error: "forbidden" });
-  }
   if (a.status !== "completed") return res.status(400).json({ ok: false, error: "not completed" });
   const CHANNELS = ["whatsapp", "telegram", "viber", "copy"];
   const channel = CHANNELS.indexOf(clean((req.body || {}).channel, 20)) !== -1 ? (req.body || {}).channel : "copy";
