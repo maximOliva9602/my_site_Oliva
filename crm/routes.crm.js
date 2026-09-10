@@ -287,6 +287,21 @@ function createAppointment(d, session) {
   let publicId, appointmentId;
   try {
     db.transaction(function () {
+      /* Захист від дубля: подвійне/багаторазове натискання "Зберегти"
+         (повільна мережа, нетерплячий тап) раніше створювало кілька
+         однакових записів на той самий час того самого майстра — тут
+         конфлікту не було, бо ця перевірка взагалі не робилась (на
+         відміну від публічного онлайн-запису, де isSlotFree() рятує).
+         Навмисне бронювання поза графіком/у перерву тут не ламаємо —
+         перевіряємо лише накладку з ІНШИМ реальним записом цього
+         майстра, а не робочі години. */
+      const overlap = db.prepare(
+        `SELECT 1 FROM appointments
+          WHERE master_id=? AND date=? AND status NOT IN ('cancelled')
+            AND start_min < ? AND end_min > ?
+          LIMIT 1`
+      ).get(masterId, date, startMin + totalDuration, startMin);
+      if (overlap) { const err = new Error("SLOT_TAKEN"); err.code = "SLOT_TAKEN"; throw err; }
       let client = null;
       if (isGuest) client = { id: getOrCreateGuestClient() };
       if (!client && clientId) client = db.prepare("SELECT id FROM clients WHERE id=?").get(clientId);

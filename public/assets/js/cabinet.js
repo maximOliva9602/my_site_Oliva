@@ -4112,6 +4112,12 @@
     }
 
     $("mSave").addEventListener("click", function () {
+      var saveBtn = $("mSave");
+      /* Захист від дубля: без цього кілька швидких тапів (повільна мережа,
+         нетерплячий клік) відправляли кілька однакових POST-ів і плодили
+         декілька записів на той самий час — бекенд тепер теж це блокує,
+         але тут блокуємо ще на кліку, щоб не спамити зайвими запитами. */
+      if (saveBtn.disabled) return;
       var err = $("mErr"); err.textContent = "";
       if (chosen.start_min == null) { err.textContent = "Оберіть час"; return; }
       var name, phone;
@@ -4132,6 +4138,7 @@
       var certCode = $("mCertCode").value.trim();
       var url = ME.role === "owner" ? "/api/crm/appointments" : "/api/crm/me/appointments";
       var extras = selectedServices.slice(1);
+      saveBtn.disabled = true;
       api("POST", url, {
         service: $("mService").value, master: $("mMaster").value,
         branch: $("mBranchRow") && $("mBranchRow").style.display !== "none" ? $("mBranch").value : undefined,
@@ -4147,11 +4154,12 @@
            ризик другого такого самого запису. */
         if (res.netError) {
           err.textContent = "Зв'язок пропав — невідомо, чи створився запис. Закрийте вікно й перевірте розклад, перш ніж створювати ще раз.";
+          saveBtn.disabled = false;
           return;
         }
-        if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; return; }
-        if (res.code === 404 && res.j.error === "CLIENT_NOT_FOUND") { err.textContent = "Клієнта не знайдено. Спробуйте обрати ще раз."; return; }
-        if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); return; }
+        if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; saveBtn.disabled = false; return; }
+        if (res.code === 404 && res.j.error === "CLIENT_NOT_FOUND") { err.textContent = "Клієнта не знайдено. Спробуйте обрати ще раз."; saveBtn.disabled = false; return; }
+        if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); saveBtn.disabled = false; return; }
 
         var clientId = res.j.appointment && res.j.appointment.client_id;
         var appointmentId = res.j.appointment && res.j.appointment.id;
