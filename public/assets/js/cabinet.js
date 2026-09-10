@@ -6621,6 +6621,26 @@
             '<div style="font-weight:700;color:var(--cream);font-size:.92rem;">' + grn(x[1]) + '</div></div>';
         }).join("") + '</div>';
 
+      // ── Надбавка (напр. за продаж сертифікатів) — вручну, бо сертифікат
+      //    не прив'язаний до конкретного майстра в базі. ──
+      html += '<div style="margin-bottom:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;">' +
+        '<div style="font-size:.82rem;font-weight:600;color:var(--cream);margin-bottom:8px;">🎁 Надбавка (напр. за продаж сертифікатів)</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">' +
+        [["Сьогодні", "bonusTileToday", d.bonuses.today], ["Тиждень", "bonusTileWeek", d.bonuses.week], ["Місяць", "bonusTileMonth", d.bonuses.month]].map(function (x) {
+          return '<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center;">' +
+            '<div style="font-size:.66rem;color:var(--text-dim);margin-bottom:2px;">' + x[0] + '</div>' +
+            '<div id="' + x[1] + '" style="font-weight:700;color:var(--cream);font-size:.86rem;">' + grn(x[2]) + '</div></div>';
+        }).join("") + '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">' +
+          '<input type="date" id="bonusDate" style="width:140px;">' +
+          '<input type="number" id="bonusAmount" placeholder="Сума, грн" min="0" step="1" style="width:110px;">' +
+          '<input type="text" id="bonusNote" placeholder="Коментар (необов\'язково) — напр. № сертифіката" style="flex:1;min-width:140px;">' +
+          '<button type="button" class="btn btn-sm btn-primary" id="bonusAdd">+ Додати</button>' +
+        '</div>' +
+        '<div class="err" id="bonusErr"></div>' +
+        '<div id="bonusList"></div>' +
+      '</div>';
+
       html += '<button type="button" class="btn btn-ghost btn-sm" id="payBreakdownToggle" style="margin-bottom:14px;">🔍 Детальний розрахунок за місяць — звірити вручну</button>' +
         '<div id="payBreakdown" style="display:none;margin:-6px 0 14px;"></div>';
 
@@ -6739,6 +6759,57 @@
       html += '<div class="err" id="payErr"></div>' +
         '<div class="modal-foot"><button class="btn btn-primary" id="paySave">Зберегти</button><button class="btn btn-ghost" id="payClose">Закрити</button></div>';
       $("payBody").innerHTML = html;
+
+      // ── Надбавка: список за поточний місяць + додавання/видалення ──
+      $("bonusDate").value = todayStr();
+      function loadBonusList() {
+        var box = $("bonusList");
+        box.innerHTML = '<div class="empty">Завантаження…</div>';
+        api("GET", "/api/crm/masters/" + m.id + "/bonuses").then(function (r) {
+          if (!(r.j && r.j.ok)) { box.innerHTML = '<div class="empty">Помилка завантаження</div>'; return; }
+          var items = r.j.items || [];
+          if (!items.length) { box.innerHTML = '<div class="empty" style="font-size:.78rem;">За цей місяць надбавок ще немає</div>'; return; }
+          box.innerHTML = items.map(function (it) {
+            return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:.8rem;">' +
+              '<span class="muted" style="min-width:70px;">' + it.date.split("-").reverse().join(".") + '</span>' +
+              '<span style="font-weight:600;color:var(--cream);min-width:70px;">' + grn(it.amount) + '</span>' +
+              '<span class="muted" style="flex:1;">' + (it.note ? String(it.note).replace(/&/g, "&amp;").replace(/</g, "&lt;") : "") + '</span>' +
+              '<button type="button" class="btn btn-ghost btn-sm" data-bonus-del="' + it.id + '" style="padding:2px 8px;">🗑</button>' +
+            '</div>';
+          }).join("");
+          box.querySelectorAll("[data-bonus-del]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              if (!confirm("Видалити цю надбавку?")) return;
+              api("DELETE", "/api/crm/masters/" + m.id + "/bonuses/" + btn.getAttribute("data-bonus-del")).then(function () {
+                loadBonusList(); refreshBonusTiles();
+              });
+            });
+          });
+        });
+      }
+      function refreshBonusTiles() {
+        api("GET", "/api/crm/masters/" + m.id + "/pay").then(function (r) {
+          if (!(r.j && r.j.ok)) return;
+          $("bonusTileToday").textContent = grn(r.j.bonuses.today);
+          $("bonusTileWeek").textContent = grn(r.j.bonuses.week);
+          $("bonusTileMonth").textContent = grn(r.j.bonuses.month);
+        });
+      }
+      loadBonusList();
+      $("bonusAdd").addEventListener("click", function () {
+        var errEl = $("bonusErr"); errEl.textContent = "";
+        var amount = parseFloat($("bonusAmount").value);
+        if (!(amount > 0)) { errEl.textContent = "Вкажіть суму більше 0"; return; }
+        api("POST", "/api/crm/masters/" + m.id + "/bonuses", {
+          date: $("bonusDate").value || todayStr(),
+          amount: amount,
+          note: $("bonusNote").value.trim(),
+        }).then(function (r) {
+          if (!(r.j && r.j.ok)) { errEl.textContent = "Помилка збереження"; return; }
+          $("bonusAmount").value = ""; $("bonusNote").value = "";
+          loadBonusList(); refreshBonusTiles();
+        });
+      });
 
       function showPayTab(tab) {
         $("payTabRegular").style.display = tab === "regular" ? "" : "none";

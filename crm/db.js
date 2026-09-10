@@ -152,6 +152,22 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notif_status   ON notifications(status);
 CREATE INDEX IF NOT EXISTS idx_notif_provider ON notifications(provider_msg_id);
+
+/* Надбавки майстру (напр. за продаж подарункового сертифіката) — окремий
+   рядок у "💰 Зарплата", вручну вписаний власником. Сертифікати не мають
+   master_id (продаються "від студії", не прив'язані до конкретного
+   майстра), тому автоматично нарахувати це неможливо — лише журнал
+   ручних записів, які додаються до Сьогодні/Тиждень/Місяць за датою. */
+CREATE TABLE IF NOT EXISTS master_bonuses (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  master_id  INTEGER NOT NULL,
+  date       TEXT NOT NULL,
+  amount     INTEGER NOT NULL,
+  note       TEXT,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (master_id) REFERENCES masters(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_master_bonus_master_date ON master_bonuses(master_id, date);
 `);
 
 /* ---------------- Таблиця блог-статей ---------------- */

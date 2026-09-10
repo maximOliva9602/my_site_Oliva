@@ -468,6 +468,15 @@ function masterEarnings(masterId, from, to) {
   return masterEarningsDetail(masterId, from, to).reduce(function (sum, it) { return sum + it.amount; }, 0);
 }
 
+/* Сума ручних надбавок (master_bonuses) за період — окремо від
+   masterEarnings() вище, щоб не змішувати "чистий" заробіток від візитів
+   (звірений із реальними цифрами власника) із довільними ручними сумами. */
+function masterBonusSum(masterId, from, to) {
+  return db.prepare(
+    "SELECT COALESCE(SUM(amount),0) v FROM master_bonuses WHERE master_id=? AND date>=? AND date<=?"
+  ).get(masterId, from, to).v;
+}
+
 /* Перемикачі SMS-сповіщень із app_settings ("1"/"0"; dfltOn — типове значення). */
 function settingOn(key, dfltOn) {
   try {
@@ -2527,7 +2536,48 @@ router.get("/masters/:id/pay", owner, function (req, res) {
       week:  masterEarnings(id, wStart, today),
       month: masterEarnings(id, mStart, today),
     },
+    bonuses: {
+      today: masterBonusSum(id, today, today),
+      week:  masterBonusSum(id, wStart, today),
+      month: masterBonusSum(id, mStart, today),
+    },
   });
+});
+
+/* ---- Надбавки (напр. за продаж сертифікатів) — журнал ручних записів ---- */
+router.get("/masters/:id(\\d+)/bonuses", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const today = tz.nowKyiv().date;
+  const from = clean(req.query.from, 10) || (today.slice(0, 7) + "-01");
+  const to   = clean(req.query.to,   10) || today;
+  const rows = db.prepare(
+    "SELECT id, date, amount, note, created_at FROM master_bonuses WHERE master_id=? AND date>=? AND date<=? ORDER BY date DESC, id DESC"
+  ).all(id, from, to);
+  const total = rows.reduce(function (s, r) { return s + r.amount; }, 0);
+  res.json({ ok: true, period: { from, to }, items: rows, total: total });
+});
+
+router.post("/masters/:id(\\d+)/bonuses", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const m = db.prepare("SELECT id FROM masters WHERE id=?").get(id);
+  if (!m) return res.status(404).json({ ok: false, error: "master not found" });
+  const b = req.body || {};
+  const date = tz.isDate(clean(b.date, 10)) ? b.date : tz.nowKyiv().date;
+  const amount = Math.round((parseFloat(b.amount) || 0) * 100);
+  if (!(amount > 0)) return res.status(400).json({ ok: false, error: "amount required" });
+  const note = clean(b.note, 200) || null;
+  const info = db.prepare(
+    "INSERT INTO master_bonuses (master_id, date, amount, note, created_at) VALUES (?,?,?,?,?)"
+  ).run(id, date, amount, note, Date.now());
+  res.json({ ok: true, id: info.lastInsertRowid });
+});
+
+router.delete("/masters/:id(\\d+)/bonuses/:bonusId(\\d+)", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const bonusId = parseInt(req.params.bonusId, 10);
+  const r = db.prepare("DELETE FROM master_bonuses WHERE id=? AND master_id=?").run(bonusId, id);
+  if (!r.changes) return res.status(404).json({ ok: false, error: "not found" });
+  res.json({ ok: true });
 });
 
 /* Детальний розрахунок зарплати по кожному завершеному візиту за період —
