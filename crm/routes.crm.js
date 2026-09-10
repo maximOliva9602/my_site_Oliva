@@ -357,13 +357,20 @@ function createAppointment(d, session) {
    АБОНЕМЕНТ: якщо візит зарахований з абонементу (subscription_used) —
    майстер отримує окрему (типово вищу) ставку з master_subscription_pay /
    pay_percent_subscription замість нової/повторної; завжди у % (без fixed).
-   ДРУГИЙ МАЙСТЕР на парній процедурі (second_master_id — "SPA для двох"
-   тощо): раніше взагалі не враховувався в заробітку — запис і оплата
-   в БД один на двох, а masterEarnings() рахувала лише master_id, тому
-   другий майстер отримував 0 грн за візити, які фізично обслуговував.
-   Тепер рахуємо і second_master_id — за ТІЄЮ Ж власною ставкою майстра
-   (своя типова/по-послузі, своя новий/повторний), від повної ціни
-   запису, незалежно від нарахування первинному майстру.
+   ДРУГИЙ МАЙСТЕР на парній процедурі (second_master_id — "SPA для двох",
+   "у чотири руки" тощо) оплату НЕ отримує — рахується лише master_id
+   (головний). Був короткий період у цій-таки сесії, коли рахували й
+   second_master_id (нібито другий майстер має отримати свою ставку від
+   тієї самої ціни) — але власник підтвердив на реальних цифрах (Марина:
+   3860 факт vs 3320 очікувано, рівно різниця = внесок другого майстра
+   на одному записі), що так рахувати НЕ треба: платня йде тільки
+   головному, другий — без оплати з цього запису.
+   "ГІСТЬ": анонімних відвідувачів заводять під одним спільним клієнтом
+   (client_id завжди той самий, 18+ візитів) — тому isReturn для нього
+   постійно повертав true (по історії ЦЬОГО client_id), хоча кожен
+   "Гість" — фізично інша людина, яка прийшла вперше. Такі візити
+   примусово рахуються як "новий", ім'я перевіряється без регістру
+   ("Гість"/"гість" тощо — обидва варіанти трапляються в базі).
    ІНДИВІДУАЛЬНА СТАВКА КЛІЄНТА (master_client_pay) — найвищий пріоритет:
    якщо для пари (майстер, клієнт) задано окрему ставку, вона діє для
    ВСІХ візитів цього клієнта в цього майстра, незалежно від послуги,
@@ -393,26 +400,30 @@ function masterEarningsDetail(masterId, from, to) {
     .all(masterId).forEach(function (r) { clientOverrides[r.client_id] = r; });
   const rows = db.prepare(
     `SELECT a.id, a.client_id, a.service_id, a.price, a.date, a.start_min, a.subscription_used,
-            a.master_id, a.second_master_id, c.name client_name, s.name service_name
+            c.name client_name, s.name service_name
        FROM appointments a
        JOIN clients c ON c.id = a.client_id
        JOIN services s ON s.id = a.service_id
-      WHERE (a.master_id=? OR a.second_master_id=?) AND a.status='completed' AND a.date>=? AND a.date<=?
+      WHERE a.master_id=? AND a.status='completed' AND a.date>=? AND a.date<=?
       ORDER BY a.date, a.start_min`
-  ).all(masterId, masterId, from, to);
+  ).all(masterId, from, to);
   const isRetStmt = db.prepare(
     `SELECT 1 FROM appointments
-      WHERE client_id=? AND (master_id=? OR second_master_id=?) AND status='completed' AND id != ?
+      WHERE client_id=? AND master_id=? AND status='completed' AND id != ?
         AND (date < ? OR (date = ? AND start_min < ?)) LIMIT 1`
   );
+  /* "Гість"/"гість" — спільний клієнт на всіх анонімних відвідувачів
+     (див. коментар вище). Порівняння без регістру: обидва варіанти
+     трапляються в базі. */
+  function isGuestName(name) { return /^гість$/i.test(String(name || "").trim()); }
   const items = [];
   for (const a of rows) {
-    const role = a.master_id === masterId ? "primary" : "second";
+    const isGuest = isGuestName(a.client_name);
     const co = clientOverrides[a.client_id];
     if (co) {
       const amount = co.mode === "fixed" ? Math.round(co.value) : Math.round((a.price || 0) * co.value / 100);
       items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
-        price: a.price, role: role, kind: "client_override", rate_mode: co.mode, rate_value: co.value, amount: amount });
+        price: a.price, role: "primary", kind: "client_override", rate_mode: co.mode, rate_value: co.value, amount: amount });
       continue;
     }
     const o = overrides[a.service_id];
@@ -420,20 +431,20 @@ function masterEarningsDetail(masterId, from, to) {
       const pct = subOverrides[a.service_id] != null ? subOverrides[a.service_id] : defSub;
       const amount = pct ? Math.round((a.price || 0) * pct / 100) : 0;
       items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
-        price: a.price, role: role, kind: "subscription", rate_mode: "percent", rate_value: pct, amount: amount });
+        price: a.price, role: "primary", kind: "subscription", rate_mode: "percent", rate_value: pct, amount: amount });
       continue;
     }
-    const isReturn = !!isRetStmt.get(a.client_id, masterId, masterId, a.id, a.date, a.date, a.start_min);
+    const isReturn = isGuest ? false : !!isRetStmt.get(a.client_id, masterId, a.id, a.date, a.date, a.start_min);
     if (o) {
       const val = (isReturn && o.value_return != null) ? o.value_return : o.value;
       const amount = o.mode === "fixed" ? Math.round(val) : Math.round((a.price || 0) * val / 100);
       items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
-        price: a.price, role: role, kind: "service_override", is_return: isReturn, rate_mode: o.mode, rate_value: val, amount: amount });
+        price: a.price, role: "primary", kind: "service_override", is_return: isReturn, rate_mode: o.mode, rate_value: val, amount: amount });
     } else {
       const pct = isReturn ? defRet : defNew;
       const amount = pct ? Math.round((a.price || 0) * pct / 100) : 0;
       items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
-        price: a.price, role: role, kind: "default", is_return: isReturn, rate_mode: "percent", rate_value: pct, amount: amount });
+        price: a.price, role: "primary", kind: "default", is_return: isReturn, rate_mode: "percent", rate_value: pct, amount: amount });
     }
   }
   return items;
