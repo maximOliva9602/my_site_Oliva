@@ -477,6 +477,47 @@ function masterBonusSum(masterId, from, to) {
   ).get(masterId, from, to).v;
 }
 
+/* ---------- Дохід студії (реальні гроші за період) ----------
+   Дохід = вартість завершених візитів МІНУС та їх частина, що закрита
+   подарунковим сертифікатом, ПЛЮС сертифікати, продані за цей період.
+
+   Чому саме так: гроші за сертифікат надходять у момент ПРОДАЖУ, тож
+   тоді ж і визнаються доходом. Коли клієнт пізніше приходить і гасить
+   ним візит — нових грошей не надходить, тому цю частину віднімаємо,
+   інакше та сама сума порахувалася б двічі.
+
+   Віднімаємо саме НОМІНАЛ сертифіката, а не весь візит: якщо сертифікат
+   дешевший за послугу (сертифікат 1200 грн, масаж 1350 грн), різницю
+   клієнт доплачує на місці — і ці 150 грн мають лишитись у доході дня
+   візиту. Якщо ж номер сертифіката занесли без суми (поле необов'язкове),
+   віднімається 0 — і візит рахується повністю, а не зникає з каси.
+   min(...) страхує зворотний випадок: сертифікат, дорожчий за послугу,
+   не має робити дохід від'ємним — невикористаний залишок лишається
+   доходом того дня, коли сертифікат продали. */
+const CERT_COVERED_SQL =
+  "min(COALESCE((SELECT SUM(c.amount) FROM certificates c WHERE c.used_by_appointment_id = a.id), 0), a.price)";
+
+function studioServiceRevenue(from, to) {
+  return db.prepare(
+    `SELECT COALESCE(SUM(a.price - ${CERT_COVERED_SQL}),0) v FROM appointments a
+      WHERE a.status='completed' AND a.date>=? AND a.date<=?`
+  ).get(from, to).v;
+}
+
+/* Сертифікати мають created_at у мілісекундах (а не date-рядок), тому
+   межі періоду переводимо в епоху через tz.apptInstant — інакше межа
+   "пливе" на різницю з UTC і сертифікат, куплений під північ, потрапляє
+   не в той день. */
+function studioCertSales(from, to) {
+  return db.prepare(
+    "SELECT COALESCE(SUM(amount),0) v FROM certificates WHERE created_at>=? AND created_at<?"
+  ).get(tz.apptInstant(from, 0), tz.apptInstant(to, 0) + 24 * 3600 * 1000).v;
+}
+
+function studioRevenue(from, to) {
+  return studioServiceRevenue(from, to) + studioCertSales(from, to);
+}
+
 /* Перемикачі SMS-сповіщень із app_settings ("1"/"0"; dfltOn — типове значення). */
 function settingOn(key, dfltOn) {
   try {
@@ -1884,10 +1925,11 @@ router.get("/dashboard", owner, function (req, res) {
   ).all(thirtyDaysAgo);
 
   // --- 5. Фінанси ---
+  /* Той самий розрахунок, що й "Всього доходу" на вкладці "Аналітика"
+     (studioRevenue) — інакше дві вкладки показували б різні суми доходу
+     за один і той самий період. */
   function revenue(from, to) {
-    return db.prepare(
-      `SELECT COALESCE(SUM(price),0) s FROM appointments WHERE status='completed' AND date>=? AND date<=?`
-    ).get(from, to).s;
+    return studioRevenue(from, to);
   }
   function forecast(from, to) {
     return db.prepare(
@@ -2007,18 +2049,10 @@ router.get("/dashboard/analytics", owner, function (req, res) {
   const to   = clean(req.query.to,   10) || today;
 
   // ── Статистика за вибраний період ──────────────────────────────
-  /* "Всього доходу" тепер враховує й продаж сертифікатів (раніше вони
-     рахувались лише в окремій картці "Куплено сертифікатів", у загальний
-     дохід не потрапляли — власник попросив це виправити). Але щоб не
-     порахувати ті самі гроші ДВІЧІ: коли сертифікат продано — дохід
-     визнаємо одразу (тут, нижче), а коли клієнт ним пізніше розрахується
-     за візит — цей візит виключаємо із суми завершених записів (інакше
-     та сама сума додалась би вдруге в момент списання). */
-  const periodServiceRevenue = db.prepare(
-    `SELECT COALESCE(SUM(a.price),0) v FROM appointments a
-      WHERE a.status='completed' AND a.date>=? AND a.date<=?
-        AND NOT EXISTS (SELECT 1 FROM certificates c WHERE c.used_by_appointment_id = a.id)`
-  ).get(from, to).v;
+  /* "Всього доходу" враховує й продаж сертифікатів (раніше вони були
+     лише в окремій картці "Куплено сертифікатів"). Правила подвійного
+     рахування — у studioServiceRevenue() вгорі файлу. */
+  const periodServiceRevenue = studioServiceRevenue(from, to);
 
   const periodClients = db.prepare(
     `SELECT COUNT(DISTINCT client_id) v FROM appointments WHERE status='completed' AND date>=? AND date<=?`
@@ -2061,9 +2095,8 @@ router.get("/dashboard/analytics", owner, function (req, res) {
   // щоб сума стовпчиків графіка збігалася з карткою "Всього доходу".
   const revenueByDayMap = {};
   db.prepare(
-    `SELECT date, SUM(a.price) revenue FROM appointments a
+    `SELECT date, SUM(a.price - ${CERT_COVERED_SQL}) revenue FROM appointments a
       WHERE a.status='completed' AND a.date>=? AND a.date<=?
-        AND NOT EXISTS (SELECT 1 FROM certificates c WHERE c.used_by_appointment_id = a.id)
       GROUP BY date`
   ).all(from, to).forEach(function (r) { revenueByDayMap[r.date] = r.revenue; });
   db.prepare("SELECT amount, created_at FROM certificates WHERE created_at>=? AND created_at<?")
