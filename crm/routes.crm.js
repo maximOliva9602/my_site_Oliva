@@ -2007,8 +2007,17 @@ router.get("/dashboard/analytics", owner, function (req, res) {
   const to   = clean(req.query.to,   10) || today;
 
   // ── Статистика за вибраний період ──────────────────────────────
-  const periodRevenue = db.prepare(
-    `SELECT COALESCE(SUM(price),0) v FROM appointments WHERE status='completed' AND date>=? AND date<=?`
+  /* "Всього доходу" тепер враховує й продаж сертифікатів (раніше вони
+     рахувались лише в окремій картці "Куплено сертифікатів", у загальний
+     дохід не потрапляли — власник попросив це виправити). Але щоб не
+     порахувати ті самі гроші ДВІЧІ: коли сертифікат продано — дохід
+     визнаємо одразу (тут, нижче), а коли клієнт ним пізніше розрахується
+     за візит — цей візит виключаємо із суми завершених записів (інакше
+     та сама сума додалась би вдруге в момент списання). */
+  const periodServiceRevenue = db.prepare(
+    `SELECT COALESCE(SUM(a.price),0) v FROM appointments a
+      WHERE a.status='completed' AND a.date>=? AND a.date<=?
+        AND NOT EXISTS (SELECT 1 FROM certificates c WHERE c.used_by_appointment_id = a.id)`
   ).get(from, to).v;
 
   const periodClients = db.prepare(
@@ -2043,13 +2052,29 @@ router.get("/dashboard/analytics", owner, function (req, res) {
       WHERE created_at>=? AND created_at<?`
   ).get(certFromMs, certToMs);
 
+  const periodRevenue = periodServiceRevenue + periodCerts.sum;
+
   const totalClients = db.prepare("SELECT COUNT(*) v FROM clients").get().v;
 
-  // Дохід по днях за вибраний період
-  const revenueByDay = db.prepare(
-    `SELECT date, SUM(price) revenue FROM appointments
-      WHERE status='completed' AND date>=? AND date<=? GROUP BY date ORDER BY date`
-  ).all(from, to);
+  // Дохід по днях за вибраний період: завершені візити (без оплачених
+  // сертифікатом — див. коментар вище) + продаж сертифікатів у той день,
+  // щоб сума стовпчиків графіка збігалася з карткою "Всього доходу".
+  const revenueByDayMap = {};
+  db.prepare(
+    `SELECT date, SUM(a.price) revenue FROM appointments a
+      WHERE a.status='completed' AND a.date>=? AND a.date<=?
+        AND NOT EXISTS (SELECT 1 FROM certificates c WHERE c.used_by_appointment_id = a.id)
+      GROUP BY date`
+  ).all(from, to).forEach(function (r) { revenueByDayMap[r.date] = r.revenue; });
+  db.prepare("SELECT amount, created_at FROM certificates WHERE created_at>=? AND created_at<?")
+    .all(certFromMs, certToMs)
+    .forEach(function (c) {
+      const d = tz.nowKyiv(undefined, c.created_at).date;
+      revenueByDayMap[d] = (revenueByDayMap[d] || 0) + c.amount;
+    });
+  const revenueByDay = Object.keys(revenueByDayMap).sort().map(function (date) {
+    return { date: date, revenue: revenueByDayMap[date] };
+  });
 
   // ── Повернення клієнтів: загальна аналітика (весь час) ─────────
   const clientsReturning = db.prepare("SELECT COUNT(*) v FROM clients WHERE visit_count>1").get().v;
