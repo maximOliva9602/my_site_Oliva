@@ -2528,6 +2528,28 @@
       '</div>';
     }
 
+    /* Нагадування про майбутній візит — той самий click-to-chat підхід,
+       що й "Запросити відгук" вище, тільки для запису, який ЩЕ НЕ
+       відбувся: персонал сам вирішує зайвий раз нагадати клієнту, не
+       чекаючи автоматичного нагадування за добу/2 години до візиту. */
+    var reminderPhone = String(a.client_phone || "").replace(/\D/g, "");
+    var canAskReminder = ME.role === "owner" && (a.status === "pending" || a.status === "confirmed") &&
+      reminderPhone.length >= 10 && a.client_name !== "Гість";
+    if (canAskReminder) {
+      html += '<div style="margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;">' +
+        '<div style="font-size:.82rem;font-weight:600;color:var(--cream);margin-bottom:8px;">🔔 Нагадати про візит</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+          '<a id="dRemWa" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">💬 WhatsApp</a>' +
+          '<a id="dRemTg" class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">✈️ Telegram</a>' +
+          '<a id="dRemViber" class="btn btn-ghost btn-sm" style="text-decoration:none;">💜 Viber</a>' +
+          '<button class="btn btn-ghost btn-sm" id="dRemSms" type="button">📩 SMS</button>' +
+          '<button class="btn btn-ghost btn-sm" id="dRemCopy" type="button">📋 Скопіювати текст</button>' +
+        '</div>' +
+        '<div style="font-size:.7rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">Відкриє чат саме з цим клієнтом із текстом нагадування про дату/час/майстра. «SMS» — надішле реальне платне повідомлення напряму. Текст можна змінити в CRM → Сповіщення → шаблон «Нагадування».</div>' +
+        '<textarea id="dRemManual" readonly rows="3" style="display:none;width:100%;margin-top:6px;font-size:.78rem;"></textarea>' +
+      '</div>';
+    }
+
     html += '<div class="err" id="dErr"></div><div class="modal-foot">';
 
     if (a.status === "pending") html += '<button class="btn btn-primary btn-sm" id="dConfirm">Підтвердити</button>';
@@ -2678,6 +2700,94 @@
             } else {
               smsBtn.disabled = false;
               smsBtn.textContent = "📩 SMS";
+              alert("Не вдалося надіслати SMS: " + ((r.j && r.j.error) || "невідома помилка"));
+            }
+          });
+        });
+      }
+    }
+
+    if (canAskReminder) {
+      var remMsg = "Нагадування від Oliva 💆\nМайстер: " + a.master_name + "\nДата: " + a.date + "\nЧас: " + fmtMin(a.start_min);
+      api("GET", "/api/crm/appointments/" + a.id + "/reminder-text").then(function (r) {
+        if (r.j && r.j.ok && r.j.text) {
+          remMsg = r.j.text;
+          if (remWaLink) remWaLink.href = "https://wa.me/" + reminderPhone + "?text=" + encodeURIComponent(remMsg);
+          if (remTgLink) remTgLink.href = "https://t.me/+" + reminderPhone + "?text=" + encodeURIComponent(remMsg);
+        }
+      });
+      var remWaLink = $("dRemWa");
+      if (remWaLink) remWaLink.href = "https://wa.me/" + reminderPhone + "?text=" + encodeURIComponent(remMsg);
+      var remTgLink = $("dRemTg");
+      if (remTgLink) remTgLink.href = "https://t.me/+" + reminderPhone + "?text=" + encodeURIComponent(remMsg);
+      function copyRemMsg() {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(remMsg);
+        }
+        return Promise.reject(new Error("no clipboard api"));
+      }
+      function copyRemFallback() {
+        var ta = document.createElement("textarea");
+        ta.value = remMsg;
+        ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        ta.remove();
+        return ok;
+      }
+      function showRemManualFallback() {
+        var manual = $("dRemManual");
+        if (manual) {
+          manual.style.display = "block";
+          manual.value = remMsg;
+          manual.focus(); manual.select();
+        }
+      }
+      function copyRemSilently() {
+        copyRemMsg().catch(function() { if (!copyRemFallback()) showRemManualFallback(); });
+      }
+      function markReminderSent(channel) {
+        api("POST", "/api/crm/appointments/" + a.id + "/reminder-mark", { channel: channel });
+      }
+      if (remWaLink) remWaLink.addEventListener("click", function() { markReminderSent("whatsapp"); });
+      var remVbLink = $("dRemViber");
+      if (remVbLink) {
+        remVbLink.href = "viber://chat?number=" + encodeURIComponent("+" + reminderPhone);
+        remVbLink.addEventListener("click", function() { copyRemSilently(); markReminderSent("viber"); });
+      }
+      if (remTgLink) remTgLink.addEventListener("click", function() { copyRemSilently(); markReminderSent("telegram"); });
+      var remCopyBtn = $("dRemCopy");
+      if (remCopyBtn) {
+        remCopyBtn.addEventListener("click", function() {
+          markReminderSent("copy");
+          copyRemMsg()
+            .then(function() {
+              remCopyBtn.textContent = "✓ Скопійовано";
+              setTimeout(function() { remCopyBtn.textContent = "📋 Скопіювати текст"; }, 1800);
+            })
+            .catch(function() {
+              var ok = copyRemFallback();
+              remCopyBtn.textContent = ok ? "✓ Скопійовано" : "✕ Не вдалося";
+              setTimeout(function() { remCopyBtn.textContent = "📋 Скопіювати текст"; }, 1800);
+              if (!ok) showRemManualFallback();
+            });
+        });
+      }
+      var remSmsBtn = $("dRemSms");
+      if (remSmsBtn) {
+        remSmsBtn.addEventListener("click", function () {
+          if (!confirm("Надіслати SMS-нагадування клієнту " + a.client_name + "?")) return;
+          remSmsBtn.disabled = true;
+          remSmsBtn.textContent = "…";
+          api("POST", "/api/crm/appointments/" + a.id + "/ask-reminder-sms").then(function (r) {
+            if (r.j && r.j.ok) {
+              remSmsBtn.textContent = "✓ Надіслано";
+              markReminderSent("sms");
+            } else {
+              remSmsBtn.disabled = false;
+              remSmsBtn.textContent = "📩 SMS";
               alert("Не вдалося надіслати SMS: " + ((r.j && r.j.error) || "невідома помилка"));
             }
           });
@@ -8117,7 +8227,7 @@
     });
 
     var listEl = el("div", "list"); main.appendChild(listEl);
-    var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 1", reminder_2h: "Нагадування 2", reschedule: "Перенесення", cancellation: "Скасування візиту", review_request: "Запит відгуку" };
+    var KIND = { confirmation: "Підтвердження", reminder_24h: "Нагадування 1", reminder_2h: "Нагадування 2", reminder_manual: "Нагадування (вручну)", reschedule: "Перенесення", cancellation: "Скасування візиту", review_request: "Запит відгуку" };
     var ST = { queued: "у черзі", sent: "відправлено", delivered: "доставлено", undelivered: "не доставлено", failed: "помилка", cancelled: "скасовано" };
     listEl.innerHTML = '<div class="empty">Завантаження…</div>';
     api("GET", "/api/crm/notifications").then(function (res) {

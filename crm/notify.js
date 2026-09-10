@@ -272,9 +272,19 @@ function reviewRequestText(masterId) {
   return `Дякуємо, що завітали до Oliva 💚 Будемо вдячні, якщо поділитесь враженнями: ${link}`;
 }
 
+/* Текст ручного нагадування про майбутній візит — той самий шаблон
+   "Нагадування", що й автоматичні reminder_24h/reminder_2h (CRM →
+   Сповіщення), але для кнопок WhatsApp/Telegram/Viber/SMS/«Скопіювати»
+   у картці запису (аналог reviewRequestText вище). */
+function manualReminderText(appointmentId) {
+  const v = apptView(appointmentId);
+  if (!v) return null;
+  return renderTemplate("reminder_24h", v);
+}
+
 module.exports = {
   driver, DRIVER_NAME, STUDIO_ADDRESS,
   apptView, renderTemplate, queueNotification,
   flushQueued, flushBroadcasts, recordStatus, pollStatuses, sendDirect,
-  birthdayText, reviewRequestText,
+  birthdayText, reviewRequestText, manualReminderText,
 };

@@ -711,6 +711,70 @@ router.post("/appointments/:id(\\d+)/review-request-mark", owner, function (req,
   res.json({ ok: true });
 });
 
+/* ---- Нагадування про майбутній візит (ручне, кнопки в картці запису) ----
+   Той самий патерн, що й запит на відгук вище, але для запису, який ЩЕ НЕ
+   відбувся (status pending/confirmed) — персонал сам вирішує написати
+   клієнту "не забудьте про візит", а не чекати автоматичного reminder_24h/
+   reminder_2h. Пишемо в journal окремим kind='reminder_manual', щоб НЕ
+   заважати автоматичній черзі (notify.queueNotification): якби ділили той
+   самий kind з reminder_24h/reminder_2h, UNIQUE(appointment_id, kind) міг
+   би "з'їсти" пізніший автоматичний нагадувач через ON CONFLICT. */
+router.get("/appointments/:id(\\d+)/reminder-text", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = id ? apptRow(id) : null;
+  if (!a) return res.status(404).json({ ok: false, error: "not found" });
+  res.json({ ok: true, text: require("./notify").manualReminderText(id) });
+});
+
+router.post("/appointments/:id(\\d+)/ask-reminder-sms", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = id ? apptRow(id) : null;
+  if (!a) return res.status(404).json({ ok: false, error: "not found" });
+  if (a.status !== "pending" && a.status !== "confirmed") return res.status(400).json({ ok: false, error: "not upcoming" });
+  if (a.client_name === "Гість") return res.status(400).json({ ok: false, error: "guest client" });
+  const phone = tz.normPhone(a.client_phone);
+  if (!phone || phone.replace(/\D/g, "").length < 11) {
+    return res.status(400).json({ ok: false, error: "bad phone" });
+  }
+  const notify = require("./notify");
+  const text = notify.manualReminderText(id);
+  notify.sendDirect(phone, text)
+    .then(function () {
+      try {
+        db.prepare(
+          `INSERT INTO notifications (appointment_id, kind, phone, text, provider, status, created_at, sent_at)
+           VALUES (?, 'reminder_manual', ?, ?, ?, 'sent', ?, ?)
+           ON CONFLICT(appointment_id, kind) DO UPDATE SET
+             phone=excluded.phone, text=excluded.text, provider=excluded.provider,
+             status='sent', provider_msg_id=NULL, final_channel=NULL, status_at=NULL, sent_at=excluded.sent_at`
+        ).run(id, phone, text, notify.driver.name, Date.now(), Date.now());
+      } catch (e) { /* журнал не критичний — SMS вже пішла */ }
+      res.json({ ok: true });
+    })
+    .catch(function (e) {
+      res.status(500).json({ ok: false, error: String((e && e.message) || e) });
+    });
+});
+
+router.post("/appointments/:id(\\d+)/reminder-mark", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const a = id ? apptRow(id) : null;
+  if (!a) return res.status(404).json({ ok: false, error: "not found" });
+  if (a.status !== "pending" && a.status !== "confirmed") return res.status(400).json({ ok: false, error: "not upcoming" });
+  const CHANNELS = ["whatsapp", "telegram", "viber", "copy"];
+  const channel = CHANNELS.indexOf(clean((req.body || {}).channel, 20)) !== -1 ? (req.body || {}).channel : "copy";
+  const notify = require("./notify");
+  const text = notify.manualReminderText(id);
+  try {
+    db.prepare(
+      `INSERT INTO notifications (appointment_id, kind, phone, text, provider, status, final_channel, created_at, sent_at)
+       VALUES (?, 'reminder_manual', ?, ?, ?, 'sent', ?, ?, ?)
+       ON CONFLICT(appointment_id, kind) DO NOTHING`
+    ).run(id, a.client_phone || "", text, channel, channel, Date.now(), Date.now());
+  } catch (e) { /* маркер не критичний */ }
+  res.json({ ok: true });
+});
+
 router.get("/me/clients", any, function (req, res) {
   const s = req.session;
   let rows;
