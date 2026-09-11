@@ -200,8 +200,8 @@
   <div class="tip-modal">
     <div class="tip-modal-icon">⭐</div>
     <div class="tip-modal-title">Дякуємо за 5 зірок!</div>
-    <div class="tip-modal-sub">Залишилось лише написати кілька слів у Google — це дуже допоможе нам 🤍</div>
-    <button type="button" class="tip-modal-yes" id="goModalBtn">Написати відгук у Google</button>
+    <div class="tip-modal-sub">Відкриваємо відгук у Google…</div>
+    <button type="button" class="tip-modal-no" id="goModalBtn">Не відкрилось? Натисніть тут</button>
   </div>
 </div>
 
@@ -277,7 +277,7 @@
     if (isTelegramInApp()) { openExternal(url); return; }
     var w = null;
     try { w = window.open(url, '_blank'); } catch (e) { w = null; }
-    if (!w) window.location.assign(url);
+    if (!w) { markReturnForTip(); window.location.assign(url); }
   }
   /* У браузер телефону відкриваємо НЕ одразу Google, а нашу ж сторінку з
      ?go=1 — вона сама перекидає на Google (див. нижче). Так наша сторінка
@@ -290,9 +290,14 @@
     qs.set('go', '1');
     qs.set('b', branch);
     var ext = externalBrowserUrl(location.origin + location.pathname + '?' + qs.toString());
-    if (!ext) { window.location.assign(url); return; }
+    if (!ext) { markReturnForTip(); window.location.assign(url); return; }
+    /* На Android Chrome пропускає кнопкою "Назад" сторінку, що сама
+       перейшла далі, тож "Назад" з Google повертає прямо в Telegram — там
+       чайові й покажемо. На iPhone їх покаже Safari, тут знімаємо. */
     var pendingId = null;
-    try { pendingId = sessionStorage.getItem(TIP_PENDING_KEY); sessionStorage.removeItem(TIP_PENDING_KEY); } catch (e) {}
+    if (!/Android/i.test(navigator.userAgent)) {
+      try { pendingId = sessionStorage.getItem(TIP_PENDING_KEY); sessionStorage.removeItem(TIP_PENDING_KEY); } catch (e) {}
+    }
     var left = false;
     function onHide() { if (document.hidden) left = true; }
     document.addEventListener('visibilitychange', onHide);
@@ -301,7 +306,7 @@
       document.removeEventListener('visibilitychange', onHide);
       if (!left && !document.hidden) {
         // Браузер телефону не відкрився — відгук тут же, чайові теж тут.
-        if (pendingId) { try { sessionStorage.setItem(TIP_PENDING_KEY, pendingId); } catch (e) {} }
+        if (pendingId) markReturnForTip();
         window.location.assign(url);
       }
     }, 1200);
@@ -368,14 +373,36 @@
      запропонувати чайові, якщо клієнт повернеться сюди після Google. */
   var masterIdFromUrl = new URLSearchParams(window.location.search).get('m');
 
+  /* Позначку "запропонувати чайові після повернення" тримаємо в АДРЕСІ
+     нашої сторінки (&tip=1), а не лише в sessionStorage: сторінки Google
+     відкриваються з захистом COOP, і браузер при переході на них та
+     поверненні "Назад" починає вкладку з чистим sessionStorage —
+     позначка там губилась, і чайові не з'являлись. Адреса ж запису в
+     історії при "Назад" лишається тією самою. Ставимо її безпосередньо
+     перед переходом на Google у цій же вкладці. */
+  function markReturnForTip() {
+    if (!masterIdFromUrl) return;
+    try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {}
+    var q = new URLSearchParams(location.search);
+    q.set('tip', '1');
+    history.replaceState(null, '', location.pathname + '?' + q.toString());
+  }
+  function consumeReturnFlag() {
+    var q = new URLSearchParams(location.search);
+    if (q.get('tip') !== '1') return;
+    if (masterIdFromUrl) { try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {} }
+    q.delete('tip');
+    history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q.toString() : ''));
+  }
+  consumeReturnFlag();
+
   /* ?go=1 — сторінку відкрив Telegram у браузері телефону після 5 зірок
-     (openExternal). Автоматично перекидати на Google НЕ можна: Chrome і
-     Safari вважають сторінку, що сама пішла далі без дотику людини,
-     "прохідною" — кнопка "Назад" її пропускає, і до чайових клієнт не
-     повернеться. Тому показуємо одну кнопку "Написати відгук у Google":
-     після дотику сторінка лишається в історії, і "Назад" з Google
-     повертає сюди — до вікна чайових. go прибираємо з адреси, щоб при
-     поверненні це вікно не з'явилось удруге. */
+     (openExternal). Сама одразу веде на форму Google-відгуку, а наша
+     сторінка лишається в історії браузера — "Назад" з Google повертає
+     сюди, до вікна чайових. Перехід — лише ПІСЛЯ завершення завантаження:
+     Safari перехід під час завантаження вважає редиректом і заміняє ним
+     нашу сторінку в історії, тоді "Назад" не мав би куди повернути.
+     go прибираємо з адреси, щоб при поверненні не перекинуло знову. */
   (function () {
     var qs = new URLSearchParams(location.search);
     if (qs.get('go') !== '1') return;
@@ -389,16 +416,24 @@
     qs.delete('go');
     qs.delete('b');
     history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs.toString() : ''));
+    if (masterIdFromUrl) { try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {} }
     var goModal = document.getElementById('goModalOverlay');
     goModal.classList.add('show');
-    document.getElementById('goModalBtn').addEventListener('click', function () {
-      if (masterIdFromUrl) { try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {} }
+    var gone = false;
+    function go() {
+      if (gone) return;
+      gone = true;
       goModal.classList.remove('show');
+      markReturnForTip();
       window.location.assign(GOOGLE_REVIEW_LINK[branch]);
-    });
+    }
+    // Запасна кнопка — якщо браузер з якоїсь причини не перейшов сам.
+    document.getElementById('goModalBtn').addEventListener('click', function () { gone = false; go(); });
+    if (document.readyState === 'complete') setTimeout(go, 300);
+    else window.addEventListener('load', function () { setTimeout(go, 300); });
   })();
 
-  fetch('/api/masters')
+  fetch('/api/masters' + (masterIdFromUrl ? '?with=' + encodeURIComponent(masterIdFromUrl) : ''))
     .then(function (r) { return r.json(); })
     .then(function (j) {
       if (!j.ok || !j.masters) return;
@@ -451,7 +486,7 @@
      весь код вище просто НЕ виконується заново (сторінка "заморожена"),
      і pageshow — єдиний спосіб дізнатись про повернення. */
   window.addEventListener('pageshow', function (e) {
-    if (e.persisted) maybeShowPendingTip(lastUrlMaster);
+    if (e.persisted) { consumeReturnFlag(); maybeShowPendingTip(lastUrlMaster); }
   });
   /* Відгук писали в іншій вкладці чи зовнішньому браузері, а ця сторінка
      весь час лишалась відкритою — повернення до неї видно лише так. */

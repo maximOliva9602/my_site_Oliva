@@ -714,9 +714,13 @@ app.post("/api/admin/upload-image", requireAdmin, function (req, res) {
 
 /* ---- Публічний список майстрів (для сайту) ---- */
 app.get("/api/masters", function (req, res) {
+  /* ?with=<id> — сторінка відгуку з персонального посилання: свого
+     майстра клієнт має бачити (і мати змогу дати йому чайові), навіть
+     якщо той прихований із сайту. Без параметра — як і було. */
+  var withId = parseInt(req.query.with, 10) || 0;
   var rows = db.prepare(
-    "SELECT id, name, level, photo, mono_link FROM masters WHERE active=1 AND show_on_site=1 ORDER BY sort_order, id"
-  ).all();
+    "SELECT id, name, level, photo, mono_link FROM masters WHERE active=1 AND (show_on_site=1 OR id=?) ORDER BY sort_order, id"
+  ).all(withId);
   res.json({ ok: true, masters: rows });
 });
 
