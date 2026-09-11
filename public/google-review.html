@@ -124,6 +124,14 @@
     .tip-modal-step.show { display: block; }
 
     .footer-link { text-align: center; margin-top: 28px; font-size: 12px; color: rgba(242,237,228,0.3); }
+
+    /* Вікно "відкрийте в браузері телефону" — лише у вбудованому браузері
+       Telegram, над усім іншим (і над модалкою чайових). */
+    .tg-gate { z-index: 200; }
+    .tg-gate-steps { background: rgba(122,145,86,0.10); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; font-size: 13px; color: var(--text-dim); line-height: 1.7; text-align: left; margin-bottom: 16px; }
+    .tg-gate-steps b { color: var(--cream); font-weight: 500; }
+    .tg-gate-secondary { display: block; width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 14px; padding: 13px; font-size: 13.5px; color: var(--cream); cursor: pointer; font-family: inherit; margin-bottom: 6px; }
+    .tg-gate-secondary:hover { border-color: var(--olive-light); }
   </style>
 </head>
 <body>
@@ -227,7 +235,92 @@
   </div>
 </div>
 
+<div class="tip-modal-overlay tg-gate" id="tgGate">
+  <div class="tip-modal">
+    <div class="tip-modal-icon">🌐</div>
+    <div class="tip-modal-title">Відкрийте у браузері телефону</div>
+    <div class="tip-modal-sub">Щоб залишити відгук у Google, сторінку треба відкрити у звичайному браузері (Chrome чи Safari) — у вбудованому браузері Telegram Google не бачить ваш акаунт.</div>
+    <button type="button" class="tip-modal-yes" id="tgGateOpen">Відкрити в браузері</button>
+    <div class="tg-gate-steps" id="tgGateSteps"></div>
+    <button type="button" class="tg-gate-secondary" id="tgGateCopy">📋 Скопіювати посилання</button>
+    <button type="button" class="tip-modal-no" id="tgGateStay">Продовжити тут</button>
+  </div>
+</div>
+
 <script>
+  /* ---- Вбудований браузер Telegram ----
+     Google-відгук вимагає входу в Google-акаунт, а у вбудованому браузері
+     Telegram клієнт не залогінений — форма Google не відкривається або
+     просить увійти, і людина кидає відгук. Тому спершу просимо відкрити
+     сторінку у звичайному браузері; там цього вікна вже не буде, і все
+     йде як завжди. Telegram (Android та iOS) додає у свій браузер об'єкт
+     TelegramWebviewProxy; нові версії Android ще й пишуть "Telegram" в UA. */
+  function isTelegramInApp() {
+    return typeof window.TelegramWebviewProxy !== 'undefined' || /Telegram/i.test(navigator.userAgent);
+  }
+  function setupTelegramGate() {
+    if (!isTelegramInApp()) return;
+    var ua = navigator.userAgent;
+    var isAndroid = /Android/i.test(ua);
+    var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var url = window.location.href;
+    var openBtn = document.getElementById('tgGateOpen');
+    var steps = document.getElementById('tgGateSteps');
+
+    if (isAndroid) {
+      steps.innerHTML = 'Якщо кнопка не спрацювала: натисніть <b>⋮</b> у правому верхньому куті й оберіть <b>«Відкрити в браузері»</b>.';
+    } else if (isIOS) {
+      steps.innerHTML = 'Якщо кнопка не спрацювала: натисніть <b>⋯</b> у куті екрана й оберіть <b>«Відкрити в Safari»</b>.';
+    } else {
+      steps.innerHTML = 'Відкрийте меню (<b>⋯</b> або <b>⋮</b>) і оберіть <b>«Відкрити в браузері»</b>.';
+      openBtn.style.display = 'none';
+    }
+
+    /* Android: intent:// без прив'язки до пакета — система відкриє браузер
+       за замовчуванням. iOS 17+: схема x-safari-https:// відкриває Safari.
+       Спрацьовує не в кожній версії Telegram — тому під кнопкою завжди є
+       ручна інструкція. */
+    openBtn.addEventListener('click', function () {
+      if (isAndroid) {
+        window.location.href = 'intent://' + location.host + location.pathname + location.search +
+          '#Intent;scheme=https;action=android.intent.action.VIEW;end';
+      } else if (isIOS) {
+        window.location.href = 'x-safari-' + url;
+      }
+    });
+
+    var copyBtn = document.getElementById('tgGateCopy');
+    copyBtn.addEventListener('click', function () {
+      function done(ok) {
+        copyBtn.textContent = ok ? '✓ Скопійовано — вставте в браузері' : '✕ Не вдалося скопіювати';
+        setTimeout(function () { copyBtn.textContent = '📋 Скопіювати посилання'; }, 2500);
+      }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        ta.remove();
+        done(ok);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () { done(true); }, fallback);
+      } else {
+        fallback();
+      }
+    });
+
+    document.getElementById('tgGateStay').addEventListener('click', function () {
+      document.getElementById('tgGate').classList.remove('show');
+    });
+
+    document.getElementById('tgGate').classList.add('show');
+  }
+  setupTelegramGate();
+
   /* Прямі посилання відкривають форму Google-відгуку потрібної філії. */
   var GOOGLE_REVIEW_LINK = {
     borshchahivska: 'https://search.google.com/local/writereview?placeid=ChIJTQzX8Ow38GYRKaa1CYwhqac',
