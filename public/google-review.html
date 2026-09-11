@@ -382,7 +382,6 @@
      перед переходом на Google у цій же вкладці. */
   function markReturnForTip() {
     if (!masterIdFromUrl) return;
-    try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {}
     var q = new URLSearchParams(location.search);
     q.set('tip', '1');
     history.replaceState(null, '', location.pathname + '?' + q.toString());
@@ -416,7 +415,9 @@
     qs.delete('go');
     qs.delete('b');
     history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs.toString() : ''));
-    if (masterIdFromUrl) { try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {} }
+    /* Позначку чайових тут НЕ ставимо: коли довантажиться список майстрів,
+       вікно чайових блимнуло б ще до переходу на Google. Її ставить go()
+       в адресі — вона спрацює лише після повернення. */
     var goModal = document.getElementById('goModalOverlay');
     goModal.classList.add('show');
     var gone = false;
