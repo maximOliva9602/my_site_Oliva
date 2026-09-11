@@ -255,8 +255,25 @@
      Telegram не пропустив схему) — за секунду сторінка все ще на
      екрані, тоді відкриваємо форму тут же, як раніше, щоб клієнт не
      лишився ні з чим. */
+  /* Відгук відкриваємо в НОВІЙ вкладці: після "Опублікувати" Google сам
+     водить клієнта своїми сторінками (форма → h.google.com → картка
+     студії), і "Назад" до нас уже не повертає — лише ходить по колу між
+     сторінками Google (видно на відео з iPhone). Наша сторінка лишається
+     в першій вкладці: повернувся до неї — одразу бачить чайові (onReturn
+     нижче). Android у Telegram — одразу в зовнішній браузер (intent://
+     там працює надійно), решта Telegram — спершу нова вкладка, бо
+     x-safari на iPhone спрацьовує не завжди. */
   function openGoogleReview(url) {
-    var ext = isTelegramInApp() ? externalBrowserUrl(url) : null;
+    var tg = isTelegramInApp();
+    if (tg && /Android/i.test(navigator.userAgent)) { openExternal(url); return; }
+    var w = null;
+    try { w = window.open(url, '_blank'); } catch (e) { w = null; }
+    if (w) return;
+    if (tg) { openExternal(url); return; }
+    window.location.assign(url);
+  }
+  function openExternal(url) {
+    var ext = externalBrowserUrl(url);
     if (!ext) { window.location.assign(url); return; }
     var left = false;
     function onHide() { if (document.hidden) left = true; }
@@ -384,11 +401,11 @@
   window.addEventListener('pageshow', function (e) {
     if (e.persisted) maybeShowPendingTip(lastUrlMaster);
   });
-  /* Telegram: відгук писали в зовнішньому браузері, а ця сторінка весь
-     час лишалась відкритою — повернення в Telegram видно лише так. */
-  document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && isTelegramInApp()) maybeShowPendingTip(lastUrlMaster);
-  });
+  /* Відгук писали в іншій вкладці чи зовнішньому браузері, а ця сторінка
+     весь час лишалась відкритою — повернення до неї видно лише так. */
+  function onReturn() { if (!document.hidden) maybeShowPendingTip(lastUrlMaster); }
+  document.addEventListener('visibilitychange', onReturn);
+  window.addEventListener('focus', onReturn);
 
   /* Сума чайових обирається одразу в модалці (майстер уже відомий з
      ?m=, повторно вибирати його на /share не треба). "Оплатити" відкриває
