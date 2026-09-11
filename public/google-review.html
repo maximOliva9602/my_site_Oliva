@@ -196,6 +196,15 @@
   <div class="footer-link">massage-oliva.com</div>
 </div>
 
+<div class="tip-modal-overlay" id="goModalOverlay">
+  <div class="tip-modal">
+    <div class="tip-modal-icon">⭐</div>
+    <div class="tip-modal-title">Дякуємо за 5 зірок!</div>
+    <div class="tip-modal-sub">Залишилось лише написати кілька слів у Google — це дуже допоможе нам 🤍</div>
+    <button type="button" class="tip-modal-yes" id="goModalBtn">Написати відгук у Google</button>
+  </div>
+</div>
+
 <div class="tip-modal-overlay" id="tipModalOverlay">
   <div class="tip-modal">
 
@@ -270,16 +279,31 @@
     try { w = window.open(url, '_blank'); } catch (e) { w = null; }
     if (!w) window.location.assign(url);
   }
+  /* У браузер телефону відкриваємо НЕ одразу Google, а нашу ж сторінку з
+     ?go=1 — вона сама перекидає на Google (див. нижче). Так наша сторінка
+     є в історії браузера, і кнопка "Назад" з Google повертає на неї, де
+     й показуємо чайові. Чайові пропонуються вже в браузері, тож у Telegram
+     позначку "чекає на чайові" знімаємо — інакше при поверненні в
+     Telegram їх запропонувало б удруге. */
   function openExternal(url) {
-    var ext = externalBrowserUrl(url);
+    var qs = new URLSearchParams(location.search);
+    qs.set('go', '1');
+    qs.set('b', branch);
+    var ext = externalBrowserUrl(location.origin + location.pathname + '?' + qs.toString());
     if (!ext) { window.location.assign(url); return; }
+    var pendingId = null;
+    try { pendingId = sessionStorage.getItem(TIP_PENDING_KEY); sessionStorage.removeItem(TIP_PENDING_KEY); } catch (e) {}
     var left = false;
     function onHide() { if (document.hidden) left = true; }
     document.addEventListener('visibilitychange', onHide);
     window.location.href = ext;
     setTimeout(function () {
       document.removeEventListener('visibilitychange', onHide);
-      if (!left && !document.hidden) window.location.assign(url);
+      if (!left && !document.hidden) {
+        // Браузер телефону не відкрився — відгук тут же, чайові теж тут.
+        if (pendingId) { try { sessionStorage.setItem(TIP_PENDING_KEY, pendingId); } catch (e) {} }
+        window.location.assign(url);
+      }
     }, 1200);
   }
 
@@ -343,6 +367,36 @@
      відгуку заздалегідь (не шукати його в списку самому) і знати, кому
      запропонувати чайові, якщо клієнт повернеться сюди після Google. */
   var masterIdFromUrl = new URLSearchParams(window.location.search).get('m');
+
+  /* ?go=1 — сторінку відкрив Telegram у браузері телефону після 5 зірок
+     (openExternal). Автоматично перекидати на Google НЕ можна: Chrome і
+     Safari вважають сторінку, що сама пішла далі без дотику людини,
+     "прохідною" — кнопка "Назад" її пропускає, і до чайових клієнт не
+     повернеться. Тому показуємо одну кнопку "Написати відгук у Google":
+     після дотику сторінка лишається в історії, і "Назад" з Google
+     повертає сюди — до вікна чайових. go прибираємо з адреси, щоб при
+     поверненні це вікно не з'явилось удруге. */
+  (function () {
+    var qs = new URLSearchParams(location.search);
+    if (qs.get('go') !== '1') return;
+    var b = qs.get('b');
+    if (b && GOOGLE_REVIEW_LINK[b]) {
+      branch = b;
+      document.querySelectorAll('.branch-btn').forEach(function (btn) { btn.classList.toggle('active', btn.dataset.branch === b); });
+    }
+    rating = 5;
+    document.querySelectorAll('.star-btn').forEach(function (s) { s.classList.add('active'); });
+    qs.delete('go');
+    qs.delete('b');
+    history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs.toString() : ''));
+    var goModal = document.getElementById('goModalOverlay');
+    goModal.classList.add('show');
+    document.getElementById('goModalBtn').addEventListener('click', function () {
+      if (masterIdFromUrl) { try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {} }
+      goModal.classList.remove('show');
+      window.location.assign(GOOGLE_REVIEW_LINK[branch]);
+    });
+  })();
 
   fetch('/api/masters')
     .then(function (r) { return r.json(); })
