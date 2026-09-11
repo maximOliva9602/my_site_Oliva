@@ -2108,9 +2108,14 @@
             var hasNote = !!(a.comment && a.comment.trim());
 
             /* Парна процедура: основний запис підписуємо "+ другий майстер",
-               а автоматично створений запис другого майстра — "пара з …". */
+               а запис другого майстра — "Парна з …" і ім'ям клієнта пари
+               замість службового "Гість", щоб одразу було видно, що це той
+               самий масаж. Дані про пару приходять із сервера (pair_*), тож
+               працює й тоді, коли у фільтрі обрано лише одного майстра. */
             var pairParent = a.pair_parent_id ? apptById[a.pair_parent_id] : null;
-            var pairLbl = a.second_master_id ? "+ " + (a.second_master_name || "") : (pairParent ? "пара з " + (pairParent.master_name || "") : "");
+            var pairMasterName = a.pair_master_name || (pairParent && pairParent.master_name) || "";
+            var pairLbl = a.second_master_id ? "Парна + " + (a.second_master_name || "") : (a.pair_parent_id ? "Парна з " + pairMasterName : "");
+            var shownClient = a.pair_parent_id ? (a.pair_client_name || (pairParent && pairParent.client_name) || a.client_name) : a.client_name;
             var block = document.createElement("div");
             block.id = "cal-block-" + a.id;
             // Колонка вже підписана своєю філією (columns вище) — картці
@@ -2138,11 +2143,11 @@
                 '</span>' +
                 '</div>';
             }
-            html += '<div style="font-size:.76rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
-            if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
-            if (heightPx >= 44 && pairLbl) {
-              html += '<div style="font-size:.62rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">👥 ' + pairLbl + '</div>';
+            html += '<div style="font-size:.76rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + shownClient + '</div>';
+            if (pairLbl) {
+              html += '<div style="display:inline-block;max-width:100%;margin:1px 0 1px;padding:0 6px;border-radius:6px;background:rgba(0,0,0,.22);font-size:.64rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;">👥 ' + pairLbl + '</div>';
             }
+            if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
             /* Просто номер цього візиту в абонементі: 5/10. sub_index для
                завершених — зафіксований номер, для решти — черга. */
             if (heightPx >= 44 && a.sub_total) {
@@ -2364,11 +2369,11 @@
               var ts2 = fmtMin(a.start_min) + "–" + fmtMin(a.end_min || (a.start_min + a.duration_min));
               var popMarker = a.color_marker || DEFAULT_MARKER;
               popup.innerHTML =
-                '<div style="font-size:.95rem;font-weight:600;color:#111;margin-bottom:6px;">' + a.client_name + '</div>' +
+                '<div style="font-size:.95rem;font-weight:600;color:#111;margin-bottom:6px;">' + shownClient + '</div>' +
                 '<div style="font-size:.8rem;color:#555;margin-bottom:3px;">🕐 ' + ts2 + '</div>' +
                 '<div style="font-size:.8rem;color:#555;margin-bottom:3px;">💆 ' + svcName + '</div>' +
                 '<div style="font-size:.8rem;color:#555;margin-bottom:' + (pairLbl ? '3' : '8') + 'px;">👤 ' + (a.master_name||'') + '</div>' +
-                (pairLbl ? '<div style="font-size:.8rem;color:#555;margin-bottom:8px;">👥 ' + (a.second_master_id ? (a.second_master_name||'') + ' (другий майстер)' : pairLbl) + '</div>' : '') +
+                (pairLbl ? '<div style="font-size:.8rem;color:#555;margin-bottom:8px;">👥 ' + (a.second_master_id ? (a.second_master_name||'') + ' (другий майстер)' : 'Парна процедура з ' + pairMasterName) + '</div>' : '') +
                 (a.price ? '<div style="font-size:.82rem;color:#3d6b28;margin-bottom:8px;">' + Math.round(a.price/100) + ' ₴' + (a.paid ? ' ✓' : '') + '</div>' : '') +
                 '<div style="margin-bottom:' + (hasNote ? '8' : '10') + 'px;"><span class="badge b-' + a.status + '" style="font-size:.7rem;">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
                 (hasNote ? '<div style="font-size:.78rem;color:#555;margin-bottom:10px;">💬 ' + a.comment + '</div>' : '') +
@@ -3416,8 +3421,11 @@
     var row = el("div", "row1");
     row.appendChild(el("span", "t", fmtMin(a.start_min)));
     var info = el("div");
-    info.appendChild(el("div", "t", a.client_name + " · " + a.service_name));
+    var listClient = a.pair_parent_id && a.pair_client_name ? a.pair_client_name : a.client_name;
+    info.appendChild(el("div", "t", listClient + " · " + a.service_name));
     var subParts = [a.master_name, a.client_phone, a.duration_min + " хв"];
+    if (a.second_master_id) subParts.push("👥 парна + " + (a.second_master_name || ""));
+    else if (a.pair_parent_id) subParts.push("👥 парна з " + (a.pair_master_name || ""));
     if (a.price) subParts.push(money(a.price));
     if (a.paid) subParts.push("✅ " + (a.pay_method || "оплачено"));
     info.appendChild(el("div", "sub", subParts.join(" · ")));
