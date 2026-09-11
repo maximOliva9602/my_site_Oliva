@@ -1593,7 +1593,7 @@
         // (schedMap заповнюється з денного графіка з урахуванням override'ів),
         // а також тих, у кого вже є записи цього дня — щоб не ховати наявні брони.
         masters = masters.filter(function(m) {
-          return !!schedMap[m.id] || appts.some(function(a) { return a.master_id === m.id; });
+          return !!schedMap[m.id] || appts.some(function(a) { return a.master_id === m.id || a.second_master_id === m.id; });
         });
 
         var dayBlocksMap = {};
@@ -2066,8 +2066,13 @@
           // Блоки записів — lane-assignment для відображення записів що накладаються.
           // Коли колонка розділена по філії (colBranchId), показуємо лише
           // записи ЦІЄЇ філії — решта в сусідній колонці цього ж майстра.
+          /* Парна процедура — один запис, але показуємо його і в колонці
+             другого майстра (second_master_id): його час теж зайнятий, і
+             вручну ставити йому окремий візит більше не треба. Така копія
+             лише для перегляду — перетягувати можна тільки основний блок. */
           var masterAppts = appts.filter(function(a) {
-            return a.master_id === master.id && (colBranchId == null || a.branch_id === colBranchId);
+            return (a.master_id === master.id || a.second_master_id === master.id) &&
+              (colBranchId == null || a.branch_id === colBranchId);
           }).sort(function(a, b) { return a.start_min - b.start_min; });
           var laneEnd = [];
           var laneMap = {};
@@ -2105,8 +2110,9 @@
             var svcName = (a.service_name||'').replace(/\s*\([^)]*\)\s*/g,'').trim();
             var hasNote = !!(a.comment && a.comment.trim());
 
+            var isMirror = a.master_id !== master.id;
             var block = document.createElement("div");
-            block.id = "cal-block-" + a.id;
+            block.id = (isMirror ? "cal-block2-" : "cal-block-") + a.id;
             // Колонка вже підписана своєю філією (columns вище) — картці
             // окрема мітка не потрібна. Коли філію визначено автоматично
             // за графіком (inferredApptIds), а не збережено напряму —
@@ -2115,6 +2121,7 @@
             block.style.cssText = "position:absolute;left:calc(" + leftPct + "% + 2px);width:calc(" + pct + "% - 4px);top:" + topPx + "px;height:" + heightPx + "px;" +
               "background:" + markerHex + ";border-radius:5px;" +
               "padding:3px 5px 2px 5px;overflow:hidden;cursor:pointer;z-index:3;" +
+              (isMirror ? "background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.2) 0 6px,transparent 6px 12px);" : "") +
               (a.status === "confirmed"
                 ? "border:2px solid #d9ff9f;box-shadow:0 0 0 1px #31531d,0 2px 7px rgba(49,83,29,.45);"
                 : "border:2px solid transparent;");
@@ -2134,6 +2141,10 @@
             }
             html += '<div style="font-size:.76rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + a.client_name + '</div>';
             if (heightPx >= 44) html += '<div style="font-size:.66rem;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + svcName + '</div>';
+            if (heightPx >= 44 && a.second_master_id) {
+              html += '<div style="font-size:.62rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">👥 ' +
+                (isMirror ? 'з ' + (a.master_name || '') : '+ ' + (a.second_master_name || '')) + '</div>';
+            }
             /* Просто номер цього візиту в абонементі: 5/10. sub_index для
                завершених — зафіксований номер, для решти — черга. */
             if (heightPx >= 44 && a.sub_total) {
@@ -2157,7 +2168,7 @@
             block.innerHTML = html;
 
             // Native mouse drag is enabled only for the owner on desktop.
-            if (desktopMouseDragEnabled) {
+            if (desktopMouseDragEnabled && !isMirror) {
               block.draggable = true;
               block.style.cursor = "grab";
               block.title = "Затисніть і перетягніть до іншого майстра";
@@ -2204,6 +2215,7 @@
             }
 
             block.addEventListener("touchstart", function(e) {
+              if (isMirror) return;
               var t = e.touches[0];
               blkDragX = t.clientX; blkDragY = t.clientY;
               blkDragRect = block.getBoundingClientRect();
@@ -2358,7 +2370,8 @@
                 '<div style="font-size:.95rem;font-weight:600;color:#111;margin-bottom:6px;">' + a.client_name + '</div>' +
                 '<div style="font-size:.8rem;color:#555;margin-bottom:3px;">🕐 ' + ts2 + '</div>' +
                 '<div style="font-size:.8rem;color:#555;margin-bottom:3px;">💆 ' + svcName + '</div>' +
-                '<div style="font-size:.8rem;color:#555;margin-bottom:8px;">👤 ' + (a.master_name||'') + '</div>' +
+                '<div style="font-size:.8rem;color:#555;margin-bottom:' + (a.second_master_id ? '3' : '8') + 'px;">👤 ' + (a.master_name||'') + '</div>' +
+                (a.second_master_id ? '<div style="font-size:.8rem;color:#555;margin-bottom:8px;">👥 ' + (a.second_master_name||'') + ' (другий майстер)</div>' : '') +
                 (a.price ? '<div style="font-size:.82rem;color:#3d6b28;margin-bottom:8px;">' + Math.round(a.price/100) + ' ₴' + (a.paid ? ' ✓' : '') + '</div>' : '') +
                 '<div style="margin-bottom:' + (hasNote ? '8' : '10') + 'px;"><span class="badge b-' + a.status + '" style="font-size:.7rem;">' + (STATUS_LABEL[a.status]||a.status) + '</span></div>' +
                 (hasNote ? '<div style="font-size:.78rem;color:#555;margin-bottom:10px;">💬 ' + a.comment + '</div>' : '') +
@@ -2836,8 +2849,10 @@
     $("dMarkerWrap").appendChild(markerPicker(a.color_marker || null, function(c) {
       api("PATCH", "/api/crm/appointments/" + a.id + "/color-marker", { color_marker: c });
       a.color_marker = c;
-      var blk = document.getElementById("cal-block-" + a.id);
-      if (blk) { blk.style.background = c; }
+      ["cal-block-", "cal-block2-"].forEach(function (pfx) {
+        var blk = document.getElementById(pfx + a.id);
+        if (blk) { blk.style.backgroundColor = c; }
+      });
     }));
 
     // Абонемент
