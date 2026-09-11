@@ -200,8 +200,8 @@
   <div class="tip-modal">
     <div class="tip-modal-icon">⭐</div>
     <div class="tip-modal-title">Дякуємо за 5 зірок!</div>
-    <div class="tip-modal-sub">Відкриваємо відгук у Google…</div>
-    <button type="button" class="tip-modal-no" id="goModalBtn">Не відкрилось? Натисніть тут</button>
+    <div class="tip-modal-sub">Залишилось лише написати кілька слів у Google — це дуже допоможе нам 🤍</div>
+    <button type="button" class="tip-modal-yes" id="goModalBtn">Написати відгук у Google</button>
   </div>
 </div>
 
@@ -291,13 +291,9 @@
     qs.set('b', branch);
     var ext = externalBrowserUrl(location.origin + location.pathname + '?' + qs.toString());
     if (!ext) { markReturnForTip(); window.location.assign(url); return; }
-    /* На Android Chrome пропускає кнопкою "Назад" сторінку, що сама
-       перейшла далі, тож "Назад" з Google повертає прямо в Telegram — там
-       чайові й покажемо. На iPhone їх покаже Safari, тут знімаємо. */
+    // Чайові запропонує сторінка в браузері телефону — тут, у Telegram, знімаємо, щоб не вдруге.
     var pendingId = null;
-    if (!/Android/i.test(navigator.userAgent)) {
-      try { pendingId = sessionStorage.getItem(TIP_PENDING_KEY); sessionStorage.removeItem(TIP_PENDING_KEY); } catch (e) {}
-    }
+    try { pendingId = sessionStorage.getItem(TIP_PENDING_KEY); sessionStorage.removeItem(TIP_PENDING_KEY); } catch (e) {}
     var left = false;
     function onHide() { if (document.hidden) left = true; }
     document.addEventListener('visibilitychange', onHide);
@@ -396,12 +392,14 @@
   consumeReturnFlag();
 
   /* ?go=1 — сторінку відкрив Telegram у браузері телефону після 5 зірок
-     (openExternal). Сама одразу веде на форму Google-відгуку, а наша
-     сторінка лишається в історії браузера — "Назад" з Google повертає
-     сюди, до вікна чайових. Перехід — лише ПІСЛЯ завершення завантаження:
-     Safari перехід під час завантаження вважає редиректом і заміняє ним
-     нашу сторінку в історії, тоді "Назад" не мав би куди повернути.
-     go прибираємо з адреси, щоб при поверненні не перекинуло знову. */
+     (openExternal). Показуємо одну кнопку "Написати відгук у Google", яка
+     відкриває Google в ОКРЕМІЙ вкладці, а наша сторінка лишається в цій.
+     Якби йшли на Google у цій же вкладці, після "Готово" Google відкриває
+     картку студії, і перше "Назад" вело на його порожню сторінку (відео з
+     iPhone). Вкладку, відкриту сторінкою, Google після "Готово" може
+     закрити сам, а "Назад" на її першій сторінці повертає сюди — і тут
+     одразу чайові (onReturn). Відкрити вкладку браузер дозволяє лише
+     після дотику людини, тому без кнопки не обійтись. */
   (function () {
     var qs = new URLSearchParams(location.search);
     if (qs.get('go') !== '1') return;
@@ -415,23 +413,21 @@
     qs.delete('go');
     qs.delete('b');
     history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs.toString() : ''));
-    /* Позначку чайових тут НЕ ставимо: коли довантажиться список майстрів,
-       вікно чайових блимнуло б ще до переходу на Google. Її ставить go()
-       в адресі — вона спрацює лише після повернення. */
     var goModal = document.getElementById('goModalOverlay');
     goModal.classList.add('show');
-    var gone = false;
-    function go() {
-      if (gone) return;
-      gone = true;
+    document.getElementById('goModalBtn').addEventListener('click', function () {
       goModal.classList.remove('show');
+      var url = GOOGLE_REVIEW_LINK[branch];
+      var w = null;
+      try { w = window.open(url, '_blank'); } catch (e) { w = null; }
+      if (w) {
+        if (masterIdFromUrl) { try { sessionStorage.setItem(TIP_PENDING_KEY, masterIdFromUrl); } catch (e) {} }
+        return;
+      }
+      // Браузер не дав відкрити вкладку — як раніше, у цій же.
       markReturnForTip();
-      window.location.assign(GOOGLE_REVIEW_LINK[branch]);
-    }
-    // Запасна кнопка — якщо браузер з якоїсь причини не перейшов сам.
-    document.getElementById('goModalBtn').addEventListener('click', function () { gone = false; go(); });
-    if (document.readyState === 'complete') setTimeout(go, 300);
-    else window.addEventListener('load', function () { setTimeout(go, 300); });
+      window.location.assign(url);
+    });
   })();
 
   fetch('/api/masters' + (masterIdFromUrl ? '?with=' + encodeURIComponent(masterIdFromUrl) : ''))
