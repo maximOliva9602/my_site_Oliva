@@ -198,6 +198,40 @@ function getOrCreateGuestClient() {
   return c.id;
 }
 
+/* Парна процедура: другий майстер отримує окремий запис "Гість" (другий
+   клієнт пари) — ту саму послугу, ціну й час, що й основний запис. Саме
+   так власник ставив його вручну, і саме з цього запису другий майстер
+   отримує ЗП (сам second_master_id оплати не дає). Викликається після
+   будь-якої зміни основного запису: призначили/зняли другого майстра,
+   перенесли, скасували. Послугу й ціну задаємо лише при створенні —
+   якщо власник потім поправить їх у записі "Гість" вручну, не затираємо.
+   Без сповіщень: другому майстру вже пише notifySecondMaster, а "Гість"
+   без телефону — SMS нікому не піде. */
+function syncPairCompanion(pairId) {
+  const a = db.prepare("SELECT * FROM appointments WHERE id=?").get(pairId);
+  if (!a) return;
+  const comp = db.prepare("SELECT id, status FROM appointments WHERE pair_parent_id=? ORDER BY id DESC LIMIT 1").get(pairId);
+  const now = Date.now();
+  if (!a.second_master_id || a.status === "cancelled") {
+    if (comp && comp.status !== "cancelled") {
+      db.prepare("UPDATE appointments SET status='cancelled', updated_at=? WHERE id=?").run(now, comp.id);
+    }
+    return;
+  }
+  if (comp) {
+    db.prepare(
+      `UPDATE appointments SET master_id=?, date=?, start_min=?, end_min=? + duration_min, branch_id=?,
+              status=CASE WHEN status='cancelled' THEN ? ELSE status END, updated_at=? WHERE id=?`
+    ).run(a.second_master_id, a.date, a.start_min, a.start_min, a.branch_id, a.status, now, comp.id);
+    return;
+  }
+  db.prepare(
+    `INSERT INTO appointments (public_id,client_id,master_id,branch_id,service_id,date,start_min,end_min,duration_min,price,status,source,pair_parent_id,created_at,updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,'staff',?,?,?)`
+  ).run(crypto.randomBytes(8).toString("hex"), getOrCreateGuestClient(), a.second_master_id, a.branch_id, a.service_id,
+    a.date, a.start_min, a.end_min, a.duration_min, a.price, a.status, pairId, now, now);
+}
+
 /* Філія для запису, який CRM створює сама (кнопка "+ Новий запис" не
    питає філію — на відміну від публічного /booking, де клієнт її
    обирає). Раніше тут просто брали masters.branch_id — застаріле поле
@@ -532,7 +566,7 @@ function settingOn(key, dfltOn) {
 function setStatus(id, status, session, options) {
   options = options || {};
   if (STATUSES.indexOf(status) === -1) return { status: 400, body: { ok: false, error: "bad status" } };
-  const a = db.prepare("SELECT id, master_id, client_id, public_id, status, service_id, subscription_used FROM appointments WHERE id=?").get(id);
+  const a = db.prepare("SELECT id, master_id, client_id, public_id, status, service_id, subscription_used, second_master_id FROM appointments WHERE id=?").get(id);
   if (!a) return { status: 404, body: { ok: false, error: "not found" } };
   if (session.role !== "owner" && a.master_id !== session.masterId) {
     return { status: 403, body: { ok: false, error: "forbidden" } };
@@ -540,6 +574,8 @@ function setStatus(id, status, session, options) {
   const wasCompleted = a.status === "completed";
   db.prepare("UPDATE appointments SET status=?, updated_at=? WHERE id=?").run(status, Date.now(), id);
   recomputeClient(a.client_id);
+  // Скасували (або повернули зі скасованих) парну процедуру — так само і запис "Гість" другого майстра.
+  if (a.second_master_id && (status === "cancelled" || a.status === "cancelled")) syncPairCompanion(id);
 
   /* Знімаємо «Завершено» (вручну чи це був помилковий автозавершений
      запис) — повертаємо сеанс абонементу, якщо його вже списали.
@@ -653,12 +689,10 @@ router.get("/me/appointments", any, function (req, res) {
   // календар і так показує розклад усіх майстрів). master=all — явно
   // прибрати фільтр і показати записи всіх майстрів. Без параметра —
   // стара поведінка: власник бачить усіх, майстер лише себе.
-  // Парна процедура — і в записах другого майстра (його час теж зайнятий).
   if (masterParam && masterParam !== "all") {
-    const mp = parseInt(masterParam, 10);
-    sql += " AND (a.master_id=? OR a.second_master_id=?)"; args.push(mp, mp);
+    sql += " AND a.master_id=?"; args.push(parseInt(masterParam, 10));
   } else if (masterParam !== "all" && s.role !== "owner") {
-    sql += " AND (a.master_id=? OR a.second_master_id=?)"; args.push(s.masterId, s.masterId);
+    sql += " AND a.master_id=?"; args.push(s.masterId);
   }
   if (tz.isDate(from)) { sql += " AND a.date>=?"; args.push(from); }
   if (tz.isDate(to)) { sql += " AND a.date<=?"; args.push(to); }
@@ -925,6 +959,8 @@ router.patch("/appointments/:id", any, function (req, res) {
   } else {
     db.prepare("UPDATE appointments SET comment=?, updated_at=? WHERE id=?").run(comment, Date.now(), id);
   }
+  // Перенесли парну процедуру — запис "Гість" другого майстра їде разом із нею.
+  if (a.second_master_id && (timeChanged || branchId !== a.branch_id)) syncPairCompanion(id);
 
   // Ручна відмітка «використати абонемент за цей візит» (лише unset → set).
   if (d.subscription_used === true && !a.subscription_used) {
@@ -1000,25 +1036,26 @@ router.patch("/appointments/:id/second-master", owner, function (req, res) {
     if (masterId === a.master_id) return res.status(400).json({ ok: false, error: "same as primary master" });
     const m = db.prepare("SELECT id FROM masters WHERE id=? AND active=1").get(masterId);
     if (!m) return res.status(404).json({ ok: false, error: "master not found" });
-    /* Другий майстер тепер автоматично стоїть у своїй колонці розкладу на
-       час парної процедури — тож не можна поставити його туди, де він уже
-       зайнятий іншим записом. Найчастіше це ручна копія цієї ж процедури,
-       яку раніше доводилось створювати окремо, — підказуємо її скасувати. */
+    /* Запис "Гість" для другого майстра тепер створюється автоматично
+       (syncPairCompanion) — тож не можна ставити його туди, де він уже
+       зайнятий. Власний запис-пару цієї процедури не рахуємо. */
     const busy = db.prepare(
       `SELECT a.start_min, a.end_min, c.name client_name FROM appointments a JOIN clients c ON c.id=a.client_id
-        WHERE (a.master_id=? OR a.second_master_id=?) AND a.id != ? AND a.date=?
-          AND a.status NOT IN ('cancelled','no_show') AND a.start_min < ? AND a.end_min > ?
+        WHERE (a.master_id=? OR a.second_master_id=?) AND a.id != ? AND (a.pair_parent_id IS NULL OR a.pair_parent_id != ?)
+          AND a.date=? AND a.status NOT IN ('cancelled','no_show') AND a.start_min < ? AND a.end_min > ?
         LIMIT 1`
-    ).get(masterId, masterId, id, a.date, a.end_min, a.start_min);
+    ).get(masterId, masterId, id, id, a.date, a.end_min, a.start_min);
     if (busy) {
       return res.status(409).json({ ok: false, error:
-        "Майстер уже зайнятий у цей час: " + busy.client_name + ", " + tz.fmtMin(busy.start_min) + "–" + tz.fmtMin(busy.end_min) +
-        ". Якщо це ручна копія цієї парної процедури — скасуйте її: другий майстер тепер ставиться в розклад автоматично." });
+        "Майстер уже зайнятий у цей час: " + busy.client_name + ", " + tz.fmtMin(busy.start_min) + "–" + tz.fmtMin(busy.end_min) + "." });
     }
     db.prepare("INSERT OR IGNORE INTO master_services (master_id,service_id) VALUES (?,?)").run(masterId, a.service_id);
   }
 
-  db.prepare("UPDATE appointments SET second_master_id=?, updated_at=? WHERE id=?").run(masterId, Date.now(), id);
+  db.transaction(function () {
+    db.prepare("UPDATE appointments SET second_master_id=?, updated_at=? WHERE id=?").run(masterId, Date.now(), id);
+    syncPairCompanion(id);
+  })();
 
   if (masterId && masterId !== a.second_master_id) {
     try { require("./admin-notify").notifySecondMaster(id); } catch (e) { console.error("[second-master-notify]", e.message); }
@@ -1043,7 +1080,7 @@ router.get("/appointments/month-counts", any, function (req, res) {
   const filterBranchId = req.session.role === "owner" ? parseInt(req.query.branch, 10) || null : null;
   let sql = "SELECT date, COUNT(*) n FROM appointments WHERE date>=? AND date<=? AND status NOT IN ('cancelled')";
   const args = [from, to];
-  if (filterMasterId) { sql += " AND (master_id=? OR second_master_id=?)"; args.push(filterMasterId, filterMasterId); }
+  if (filterMasterId) { sql += " AND master_id=?"; args.push(filterMasterId); }
   if (filterBranchId) { sql += " AND branch_id=?"; args.push(filterBranchId); }
   sql += " GROUP BY date";
   const stmtMc = db.prepare(sql);
@@ -1062,7 +1099,7 @@ router.get("/appointments", owner, function (req, res) {
   if (tz.isDate(date)) { sql += " AND a.date=?"; args.push(date); }
   if (tz.isDate(from)) { sql += " AND a.date>=?"; args.push(from); }
   if (tz.isDate(to)) { sql += " AND a.date<=?"; args.push(to); }
-  if (master) { sql += " AND (a.master_id=? OR a.second_master_id=?)"; args.push(master, master); }
+  if (master) { sql += " AND a.master_id=?"; args.push(master); }
   if (branch) { sql += " AND a.branch_id=?"; args.push(branch); }
   sql += " ORDER BY a.date, a.start_min";
   const stmt = db.prepare(sql);
@@ -1133,7 +1170,7 @@ router.post("/appointments/bulk-import", owner, function (req, res) {
 /* ---- Розклад (для майстрів — загальний вигляд) ---- */
 router.get("/schedule", any, function (req, res) {
   const date = clean(req.query.date, 10) || tz.nowKyiv().date;
-  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.second_master_id, a.service_id, a.client_id, a.price, a.paid, a.color_marker, a.comment, a.extra_services, " +
+  const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.second_master_id, a.pair_parent_id, a.service_id, a.client_id, a.price, a.paid, a.color_marker, a.comment, a.extra_services, " +
               "a.subscription_used, a.subscription_session_no, a.subscription_session_total, " +
               "c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name, " +
               "r.rating review_rating, r.comment review_comment " +
@@ -1900,11 +1937,10 @@ router.get("/dashboard", owner, function (req, res) {
       return sum + (minByWeekday[wd] || 0);
     }, 0);
 
-    // Зайнятість враховує й парні процедури, де майстер — другий.
     const usedMin = db.prepare(
       `SELECT COALESCE(SUM(duration_min),0) s FROM appointments
-        WHERE (master_id=? OR second_master_id=?) AND date>=? AND date<=? AND status IN ('pending','confirmed','completed')`
-    ).get(m.id, m.id, pFrom, pTo).s;
+        WHERE master_id=? AND date>=? AND date<=? AND status IN ('pending','confirmed','completed')`
+    ).get(m.id, pFrom, pTo).s;
 
     m.workload_pct = capacityMin > 0 ? Math.min(100, Math.round(usedMin / capacityMin * 100)) : 0;
 
@@ -1916,8 +1952,8 @@ router.get("/dashboard", owner, function (req, res) {
     } else {
       const busyToday = db.prepare(
         `SELECT COALESCE(SUM(duration_min),0) s FROM appointments
-          WHERE (master_id=? OR second_master_id=?) AND date=? AND status IN ('pending','confirmed','completed')`
-      ).get(m.id, m.id, today).s;
+          WHERE master_id=? AND date=? AND status IN ('pending','confirmed','completed')`
+      ).get(m.id, today).s;
       m.free_today_h = Math.max(0, Math.round((shiftMin - busyToday) / 60 * 10) / 10);
     }
 

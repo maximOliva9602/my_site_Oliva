@@ -726,6 +726,32 @@ try { db.exec("ALTER TABLE appointments ADD COLUMN branch_id INTEGER REFERENCES 
    звичайних записів і для старих парних записів до цієї міграції. */
 try { db.exec("ALTER TABLE appointments ADD COLUMN second_master_id INTEGER REFERENCES masters(id)"); } catch(e) {}
 
+/* Запис другого майстра парної процедури ("Гість" — другий клієнт пари)
+   посилається на основний запис через pair_parent_id, щоб рухатись і
+   скасовуватись разом із ним (див. syncPairCompanion у routes.crm.js).
+   Раніше власник ставив такий запис вручну — без зв'язку. Прив'язуємо ці
+   старі ручні записи: "Гість" у другого майстра, що накладається за часом
+   на пару, де той стоїть другим, — інакше бути не може, бо фізично два
+   масажі одночасно майстер не робить. Лише непривʼязані, тож повторний
+   запуск на кожному старті нічого не змінює. */
+try { db.exec("ALTER TABLE appointments ADD COLUMN pair_parent_id INTEGER REFERENCES appointments(id)"); } catch(e) {}
+try {
+  db.exec(`
+    UPDATE appointments SET pair_parent_id = (
+      SELECT p.id FROM appointments p
+       WHERE p.second_master_id = appointments.master_id AND p.date = appointments.date
+         AND p.start_min < appointments.end_min AND p.end_min > appointments.start_min
+         AND p.status != 'cancelled' AND p.id != appointments.id
+       ORDER BY ABS(p.start_min - appointments.start_min) LIMIT 1)
+     WHERE pair_parent_id IS NULL AND second_master_id IS NULL AND status != 'cancelled'
+       AND client_id IN (SELECT id FROM clients WHERE phone='guest' OR name IN ('Гість','гість'))
+       AND EXISTS (SELECT 1 FROM appointments p
+                    WHERE p.second_master_id = appointments.master_id AND p.date = appointments.date
+                      AND p.start_min < appointments.end_min AND p.end_min > appointments.start_min
+                      AND p.status != 'cancelled' AND p.id != appointments.id)
+  `);
+} catch (e) { console.error("[db] pair_parent_id backfill:", e.message); }
+
 /* Одноразово та безпечно переносимо старі прив'язки до нової таблиці.
    INSERT OR IGNORE дозволяє запускати міграцію на кожному старті. */
 db.exec(`
