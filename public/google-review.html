@@ -260,17 +260,15 @@
      студії), і "Назад" до нас уже не повертає — лише ходить по колу між
      сторінками Google (видно на відео з iPhone). Наша сторінка лишається
      в першій вкладці: повернувся до неї — одразу бачить чайові (onReturn
-     нижче). Android у Telegram — одразу в зовнішній браузер (intent://
-     там працює надійно), решта Telegram — спершу нова вкладка, бо
-     x-safari на iPhone спрацьовує не завжди. */
+     нижче). У Telegram (Android і iPhone) — одразу в браузер телефону:
+     нова вкладка там відкривається у вбудованому браузері Telegram, де
+     клієнт не залогінений у Google. Повернувся з браузера в Telegram —
+     та сама onReturn показує чайові. */
   function openGoogleReview(url) {
-    var tg = isTelegramInApp();
-    if (tg && /Android/i.test(navigator.userAgent)) { openExternal(url); return; }
+    if (isTelegramInApp()) { openExternal(url); return; }
     var w = null;
     try { w = window.open(url, '_blank'); } catch (e) { w = null; }
-    if (w) return;
-    if (tg) { openExternal(url); return; }
-    window.location.assign(url);
+    if (!w) window.location.assign(url);
   }
   function openExternal(url) {
     var ext = externalBrowserUrl(url);
