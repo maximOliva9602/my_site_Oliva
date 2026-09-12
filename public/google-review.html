@@ -222,7 +222,7 @@
       <div class="tip-custom-wrap">
         <input type="number" class="tip-custom-input" id="tipCustomAmt" min="10" max="10000" placeholder="Або своя сума, грн..." />
       </div>
-      <button type="button" class="tip-modal-yes" id="tipModalPay">🤍 Оплатити <span id="tipPayAmt">150</span> грн</button>
+      <button type="button" class="tip-modal-yes" id="tipModalPay">💚 Додати чайові</button>
       <button type="button" class="tip-modal-no" id="tipModalNo">Ні, дякую</button>
     </div>
 
@@ -511,13 +511,11 @@
     var amt = 150;
     var amtBtns = document.querySelectorAll('#tipAmounts .tip-amt-btn');
     var customInput = document.getElementById('tipCustomAmt');
-    var payAmtLbl = document.getElementById('tipPayAmt');
 
     function selectAmt(btn, value) {
       amtBtns.forEach(function (b) { b.classList.remove('active'); });
       if (btn) btn.classList.add('active');
       amt = value;
-      payAmtLbl.textContent = value;
       payBtn.disabled = !(value > 0);
     }
     amtBtns.forEach(function (btn) {
