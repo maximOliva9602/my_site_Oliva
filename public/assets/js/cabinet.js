@@ -1603,13 +1603,21 @@
           if (!dayBlocksMap[blk.master_id]) dayBlocksMap[blk.master_id] = [];
           dayBlocksMap[blk.master_id].push(blk);
         });
+        /* Перерви майстра для колонки: перерва, поставлена в колонці однієї
+           філії, не показується в колонці іншої. Без філії (старі перерви)
+           або колонка без поділу на філії — показуємо всі. */
+        function blocksForColumn(mid, branchId) {
+          return (dayBlocksMap[mid] || []).filter(function(blk) {
+            return blk.branch_id == null || branchId == null || blk.branch_id === branchId;
+          });
+        }
 
-        function isUnavail(mid, absMin) {
+        function isUnavail(mid, absMin, branchId) {
           var s = schedMap[mid];
           if (!s) return true;
           if (absMin < s.ws || absMin >= s.we) return true;
           for (var i = 0; i < s.bks.length; i++) { if (absMin >= s.bks[i].s && absMin < s.bks[i].e) return true; }
-          var dbs = dayBlocksMap[mid] || [];
+          var dbs = blocksForColumn(mid, branchId);
           for (var j = 0; j < dbs.length; j++) { if (absMin >= dbs[j].start_min && absMin < dbs[j].end_min) return true; }
           return false;
         }
@@ -1701,7 +1709,7 @@
           if (oldCtx) { oldCtx.remove(); return; }
           // Майстер може взаємодіяти тільки з власною колонкою
           if (ME.role !== "owner" && master.id !== ME.masterId) return;
-          var unavail = isUnavail(master.id, absMin);
+          var unavail = isUnavail(master.id, absMin, ctxBranchId);
           var ctx = document.createElement("div");
           ctx.id = "cal-ctx";
           ctx.style.cssText = "position:fixed;left:" + (screenX + 8) + "px;top:" + (screenY - 10) + "px;" +
@@ -1734,7 +1742,8 @@
           document.getElementById("ctx-break").addEventListener("click", function() {
             closeCtx();
             var endMin = Math.min(absMin + 60, HOUR_END * 60);
-            var html = '<h3>⏸ Перерва — ' + (master.name || '') + '</h3>' +
+            var bkBranchAddr = ctxBranchId ? branchAddrById[ctxBranchId] : null;
+            var html = '<h3>⏸ Перерва — ' + (master.name || '') + (bkBranchAddr ? ' · ' + streetName(bkBranchAddr) : '') + '</h3>' +
               '<div class="grid2"><div><label>Від</label><input type="time" id="bkFrom" value="' + fmtMin(absMin) + '"></div>' +
               '<div><label>До</label><input type="time" id="bkTo" value="' + fmtMin(endMin) + '"></div></div>' +
               '<label style="margin-top:10px;display:block;">Нотатка</label>' +
@@ -1751,6 +1760,7 @@
               if (em <= sm) { $("bkErr").textContent = "«До» має бути пізніше «Від»"; return; }
               api("POST", "/api/crm/day-blocks", {
                 master_id: master.id, date: apptDate, start_min: sm, end_min: em,
+                branch_id: ctxBranchId || null,
                 note: $("bkNote").value.trim() || null
               }).then(function(res) {
                 if (!res.j.ok) { $("bkErr").textContent = "Помилка"; return; }
@@ -1990,7 +2000,7 @@
           });
 
           // Перерви на конкретну дату (day_blocks)
-          (dayBlocksMap[master.id] || []).forEach(function(blk) {
+          blocksForColumn(master.id, colBranchId).forEach(function(blk) {
             var yt = ((blk.start_min - HOUR_START * 60) / STEP) * SLOT_H;
             var yh = ((blk.end_min - blk.start_min) / STEP) * SLOT_H;
             var blkDiv = document.createElement("div");

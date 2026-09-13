@@ -34,7 +34,7 @@ function computeSlots(workStart, workEnd, blocked, durationMin, earliest) {
 
 /* Заблоковані інтервали майстра на дату: перерви (за днем тижня),
    time-off (повний день або діапазон) і активні записи. */
-function blockedIntervals(masterId, date) {
+function blockedIntervals(masterId, date, branchId) {
   const weekday = tz.weekdayOf(date);
   const blocked = [];
 
@@ -68,10 +68,13 @@ function blockedIntervals(masterId, date) {
 
   /* Разові перерви на конкретну дату (кнопка "⏸ Перерва" в календарі
      CRM) — окрема таблиця day_blocks, її досі ніхто тут не враховував,
-     тож онлайн-запис пропонував час, заблокований у CRM. */
+     тож онлайн-запис пропонував час, заблокований у CRM.
+     Перерва в іншій філії цей час не закриває. Філія невідома (0) — беремо
+     всі перерви, щоб не запропонувати закритий час. */
+  const blockBranch = parseInt(branchId, 10) || 0;
   const dayBlocks = db.prepare(
-    "SELECT start_min, end_min FROM day_blocks WHERE master_id = ? AND date = ?"
-  ).all(masterId, date);
+    "SELECT start_min, end_min FROM day_blocks WHERE master_id = ? AND date = ? AND (? = 0 OR branch_id IS NULL OR branch_id = ?)"
+  ).all(masterId, date, blockBranch, blockBranch);
   for (const b of dayBlocks) blocked.push([b.start_min, b.end_min]);
 
   return blocked;
@@ -117,7 +120,7 @@ function freeSlots(masterId, date, durationMin, nowMs, branchId) {
   let earliest = workStart;
   if (date === now.date) earliest = Math.max(workStart, now.min + LEAD_MIN);
 
-  const blocked = blockedIntervals(masterId, date);
+  const blocked = blockedIntervals(masterId, date, branchId);
   return computeSlots(workStart, workEnd, blocked, durationMin, earliest);
 }
 
@@ -172,7 +175,7 @@ function maxDurationFrom(masterId, date, startMin, branchId) {
   const workStart = win.start, workEnd = win.end;
   if (startMin < workStart || startMin >= workEnd) return 0;
   let limit = workEnd;
-  const blocked = blockedIntervals(masterId, date);
+  const blocked = blockedIntervals(masterId, date, branchId);
   for (const b of blocked) {
     const bs = b[0], be = b[1];
     if (bs <= startMin && be > startMin) return 0;   // старт усередині зайнятого інтервалу

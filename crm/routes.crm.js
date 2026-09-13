@@ -2353,9 +2353,10 @@ router.post("/day-blocks", any, function (req, res) {
   if (!masterId || !date || isNaN(startMin) || isNaN(endMin) || endMin <= startMin)
     return res.status(400).json({ ok: false });
   const note = clean(b.note, 200) || null;
+  const branchId = parseInt(b.branch_id, 10) || null;
   const info = db.prepare(
-    "INSERT INTO day_blocks (master_id,date,start_min,end_min,note,created_at) VALUES (?,?,?,?,?,?)"
-  ).run(masterId, date, startMin, endMin, note, Date.now());
+    "INSERT INTO day_blocks (master_id,date,start_min,end_min,note,branch_id,created_at) VALUES (?,?,?,?,?,?,?)"
+  ).run(masterId, date, startMin, endMin, note, branchId, Date.now());
   res.json({ ok: true, id: info.lastInsertRowid });
 });
 
