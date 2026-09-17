@@ -1196,19 +1196,32 @@
   var branchChips = document.getElementById('branchChips');
   var branchesList = [];
 
+  /* Назва філії в CRM ("name") пишеться довільно й довго — напр.
+     "OLIVA за адресою: м.Київ, вул. Борщагівська 145" — на кнопці-чіпі
+     не влізе. Показуємо й зберігаємо коротку адресу, як скрізь на сайті
+     ("Борщагівська, 145" / "Успішна, 8"): беремо address (якщо є) або
+     name, і зрізаємо службовий префікс і місто. */
+  function shortBranchLabel(b) {
+    var raw = String((b.address || b.name || '')).trim();
+    raw = raw.replace(/^OLIVA\s*за\s*адресою:\s*/i, '').trim();
+    raw = raw.replace(/^м\.?\s*Київ,?\s*/i, '').trim();
+    return raw || b.name;
+  }
+
   fetch('/api/public/branches').then(function(r){ return r.json(); }).then(function(res){
     branchesList = (res && res.ok && res.branches) ? res.branches : [];
     branchChips.innerHTML = '';
     branchesList.forEach(function(b){
+      var label = shortBranchLabel(b);
       var chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'option-chip';
-      chip.setAttribute('data-val', b.name);
-      chip.textContent = '📍 ' + b.name;
+      chip.setAttribute('data-val', label);
+      chip.textContent = '📍 ' + label;
       chip.addEventListener('click', function(){
         branchChips.querySelectorAll('.option-chip').forEach(function(c){ c.classList.remove('active'); });
         chip.classList.add('active');
-        inpBranch.value = b.name;
+        inpBranch.value = label;
         fgBranch.classList.remove('invalid');
       });
       branchChips.appendChild(chip);
@@ -1247,7 +1260,7 @@
           fgBranch.style.display = 'block';
         } else {
           fgBranch.style.display = 'none';
-          inpBranch.value = branchesList.length === 1 ? branchesList[0].name : '';
+          inpBranch.value = branchesList.length === 1 ? shortBranchLabel(branchesList[0]) : '';
         }
       }
     });
