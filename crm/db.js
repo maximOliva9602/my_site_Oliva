@@ -714,6 +714,21 @@ CREATE INDEX IF NOT EXISTS idx_branch_services_branch ON branch_services(branch_
    в SMS/подію календаря замість однієї адреси студії на всіх. */
 try { db.exec("ALTER TABLE branches ADD COLUMN address TEXT"); } catch(e) {}
 
+/* Бекфіл для філій, заведених до появи окремого поля address (їхня
+   адреса була лише в name — "OLIVA за адресою: м.Київ, вул. …"). Без
+   цього SMS-нагадування для такої філії тихо падало на STUDIO_ADDRESS
+   (жорстко "Борщагівська") — власник побачив це на живому клієнті:
+   візит був на Успішній, а СМС прийшла з адресою іншої філії. Пише
+   лише туди, де address ще порожній — на кожному старті нешкідливо. */
+try {
+  const branchesNoAddr = db.prepare("SELECT id, name FROM branches WHERE address IS NULL OR address=''").all();
+  const setAddr = db.prepare("UPDATE branches SET address=? WHERE id=?");
+  branchesNoAddr.forEach(function (b) {
+    let addr = String(b.name || "").replace(/^OLIVA\s*за\s*адресою:\s*/i, "").trim();
+    if (addr) setAddr.run(addr, b.id);
+  });
+} catch (e) { console.error("[db] branches address backfill:", e.message); }
+
 /* Картка філії в онлайн-записі: підпис над назвою ("Студія масажу" /
    "Кабінет студії масажу"), орієнтири ("ст. метро Шулявська / ...") і
    галерея фото інтер'єру. photos — JSON-масив адрес; старе одиночне

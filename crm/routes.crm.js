@@ -358,6 +358,20 @@ function createAppointment(d, session) {
       } else {
         db.prepare("UPDATE clients SET name=COALESCE(NULLIF(?,''),name) WHERE id=?").run(name, client.id);
       }
+      /* Філія не визначена автоматично (розклад майстра того дня
+         допускає кілька філій) — якщо майстер справді працює в кількох,
+         не зберігаємо запис "навмання": саме так клієнту, записаному на
+         Успішну, пішла СМС з адресою Борщагівської (нагадування згодом
+         вгадувало філію через застаріле "основне" поле майстра, і
+         вгадало неправильно). З однією філією в майстра гадати нема
+         чого — null тут означає лише "дані ще не заведені". */
+      const finalBranch = explicitBranch || resolveBranchForNewAppt(masterId, date, m.branch_id);
+      if (!finalBranch) {
+        const ownBranches = db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=?").all(masterId);
+        if (ownBranches.length > 1) {
+          const err = new Error("BRANCH_REQUIRED"); err.code = "BRANCH_REQUIRED"; throw err;
+        }
+      }
       publicId = crypto.randomBytes(8).toString("hex");
       const info = db.prepare(
         /* Запис із CRM створює власник або сам майстер — підтверджувати
@@ -365,12 +379,13 @@ function createAppointment(d, session) {
            сайту лишається 'pending': його підтверджують вручну. */
         `INSERT INTO appointments (public_id,client_id,master_id,branch_id,service_id,date,start_min,end_min,duration_min,price,status,source,comment,color_marker,extra_services,created_at,updated_at)
          VALUES (?,?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?,?)`
-      ).run(publicId, client.id, masterId, explicitBranch || resolveBranchForNewAppt(masterId, date, m.branch_id), serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
+      ).run(publicId, client.id, masterId, finalBranch, serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
       appointmentId = info.lastInsertRowid;
     })();
   } catch (e) {
     if (e.code === "SLOT_TAKEN") return { status: 409, body: { ok: false, error: "SLOT_TAKEN" } };
     if (e.code === "CLIENT_NOT_FOUND") return { status: 404, body: { ok: false, error: "CLIENT_NOT_FOUND" } };
+    if (e.code === "BRANCH_REQUIRED") return { status: 400, body: { ok: false, error: "BRANCH_REQUIRED" } };
     return { status: 500, body: { ok: false, error: e.message } };
   }
   // Сповіщення адміну в Telegram + PWA push

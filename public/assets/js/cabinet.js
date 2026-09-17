@@ -4258,6 +4258,13 @@
       if (saveBtn.disabled) return;
       var err = $("mErr"); err.textContent = "";
       if (chosen.start_min == null) { err.textContent = "Оберіть час"; return; }
+      /* Майстер працює у кількох філіях — без явного вибору сервер не
+         вгадуватиме (саме тому клієнту, записаному на Успішну, раніше
+         йшла СМС з адресою іншої філії). */
+      if ($("mBranchRow") && $("mBranchRow").style.display !== "none" && !$("mBranch").value) {
+        err.textContent = "Оберіть філію — цей майстер працює у кількох студіях";
+        return;
+      }
       var name, phone;
       if (isGuestBooking) {
         name = "Гість"; phone = "";
@@ -4297,6 +4304,7 @@
         }
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; saveBtn.disabled = false; return; }
         if (res.code === 404 && res.j.error === "CLIENT_NOT_FOUND") { err.textContent = "Клієнта не знайдено. Спробуйте обрати ще раз."; saveBtn.disabled = false; return; }
+        if (res.code === 400 && res.j.error === "BRANCH_REQUIRED") { err.textContent = "Оберіть філію — цей майстер працює у кількох студіях"; saveBtn.disabled = false; return; }
         if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); saveBtn.disabled = false; return; }
 
         var clientId = res.j.appointment && res.j.appointment.client_id;

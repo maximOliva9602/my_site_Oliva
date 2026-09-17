@@ -26,7 +26,15 @@ try {
 }
 console.log(`[notify] драйвер: ${driver.name}`);
 
-/* Дані запису для шаблону (join з клієнтом, послугою, майстром). */
+/* Дані запису для шаблону (join з клієнтом, послугою, майстром).
+   Адреса філії: якщо в записі вона не вказана (a.branch_id NULL),
+   вгадувати через "основну" філію майстра (masters.branch_id) можна
+   лише коли він насправді працює в ОДНІЙ філії — для майстра з двома
+   й більше цей стовпець застарілий і показує довільну з них. Саме
+   так клієнту, записаному на Успішну, пішла СМС з адресою Борщагівської:
+   запис зберігся без явної філії (розклад майстра того дня допускав
+   обидві — система свідомо "не вгадала"), а тут вгадала — неправильно.
+   Тепер fallback лише для майстра з рівно однією філією в branch_masters. */
 function apptView(appointmentId) {
   return db.prepare(
     `SELECT a.*, c.name AS client_name, c.phone AS client_phone,
@@ -37,7 +45,11 @@ function apptView(appointmentId) {
        JOIN clients c  ON c.id = a.client_id
        JOIN services s ON s.id = a.service_id
        JOIN masters m  ON m.id = a.master_id
-       LEFT JOIN branches br ON br.id = COALESCE(a.branch_id, m.branch_id)
+       LEFT JOIN branches br ON br.id = COALESCE(
+         a.branch_id,
+         (SELECT bm.branch_id FROM branch_masters bm WHERE bm.master_id = a.master_id
+          GROUP BY bm.master_id HAVING COUNT(*) = 1)
+       )
       WHERE a.id = ?`
   ).get(appointmentId);
 }
