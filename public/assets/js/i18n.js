@@ -117,7 +117,7 @@
       "cta.buy": "Купити сертифікат →", "cta.book": "Записатися онлайн",
 
       "con.label": "Де нас знайти", "con.title": "Контакти",
-      "con.addr": "Адреси", "con.addrVal": "Київ, вул. Борщагівська, 145", "con.addrVal2": "Київ, вул. Успішна, 8",
+      "con.addr": "Адреси", "con.addrVal": "Київ, вул. Борщагівська, 145", "con.addrVal2": "Київ, вул. Успішна, 8 (р-н Іподром)",
       "con.phone": "Телефон", "con.hours": "Графік роботи", "con.hoursVal": "Щодня 09:00 — 21:30",
       "con.email": "Пошта", "con.openMap": "Відкрити в Google Maps →",
 
@@ -339,7 +339,7 @@
       "cta.buy": "Buy a certificate →", "cta.book": "Book online",
 
       "con.label": "Where to find us", "con.title": "Contacts",
-      "con.addr": "Addresses", "con.addrVal": "Kyiv, Borshchahivska St, 145", "con.addrVal2": "Kyiv, Uspishna St, 8",
+      "con.addr": "Addresses", "con.addrVal": "Kyiv, Borshchahivska St, 145", "con.addrVal2": "Kyiv, Uspishna St, 8 (Hippodrome area)",
       "con.phone": "Phone", "con.hours": "Working hours", "con.hoursVal": "Daily 09:00 — 21:30",
       "con.email": "Email", "con.openMap": "Open in Google Maps →",
 
