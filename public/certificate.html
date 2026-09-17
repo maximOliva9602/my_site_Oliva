@@ -537,6 +537,14 @@
       <div class="field-error" data-i18n="cert.errAddress">Вкажіть адресу</div>
     </div>
 
+    <!-- ЛОКАЦІЯ СТУДІЇ (тільки коли "Отримаю у студії" і філій більше однієї) -->
+    <div class="form-group" id="fg-branch" style="display:none">
+      <label data-i18n="cert.labelBranch">У якій студії заберете? *</label>
+      <div class="option-chips" id="branchChips"></div>
+      <input type="hidden" id="inp-branch" />
+      <div class="field-error" data-i18n="cert.errBranch">Оберіть студію</div>
+    </div>
+
     <!-- ПІДСУМКОВА СУМА -->
     <div class="total-price-row" id="totalRow" style="display:none">
       <span class="total-label" data-i18n="cert.totalLabel">Загальна сума:</span>
@@ -1178,6 +1186,40 @@
   var inpAddress = document.getElementById('inp-address');
   var addressLabel = document.getElementById('addressLabel');
 
+  /* ── ЛОКАЦІЯ СТУДІЇ (для "Отримаю у студії") ──
+     Раніше при виборі "У студії" ми просто не питали більше нічого —
+     а філій уже дві, і власник дізнавався, куди саме нести сертифікат,
+     лише зателефонувавши клієнту. Чіпи показуємо тільки коли філій
+     справді більше однієї (з однією — крок зайвий, і так зрозуміло). */
+  var fgBranch = document.getElementById('fg-branch');
+  var inpBranch = document.getElementById('inp-branch');
+  var branchChips = document.getElementById('branchChips');
+  var branchesList = [];
+
+  fetch('/api/public/branches').then(function(r){ return r.json(); }).then(function(res){
+    branchesList = (res && res.ok && res.branches) ? res.branches : [];
+    branchChips.innerHTML = '';
+    branchesList.forEach(function(b){
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'option-chip';
+      chip.setAttribute('data-val', b.name);
+      chip.textContent = '📍 ' + b.name;
+      chip.addEventListener('click', function(){
+        branchChips.querySelectorAll('.option-chip').forEach(function(c){ c.classList.remove('active'); });
+        chip.classList.add('active');
+        inpBranch.value = b.name;
+        fgBranch.classList.remove('invalid');
+      });
+      branchChips.appendChild(chip);
+    });
+    // Список довантажився вже ПІСЛЯ того, як клієнт обрав "У студії" —
+    // показуємо чіпи задніх числом, інакше поле лишилось би без вибору.
+    if (inpDelivery.value === 'Отримаю у студії' && branchesList.length > 1) {
+      fgBranch.style.display = 'block';
+    }
+  }).catch(function(){ branchesList = []; });
+
   document.getElementById('deliveryChips').querySelectorAll('.option-chip').forEach(function(btn){
     btn.addEventListener('click', function(){
       document.getElementById('deliveryChips').querySelectorAll('.option-chip').forEach(function(b){ b.classList.remove('active'); });
@@ -1190,13 +1232,23 @@
         fgAddress.style.display = 'block';
         addressLabel.textContent = tx('addrNP');
         inpAddress.placeholder = tx('phAddrNP');
+        fgBranch.style.display = 'none';
+        inpBranch.value = '';
       } else if (val === 'Таксі') {
         fgAddress.style.display = 'block';
         addressLabel.textContent = tx('addrDelivery');
         inpAddress.placeholder = tx('phAddrTaxi');
+        fgBranch.style.display = 'none';
+        inpBranch.value = '';
       } else {
         fgAddress.style.display = 'none';
         inpAddress.value = '';
+        if (branchesList.length > 1) {
+          fgBranch.style.display = 'block';
+        } else {
+          fgBranch.style.display = 'none';
+          inpBranch.value = branchesList.length === 1 ? branchesList[0].name : '';
+        }
       }
     });
   });
@@ -1233,6 +1285,10 @@
     // адреса — тільки якщо НП або Таксі
     if (inpDelivery.value === 'Нова Пошта' || inpDelivery.value === 'Таксі') {
       ok = validateField('address', function(){ return inpAddress.value.trim().length > 3; }, 'Адреса доставки', missing) && ok;
+    }
+    // локація студії — тільки якщо "У студії" і філій більше однієї
+    if (inpDelivery.value === 'Отримаю у студії' && branchesList.length > 1) {
+      ok = validateField('branch', function(){ return !!inpBranch.value; }, 'Студія', missing) && ok;
     }
 
     var serviceOk = !!inpService.value;
@@ -1271,7 +1327,7 @@
         price2:    inpPrice2.value || '',
         certType:  inpCertType.value,
         delivery:  inpDelivery.value,
-        address:   inpAddress.value.trim(),
+        address:   inpDelivery.value === 'Отримаю у студії' ? inpBranch.value : inpAddress.value.trim(),
         wishes:    document.getElementById('inp-wishes').value.trim(),
         totalPrice: (activeVariant ? activeVariant.price : 0) + (activeVariant2 ? activeVariant2.price : 0) + (inpCertType.value === 'Паперовий' ? 150 : 0),
       })

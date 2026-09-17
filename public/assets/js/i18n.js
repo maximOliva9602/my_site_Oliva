@@ -187,6 +187,8 @@
       "cert.errDelivery": "Оберіть спосіб отримання",
       "cert.addrLabel": "Адреса *",
       "cert.errAddress": "Вкажіть адресу",
+      "cert.labelBranch": "У якій студії заберете? *",
+      "cert.errBranch": "Оберіть студію",
 
       "book.title": "Онлайн-запис", "book.brandSub": "СТУДІЯ МАСАЖУ",
       "book.branch.title": "Оберіть філію", "book.branch.sub": "Де вам зручніше",
@@ -407,6 +409,8 @@
       "cert.errDelivery": "Please select delivery method",
       "cert.addrLabel": "Address *",
       "cert.errAddress": "Please enter address",
+      "cert.labelBranch": "Which studio will you pick it up from? *",
+      "cert.errBranch": "Please select a studio",
 
       "book.title": "Book Online", "book.brandSub": "MASSAGE STUDIO",
       "book.branch.title": "Choose a location", "book.branch.sub": "Wherever's convenient for you",

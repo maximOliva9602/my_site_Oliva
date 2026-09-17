@@ -424,7 +424,7 @@ app.post("/api/certificate", async function (req, res) {
   }
 
   var deliveryLine = delivery === "Отримаю у студії"
-    ? `🏠 <b>Отримання:</b> У студії`
+    ? `🏠 <b>Отримання:</b> У студії` + (address ? ` — ${address}` : "")
     : `📦 <b>Доставка:</b> ${delivery}` + (address ? ` — ${address}` : "");
 
   var serviceLine = service2
