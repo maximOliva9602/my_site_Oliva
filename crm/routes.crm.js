@@ -2978,7 +2978,7 @@ function heroDropOld(url) {
 }
 
 router.get("/hero-media", owner, function (req, res) {
-  res.json({ ok: true, photo: heroGet(HERO_KEYS.photo), video: heroGet(HERO_KEYS.video) });
+  res.json({ ok: true, photo: heroGet(HERO_KEYS.photo), video: heroGet(HERO_KEYS.video), pos: heroGet("hero_text_pos") });
 });
 
 /* Тіло приходить бінарно (application/octet-stream), а не base64: відео
@@ -3012,6 +3012,17 @@ router.post(
     res.json({ ok: true, kind: kind, url: url });
   }
 );
+
+/* Де на головному екрані стоїть текст: "left|center|right-top|middle|bottom".
+   Порожньо = типове розташування (справа по центру). */
+router.put("/hero-text-pos", owner, function (req, res) {
+  const pos = String((req.body || {}).pos || "");
+  if (pos && !/^(left|center|right)-(top|middle|bottom)$/.test(pos)) {
+    return res.status(400).json({ ok: false, error: "bad position" });
+  }
+  heroSet("hero_text_pos", pos);
+  res.json({ ok: true, pos: pos });
+});
 
 /* Повернути типове (те, що в репозиторії) */
 router.delete("/hero-media/:kind", owner, function (req, res) {

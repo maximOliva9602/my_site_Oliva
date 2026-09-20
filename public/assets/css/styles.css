@@ -208,6 +208,22 @@ nav.scrolled {
 .hero-desc { font-size: 1rem; line-height: 1.7; color: rgba(255,255,255,0.75); max-width: 460px; margin-bottom: 40px; }
 .hero-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: flex-start; }
 
+/* Розташування тексту на головному екрані — вибирає власник у CRM
+   (Ще → Головний екран). Клас hero--pos ставить сервер, коли позицію
+   задано; без нього лишається типове розташування (справа по центру).
+   ПК: 3 колонки × 3 рядки. Телефон: див. блок max-width:900px нижче. */
+@media (min-width: 901px) {
+  .hero--pos .hero-center { left: auto; right: auto; top: auto; bottom: auto; transform: translate(var(--hx, 0), var(--hy, 0)); }
+  .hero--h-left .hero-center { left: 0; padding: 0 48px 0 64px; }
+  .hero--h-center .hero-center { left: 50%; --hx: -50%; padding: 0 24px; text-align: center; align-items: center; }
+  .hero--h-right .hero-center { left: 50%; }
+  .hero--h-center .hero-desc { margin-left: auto; margin-right: auto; }
+  .hero--h-center .hero-btns { justify-content: center; }
+  .hero--v-top .hero-center { top: 130px; }
+  .hero--v-middle .hero-center { top: 50%; --hy: -50%; }
+  .hero--v-bottom .hero-center { bottom: 150px; }
+}
+
 .hero-badge {
   position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
   background: rgba(8,10,7,0.85); backdrop-filter: blur(16px);
@@ -612,6 +628,16 @@ footer { background: var(--black); border-top: 1px solid var(--line); padding: 3
   .hero { align-items: flex-start; justify-content: flex-start; }
   .hero-center { position: relative; left: auto; top: auto; transform: none; padding: 100px 24px 60px 24px; width: 100%; max-width: 100%; text-align: left; align-items: flex-start; }
   .hero-btns { justify-content: flex-start; }
+  /* Позиція тексту з CRM: по вертикалі — як обрано; по горизонталі на
+     телефоні лише «по центру» (праворуч виглядало б дивно й так само
+     читається зліва). Знизу залишаємо місце під плашку з адресами. */
+  .hero--v-middle { align-items: center; }
+  .hero--v-bottom { align-items: flex-end; }
+  .hero--v-middle .hero-center { padding-top: 60px; }
+  .hero--v-bottom .hero-center { padding-top: 60px; padding-bottom: 150px; }
+  .hero--h-center .hero-center { text-align: center; align-items: center; }
+  .hero--h-center .hero-desc { margin-left: auto; margin-right: auto; }
+  .hero--h-center .hero-btns { justify-content: center; }
   .hero-badge { bottom: 14px; left: 16px; right: 16px; transform: none; padding: 8px 14px; gap: 8px; font-size: 0.65rem; flex-wrap: wrap; justify-content: center; white-space: normal; }
   /* Адреси — окремим рядком зверху, під ними графік роботи й телефон —
      інакше все зливалось в один тісний рядок і обрізалось на екрані. */

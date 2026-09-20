@@ -115,6 +115,40 @@ app.use(function (req, res, next) {
    і правки в js/css доїжджають до користувачів лише через 4 години.
    Код і розмітку віддаємо з обов'язковою ревалідацією (ETag все одно
    поверне 304, якщо файл не змінився), медіа — кешуємо надовго. */
+/* Головна сторінка: фото/відео та позицію тексту головного екрану підставляємо
+   в HTML прямо на сервері. Раніше сторінка завжди приходила з типовим
+   фото з репозиторію, а завантажене власником підміняв уже скрипт після
+   fetch("/api/hero-media") — через це після оновлення сторінки на мить
+   блимало старе зображення, а потім вискакувало нове. */
+var HOME_FILE = path.join(__dirname, "public", "index.html");
+function heroSetting(k) {
+  try {
+    var r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(k);
+    return r && r.value ? r.value : "";
+  } catch (e) { return ""; }
+}
+function serveHome(req, res) {
+  var html;
+  try { html = fs.readFileSync(HOME_FILE, "utf8"); } catch (e) { return res.sendFile(HOME_FILE); }
+  var photo = heroSetting("hero_photo_url"), video = heroSetting("hero_video_url"), pos = heroSetting("hero_text_pos");
+  var okUrl = /^\/api\/site-media\/[\w.\-]+$/;
+  if (okUrl.test(photo)) {
+    html = html.replace('<img class="hero-bg-photo" src="assets/img/main_photo.jpg"', '<img class="hero-bg-photo" src="' + photo + '"');
+  }
+  if (okUrl.test(video)) {
+    html = html.replace('<source src="assets/video/certificate.mp4" type="video/mp4" />',
+      '<source src="' + video + '" type="' + (/\.webm$/i.test(video) ? "video/webm" : "video/mp4") + '" />');
+  }
+  var m = /^(left|center|right)-(top|middle|bottom)$/.exec(pos);
+  if (m) {
+    html = html.replace('<section class="hero" id="hero">',
+      '<section class="hero hero--pos hero--h-' + m[1] + ' hero--v-' + m[2] + '" id="hero">');
+  }
+  res.set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, must-revalidate" });
+  res.send(html);
+}
+app.get(["/", "/index.html"], serveHome);
+
 /* sitemap.xml — динамічний: статичні сторінки + опубліковані статті блогу
    та сторінки послуг. Якорі (#services…) Google ігнорує, тому їх тут нема. */
 app.get("/sitemap.xml", function (req, res) {
@@ -793,7 +827,7 @@ app.get("/api/hero-media", function (req, res) {
       return r && r.value ? r.value : "";
     } catch (e) { return ""; }
   }
-  res.json({ ok: true, photo: get("hero_photo_url"), video: get("hero_video_url") });
+  res.json({ ok: true, photo: get("hero_photo_url"), video: get("hero_video_url"), pos: get("hero_text_pos") });
 });
 
 /* ---- Публічний список активних послуг (для сайту) ---- */
@@ -966,9 +1000,7 @@ app.post("/api/office-request", async function (req, res) {
 });
 
 /* ---------------- Fallback ---------------- */
-app.get("*", function (req, res) {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+app.get("*", serveHome);
 
 /* Реєстрація Telegram-вебхука при старті.
    Раніше це була ручна curl-команда, і поки її не виконали, Telegram

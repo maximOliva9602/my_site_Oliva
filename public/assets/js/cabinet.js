@@ -4892,9 +4892,81 @@
     api("GET", "/api/crm/hero-media").then(function (res) {
       var cur = (res.j && res.j.ok) ? res.j : { photo: "", video: "" };
       box.innerHTML = "";
+      box.appendChild(heroPosCard(cur.pos || "", cur.photo));
       box.appendChild(heroCard("photo", "Фото-заставка (комп'ютер)", "image/*", "JPG, PNG або WebP, до 12 МБ. Рекомендовано широке фото від 1920 px.", cur.photo));
       box.appendChild(heroCard("video", "Відео (телефон)", "video/*", "MP4 або WebM, до 60 МБ. Відео програється без звуку по колу — коротке (10–20 с) вантажиться швидше.", cur.video));
     });
+
+    /* Де на головному екрані стоїть текст («Студія масажу OLIVA…» і кнопки).
+       Сітка 3×3 накладена на фото: тап по клітинці = зберегти. */
+    function heroPosCard(currentPos, photoUrl) {
+      var H = ["left", "center", "right"], V = ["top", "middle", "bottom"];
+      var HL = { left: "зліва", center: "по центру", right: "справа" };
+      var VL = { top: "зверху", middle: "посередині", bottom: "знизу" };
+      var DEFAULT_POS = "right-middle";
+      var card = el("div", "item");
+      card.style.marginBottom = "14px";
+      card.appendChild(el("div", null, "Розташування тексту")).style.cssText = "font-weight:600;color:var(--cream);margin-bottom:4px;";
+      var note = el("div", "sub", "Якщо текст закриває обличчя чи важливе місце на фото — оберіть іншу клітинку. На телефоні текст і так займає майже весь екран, тому там діє лише вибір «по центру».");
+      note.style.marginBottom = "10px"; card.appendChild(note);
+
+      var wrap = el("div", null);
+      wrap.style.cssText = "position:relative;border-radius:10px;overflow:hidden;background:#000;max-width:420px;aspect-ratio:16/9;margin-bottom:10px;";
+      var img = document.createElement("img");
+      img.src = photoUrl || (HERO_DEFAULTS.photo + "?t=" + Date.now());
+      img.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;";
+      wrap.appendChild(img);
+      var shade = el("div", null); shade.style.cssText = "position:absolute;inset:0;background:rgba(0,0,0,.25);"; wrap.appendChild(shade);
+      var grid = el("div", null);
+      grid.style.cssText = "position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2px;padding:2px;";
+      wrap.appendChild(grid);
+      card.appendChild(wrap);
+
+      var stateEl = el("div", "sub"); stateEl.style.marginBottom = "8px"; card.appendChild(stateEl);
+      var msg = el("div", "sub"); msg.style.marginTop = "8px";
+      var reset = el("button", "btn btn-sm btn-ghost", "Повернути типове (справа посередині)");
+      card.appendChild(reset); card.appendChild(msg);
+
+      var cells = {};
+      function paint(pos) {
+        var eff = pos || DEFAULT_POS;
+        Object.keys(cells).forEach(function (k) {
+          var on = k === eff;
+          cells[k].style.background = on ? "rgba(122,145,86,.85)" : "rgba(255,255,255,.08)";
+          cells[k].style.borderColor = on ? "#fff" : "rgba(255,255,255,.35)";
+          cells[k].textContent = on ? "Текст" : "";
+        });
+        var p = eff.split("-");
+        stateEl.textContent = "Зараз: " + VL[p[1]] + ", " + HL[p[0]] + (pos ? "" : " (типово)");
+        reset.style.display = pos ? "" : "none";
+        currentPos = pos;
+      }
+      function save(pos) {
+        msg.style.color = "var(--text-dim)"; msg.textContent = "Збереження…";
+        api("PUT", "/api/crm/hero-text-pos", { pos: pos }).then(function (res) {
+          if (res.j && res.j.ok) {
+            paint(pos);
+            msg.style.color = "var(--ok)"; msg.textContent = "✓ Збережено — оновіть сайт, щоб побачити";
+          } else {
+            msg.style.color = "var(--err)"; msg.textContent = "✗ Не вдалося зберегти";
+          }
+        });
+      }
+      V.forEach(function (v) {
+        H.forEach(function (h) {
+          var key = h + "-" + v;
+          var c = document.createElement("button");
+          c.type = "button";
+          c.title = VL[v] + ", " + HL[h];
+          c.style.cssText = "border:1.5px dashed;border-radius:6px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;padding:0;";
+          c.addEventListener("click", function () { save(key); });
+          cells[key] = c; grid.appendChild(c);
+        });
+      });
+      reset.addEventListener("click", function () { save(""); });
+      paint(currentPos);
+      return card;
+    }
 
     function heroCard(kind, title, accept, note, current) {
       var card = el("div", "item");

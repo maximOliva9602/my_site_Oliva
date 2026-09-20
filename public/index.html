@@ -122,7 +122,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=9" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=10" />
 </head>
 <body>
 
@@ -232,9 +232,13 @@
     fetch("/api/hero-media").then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.ok) return;
       var img = document.querySelector(".hero-bg-photo");
-      if (d.photo && img) img.src = d.photo;
+      /* Сервер уже підставив актуальні файли в HTML; це лише запасний
+         варіант (наприклад, сторінка з кешу). Якщо адреса та сама — не
+         чіпаємо, інакше картинка перезавантажується й блимає. */
+      if (d.photo && img && img.getAttribute("src") !== d.photo) img.src = d.photo;
       var vid = document.querySelector(".hero-bg-video");
-      if (d.video && vid) {
+      var curSrc = vid && vid.querySelector("source");
+      if (d.video && vid && !(curSrc && curSrc.getAttribute("src") === d.video)) {
         var src = vid.querySelector("source");
         if (src) {
           src.src = d.video;
