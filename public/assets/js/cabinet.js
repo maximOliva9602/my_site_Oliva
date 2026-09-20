@@ -3555,6 +3555,13 @@
       '</div>' +
       '<select id="mService" style="display:none;"></select>' +
 
+      // Другий майстер — лише для парних послуг («Парний масаж», «SPA для двох»)
+      '<div id="mSecondRow" style="display:none;margin-top:10px;">' +
+        '<label style="display:block;">👥 Другий майстер <span style="color:var(--text-dim);font-weight:400;">(парна процедура)</span></label>' +
+        '<select id="mSecondMaster"></select>' +
+        '<div style="font-size:.72rem;color:var(--text-dim);margin-top:4px;line-height:1.4;">Обраний майстер буде зайнятий у цей самий час і побачить запис у своєму розкладі. Можна призначити й пізніше в картці запису.</div>' +
+      '</div>' +
+
       // Секція абонементу (з'являється після вибору послуги)
       '<div id="mSubSection" style="display:none;margin-top:8px;">' +
         '<div id="mSubBadge"></div>' +
@@ -3648,6 +3655,35 @@
       });
     }
 
+    /* Парна послуга (той самий критерій, що й у картці запису). Показуємо
+       вибір другого майстра лише власнику — так само, як і PATCH на сервері. */
+    function isPairService(svc) {
+      if (!svc) return false;
+      var nm = svc.name || "";
+      try {
+        if (window.OlivaServiceGroups) {
+          var cat = window.OlivaServiceGroups.parseName(nm).cat;
+          if (window.OlivaServiceGroups.GROUP_MAP[cat] === "spa2" || /для двох|парн/i.test(cat)) return true;
+        }
+      } catch (e) {}
+      return /для двох|парн/i.test(nm);
+    }
+    function refreshSecondMaster() {
+      var row = $("mSecondRow"), sel = $("mSecondMaster");
+      if (!row || !sel) return;
+      var show = ME.role === "owner" && selectedServices.length > 0 && isPairService(selectedServices[0]);
+      if (!show) { row.style.display = "none"; sel.innerHTML = ""; return; }
+      var prev = sel.value, mainId = $("mMaster") ? $("mMaster").value : "";
+      sel.innerHTML = "";
+      sel.appendChild(new Option("— оберіть (необов'язково) —", ""));
+      appointmentMasters.forEach(function (m) {
+        if (String(m.id) === String(mainId)) return;
+        sel.appendChild(new Option(m.name + (m.level ? " · " + m.level : ""), m.id));
+      });
+      if (prev && Array.prototype.some.call(sel.options, function (o) { return o.value === prev; })) sel.value = prev;
+      row.style.display = "block";
+    }
+
     function renderSvcList() {
       var listEl = $("mSvcList"); if (!listEl) return;
       listEl.innerHTML = "";
@@ -3698,6 +3734,7 @@
       }
       var addWrap = $("mAddSvcWrap");
       if (addWrap) addWrap.style.display = selectedServices.length > 0 ? "block" : "none";
+      refreshSecondMaster();
     }
 
     // Попередження про дублікат номера сертифіката — поки друкує, а не
@@ -4125,6 +4162,7 @@
           sel.value = String(prefill.masterId);
         }
         renderMBranch();
+        refreshSecondMaster();
         if (!prefill.serviceId) renderSvcCategories();
         loadSlots();
       }
@@ -4145,6 +4183,7 @@
       $("mSvcCategories").style.display = "grid";
       renderSvcCategories();
       renderMBranch();
+      refreshSecondMaster();
       loadSlots();
     });
     $("mDate").addEventListener("change", loadSlots);
@@ -4291,6 +4330,7 @@
         start_min: chosen.start_min, name: name, phone: phone,
         client_id: selectedClient ? selectedClient.id : null,
         guest: isGuestBooking || undefined,
+        second_master: $("mSecondRow") && $("mSecondRow").style.display !== "none" && $("mSecondMaster").value ? $("mSecondMaster").value : undefined,
         comment: $("mComment").value.trim(), color_marker: chosen.color_marker || null,
         extra_services: extras.length ? JSON.stringify(extras) : null
       }).then(function (res) {
@@ -4302,6 +4342,7 @@
           saveBtn.disabled = false;
           return;
         }
+        if (res.code === 409 && res.j.error === "SECOND_MASTER_BUSY") { err.textContent = res.j.message || "Другий майстер зайнятий у цей час"; saveBtn.disabled = false; return; }
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; saveBtn.disabled = false; return; }
         if (res.code === 404 && res.j.error === "CLIENT_NOT_FOUND") { err.textContent = "Клієнта не знайдено. Спробуйте обрати ще раз."; saveBtn.disabled = false; return; }
         if (res.code === 400 && res.j.error === "BRANCH_REQUIRED") { err.textContent = "Оберіть філію — цей майстер працює у кількох студіях"; saveBtn.disabled = false; return; }

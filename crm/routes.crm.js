@@ -282,6 +282,16 @@ function createAppointment(d, session) {
   // майстер може створювати лише собі
   if (session.role !== "owner") masterId = session.masterId;
 
+  /* Другий майстер парної процедури — лише власник (як і PATCH
+     /appointments/:id/second-master). Необов'язковий: можна призначити й пізніше. */
+  const secondMasterId = session.role === "owner" && d.second_master ? (parseInt(d.second_master, 10) || null) : null;
+  if (secondMasterId) {
+    if (secondMasterId === masterId) return { status: 400, body: { ok: false, error: "same as primary master" } };
+    if (!db.prepare("SELECT id FROM masters WHERE id=? AND active=1").get(secondMasterId)) {
+      return { status: 404, body: { ok: false, error: "second master not found" } };
+    }
+  }
+
   if (!serviceId || !masterId || !tz.isDate(date) || !(startMin >= 0) || !name) {
     return { status: 400, body: { ok: false, error: "missing fields" } };
   }
@@ -337,6 +347,17 @@ function createAppointment(d, session) {
           LIMIT 1`
       ).get(masterId, masterId, date, startMin + totalDuration, startMin);
       if (overlap) { const err = new Error("SLOT_TAKEN"); err.code = "SLOT_TAKEN"; throw err; }
+      if (secondMasterId) {
+        const busy2 = db.prepare(
+          `SELECT a.start_min, a.end_min, c.name client_name FROM appointments a JOIN clients c ON c.id=a.client_id
+            WHERE (a.master_id=? OR a.second_master_id=?) AND a.date=? AND a.status NOT IN ('cancelled','no_show')
+              AND a.start_min < ? AND a.end_min > ? LIMIT 1`
+        ).get(secondMasterId, secondMasterId, date, startMin + totalDuration, startMin);
+        if (busy2) {
+          const err = new Error("Другий майстер уже зайнятий у цей час: " + busy2.client_name + ", " + tz.fmtMin(busy2.start_min) + "–" + tz.fmtMin(busy2.end_min) + ".");
+          err.code = "SECOND_MASTER_BUSY"; throw err;
+        }
+      }
       let client = null;
       if (isGuest) client = { id: getOrCreateGuestClient() };
       if (!client && clientId) client = db.prepare("SELECT id FROM clients WHERE id=?").get(clientId);
@@ -381,8 +402,14 @@ function createAppointment(d, session) {
          VALUES (?,?,?,?,?,?,?,?,?,?, 'confirmed','staff',?,?,?,?,?)`
       ).run(publicId, client.id, masterId, finalBranch, serviceId, date, startMin, startMin + totalDuration, totalDuration, totalPrice, comment, colorMarker, extraServices, now, now);
       appointmentId = info.lastInsertRowid;
+      if (secondMasterId) {
+        db.prepare("INSERT OR IGNORE INTO master_services (master_id,service_id) VALUES (?,?)").run(secondMasterId, serviceId);
+        db.prepare("UPDATE appointments SET second_master_id=? WHERE id=?").run(secondMasterId, appointmentId);
+        syncPairCompanion(appointmentId);
+      }
     })();
   } catch (e) {
+    if (e.code === "SECOND_MASTER_BUSY") return { status: 409, body: { ok: false, error: "SECOND_MASTER_BUSY", message: e.message } };
     if (e.code === "SLOT_TAKEN") return { status: 409, body: { ok: false, error: "SLOT_TAKEN" } };
     if (e.code === "CLIENT_NOT_FOUND") return { status: 404, body: { ok: false, error: "CLIENT_NOT_FOUND" } };
     if (e.code === "BRANCH_REQUIRED") return { status: 400, body: { ok: false, error: "BRANCH_REQUIRED" } };
@@ -393,6 +420,9 @@ function createAppointment(d, session) {
     const adminNotify = require("./admin-notify");
     adminNotify.notifyNewAppt(appointmentId, "crm");
   } catch (e) { console.error("[routes.crm] adminNotify error:", e.message); }
+  if (secondMasterId) {
+    try { require("./admin-notify").notifySecondMaster(appointmentId); } catch (e) { console.error("[create] second-master-notify:", e.message); }
+  }
 
   /* Запис одразу підтверджений, тож клієнту йде те саме SMS «запис
      підтверджено», що й при ручному натисканні «Підтвердити» — інакше при
