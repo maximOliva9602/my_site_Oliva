@@ -131,7 +131,7 @@ function serveHome(req, res) {
   var html;
   try { html = fs.readFileSync(HOME_FILE, "utf8"); } catch (e) { return res.sendFile(HOME_FILE); }
   var photo = heroSetting("hero_photo_url"), video = heroSetting("hero_video_url"), pos = heroSetting("hero_text_pos");
-  var okUrl = /^\/api\/site-media\/[\w.\-]+$/;
+  var okUrl = /^\/(api\/site-media|assets\/(img|video))\/[\w.\-]+$/;
   if (okUrl.test(photo)) {
     html = html.replace('<img class="hero-bg-photo" src="assets/img/main_photo.jpg"', '<img class="hero-bg-photo" src="' + photo + '"');
   }

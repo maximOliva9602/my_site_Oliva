@@ -2977,6 +2977,28 @@ function heroDropOld(url) {
   try { fsMedia.unlinkSync(pathMedia.join(SITE_MEDIA_DIR, pathMedia.basename(url))); } catch (_) {}
 }
 
+/* Одноразова міграція: файли головного екрану, які власник завантажив ДО
+   появи стиснення (фото 9,6 МБ, відео 27 МБ .mov), замінюємо їх стиснутими
+   копіями з репозиторію — візуально ті самі (SSIM ≈ 0,99), але сайт
+   вантажить у 20 разів менше. Ключ — імʼя файлу на томі; нові завантаження
+   сюди не потрапляють. Старий файл з тому видаляємо. */
+const HERO_OPTIMIZED = {
+  "hero-photo-b1727e212202b9f5.jpeg": "/assets/img/hero-main.jpg",
+  "hero-video-1077945a84ef60a8.mov": "/assets/video/hero-mobile.mp4",
+};
+(function migrateHeroMedia() {
+  try {
+    Object.keys(HERO_KEYS).forEach(function (kind) {
+      const cur = heroGet(HERO_KEYS[kind]);
+      const repl = cur && HERO_OPTIMIZED[pathMedia.basename(cur)];
+      if (!repl || !fsMedia.existsSync(pathMedia.join(__dirname, "..", "public", repl))) return;
+      heroSet(HERO_KEYS[kind], repl);
+      heroDropOld(cur);
+      console.log("[hero] " + kind + ": " + cur + " → " + repl);
+    });
+  } catch (e) { console.error("[hero] міграція:", e.message); }
+})();
+
 router.get("/hero-media", owner, function (req, res) {
   res.json({ ok: true, photo: heroGet(HERO_KEYS.photo), video: heroGet(HERO_KEYS.video), pos: heroGet("hero_text_pos") });
 });

@@ -5013,20 +5013,63 @@
       }
       paint(current);
 
+      /* Фото з телефона/камери — 6000 px і 8–10 МБ, а на екрані потрібно
+         щонайбільше ~2500 px. Стискаємо ще в браузері: візуально те саме,
+         але сайт вантажить у десятки разів менше. Якщо стиснути не вийшло —
+         вантажимо як є. */
+      function shrinkPhoto(f) {
+        var MAX_W = 2560;
+        return new Promise(function (resolve) {
+          if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return resolve(null);
+          var done = function (bmp) {
+            var w = bmp.width, h = bmp.height;
+            if (w <= MAX_W && f.size <= 1.5 * 1048576) return resolve(null); // і так легке
+            var k = Math.min(1, MAX_W / w);
+            var cv = document.createElement("canvas");
+            cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+            var ctx = cv.getContext("2d");
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
+            cv.toBlob(function (blob) {
+              resolve(blob && blob.size < f.size ? { blob: blob, ext: "jpg", from: f.size } : null);
+            }, "image/jpeg", 0.85);
+          };
+          if (window.createImageBitmap) {
+            createImageBitmap(f, { imageOrientation: "from-image" }).then(done, function () { resolve(null); });
+          } else {
+            var im = new Image(), u = URL.createObjectURL(f);
+            im.onload = function () { done(im); URL.revokeObjectURL(u); };
+            im.onerror = function () { resolve(null); };
+            im.src = u;
+          }
+        });
+      }
+
       pick.addEventListener("click", function () { file.click(); });
       file.addEventListener("change", function () {
         var f = file.files && file.files[0];
         if (!f) return;
         var ext = (f.name.split(".").pop() || "").toLowerCase();
         msg.style.color = "var(--text-dim)";
-        msg.textContent = "Завантаження… " + Math.round(f.size / 104857.6) / 10 + " МБ";
+        if (kind === "video" && f.size > 8 * 1048576) {
+          if (!confirm("Відео важить " + Math.round(f.size / 104857.6) / 10 + " МБ — на телефоні воно вантажитиметься дуже довго. Рекомендовано до 5–8 МБ (720p, 10–20 с). Все одно завантажити?")) {
+            file.value = ""; msg.textContent = ""; return;
+          }
+        }
         pick.disabled = reset.disabled = true;
-        /* Бінарно, без base64 — інакше 40-мегабайтне відео роздулось би
-           на третину і не пролізло б у ліміт тіла запиту. */
-        fetch("/api/crm/hero-media/" + kind + "?ext=" + encodeURIComponent(ext), {
-          method: "POST",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: f,
+        msg.textContent = kind === "photo" ? "Оптимізація фото…" : "Завантаження… " + Math.round(f.size / 104857.6) / 10 + " МБ";
+        (kind === "photo" ? shrinkPhoto(f) : Promise.resolve(null)).then(function (small) {
+          var body = small ? small.blob : f;
+          if (small) ext = small.ext;
+          msg.textContent = "Завантаження… " + Math.round(body.size / 104857.6) / 10 + " МБ" +
+            (small ? " (стиснуто з " + Math.round(small.from / 104857.6) / 10 + " МБ)" : "");
+          /* Бінарно, без base64 — інакше 40-мегабайтне відео роздулось би
+             на третину і не пролізло б у ліміт тіла запиту. */
+          return fetch("/api/crm/hero-media/" + kind + "?ext=" + encodeURIComponent(ext), {
+            method: "POST",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: body,
+          });
         }).then(function (r) {
           return r.json().catch(function () { return {}; });
         }).then(function (j) {
