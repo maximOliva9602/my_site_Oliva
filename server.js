@@ -115,6 +115,31 @@ app.use(function (req, res, next) {
    і правки в js/css доїжджають до користувачів лише через 4 години.
    Код і розмітку віддаємо з обов'язковою ревалідацією (ETag все одно
    поверне 304, якщо файл не змінився), медіа — кешуємо надовго. */
+/* sitemap.xml — динамічний: статичні сторінки + опубліковані статті блогу
+   та сторінки послуг. Якорі (#services…) Google ігнорує, тому їх тут нема. */
+app.get("/sitemap.xml", function (req, res) {
+  var today = new Date().toISOString().slice(0, 10);
+  var urls = [
+    { p: "/", f: "weekly", pr: "1.0" },
+    { p: "/booking", f: "weekly", pr: "0.9" },
+    { p: "/certificate", f: "monthly", pr: "0.7" },
+    { p: "/office", f: "monthly", pr: "0.7" },
+    { p: "/blog", f: "weekly", pr: "0.6" },
+  ];
+  try {
+    db.prepare("SELECT slug, date FROM blog_posts WHERE published=1 AND (service_key IS NULL OR service_key='')").all()
+      .forEach(function (r) { urls.push({ p: "/blog/" + encodeURIComponent(r.slug), f: "monthly", pr: "0.6", d: r.date }); });
+    stmtServiceArticles.all()
+      .forEach(function (r) { urls.push({ p: "/service/" + encodeURIComponent(r.service_key), f: "monthly", pr: "0.8" }); });
+  } catch (e) { console.error("[sitemap]", e.message); }
+  var xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    urls.map(function (u) {
+      var d = /^\d{4}-\d{2}-\d{2}/.test(u.d || "") ? u.d.slice(0, 10) : today;
+      return "  <url><loc>" + PRIMARY_SITE_URL + u.p + "</loc><lastmod>" + d + "</lastmod><changefreq>" + u.f + "</changefreq><priority>" + u.pr + "</priority></url>";
+    }).join("\n") + "\n</urlset>\n";
+  res.set("Content-Type", "application/xml; charset=utf-8").send(xml);
+});
+
 app.use(express.static(path.join(__dirname, "public"), {
   setHeaders: function (res, filePath) {
     if (/\.(js|css|html|json)$/i.test(filePath)) {
