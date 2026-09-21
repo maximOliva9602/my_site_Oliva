@@ -473,24 +473,41 @@
     var abonGroups = parseAbonemenItems(p.abonement_items);
     var abonLevels = collectRealLevels(variants);
     var activeLevel = abonLevels.length ? abonLevels[0] : null;
-    var activeDurIdx = 0;
-    /* "Ціна за візит" зверху блока абонементів має показувати РЕАЛЬНУ ціну
-       з прайсу послуги (той самий рядок у "Послугах" в адмінці), а не
-       розрахунок "разом / кількість сеансів" з абонемента — власник
-       спеціально задає абонементні пакети з дисконтом, і та розрахункова
-       цифра виходила іншою за фактичну ціну відвідування. Підбираємо
-       варіант із variants за тривалістю поточної групи (якщо групу явно
-       вказано, напр. "[90 хв]") і обраним рівнем. */
     function parseDurNum(s) { var m = String(s || '').match(/\d+/); return m ? parseInt(m[0], 10) : null; }
-    function realPriceFor(groupIdx, level) {
-      var durNum = parseDurNum((abonGroups[groupIdx] || {}).duration);
+    /* Перемикач тривалості. Якщо в прайсі послуга має кілька тривалостей
+       (напр. 90 хв — 2150, 130 хв — 2750), беремо їх ПРЯМО з прайсу — раніше
+       вони з'являлись лише тоді, коли власник вручну створював групи
+       абонементів, і без цього сторінка показувала одну цифру «від 2150».
+       Якщо в прайсі тривалість одна — лишається старий варіант: групи
+       абонементів "[90 хв]". */
+    var realDurs = variants.map(function(v){ return v.dur; })
+      .filter(function(d, i, a){ return a.indexOf(d) === i; }).sort(function(a, b){ return a - b; });
+    var useRealSwitch = realDurs.length > 1;
+    var switchOpts = useRealSwitch
+      ? realDurs.map(function(d){ return { label: d + ' хв', num: d }; })
+      : (abonGroups.length > 1 ? abonGroups.map(function(g){ return { label: g.duration, num: parseDurNum(g.duration) }; }) : []);
+    var activeDurIdx = 0;
+    function activeDurNum() {
+      if (switchOpts.length) return switchOpts[activeDurIdx] ? switchOpts[activeDurIdx].num : null;
+      return abonGroups.length ? parseDurNum(abonGroups[0].duration) : null;
+    }
+    /* Чи показувати групу абонементів gi при поточній тривалості. Група без
+       тривалості підходить до будь-якої; з тривалістю — лише до своєї. */
+    function groupVisible(gi) {
+      if (!useRealSwitch) return gi === activeDurIdx;
+      var gd = parseDurNum(abonGroups[gi].duration);
+      return gd == null || gd === activeDurNum();
+    }
+    /* "Ціна за візит" — РЕАЛЬНА ціна з прайсу послуги (той самий рядок у
+       "Послугах" в адмінці), а не розрахунок "разом / кількість сеансів"
+       з абонемента. Повертає { price, exact }: exact=false, якщо під поточну
+       тривалість/рівень підходить кілька різних цін — тоді пишемо «від». */
+    function realPriceFor(durNum, level) {
       var pool = variants;
       /* Абонементи інколи мають рівневі пакети (Майстер/Топ Майстер/Експерт)
          навіть для послуг, де в самому прайсі рівнів немає (одна ціна на
          всіх) — тоді фільтр за рівнем не знайшов би жодного варіанту.
-         У такому разі не показуємо порожньо, а беремо ціну без урахування
-         рівня — вона однакова для всіх, тож перемикач рівня просто не
-         впливає на цифру. */
+         У такому разі беремо ціну без урахування рівня. */
       if (level) {
         var byLevel = pool.filter(function(v){ return v.level === level; });
         if (byLevel.length) pool = byLevel;
@@ -500,9 +517,19 @@
         if (exact.length) pool = exact;
       }
       if (!pool.length) return null;
-      return Math.round(Math.min.apply(null, pool.map(function(v){ return v.price; })) / 100);
+      var prices = pool.map(function(v){ return v.price; });
+      var min = Math.min.apply(null, prices), max = Math.max.apply(null, prices);
+      return { price: Math.round(min / 100), exact: min === max };
     }
-    var abonMinByGroup = abonGroups.map(function(g, i){ return realPriceFor(i, activeLevel); });
+    function priceBigHtml(r) {
+      return (r.exact ? '' : '<span>від </span>') + r.price + ' грн';
+    }
+    function durSwitchHtml() {
+      if (switchOpts.length < 2) return '';
+      return '<div class="abon-duration-switch-wrap"><div class="abon-duration-switch">' + switchOpts.map(function(o, i){
+        return '<button type="button" class="abon-duration-btn' + (i === activeDurIdx ? ' active' : '') + '" data-abon-dur="' + i + '">' + esc(o.label) + '</button>';
+      }).join('') + '</div></div>';
+    }
 
     var title = p.hero_title || key;
     document.title = title + ' — Студія масажу Oliva';
@@ -544,7 +571,6 @@
 
     // АБОНЕМЕНТИ
     if (abonGroups.length) {
-      var multiDur = abonGroups.length > 1;
       function renderAbonCards(items){
         return items.map(function(a){
           var single = a.totals.length <= 1 && !(a.totals[0] && a.totals[0].level);
@@ -571,18 +597,16 @@
           '</div>';
         }).join('');
       }
-      var abonHeaderPrice = abonMinByGroup[0] != null ? abonMinByGroup[0] : (minPrice != null ? Math.round(minPrice / 100) : null);
+      var abonHeaderR = realPriceFor(activeDurNum(), activeLevel) || (minPrice != null ? { price: Math.round(minPrice / 100), exact: false } : null);
       html += '<div class="abon-section"><div class="abon-block">' +
         '<div class="abon-grid">' +
         '<div class="abon-price-col">' +
-          (multiDur ? '<div class="abon-duration-switch-wrap"><div class="abon-duration-switch">' + abonGroups.map(function(g, i){
-            return '<button type="button" class="abon-duration-btn' + (i === 0 ? ' active' : '') + '" data-abon-dur="' + i + '">' + esc(g.duration) + '</button>';
-          }).join('') + '</div></div>' : '') +
+          durSwitchHtml() +
           (abonLevels.length ? '<div class="abon-level-switch-wrap"><div class="abon-level-switch">' + abonLevels.map(function(lv, i){
             return '<button type="button" class="abon-level-btn' + (i === 0 ? ' active' : '') + '" data-abon-level="' + esc(lv) + '">' + esc(lv) + '</button>';
           }).join('') + '</div></div>' : '') +
           '<div class="abon-price-label">Ціна за візит</div>' +
-          (abonHeaderPrice != null ? '<div class="abon-price-big" id="abonPriceBig"><span>від </span>' + abonHeaderPrice + ' грн</div>' : '') +
+          (abonHeaderR ? '<div class="abon-price-big" id="abonPriceBig">' + priceBigHtml(abonHeaderR) + '</div>' : '') +
           '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
         '</div>' +
         '<div class="abon-info-box">' +
@@ -590,8 +614,9 @@
         '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
         '<div class="abon-cards-wrap">' +
         abonGroups.map(function(g, i){
-          return '<div class="abon-cards" data-abon-group="' + i + '"' + (i === 0 ? '' : ' style="display:none;"') + '>' + renderAbonCards(g.items) + '</div>';
+          return '<div class="abon-cards" data-abon-group="' + i + '"' + (groupVisible(i) ? '' : ' style="display:none;"') + '>' + renderAbonCards(g.items) + '</div>';
         }).join('') +
+        '<div class="abon-none" style="display:' + (abonGroups.some(function(g, gi){ return groupVisible(gi); }) ? 'none' : 'block') + ';color:var(--text-dim);font-size:13px;padding:18px 4px;">Для цієї тривалості абонементів немає — запитайте в адміністратора.</div>' +
         '<button type="button" class="abon-carousel-arrow abon-carousel-arrow--prev" data-abon-dir="-1" aria-label="Попередній пакет">&#8249;</button>' +
         '<button type="button" class="abon-carousel-arrow abon-carousel-arrow--next" data-abon-dir="1" aria-label="Наступний пакет">&#8250;</button>' +
         '</div>' +
@@ -603,10 +628,12 @@
          дублювалась у шапці й у таблиці цін, обидва блоки прибрані, тож без
          цієї гілки сторінка лишалась зовсім без ціни (напр. «Антивіковий
          масаж обличчя»). Той самий блок, лише без правої колонки з картками. */
+      var soloR = realPriceFor(activeDurNum(), null);
       html += '<div class="abon-section"><div class="abon-block abon-block--price-only">' +
         '<div class="abon-price-col abon-price-col--solo">' +
+          durSwitchHtml() +
           '<div class="abon-price-label">Ціна за візит</div>' +
-          '<div class="abon-price-big"><span>від </span>' + Math.round(minPrice / 100) + ' грн</div>' +
+          '<div class="abon-price-big" id="abonPriceBig">' + priceBigHtml(soloR || { price: Math.round(minPrice / 100), exact: false }) + '</div>' +
           '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
         '</div>' +
       '</div></div>';
@@ -777,18 +804,21 @@
     // впливають на велику цифру "Ціна за візит" зверху блока.
     function updateAbonPrice(){
       var big = content.querySelector('#abonPriceBig');
-      var price = realPriceFor(activeDurIdx, activeLevel);
-      if (big && price != null) big.innerHTML = '<span>від </span>' + price + ' грн';
+      var r = realPriceFor(activeDurNum(), activeLevel);
+      if (big && r) big.innerHTML = priceBigHtml(r);
     }
     content.querySelectorAll('.abon-duration-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         activeDurIdx = parseInt(btn.getAttribute('data-abon-dur'), 10);
         content.querySelectorAll('.abon-duration-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+        var anyShown = false;
         content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
-          var isActive = parseInt(box.getAttribute('data-abon-group'), 10) === activeDurIdx;
+          var isActive = groupVisible(parseInt(box.getAttribute('data-abon-group'), 10));
           box.style.display = isActive ? '' : 'none';
-          if (isActive) centerPopularCard(box);
+          if (isActive) { anyShown = true; centerPopularCard(box); }
         });
+        var none = content.querySelector('.abon-none');
+        if (none) none.style.display = anyShown ? 'none' : '';
         updateAbonPrice();
         updateArrowState();
       });

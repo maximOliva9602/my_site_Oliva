@@ -679,6 +679,7 @@
         <div style="font-size:12.5px;color:var(--text-dim);">Тривалість і ціни підтягуються з «Послуги» автоматично — вписувати їх окремо не треба.</div>
         <div>
           <label>Абонементи <span class="field-hint">(пакети сеансів зі знижкою — необов'язково; оберіть послугу вгорі, щоб з'явились колонки рівнів майстра)</span></label>
+          <div style="font-size:12.5px;color:var(--text-dim);margin:2px 0 10px;line-height:1.5;">Тривалості й «Ціна за візит» на сторінці підтягуються з прайсу самі. Групи тривалості тут потрібні лише якщо <b>ціна абонемента</b> залежить від тривалості: додайте тривалість і хоча б один пакет.</div>
           <div style="display:flex;align-items:center;gap:8px;margin:2px 0 12px;">
             <input type="checkbox" id="spAbonNoCategory" style="width:18px;height:18px;cursor:pointer;accent-color:var(--olive-light);" />
             <label for="spAbonNoCategory" style="margin:0;font-weight:400;text-transform:none;letter-spacing:normal;font-size:13px;color:var(--text-dim);cursor:pointer;">Без категорії — одна ціна для всіх майстрів (ціна однакова, не залежить від рівня)</label>
@@ -2034,7 +2035,8 @@
       var pkg = abonParseLine(line);
       if (pkg.sessions !== '') current.packages.push(pkg);
     });
-    groups = groups.filter(function (g) { return g.packages.length; });
+    /* Тривалість без пакетів теж лишаємо: інакше після збереження вона зникала, і власник бачив порожній редактор. */
+    groups = groups.filter(function (g) { return g.packages.length || g.duration; });
     return { groups: groups.length ? groups : [{ duration: '', packages: [] }] };
   }
 
@@ -2054,9 +2056,10 @@
 
   function serializeAbonState(state, levels) {
     var lines = [];
-    var multi = state.groups.length > 1;
+    /* Заголовок "[90 хв]" пишемо, коли груп кілька АБО в єдиної групи вказано тривалість — інакше вона мовчки губилась. */
+    var multi = state.groups.length > 1 || state.groups.some(function (g) { return (g.duration || '').trim(); });
     state.groups.forEach(function (g, gi) {
-      if (multi) { if (gi > 0) lines.push(''); lines.push('[' + (g.duration || '') + ']'); }
+      if (multi) { if (gi > 0) lines.push(''); lines.push('[' + (g.duration || '').trim() + ']'); }
       g.packages.forEach(function (pkg) { lines.push(abonLine(pkg, levels)); });
     });
     return lines.join('\n');
@@ -2089,22 +2092,58 @@
     var cols = levels.length ? levels : [''];
     var builder = document.getElementById('spAbonBuilder');
     builder.innerHTML = '';
+    /* Тривалості цієї послуги з прайсу — додаються однією кнопкою, без
+       ручного набору «90 хв». */
+    (function () {
+      var SG = window.OlivaServiceGroups, key = spKey.value.trim();
+      if (!SG || !key) return;
+      var durs = [];
+      svcAllItems.forEach(function (s) {
+        var p = SG.parseName(s.name);
+        if (p.cat === key && p.dur && durs.indexOf(p.dur) === -1) durs.push(p.dur);
+      });
+      durs.sort(function (a, b) { return a - b; });
+      var have = abonState.groups.map(function (g) { var m = String(g.duration || '').match(/\d+/); return m ? parseInt(m[0], 10) : null; });
+      var missing = durs.filter(function (d) { return have.indexOf(d) === -1; });
+      if (!missing.length || durs.length < 2) return;
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px;font-size:12.5px;color:var(--text-dim);';
+      row.appendChild(document.createTextNode('Тривалості з прайсу:'));
+      missing.forEach(function (d) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'svc-variant-add-btn'; b.style.margin = '0';
+        b.textContent = '+ ' + d + ' хв';
+        b.addEventListener('click', function () {
+          var first = abonState.groups[0];
+          /* Порожню безіменну групу заповнюємо, а не плодимо зайву. */
+          if (first && !first.duration && !first.packages.length && abonState.groups.length === 1) { first.duration = d + ' хв'; first.packages.push(abonEmptyPackage()); }
+          else abonState.groups.push({ duration: d + ' хв', packages: [abonEmptyPackage()] });
+          renderAbonBuilder();
+        });
+        row.appendChild(b);
+      });
+      builder.appendChild(row);
+    })();
     abonState.groups.forEach(function (g, gi) {
       var card = document.createElement('div');
       card.className = 'abon-group';
+      /* Поле тривалості показуємо завжди (раніше — лише коли груп кілька,
+         тому в новій послузі «часового поля» просто не було видно). */
+      var head = document.createElement('div');
+      head.className = 'abon-group-head';
+      var durInput = document.createElement('input');
+      durInput.type = 'text'; durInput.className = 'abon-dur-input';
+      durInput.placeholder = abonState.groups.length > 1 ? 'Напр. 90 хв' : 'Тривалість (необов\'язково), напр. 90 хв';
+      durInput.value = g.duration;
+      durInput.addEventListener('input', function () { g.duration = durInput.value; });
+      head.appendChild(durInput);
       if (abonState.groups.length > 1) {
-        var head = document.createElement('div');
-        head.className = 'abon-group-head';
-        var durInput = document.createElement('input');
-        durInput.type = 'text'; durInput.className = 'abon-dur-input'; durInput.placeholder = 'Напр. 90 хв'; durInput.value = g.duration;
-        durInput.addEventListener('input', function () { g.duration = durInput.value; });
-        head.appendChild(durInput);
         var rmGroup = document.createElement('button');
         rmGroup.type = 'button'; rmGroup.className = 'abon-group-remove'; rmGroup.textContent = '✕ Прибрати тривалість';
         rmGroup.addEventListener('click', function () { abonState.groups.splice(gi, 1); renderAbonBuilder(); });
         head.appendChild(rmGroup);
-        card.appendChild(head);
       }
+      card.appendChild(head);
       var wrap = document.createElement('div');
       wrap.className = 'svc-matrix-wrap';
       var table = document.createElement('table');
