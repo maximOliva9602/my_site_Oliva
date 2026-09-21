@@ -891,8 +891,14 @@
     "Корекція фігури": "Корекція фігури", "Комплекси": "Корекція фігури",
     "Додаткові послуги": "Додаткові послуги"
   };
-  function canonicalCategory(raw) {
-    return SVC_CATEGORY_ALIASES[(raw || "").trim()] || "";
+  /* «SPA-ритуали» у селекті немає, тож раніше він показувався як «SPA для
+     одного» — і при збереженні будь-якої такої послуги (у т.ч. «…для двох»,
+     «Парний масаж») категорія тихо перезаписувалась на «для одного». Тепер
+     парні послуги за назвою потрапляють у «SPA для двох». */
+  function canonicalCategory(raw, name) {
+    var c = SVC_CATEGORY_ALIASES[(raw || "").trim()] || "";
+    if (c === "SPA-масажі для одного" && /для двох|парн|чотири руки/i.test(name || "")) return "SPA-масажі для двох";
+    return c;
   }
   /* Назва рівня майстра — той самий текст, що й скрізь на сайті
      (парситься назад через OlivaServiceGroups.parseName). */
@@ -1224,7 +1230,7 @@
     var parsed = (svc && SG) ? SG.parseName(svc.name) : null;
     var base = svc ? (parsed ? parsed.cat : svc.name) : '';
     svcName.value     = base;
-    svcCategory.value = svc ? canonicalCategory(svc.category) : '';
+    svcCategory.value = svc ? canonicalCategory(svc.category, svc.name) : '';
     svcDesc.value     = svc ? (svc.description || '') : '';
     svcImgUrl.value   = svc ? (svc.image_url || '') : '';
     var svcUploadBtnEl = document.getElementById('svcUploadBtn');
