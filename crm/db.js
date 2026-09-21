@@ -1548,5 +1548,20 @@ try {
   }
 } catch (e) { console.error("[db] resync Експерт-master service_ids:", e.message); }
 
+/* Тепловий SPA-ритуал «…для двох» у прайсі був заведений з категорією
+   «SPA-масажі для одного», тож у CRM (Послуги → фільтр) потрапляв не в ту
+   групу. Виправляємо один раз — прапорець у app_settings, щоб не
+   перезаписувати, якщо власник пізніше свідомо змінить категорію. */
+try {
+  var spaTwoFlag = "migr_spa_two_category";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(spaTwoFlag)) {
+    var fixed = db.prepare(
+      "UPDATE services SET category='SPA-масажі для двох' WHERE category='SPA-масажі для одного' AND name LIKE '%для двох%'"
+    ).run().changes;
+    db.prepare("INSERT INTO app_settings (key,value) VALUES (?,'1')").run(spaTwoFlag);
+    if (fixed) console.log("[db] «для двох» → категорія «SPA-масажі для двох»: " + fixed);
+  }
+} catch (e) { console.error("[db] category fix:", e.message); }
+
 module.exports = db;
 module.exports.DB_FILE = DB_FILE;
