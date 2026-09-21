@@ -82,6 +82,8 @@
     if (GROUP_MAP[parsedCat]) return GROUP_MAP[parsedCat];
     // 3) «для двох» / «парний» у назві — це завжди SPA для двох
     if (/для двох|парн/i.test(parsedCat)) return "spa2";
+    // ...а «для одного» у назві — завжди SPA для одного
+    if (/для одного/i.test(parsedCat)) return "spa1";
     // 4) категорія з CRM
     if (CATEGORY_MAP[raw]) return CATEGORY_MAP[raw];
     return "extra";

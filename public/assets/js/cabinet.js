@@ -3634,7 +3634,14 @@
       // міграція переносить усі add-on'и з фінального кроку онлайн-запису.
       if (String((s && s.category) || "").trim().toLowerCase() === "додаткові послуги") return "extra";
       var name = String((s && s.name) || "").toLowerCase();
+      var cat = String((s && s.category) || "").trim().toLowerCase();
+      /* Явне «для двох» / «для одного» — у назві або в категорії, яку
+         власник обирає в адмінці — визначає групу однозначно. Назва має
+         пріоритет: саме її бачить клієнт. */
       if (/парний|чотири руки|для двох/.test(name)) return "spa-two";
+      if (/для одного/.test(name)) return "spa-one";
+      if (/для двох/.test(cat)) return "spa-two";
+      if (/для одного/.test(cat)) return "spa-one";
       if (/фітобоч|spa[ -]?ритуал|гарячим камінням|тепловий spa/.test(name)) return "spa-one";
       if (/обличчя|кобідо|гуа-ша|букальн/.test(name)) return "massage";
       if (/антицелюліт|моделююч|моделюван|лімфодренаж|вакуум|обгортан|трансформац|сольове/.test(name)) return "body";
