@@ -1777,6 +1777,32 @@ router.get("/clients/:id", any, function (req, res) {
   client = protectClientPhone(client, req.session);
   res.json({ ok: true, client: client, history: history });
 });
+/* Створення клієнта вручну — з вкладки "Клієнти", без запису на послугу.
+   Раніше єдиний спосіб завести картку клієнта — це створити йому запис
+   (там ім'я/телефон обираються мимохідь); тут — окрема форма. Телефон не
+   обов'язковий (як і при записі "Гість"), але за номером не плодимо дублі:
+   та сама перевірка нормалізованого номера, що й у createAppointment. */
+router.post("/clients", any, function (req, res) {
+  const d = req.body || {};
+  const name = clean(d.name, 100);
+  if (!name) return res.status(400).json({ ok: false, error: "name required" });
+  const phone = tz.normPhone(clean(d.phone, 30));
+  const note = clean(d.note, 1000);
+  const birthday = tz.isDate(String(d.birthday || "")) ? String(d.birthday) : null;
+  const now = Date.now();
+  if (phone) {
+    const existing = db.prepare("SELECT id, phone FROM clients").all()
+      .find(function (c) { return tz.normPhone(c.phone) === phone; });
+    if (existing) {
+      return res.status(409).json({ ok: false, error: "PHONE_EXISTS", client_id: existing.id });
+    }
+  }
+  const info = db.prepare(
+    "INSERT INTO clients (phone,name,note,birthday,visit_count,created_at) VALUES (?,?,?,?,0,?)"
+  ).run(phone || null, name, note || null, birthday, now);
+  res.json({ ok: true, id: info.lastInsertRowid });
+});
+
 router.patch("/clients/:id", any, function (req, res) {
   const id = parseInt(req.params.id, 10);
   const d = req.body || {};

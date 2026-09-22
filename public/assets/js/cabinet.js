@@ -5642,6 +5642,10 @@
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Клієнти"));
     var search = el("input"); search.type = "text"; search.placeholder = "Пошук за іменем/телефоном";
     bar.appendChild(search);
+    var newClientBtn = el("button", "btn btn-primary btn-sm", "+ Новий клієнт");
+    newClientBtn.style.cssText = "white-space:nowrap;";
+    newClientBtn.addEventListener("click", function () { newClientModal(function () { load(search.value.trim()); }); });
+    bar.appendChild(newClientBtn);
     if (ME.role === "owner") {
       var importBtn = el("button", "btn btn-ghost btn-sm", "⬆️ Імпорт CSV");
       importBtn.style.cssText = "white-space:nowrap;";
@@ -5739,6 +5743,48 @@
       });
     }
     load("");
+  }
+
+  /* ---- модалка "Новий клієнт" — картка без запису ---- */
+  function newClientModal(onDone) {
+    openModal(
+      '<h3>Новий клієнт</h3>' +
+      '<label>Ім\'я *</label><input type="text" id="ncName" placeholder="Олена Коваленко" maxlength="100">' +
+      '<label style="margin-top:10px;display:block;">Телефон <span style="color:var(--text-dim);font-weight:400;">(необов\'язково)</span></label>' +
+      '<input type="tel" id="ncPhone" placeholder="0971234567" maxlength="30">' +
+      '<div id="ncPhoneHint" style="display:none;font-size:.74rem;color:var(--warn);margin-top:5px;line-height:1.4;"></div>' +
+      '<label style="margin-top:10px;display:block;">День народження <span style="color:var(--text-dim);font-weight:400;">(необов\'язково)</span></label>' +
+      '<input type="date" id="ncBirthday">' +
+      '<label style="margin-top:10px;display:block;">Коментар</label><textarea id="ncNote" maxlength="1000"></textarea>' +
+      '<div class="err" id="ncErr"></div>' +
+      '<div class="modal-foot"><button class="btn btn-ghost" id="ncCancel">Скасувати</button>' +
+      '<button class="btn btn-primary" id="ncSave">Створити</button></div>'
+    );
+    $("ncCancel").addEventListener("click", closeModal);
+    $("ncName").focus();
+    $("ncSave").addEventListener("click", function () {
+      var saveBtn = $("ncSave");
+      if (saveBtn.disabled) return;
+      var err = $("ncErr"); err.textContent = "";
+      var name = $("ncName").value.trim();
+      if (!name) { err.textContent = "Вкажіть ім'я"; return; }
+      var phone = $("ncPhone").value.trim();
+      var phoneDigits = phone.replace(/\D/g, "");
+      if (phoneDigits.length > 0 && phoneDigits.length < 9) { err.textContent = "Перевірте номер телефону"; return; }
+      saveBtn.disabled = true;
+      api("POST", "/api/crm/clients", {
+        name: name, phone: phone, note: $("ncNote").value.trim(), birthday: $("ncBirthday").value || null
+      }).then(function (res) {
+        saveBtn.disabled = false;
+        if (res.code === 409 && res.j && res.j.error === "PHONE_EXISTS") {
+          err.textContent = "Клієнт із таким номером уже є в базі.";
+          return;
+        }
+        if (!res.j || !res.j.ok) { err.textContent = "Помилка: " + ((res.j && res.j.error) || ""); return; }
+        closeModal();
+        if (onDone) onDone();
+      });
+    });
   }
 
   function renderClientCard(id) {
