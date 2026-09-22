@@ -608,6 +608,7 @@
   <a href="/">Студія масажу Oliva</a> · <a href="https://maps.google.com/?q=Київ,+Борщагівська+145" target="_blank" rel="noopener">Київ, Борщагівська 145</a> · <a href="https://maps.google.com/?q=50.3864358,30.4572199" target="_blank" rel="noopener">Успішна 8</a> · <a href="tel:+380974340112">📞 097 434 01 12</a>
 </div>
 
+<script src="assets/js/service-groups.js?v=6"></script>
 <script>
 (function(){
 
@@ -656,8 +657,11 @@
     return (TX[lang] && TX[lang][key]) ? TX[lang][key] : (TX.uk[key] || key);
   }
 
-  /* ── ДАНІ ПОСЛУГ (ціни з bookon.ua) ── */
-  var SERVICES = [
+  /* ── ДАНІ ПОСЛУГ: запасний варіант, якщо /api/services недоступний. ──
+     Ціни тут можуть відставати від прайсу в CRM — щойно приходить
+     відповідь з /api/services, свіжі дані підмінюють цей список
+     (buildServicesFromPrice нижче). */
+  var FALLBACK_SERVICES = [
     { id:'zagalno', icon:'', name:'Загально-оздоровчий масаж', variants:[
       { dur:'30 хв',  masters:[{type:'Майстер', price:700},  {type:'Топ Майстер', price:800}] },
       { dur:'45 хв',  masters:[{type:'Майстер', price:1000}, {type:'Топ Майстер', price:1150}] },
@@ -760,6 +764,89 @@
     ]},
   ];
 
+  /* Живий прайс (CRM) → ID_BY_NAME: та сама базова назва, що й на решті сайту
+     (SG.parseName().cat), дає ті самі короткі id, картинки (SERVICE_IMG) й
+     описи (SERVICE_DESC), що вже підібрані нижче для запасного списку.
+     Назва, якої тут нема, — все одно не губиться: отримує свій id на льоту
+     (slugify) і просто без картинки/опису. Оновлення прайсу чи нову послугу
+     власник більше НЕ повинен вручну дублювати сюди. */
+  var ID_BY_NAME = {
+    'Загально-оздоровчий масаж': 'zagalno',
+    'Антистресовий масаж': 'antistres',
+    'Парний масаж': 'parnyi',
+    'Масаж в чотири руки': 'chotyryrucky',
+    'Масаж спини': 'spyna',
+    'Масаж шийно-комірцевої зони': 'shyya',
+    'Масаж гарячим камінням': 'kaminnnya',
+    'Лімфодренажний масаж': 'limfodrenazh',
+    'Антицелюлітний масаж': 'antytsel',
+    'Класичний масаж обличчя': 'oblychchya',
+    'Антивіковий масаж обличчя': 'antyvikovy',
+    'Дитячий масаж': 'dytyachy',
+    'Паріння у фітобочці': 'fitobochka',
+    'SPA Ритуал "Фіто-оновлення тіла"': 'spa_fito',
+    /* Раніше на цю послугу вела назва без «Тепловий» — власник перейменував
+       її в прайсі, тут лишаємо зв'язок за смислом, щоб не втратити картинку й опис. */
+    'Тепловий SPA-ритуал "Глибоке прогрівання для двох"': 'spa_dvoh',
+    'Обгортання Bruno Vassari Detox': 'detox',
+    'Гаряче обгортання SPA Seaweed': 'seaweed',
+    'Гаряча експрес-трансформація тіла': 'hot_express',
+    'Холодне моделювання тіла': 'cold_sculpt',
+    'Гаряче моделювання тіла': 'hot_sculpt',
+  };
+  var LEVEL_ORDER = ['Майстер', 'Топ Майстер', 'Експерт'];
+  function fmtDurCert(min) {
+    var h = Math.floor(min / 60), m = min % 60;
+    if (h === 0) return min + ' хв';
+    return h + ' год' + (m ? ' ' + m + ' хв' : '');
+  }
+  function slugifyCertId(name, used) {
+    var base = 'svc_' + name.toLowerCase()
+      .replace(/["'«»()]/g, '')
+      .replace(/[^a-zа-яіїєґ0-9]+/gi, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 24);
+    if (!base || base === 'svc_') base = 'svc';
+    var id = base, n = 1;
+    while (used[id]) { id = base + '_' + (++n); }
+    return id;
+  }
+  /* Будує той самий формат, що й FALLBACK_SERVICES, але з живих даних
+     /api/services — тим самим групуванням за базовою назвою (SG.parseName),
+     яким користується решта сайту (booking.html, index.html). */
+  function buildServicesFromPrice(list) {
+    var SG = window.OlivaServiceGroups;
+    if (!SG || !list || !list.length) return null;
+    var byCat = {}, order = [];
+    list.forEach(function (s) {
+      if (!s.duration_min || !s.price) return;
+      var p = SG.parseName(s.name);
+      if (!p.cat || !p.dur) return;
+      if (!byCat[p.cat]) { byCat[p.cat] = {}; order.push(p.cat); }
+      var g = byCat[p.cat];
+      if (!g[p.dur]) g[p.dur] = [];
+      g[p.dur].push({ level: p.level, price: Math.round(s.price / 100) });
+    });
+    var used = {};
+    return order.map(function (cat) {
+      var g = byCat[cat];
+      var durs = Object.keys(g).map(Number).sort(function (a, b) { return a - b; });
+      var variants = durs.map(function (dur) {
+        var entries = g[dur];
+        var hasLevel = entries.some(function (e) { return e.level; });
+        var masters = hasLevel
+          ? LEVEL_ORDER.filter(function (lv) { return entries.some(function (e) { return e.level === lv; }); })
+              .map(function (lv) { return { type: lv, price: entries.filter(function (e) { return e.level === lv; })[0].price }; })
+          : [{ type: 'Ритуал', price: Math.min.apply(null, entries.map(function (e) { return e.price; })) }];
+        return { dur: fmtDurCert(dur), masters: masters };
+      });
+      var id = ID_BY_NAME[cat] || slugifyCertId(cat, used);
+      used[id] = true;
+      return { id: id, name: cat, variants: variants };
+    });
+  }
+  var SERVICES = FALLBACK_SERVICES; // до відповіді /api/services — щоб сторінка не була порожньою
+
   /* ── DOM ── */
   var popularGrid   = document.getElementById('popularGrid');
   var allServicesScroll = document.getElementById('allServicesScroll');
@@ -836,32 +923,48 @@
     hot_sculpt:  'Лімфодренажний/антицелюлітний масаж + апаратно-вакуумний масаж + гаряче бандажне обгортання SPA Seaweed. Глибоке прогрівання тканин для активного жироспалення та корекції контурів.',
   };
 
-  POPULAR_IDS.forEach(function(pid){
-    var s = SERVICES.find(function(s){ return s.id === pid; });
-    if (!s) return;
-    var durCount = s.variants.length === 1 ? s.variants[0].dur : s.variants.length + ' варіантів';
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'popular-btn';
-    btn.setAttribute('data-id', s.id);
-    if (SERVICE_IMG[s.id]) btn.style.backgroundImage = 'url(assets/img/' + SERVICE_IMG[s.id] + ')';
-    btn.innerHTML =
-      '<div class="popular-btn-top"><span class="popular-btn-name">' + s.name + '</span></div>' +
-      '<div class="popular-btn-meta">' + durCount + '</div>';
-    btn.addEventListener('click', function(){ selectCategory(s.id); });
-    popularGrid.appendChild(btn);
-  });
+  /* Рендеримо спершу з тим, що є (FALLBACK_SERVICES), щоб сторінка не була
+     порожньою, поки триває запит; коли /api/services відповість — перемалюємо
+     цим самим викликом уже з живими даними (нижче, після fetch). */
+  function renderInitialPickers(){
+    popularGrid.innerHTML = '';
+    POPULAR_IDS.forEach(function(pid){
+      var s = SERVICES.find(function(s){ return s.id === pid; });
+      if (!s) return;
+      var durCount = s.variants.length === 1 ? s.variants[0].dur : s.variants.length + ' варіантів';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'popular-btn';
+      btn.setAttribute('data-id', s.id);
+      if (SERVICE_IMG[s.id]) btn.style.backgroundImage = 'url(assets/img/' + SERVICE_IMG[s.id] + ')';
+      btn.innerHTML =
+        '<div class="popular-btn-top"><span class="popular-btn-name">' + s.name + '</span></div>' +
+        '<div class="popular-btn-meta">' + durCount + '</div>';
+      btn.addEventListener('click', function(){ selectCategory(s.id); });
+      popularGrid.appendChild(btn);
+    });
 
-  /* ── УСІ ПОСЛУГИ ── */
-  SERVICES.forEach(function(s){
-    var row = document.createElement('div');
-    row.className = 'srv-row';
-    row.setAttribute('data-id', s.id);
-    row.innerHTML =
-      '<div class="srv-row-left"><span class="srv-row-name">' + s.name + '</span></div>';
-    row.addEventListener('click', function(){ selectCategory(s.id); });
-    allServicesScroll.appendChild(row);
-  });
+    /* ── УСІ ПОСЛУГИ ── */
+    allServicesScroll.innerHTML = '';
+    SERVICES.forEach(function(s){
+      var row = document.createElement('div');
+      row.className = 'srv-row';
+      row.setAttribute('data-id', s.id);
+      row.innerHTML =
+        '<div class="srv-row-left"><span class="srv-row-name">' + s.name + '</span></div>';
+      row.addEventListener('click', function(){ selectCategory(s.id); });
+      allServicesScroll.appendChild(row);
+    });
+  }
+  renderInitialPickers();
+
+  /* Живий прайс — щойно прийшов, підміняємо запасний список і перемальовуємо.
+     Якщо запит не вдався (чи ще завантажується SG), лишається запасний
+     список: краще трохи застарілі ціни, ніж порожня сторінка. */
+  fetch('/api/services').then(function(r){ return r.json(); }).then(function(res){
+    var built = buildServicesFromPrice(res && (res.services || res));
+    if (built && built.length) { SERVICES = built; renderInitialPickers(); }
+  }).catch(function(){});
 
   /* ── ВКЛАДКИ ── */
   document.querySelectorAll('.picker-tab').forEach(function(tab){
