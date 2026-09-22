@@ -158,6 +158,7 @@ app.get("/sitemap.xml", function (req, res) {
     { p: "/booking", f: "weekly", pr: "0.9" },
     { p: "/certificate", f: "monthly", pr: "0.7" },
     { p: "/office", f: "monthly", pr: "0.7" },
+    { p: "/uspishna", f: "monthly", pr: "0.7" },
     { p: "/blog", f: "weekly", pr: "0.6" },
   ];
   try {
@@ -403,6 +404,16 @@ app.get("/booking", function (req, res) {
 });
 app.get("/master", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "master.html"));
+});
+/* Раніше на ці адреси не було маршруту — сервер віддавав fallback
+   (serveHome), тобто /office і /uspishna фактично показували ГОЛОВНУ
+   сторінку замість своєї, хоча в sitemap.xml вони заявлені як окремі
+   URL. Google бачив дубль головної замість цільового контенту. */
+app.get("/office", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "office.html"));
+});
+app.get("/uspishna", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "uspishna.html"));
 });
 
 // API для майстра — розклад

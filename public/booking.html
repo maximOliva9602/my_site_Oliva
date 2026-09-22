@@ -1473,7 +1473,23 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   function applyDeepLink() {
     var params = new URLSearchParams(location.search);
     var sid = parseInt(params.get("service"), 10);
-    if (!sid) return;
+    /* ?branch=<id> без ?service= — перехід з окремої сторінки філії
+       (напр. /uspishna): одразу фіксуємо філію й ведемо до вибору
+       категорії послуг, минаючи крок "Оберіть філію". */
+    if (!sid) {
+      var bid = parseInt(params.get("branch"), 10);
+      if (bid && branchStepEnabled && branches.some(function(b) { return b.id === bid; })) {
+        state.branch = bid;
+        /* ?group=<key> — одразу й групу послуг (з окремої сторінки філії,
+           де кожна картка веде у свою групу); без нього — крок 1 з уже
+           зафіксованою філією. */
+        var gkey = params.get("group");
+        var g = gkey && GROUPS.filter(function(x) { return x.key === gkey; })[0];
+        if (g) { state.group = g.key; renderCats(); goStep(2); }
+        else { renderGroups(); goStep(1); }
+      }
+      return;
+    }
     var svc = allServices.filter(function(s) { return s.id === sid; })[0];
     if (!svc) return;
     var p = parseName(svc.name);
@@ -1486,6 +1502,13 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
        групи послуг), інакше state.branch лишається null і сервер сам
        вгадує філію за застарілим полем — саме так запис "на Успішну"
        міг піти в Борщагівську. chooseBranch() продовжить звідси сама. */
+    var bid2 = parseInt(params.get("branch"), 10);
+    if (bid2 && branchStepEnabled && branches.some(function(b) { return b.id === bid2; })) {
+      state.branch = bid2;
+      renderMasters();
+      goStep(3);
+      return;
+    }
     if (branchStepEnabled && branches.length > 1) {
       deepLinkPendingBranch = true;
       renderBranches();
