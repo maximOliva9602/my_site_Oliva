@@ -282,6 +282,103 @@ function renderNotFound() {
   }, "/", null, { noindex: true });
 }
 
+/* ---- Сторінка філії «Успішна, 8» ----
+   Показуємо лише послуги, які справді можна записати на цій адресі:
+   послуги філії (branch_services; порожньо = усі) ∩ послуги майстрів,
+   прив'язаних до філії (branch_masters → master_services). Ціни — саме ці
+   рядки прайсу, тобто за рівнем тих майстрів, що там приймають. */
+function renderUspishna() {
+  const branch = publicBranches().filter(function (b) { return /успішн/i.test(b.address || b.name || ""); })[0];
+  let tpl = fs.readFileSync(path.join(PUB, "uspishna.html"), "utf8");
+  const services = publicServices();
+  let allowed = null, masters = [];
+  if (branch) {
+    masters = db.prepare(
+      "SELECT m.id, m.name, m.level FROM masters m JOIN branch_masters bm ON bm.master_id=m.id WHERE bm.branch_id=? AND m.active=1 ORDER BY m.sort_order, m.id"
+    ).all(branch.id);
+    const mSvc = new Set();
+    const st = db.prepare("SELECT service_id FROM master_services WHERE master_id=?");
+    masters.forEach(function (m) { st.all(m.id).forEach(function (r) { mSvc.add(r.service_id); }); });
+    const bSvc = new Set(branch.service_ids || []);
+    allowed = new Set(services.filter(function (s) {
+      return (!bSvc.size || bSvc.has(s.id)) && (!masters.length || mSvc.has(s.id));
+    }).map(function (s) { return s.id; }));
+  }
+  const list = services.filter(function (s) { return !allowed || allowed.has(s.id); });
+
+  const byCat = {}, order = [];
+  list.forEach(function (s) {
+    const p = SG.parseName(s.name);
+    if (!p.cat) return;
+    if (!byCat[p.cat]) { byCat[p.cat] = { name: p.cat, group: SG.resolveGroup(s, p.cat), rows: [], img: null, featured: false }; order.push(p.cat); }
+    const c = byCat[p.cat];
+    c.rows.push({ id: s.id, dur: p.dur || s.duration_min, price: s.price });
+    if (!c.img && s.image_url) c.img = s.image_url;
+    if (s.featured) c.featured = true;
+  });
+  const cats = order.map(function (k) { return byCat[k]; });
+  const bookBase = branch ? "/booking.html?branch=" + branch.id : "/booking.html";
+  function row(c) {
+    const min = Math.min.apply(null, c.rows.map(function (r) { return r.price; }));
+    const cheapest = c.rows.filter(function (r) { return r.price === min; })[0];
+    const durs = c.rows.map(function (r) { return r.dur; });
+    const dMin = Math.min.apply(null, durs), dMax = Math.max.apply(null, durs);
+    const href = "/booking.html?service=" + cheapest.id + (branch ? "&branch=" + branch.id : "");
+    return '<a class="us-row" href="' + href + '">' +
+      '<div class="us-row__img">' + (c.img ? '<img src="' + esc(c.img) + '" alt="' + esc(c.name) + '" loading="lazy">' : "") + "</div>" +
+      '<div class="us-row__body"><div class="us-row__name">' + esc(c.name) + "</div>" +
+      '<div class="us-row__meta">від <b>' + Math.round(min / 100) + " грн</b> · " + (dMin === dMax ? dMin : dMin + "–" + dMax) + " хв</div></div>" +
+      '<span class="us-row__arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>';
+  }
+  /* Нагорі — масажі (спершу популярні), решта згорнута за групами. */
+  const main = cats.filter(function (c) { return c.group !== "extra"; });
+  /* Нагорі — саме масажі (кінезіотейпування тощо — у згорнутому списку). */
+  const massages = main.filter(function (c) { return /масаж/i.test(c.name); });
+  const top = massages.filter(function (c) { return c.featured; }).concat(massages.filter(function (c) { return !c.featured; })).slice(0, 6);
+  const rest = cats.filter(function (c) { return top.indexOf(c) === -1; });
+  const GROUP_TITLE = { general: "Масажі", body: "Корекція фігури", spa2: "Для двох", spa1: "SPA", extra: "Додаткові послуги" };
+  const restHtml = ["general", "body", "spa2", "spa1", "extra"].map(function (g) {
+    const items = rest.filter(function (c) { return c.group === g; });
+    return items.length ? '<div class="us-group-title">' + GROUP_TITLE[g] + '</div><div class="us-list">' + items.map(row).join("") + "</div>" : "";
+  }).join("");
+
+  const minAll = massages.length ? Math.round(Math.min.apply(null, massages.map(function (c) { return Math.min.apply(null, c.rows.map(function (r) { return r.price; })); })) / 100) : null;
+  const levels = masters.map(function (m) { return m.level; }).filter(function (l, i, a) { return l && a.indexOf(l) === i; });
+  const masterNote = masters.length
+    ? "Приймає: " + masters.map(function (m) { return m.name + (m.level ? " (" + m.level + ")" : ""); }).join(", ") + ". Ціни — за прайсом " + (levels.length === 1 ? "рівня «" + levels[0] + "»" : "майстрів цієї адреси") + "."
+    : "Ціни — за актуальним прайсом студії.";
+  const metaDesc = "Студія масажу Oliva на вул. Успішна, 8 — Теремки, поруч метро «Іподром» і ЖК «Лікоград». Загально-оздоровчий, спортивний, антицелюлітний масаж, масаж спини та обличчя" +
+    (minAll ? " — від " + minAll + " грн" : "") + ". Щодня 9:00–21:30, онлайн-запис.";
+  const photo = branch && branch.photo ? branch.photo : "/assets/img/main_photo.jpg";
+
+  const prices = list.map(function (s) { return Math.round(s.price / 100); });
+  const jsonld = {
+    "@context": "https://schema.org", "@type": "HealthAndBeautyBusiness",
+    "@id": BASE + "/uspishna#business", "name": "Студія масажу Oliva — Успішна, 8 (Теремки)",
+    "branchOf": { "@id": BASE + "/#business" },
+    "description": metaDesc, "url": BASE + "/uspishna", "image": photo.indexOf("http") === 0 ? photo : BASE + photo,
+    "telephone": "+380974340112",
+    "priceRange": prices.length ? Math.min.apply(null, prices) + "–" + Math.max.apply(null, prices) + " грн" : undefined,
+    "address": { "@type": "PostalAddress", "streetAddress": "вул. Успішна, 8", "addressLocality": "Київ", "addressCountry": "UA" },
+    "geo": { "@type": "GeoCoordinates", "latitude": 50.3864358, "longitude": 30.4572199 },
+    "openingHoursSpecification": [{ "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"], "opens": "09:00", "closes": "21:30" }],
+    "hasOfferCatalog": { "@type": "OfferCatalog", "name": "Послуги на Успішній, 8",
+      "itemListElement": main.slice(0, 12).map(function (c) {
+        return { "@type": "Offer", "itemOffered": { "@type": "Service", "name": c.name },
+          "price": String(Math.round(Math.min.apply(null, c.rows.map(function (r) { return r.price; })) / 100)), "priceCurrency": "UAH" };
+      }) }
+  };
+
+  const rep = {
+    META_DESC: esc(metaDesc), OG_IMAGE: esc(photo.indexOf("http") === 0 ? photo : BASE + photo),
+    JSONLD: JSON.stringify(jsonld).replace(/</g, "\\u003c"),
+    BOOK_HREF: bookBase, PHOTO: esc(photo), MASTER_NOTE: esc(masterNote),
+    SERVICES_TOP: top.map(row).join(""), SERVICES_MORE: restHtml, SERVICES_COUNT: String(cats.length),
+  };
+  return tpl.replace(/\{\{([A-Z_]+)\}\}/g, function (m, k) { return rep[k] != null ? rep[k] : ""; });
+}
+
 /* Унікальний slug для сторінки (якщо зайнятий — додаємо -2, -3…). */
 function uniqueSlug(base, exceptKey) {
   let s = slugify(base) || "posluga", n = 1, cand = s;
@@ -377,6 +474,6 @@ const FITO_FAQ = [
 
 module.exports = {
   migrate,
-  slugify, uniqueSlug, renderServicePage, renderCategory, renderNotFound,
+  slugify, uniqueSlug, renderServicePage, renderCategory, renderNotFound, renderUspishna,
   CATEGORY_SLUGS: Object.keys(CATEGORIES), categoryLinkFor, SG,
 };

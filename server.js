@@ -420,7 +420,13 @@ app.get("/office", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "office.html"));
 });
 app.get("/uspishna", function (req, res) {
-  res.sendFile(path.join(__dirname, "public", "uspishna.html"));
+  try {
+    res.set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, must-revalidate" });
+    res.send(seoPages.renderUspishna());
+  } catch (e) {
+    console.error("[uspishna]", e.message);
+    res.redirect(302, "/#contacts");
+  }
 });
 
 // API для майстра — розклад
