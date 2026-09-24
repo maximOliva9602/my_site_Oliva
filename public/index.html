@@ -371,10 +371,12 @@
 
     <div class="srv-panel" id="tab-spa2">
       <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
+      <a href="/spa-dlya-dvoh-kyiv" style="display:inline-block;margin-top:18px;color:var(--olive-light);font-size:.9rem;border-bottom:1px solid rgba(122,145,86,.4);padding-bottom:2px;">Усі SPA-програми для двох у Києві →</a>
     </div>
 
     <div class="srv-panel" id="tab-spa1">
       <div class="services-grid"><!-- Services rendered dynamically by JS --></div>
+      <a href="/spa-dlya-odnogo-kyiv" style="display:inline-block;margin-top:18px;color:var(--olive-light);font-size:.9rem;border-bottom:1px solid rgba(122,145,86,.4);padding-bottom:2px;">Усі SPA-програми для одного у Києві →</a>
     </div>
 
     <div class="srv-panel" id="tab-body">
@@ -1476,7 +1478,8 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       }
       var a = document.createElement('a');
       a.className = 'srv-full-link';
-      a.href = '/service/' + encodeURIComponent(key);
+      /* ЧПУ (/service/fito-onovlennya-tila), якщо сторінка його має. */
+      a.href = '/service/' + (typeof svcArticles[key] === 'string' ? svcArticles[key] : encodeURIComponent(key));
       a.style.marginTop = standalone ? '14px' : '12px';
       a.innerHTML =
         '<span class="srv-full-link__ico"><img src="/assets/img/logo.png" alt="" /></span>' +
@@ -1637,7 +1640,8 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
       .then(function(rs) {
         var data = rs[0];
         if (rs[1] && rs[1].ok && rs[1].keys) {
-          rs[1].keys.forEach(function(k) { svcArticles[k] = true; }); // ДО рендеру карток
+          var slugs = rs[1].slugs || {};
+          rs[1].keys.forEach(function(k) { svcArticles[k] = slugs[k] || true; }); // ДО рендеру карток
         }
         if (!data.ok) return;
         var all = data.services;

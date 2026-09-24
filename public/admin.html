@@ -577,6 +577,22 @@
           </div>
         </div>
 
+        <div id="spKeyWarn" style="display:none;font-size:12px;color:#e0a060;margin-top:-4px;">⚠ Такої послуги немає в прайсі — ціни на сторінці не підтягнуться і кнопка «Про цей масаж» на головній не з'явиться. Оберіть назву зі списку.</div>
+
+        <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Пошук Google</div>
+        <div>
+          <label>Адреса сторінки <span style="color:var(--text-dim);font-weight:400;">(латиницею; порожньо — згенерується з назви)</span></label>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--text-dim);font-size:13px;white-space:nowrap;">massage-oliva.com/service/</span><input type="text" id="spSlug" placeholder="fito-onovlennya-tila" /></div>
+        </div>
+        <div>
+          <label>SEO-заголовок (title) <span style="color:var(--text-dim);font-weight:400;">(рядок у пошуку Google, до ~60 символів; порожньо — візьметься заголовок сторінки)</span></label>
+          <input type="text" id="spSeoTitle" maxlength="120" placeholder="SPA у Києві «Фіто-оновлення тіла» | Фітобочка + масаж | Oliva" />
+        </div>
+        <div>
+          <label>SEO-опис (description) <span style="color:var(--text-dim);font-weight:400;">(текст під заголовком у Google, до ~160 символів)</span></label>
+          <textarea id="spSeoDesc" rows="2" maxlength="300" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        </div>
+
         <div style="font-size:12px;color:var(--olive-light);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;">Шапка сторінки</div>
         <div>
           <label>Заголовок <span style="color:var(--text-dim);font-weight:400;">(порожньо — візьметься назва послуги)</span></label>
@@ -675,6 +691,10 @@
         <div>
           <label>«Вам підійде цей масаж, якщо…» — по одному пункту в рядку</label>
           <textarea id="spSuitableItems" rows="4" placeholder="Багато працюєте за компʼютером&#10;Відчуваєте напруження шиї та плечей" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+        </div>
+        <div>
+          <label>Часті питання (FAQ) — по одному в рядку: <b>Питання :: Відповідь</b></label>
+          <textarea id="spFaqItems" rows="5" placeholder="Чим відрізняються варіанти 90 і 130 хвилин? :: Складом ритуалу…" style="width:100%;background:rgba(46,61,34,0.2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--cream);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
         </div>
         <div style="font-size:12.5px;color:var(--text-dim);">Тривалість і ціни підтягуються з «Послуги» автоматично — вписувати їх окремо не треба.</div>
         <div>
@@ -1836,13 +1856,19 @@
   var SP_FIELDS = ['hero_title','hero_tagline','hero_description','hero_photo','hero_photo_size','hero_text_align',
     'symptoms_title','symptoms_items','symptoms_photo','symptoms_photo_size','symptoms_quote',
     'benefits_title','benefits_items','steps_title','steps_items',
-    'detail_description','suitable_items','abonement_items'];
+    'detail_description','suitable_items','abonement_items','seo_title','seo_description','faq_items'];
   var SP_FIELD_TO_INPUT = {
     hero_title: 'spHeroTitle', hero_tagline: 'spHeroTagline', hero_description: 'spHeroDesc', hero_photo: 'spHeroPhoto', hero_photo_size: 'spHeroPhotoSize', hero_text_align: 'spHeroTextAlign',
     symptoms_title: 'spSymptomsTitle', symptoms_items: 'spSymptomsItems', symptoms_photo: 'spSymptomsPhoto', symptoms_photo_size: 'spSymptomsPhotoSize', symptoms_quote: 'spSymptomsQuote',
     benefits_title: 'spBenefitsTitle', benefits_items: 'spBenefitsItems', steps_title: 'spStepsTitle', steps_items: 'spStepsItems',
     detail_description: 'spDetailDesc', suitable_items: 'spSuitableItems', abonement_items: 'spAbonementItems',
+    seo_title: 'spSeoTitle', seo_description: 'spSeoDesc', faq_items: 'spFaqItems',
   };
+  /* Попередження, якщо назву послуги набрано вручну й вона не збігається з прайсом. */
+  function checkSpKey() {
+    var k = spKey.value.trim();
+    document.getElementById('spKeyWarn').style.display = (k && svcKeys.length && svcKeys.indexOf(k) === -1) ? 'block' : 'none';
+  }
 
   function openSvcPageOverlay() {
     loadServiceKeys();
@@ -1895,9 +1921,9 @@
     });
     spKeyDrop.style.display = 'block';
   }
-  spKey.addEventListener('input', function () { renderSpKeyDrop(this.value.trim()); });
+  spKey.addEventListener('input', function () { renderSpKeyDrop(this.value.trim()); checkSpKey(); });
   spKey.addEventListener('focus', function () { renderSpKeyDrop(this.value.trim()); });
-  spKey.addEventListener('blur', function () { setTimeout(function () { spKeyDrop.style.display = 'none'; renderAbonBuilder(); }, 150); });
+  spKey.addEventListener('blur', function () { setTimeout(function () { spKeyDrop.style.display = 'none'; renderAbonBuilder(); checkSpKey(); }, 150); });
 
   function spPhotoField(inputId, previewId, nameId, btnId, fileId) {
     document.getElementById(btnId).addEventListener('click', function () { document.getElementById(fileId).click(); });
@@ -2208,6 +2234,8 @@
     svcPageEditor.classList.add('open');
     spKey.value = key || '';
     SP_FIELDS.forEach(function (f) { document.getElementById(SP_FIELD_TO_INPUT[f]).value = ''; });
+    document.getElementById('spSlug').value = '';
+    document.getElementById('spKeyWarn').style.display = 'none';
     ['spHeroPhotoPreview', 'spSymptomsPhotoPreview'].forEach(function (id) {
       var el = document.getElementById(id); el.src = ''; el.classList.remove('show');
     });
@@ -2233,7 +2261,9 @@
         var sp = document.getElementById('spSymptomsPhotoPreview'); sp.src = p.symptoms_photo; sp.classList.add('show');
       }
       document.getElementById('spPublished').checked = !!p.published;
-      spPreviewLink.href = '/service/' + encodeURIComponent(key);
+      document.getElementById('spSlug').value = p.slug || '';
+      spPreviewLink.href = '/service/' + (p.slug || encodeURIComponent(key));
+      checkSpKey();
       spPreviewLink.style.display = p.published ? 'inline-block' : 'none';
       abonState = abonParseRaw(p.abonement_items);
       abonState.noCategory = !abonHasAnyLevel(abonState);
@@ -2253,6 +2283,7 @@
     var data = {};
     SP_FIELDS.forEach(function (f) { data[f] = document.getElementById(SP_FIELD_TO_INPUT[f]).value; });
     data.published = document.getElementById('spPublished').checked;
+    data.slug = document.getElementById('spSlug').value.trim();
     var btn = this;
     btn.textContent = 'Збереження...'; btn.disabled = true;
     fetch('/api/admin/service-pages/' + encodeURIComponent(key), {
@@ -2260,7 +2291,7 @@
     }).then(function (r) { return r.json(); }).then(function (j) {
       btn.textContent = '💾 Зберегти'; btn.disabled = false;
       if (j.ok) { closeSpEditor(); loadSvcPages(); }
-      else alert('Помилка збереження');
+      else alert(j.error || 'Помилка збереження');
     }).catch(function () { btn.textContent = '💾 Зберегти'; btn.disabled = false; });
   });
 

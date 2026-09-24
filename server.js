@@ -17,6 +17,9 @@ const { Server } = require("socket.io");
 
 /* ---------------- CRM-модулі ---------------- */
 const db = require("./crm/db");
+/* SEO-сторінки (послуги, категорії SPA) — рендер готового HTML на сервері. */
+const seoPages = require("./crm/seo-pages");
+try { seoPages.migrate(); } catch (e) { console.error("[seo] migrate:", e.message); }
 const auth = require("./crm/auth");
 const requireAdmin = auth.requireAuth();
 const notify = require("./crm/notify");
@@ -164,8 +167,12 @@ app.get("/sitemap.xml", function (req, res) {
   try {
     db.prepare("SELECT slug, date FROM blog_posts WHERE published=1 AND (service_key IS NULL OR service_key='')").all()
       .forEach(function (r) { urls.push({ p: "/blog/" + encodeURIComponent(r.slug), f: "monthly", pr: "0.6", d: r.date }); });
-    stmtServiceArticles.all()
-      .forEach(function (r) { urls.push({ p: "/service/" + encodeURIComponent(r.service_key), f: "monthly", pr: "0.8" }); });
+    /* Сторінки послуг — за ЧПУ (slug). Раніше тут стояли service_key зі
+       статей блогу, тож опубліковані сторінки послуг без статті в sitemap
+       не потрапляли зовсім. */
+    db.prepare("SELECT slug, updated_at FROM service_pages WHERE published=1 AND slug<>''").all()
+      .forEach(function (r) { urls.push({ p: "/service/" + r.slug, f: "monthly", pr: "0.8", d: r.updated_at ? new Date(r.updated_at).toISOString() : "" }); });
+    seoPages.CATEGORY_SLUGS.forEach(function (c) { urls.push({ p: "/" + c, f: "weekly", pr: "0.9" }); });
   } catch (e) { console.error("[sitemap]", e.message); }
   var xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     urls.map(function (u) {
@@ -703,21 +710,26 @@ var SVC_PAGE_FIELDS = [
   "symptoms_title", "symptoms_items", "symptoms_photo", "symptoms_photo_size", "symptoms_quote",
   "benefits_title", "benefits_items", "steps_title", "steps_items",
   "detail_description", "suitable_items", "abonement_items",
+  "seo_title", "seo_description", "faq_items",
 ];
 var stmtSvcPageGet   = db.prepare("SELECT * FROM service_pages WHERE service_key=?");
 var stmtSvcPageAll   = db.prepare("SELECT service_key, hero_title, published, updated_at FROM service_pages ORDER BY updated_at DESC");
-var stmtSvcPageKeys  = db.prepare("SELECT service_key FROM service_pages WHERE published=1");
+var stmtSvcPageKeys  = db.prepare("SELECT service_key, slug FROM service_pages WHERE published=1");
+var stmtSvcPageBySlug = db.prepare("SELECT * FROM service_pages WHERE slug=?");
 var stmtSvcPageDel   = db.prepare("DELETE FROM service_pages WHERE service_key=?");
 
 /* Публічно: чи є опублікована сторінка для кожної послуги — щоб на
    головній показувати кнопку "Про цей масаж →" лише там, де є що показати. */
 app.get("/api/service-pages/keys", function (req, res) {
-  res.json({ ok: true, keys: stmtSvcPageKeys.all().map(function (r) { return r.service_key; }) });
+  var rows = stmtSvcPageKeys.all();
+  var slugs = {};
+  rows.forEach(function (r) { if (r.slug) slugs[r.service_key] = r.slug; });
+  res.json({ ok: true, keys: rows.map(function (r) { return r.service_key; }), slugs: slugs });
 });
 
 /* Публічно: повна сторінка для service.html */
 app.get("/api/service-pages/:key", function (req, res) {
-  var row = stmtSvcPageGet.get(req.params.key);
+  var row = stmtSvcPageBySlug.get(req.params.key) || stmtSvcPageGet.get(req.params.key);
   if (!row || !row.published) return res.status(404).json({ ok: false });
   res.json({ ok: true, page: row });
 });
@@ -749,6 +761,12 @@ app.put("/api/admin/service-pages/:key", requireAdmin, function (req, res) {
   });
   var published = d.published ? 1 : 0;
   var now = Date.now();
+  /* ЧПУ: з поля адмінки (транслітеруємо/чистимо), інакше — наявний або
+     згенерований з назви. Зайнятий іншою сторінкою — 409. */
+  var existing = stmtSvcPageGet.get(key);
+  var slug = seoPages.slugify(d.slug || "") || (existing && existing.slug) || seoPages.uniqueSlug(vals.hero_title || key, key);
+  var clash = stmtSvcPageBySlug.get(slug);
+  if (clash && clash.service_key !== key) return res.status(409).json({ ok: false, error: "Адреса /service/" + slug + " уже зайнята іншою сторінкою" });
   var stmt = db.prepare(
     `INSERT INTO service_pages (service_key,${SVC_PAGE_FIELDS.join(",")},published,updated_at)
      VALUES (?,${SVC_PAGE_FIELDS.map(function () { return "?"; }).join(",")},?,?)
@@ -757,7 +775,8 @@ app.put("/api/admin/service-pages/:key", requireAdmin, function (req, res) {
        published=excluded.published, updated_at=excluded.updated_at`
   );
   stmt.run.apply(stmt, [key].concat(SVC_PAGE_FIELDS.map(function (f) { return vals[f]; })).concat([published, now]));
-  res.json({ ok: true });
+  db.prepare("UPDATE service_pages SET slug=? WHERE service_key=?").run(slug, key);
+  res.json({ ok: true, slug: slug });
 });
 
 app.delete("/api/admin/service-pages/:key", requireAdmin, function (req, res) {
@@ -907,8 +926,39 @@ app.get("/blog", function (req, res) {
 app.get("/blog/:slug", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "blog-post.html"));
 });
+/* Сторінка послуги — готовий HTML із сервера (заголовок, H1, ціни, текст,
+   FAQ, JSON-LD), щоб пошуковик бачив зміст одразу, а не після JavaScript.
+   Адреса — ЧПУ /service/<slug>; старі адреси з назвою послуги
+   (/service/SPA%20Ритуал…) ведуть сюди 301-м редиректом. */
 app.get("/service/:key", function (req, res) {
-  res.sendFile(path.join(__dirname, "public", "service.html"));
+  var x = req.params.key;
+  try {
+    var row = stmtSvcPageBySlug.get(x);
+    if (!row) {
+      var byKey = stmtSvcPageGet.get(x);
+      if (byKey && byKey.published && byKey.slug) return res.redirect(301, "/service/" + byKey.slug);
+    }
+    if (!row || !row.published) {
+      return res.status(404).set("Content-Type", "text/html; charset=utf-8").send(seoPages.renderNotFound());
+    }
+    res.set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, must-revalidate" });
+    res.send(seoPages.renderServicePage(row));
+  } catch (e) {
+    console.error("[service-page]", e.message);
+    res.sendFile(path.join(__dirname, "public", "service.html"));
+  }
+});
+/* Категорійні SEO-сторінки: «SPA для двох у Києві», «SPA для одного у Києві». */
+seoPages.CATEGORY_SLUGS.forEach(function (slug) {
+  app.get("/" + slug, function (req, res) {
+    try {
+      res.set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, must-revalidate" });
+      res.send(seoPages.renderCategory(slug));
+    } catch (e) {
+      console.error("[category-page]", e.message);
+      res.redirect(302, "/#services");
+    }
+  });
 });
 
 /* ---------------- Socket.IO ---------------- */

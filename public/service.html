@@ -336,6 +336,41 @@
          по ширині розтягує кожен рядок (крім останнього) до країв. */
       .hero-sub .hero-desc { text-align: justify; }
     }
+    /* Хлібні крихти, ціни в описі, сертифікат, FAQ, пов'язані сторінки */
+    .crumbs { padding: 18px 0 0; font-size: 12.5px; color: var(--text-dim); }
+    .crumbs a { color: var(--text-dim); text-decoration: none; }
+    .crumbs a:hover { color: var(--olive-light); }
+    .crumbs span { margin: 0 7px; opacity: .6; }
+    .crumbs .crumbs-cur { margin: 0; opacity: 1; color: var(--cream); }
+    h3.step-title, h3.benefit-title { margin-top: 0; font-family: inherit; line-height: 1.35; }
+    .detail-prices { margin-top: 6px; }
+    .detail-price-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--text-dim); max-width: 420px; }
+    .detail-price-row b { color: var(--cream); font-weight: 600; white-space: nowrap; }
+    .detail-loc div { margin-bottom: 6px; font-size: 13.5px; }
+    .cert-cta { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; background: rgba(46,61,34,0.22); border: 1px solid var(--line); border-radius: 18px; padding: 28px 30px; }
+    .faq-list { max-width: 860px; border-top: 1px solid var(--line); }
+    .faq-item { border-bottom: 1px solid var(--line); }
+    .faq-item summary { cursor: pointer; list-style: none; padding: 18px 36px 18px 0; position: relative; color: var(--cream); font-size: 15.5px; font-weight: 500; }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after { content: '+'; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--olive-light); font-size: 1.3rem; }
+    .faq-item[open] summary::after { content: '−'; }
+    .faq-item p { color: var(--text-dim); font-size: 14.5px; line-height: 1.7; padding: 0 0 18px; }
+    .related-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 10px 16px; border: 1px solid var(--line); border-radius: 50px; color: var(--cream); text-decoration: none; font-size: 14px; }
+    .related-link:hover, .related-link--cat { border-color: var(--olive-light); color: var(--olive-light); }
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+    .cat-card { background: rgba(46,61,34,0.18); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; }
+    .cat-card--cert { border-color: rgba(122,145,86,0.5); }
+    .cat-card-img { aspect-ratio: 16/10; overflow: hidden; }
+    .cat-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cat-card-body { padding: 20px 20px 22px; display: flex; flex-direction: column; flex: 1; }
+    .cat-card-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); margin: 0 0 8px; line-height: 1.3; }
+    .cat-card-title a { color: inherit; text-decoration: none; }
+    .cat-card-title a:hover { color: var(--olive-light); }
+    .cat-card-desc { font-size: 13.5px; color: var(--text-dim); line-height: 1.6; margin: 0 0 12px; }
+    .cat-card-prices { margin-bottom: 10px; }
+    .cat-card-where { font-size: 12.5px; color: var(--text-dim); margin-bottom: 14px; }
+    .cat-card-actions { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -350,410 +385,39 @@
 
 <div id="pageContent"><div class="loading">Завантаження…</div></div>
 
-<script src="/assets/js/service-groups.js?v=4"></script>
+<script src="/assets/js/service-groups.js?v=6"></script>
+<script src="/assets/js/service-page-render.js?v=1"></script>
 <script>
 (function () {
-  var key = decodeURIComponent(location.pathname.split('/').pop() || '');
+  /* Категорійна сторінка (/spa-dlya-dvoh-kyiv) — повністю готова з сервера. */
+  if (window.__SVC_STATIC__) return;
   var content = document.getElementById('pageContent');
-
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  /* Незамінний пробіл між числом і одиницею ("6000 грн"), щоб "грн" не
-     переносилось саме по собі на новий рядок — решта тексту лишається
-     звичайно переносною, тож рядок не розпирає колонку. */
-  function nbspCur(s) { return s.replace(/ (?=\S+$)/, ' '); }
-  function lines(s) { return String(s || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean); }
-  function pair(line) {
-    var i = line.indexOf('::');
-    if (i === -1) return { title: line.trim(), text: '' };
-    return { title: line.slice(0, i).trim(), text: line.slice(i + 2).trim() };
-  }
-  /* Крок розділу «Як проходить…»: "Заголовок :: Опис :: /фото.jpg".
-     Третя частина необов'язкова — якщо є, над кроком показуємо картинку.
-     Окремо від pair(), бо той усе після першого "::" кладе в опис. */
-  function stepParts(line) {
-    var p = String(line == null ? '' : line).split('::').map(function(x){ return x.trim(); });
-    return { title: p[0] || '', text: p[1] || '', photo: p[2] || '' };
-  }
-  function money(kop) { return Math.round((kop || 0) / 100) + ' грн'; }
-  /* Рядок абонемента: "5 сеансів :: Разом :: Стара сума :: Бейдж :: рекомендовано"
-     Обов'язкові лише перші дві частини; решта — необов'язкові. "Разом" і
-     "Стара сума" можуть містити ціни для кількох рівнів майстра через кому:
-     "Майстер 6000 грн, Топ Майстер 7000 грн, Експерт 8500 грн" — або просто
-     одну суму без рівня, якщо в послуги рівнів немає. */
-  function parseAbonLevels(raw, sessions) {
-    if (!raw) return [];
-    return raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean).map(function(chunk){
-      var lm = chunk.match(/^(Топ Майстер|Майстер|Експерт)\s+(.+)$/i);
-      var level = lm ? lm[1] : '';
-      var price = lm ? lm[2].trim() : chunk;
-      var num = parseFloat(String(price).replace(/[^\d.,]/g, '').replace(',', '.'));
-      var perSession = (sessions && num) ? Math.round(num / sessions) : null;
-      return { level: level, price: price, perSession: perSession != null ? (perSession + ' грн') : '' };
-    });
-  }
-  function parseAbon(line) {
-    var parts = line.split('::').map(function(x){ return x.trim(); });
-    var title = parts[0] || '';
-    var m = title.match(/\d+/);
-    var sessions = m ? parseInt(m[0], 10) : null;
-    var totals = parseAbonLevels(parts[1] || '', sessions);
-    var originals = parseAbonLevels(parts[2] || '', sessions);
-    return {
-      title: title, totals: totals, originals: originals, badge: parts[3] || '',
-      popular: !!parts[4]
-    };
-  }
-  /* Рядок-заголовок "[90 хв]" перемикає групу тривалості для наступних
-     рядків абонементів — так можна задати різні ціни на той самий пакет
-     сеансів залежно від тривалості послуги. Послуги без такого заголовка
-     потрапляють в групу '' (тривалість не має значення, тумблер не показуємо). */
-  function parseAbonemenItems(raw) {
-    var groups = []; // [{duration, items:[]}]
-    var current = null;
-    lines(raw).forEach(function(line){
-      var dm = line.match(/^\[(.+)\]$/);
-      if (dm) {
-        current = { duration: dm[1].trim(), items: [] };
-        groups.push(current);
-        return;
-      }
-      if (!current) { current = { duration: '', items: [] }; groups.push(current); }
-      var a = parseAbon(line);
-      if (a.title) current.items.push(a);
-    });
-    return groups.filter(function(g){ return g.items.length; });
-  }
-  var LEVEL_ORDER = ['Майстер', 'Топ Майстер', 'Експерт'];
-  /* Рівні, за якими послуга РЕАЛЬНО поділена в прайсі (variants) — а не
-     ті, що просто трапились у тексті абонементів. Власник міг завести
-     абонементні пакети "Майстер/Топ Майстер/Експерт" для послуги, в якої
-     в самому прайсі одна ціна на всіх (SPA-ритуали тощо) — тоді тумблер
-     рівня лише плутає, бо на ціну він не впливає. Показуємо тумблер лише
-     коли хоч один рядок послуги в базі справді має рівень у назві. */
-  function collectRealLevels(vs) {
-    var set = {};
-    vs.forEach(function(v){ if (v.realLevel) set[v.realLevel] = true; });
-    return LEVEL_ORDER.filter(function(l){ return set[l]; });
-  }
-  /* Текст уже виводиться курсивом/у визначеному стилі через CSS, тож зайві
-     markdown-хвости, які власник іноді лишає при копіюванні (*текст*,
-     екрановані крапки "\.") прибираємо, а не показуємо як є. */
-  function clean(s) {
-    s = String(s == null ? '' : s).trim();
-    s = s.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '');
-    s = s.replace(/\\\./g, '.');
-    return s;
-  }
-
-  Promise.all([
-    fetch('/api/service-pages/' + encodeURIComponent(key)).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+  var SP = window.OlivaServicePage, SG = window.OlivaServiceGroups;
+  /* Сервер уже відрендерив сторінку й поклав дані сюди — жодних зайвих
+     запитів. Якщо сторінка прийшла без них (напр. стара копія з кешу) —
+     догружаємо, як раніше. */
+  var boot = window.__SVC_PAGE__;
+  var loaded = boot ? Promise.resolve(boot) : Promise.all([
+    fetch('/api/service-pages/' + encodeURIComponent(decodeURIComponent(location.pathname.split('/').pop() || ''))).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     fetch('/api/services').then(function(r){ return r.json(); }).catch(function(){ return { services: [] }; }),
-  ]).then(function (results) {
-    var pageRes = results[0];
-    var servicesRes = results[1];
-    if (!pageRes || !pageRes.ok) {
+    fetch('/api/public/branches').then(function(r){ return r.json(); }).catch(function(){ return { branches: [] }; }),
+  ]).then(function (rs) {
+    if (!rs[0] || !rs[0].ok) return null;
+    return { page: rs[0].page, services: rs[1].services || [], branches: rs[2].branches || [], related: rs[0].related || [], categoryLink: rs[0].categoryLink || null, path: location.pathname };
+  });
+
+  loaded.then(function (data) {
+    if (!data) {
       content.innerHTML = '<div class="loading">Сторінку не знайдено. <a href="/#services" style="color:var(--olive-light)">← До послуг</a></div>';
       return;
     }
-    var p = pageRes.page;
-    ['hero_tagline', 'hero_description', 'symptoms_quote', 'detail_description'].forEach(function (f) {
-      if (p[f]) p[f] = clean(p[f]);
-    });
-    var SG = window.OlivaServiceGroups;
-    var allServices = servicesRes.services || [];
-    // Всі тарифні варіанти саме цієї послуги (за базовою назвою, без рівня й тривалості)
-    var variants = allServices.filter(function (s) {
-      return SG.parseName(s.name).cat === key;
-    }).map(function (s) {
-      var parsed = SG.parseName(s.name);
-      return { level: parsed.level || 'Майстер', realLevel: parsed.level || null, dur: parsed.dur, price: s.price };
-    }).filter(function (v) { return v.dur; }).sort(function (a, b) { return a.dur - b.dur; });
+    var r = SP.build({ page: data.page, services: data.services, branches: data.branches, groups: SG, related: data.related, categoryLink: data.categoryLink, path: data.path || location.pathname });
+    /* Серверна розмітка ідентична — перемальовуємо лише якщо її не було. */
+    if (!boot) { content.innerHTML = r.html; document.title = r.seoTitle; }
+    var ctx = r.ctx, st = ctx.state;
 
-    var minPrice = variants.length ? Math.min.apply(null, variants.map(function(v){ return v.price; })) : null;
-    var abonGroups = parseAbonemenItems(p.abonement_items);
-    var abonLevels = collectRealLevels(variants);
-    var activeLevel = abonLevels.length ? abonLevels[0] : null;
-    function parseDurNum(s) { var m = String(s || '').match(/\d+/); return m ? parseInt(m[0], 10) : null; }
-    /* Перемикач тривалості. Якщо в прайсі послуга має кілька тривалостей
-       (напр. 90 хв — 2150, 130 хв — 2750), беремо їх ПРЯМО з прайсу — раніше
-       вони з'являлись лише тоді, коли власник вручну створював групи
-       абонементів, і без цього сторінка показувала одну цифру «від 2150».
-       Якщо в прайсі тривалість одна — лишається старий варіант: групи
-       абонементів "[90 хв]". */
-    var realDurs = variants.map(function(v){ return v.dur; })
-      .filter(function(d, i, a){ return a.indexOf(d) === i; }).sort(function(a, b){ return a - b; });
-    var useRealSwitch = realDurs.length > 1;
-    var switchOpts = useRealSwitch
-      ? realDurs.map(function(d){ return { label: d + ' хв', num: d }; })
-      : (abonGroups.length > 1 ? abonGroups.map(function(g){ return { label: g.duration, num: parseDurNum(g.duration) }; }) : []);
-    var activeDurIdx = 0;
-    function activeDurNum() {
-      if (switchOpts.length) return switchOpts[activeDurIdx] ? switchOpts[activeDurIdx].num : null;
-      return abonGroups.length ? parseDurNum(abonGroups[0].duration) : null;
-    }
-    /* Чи показувати групу абонементів gi при поточній тривалості. Група без
-       тривалості підходить до будь-якої; з тривалістю — лише до своєї. */
-    function groupVisible(gi) {
-      if (!useRealSwitch) return gi === activeDurIdx;
-      var gd = parseDurNum(abonGroups[gi].duration);
-      return gd == null || gd === activeDurNum();
-    }
-    /* "Ціна за візит" — РЕАЛЬНА ціна з прайсу послуги (той самий рядок у
-       "Послугах" в адмінці), а не розрахунок "разом / кількість сеансів"
-       з абонемента. Повертає { price, exact }: exact=false, якщо під поточну
-       тривалість/рівень підходить кілька різних цін — тоді пишемо «від». */
-    function realPriceFor(durNum, level) {
-      var pool = variants;
-      /* Абонементи інколи мають рівневі пакети (Майстер/Топ Майстер/Експерт)
-         навіть для послуг, де в самому прайсі рівнів немає (одна ціна на
-         всіх) — тоді фільтр за рівнем не знайшов би жодного варіанту.
-         У такому разі беремо ціну без урахування рівня. */
-      if (level) {
-        var byLevel = pool.filter(function(v){ return v.level === level; });
-        if (byLevel.length) pool = byLevel;
-      }
-      if (durNum != null) {
-        var exact = pool.filter(function(v){ return v.dur === durNum; });
-        if (exact.length) pool = exact;
-      }
-      if (!pool.length) return null;
-      var prices = pool.map(function(v){ return v.price; });
-      var min = Math.min.apply(null, prices), max = Math.max.apply(null, prices);
-      return { price: Math.round(min / 100), exact: min === max };
-    }
-    function priceBigHtml(r) {
-      return (r.exact ? '' : '<span>від </span>') + r.price + ' грн';
-    }
-    function durSwitchHtml() {
-      if (switchOpts.length < 2) return '';
-      return '<div class="abon-duration-switch-wrap"><div class="abon-duration-switch">' + switchOpts.map(function(o, i){
-        return '<button type="button" class="abon-duration-btn' + (i === activeDurIdx ? ' active' : '') + '" data-abon-dur="' + i + '">' + esc(o.label) + '</button>';
-      }).join('') + '</div></div>';
-    }
-
-    var title = p.hero_title || key;
-    document.title = title + ' — Студія масажу Oliva';
-    var BASE = 'https://massage-oliva.com';
-    var pageUrl = BASE + location.pathname;
-    var ogImg = p.hero_photo ? (p.hero_photo.indexOf('http') === 0 ? p.hero_photo : BASE + p.hero_photo) : BASE + '/assets/img/og-image.jpg';
-    document.querySelector('meta[name="description"]').content = p.hero_description || p.hero_tagline || title;
-    document.querySelector('meta[property="og:title"]').content = title + ' — Студія масажу Oliva';
-    document.querySelector('meta[property="og:description"]').content = p.hero_description || p.hero_tagline || title;
-    document.querySelector('meta[property="og:url"]').content = pageUrl;
-    document.querySelector('meta[property="og:image"]').content = ogImg;
-    document.querySelector('link[rel="canonical"]').href = pageUrl;
-
-    var html = '';
-
-    // HERO
-    var heroSizeCls = { compact: ' hero--compact', tall: ' hero--tall' }[p.hero_photo_size] || '';
-    var heroInnerCls = p.hero_text_align === 'right' ? ' hero-inner--right' : '';
-    html += '<section class="hero' + heroSizeCls + '">' +
-      (p.hero_photo ? '<img class="hero-bg" src="' + esc(p.hero_photo) + '" alt="' + esc(title) + '">' : '<div class="hero-bg-fallback"></div>') +
-      '<div class="hero-overlay"></div>' +
-      '<div class="wrap"><div class="hero-inner' + heroInnerCls + '">' +
-        '<div class="hero-eyebrow">Студія масажу Oliva · Київ</div>' +
-        '<h1 class="hero-title">' + esc(title) + '</h1>' +
-        '<div class="hero-btns">' +
-          '<a href="/booking.html" class="btn btn-primary">Записатися онлайн →</a>' +
-          '<a href="/certificate.html" class="btn btn-secondary">🎁 Подарувати сертифікат</a>' +
-        '</div>' +
-      '</div></div>' +
-    '</section>';
-
-    // Підзаголовок і опис — під фото шапки, щоб не перекривати об'єкт на фото
-    if (p.hero_tagline || p.hero_description) {
-      html += '<div class="hero-sub">' +
-        (p.hero_tagline ? '<div class="hero-tagline">' + esc(p.hero_tagline) + '</div>' : '') +
-        (p.hero_description ? '<p class="hero-desc">' + esc(p.hero_description) + '</p>' : '') +
-      '</div>';
-    }
-
-    // АБОНЕМЕНТИ
-    if (abonGroups.length) {
-      function renderAbonCards(items){
-        return items.map(function(a){
-          var single = a.totals.length <= 1 && !(a.totals[0] && a.totals[0].level);
-          var body;
-          if (single) {
-            var t = a.totals[0];
-            body =
-              '<div class="abon-card-price">' + esc(t ? (t.perSession || t.price) : '') + '</div>' +
-              (t && t.perSession ? '<div class="abon-card-persession">за сеанс</div>' : '') +
-              '<div class="abon-card-divider"></div>' +
-              '<div class="abon-card-total">Разом: <b>' + nbspCur(esc(t ? t.price : '')) + '</b>' + (a.originals[0] ? ' <del>' + nbspCur(esc(a.originals[0].price)) + '</del>' : '') + '</div>';
-          } else {
-            body = '<div class="abon-levels">' + a.totals.map(function(t, i){
-              var orig = a.originals[i];
-              return '<div class="abon-level-row"><span class="abon-level-name">' + esc(t.level || 'Разом') + '</span>' +
-                '<span class="abon-level-total"><span class="abon-level-total-label">Разом: </span>' + nbspCur(esc(t.price)) + (orig ? ' <del>' + nbspCur(esc(orig.price)) + '</del>' : '') + '</span></div>';
-            }).join('') + '</div>';
-          }
-          return '<div class="abon-card' + (a.popular ? ' abon-card--popular' : '') + (single ? '' : ' abon-card--levels') + '">' +
-            (a.popular ? '<div class="abon-card-popular-label">Найпопулярніший</div>' : '') +
-            (a.badge ? '<div class="abon-badge">' + esc(a.badge) + '</div>' : '') +
-            '<div class="abon-card-title">' + esc(a.title) + '</div>' +
-            body +
-          '</div>';
-        }).join('');
-      }
-      var abonHeaderR = realPriceFor(activeDurNum(), activeLevel) || (minPrice != null ? { price: Math.round(minPrice / 100), exact: false } : null);
-      html += '<div class="abon-section"><div class="abon-block">' +
-        '<div class="abon-grid">' +
-        '<div class="abon-price-col">' +
-          durSwitchHtml() +
-          (abonLevels.length ? '<div class="abon-level-switch-wrap"><div class="abon-level-switch">' + abonLevels.map(function(lv, i){
-            return '<button type="button" class="abon-level-btn' + (i === 0 ? ' active' : '') + '" data-abon-level="' + esc(lv) + '">' + esc(lv) + '</button>';
-          }).join('') + '</div></div>' : '') +
-          '<div class="abon-price-label">Ціна за візит</div>' +
-          (abonHeaderR ? '<div class="abon-price-big" id="abonPriceBig">' + priceBigHtml(abonHeaderR) + '</div>' : '') +
-          '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
-        '</div>' +
-        '<div class="abon-info-box">' +
-        '<div class="abon-info-title">Абонементи</div>' +
-        '<div class="abon-info-sub">Більше турботи — вигідніше</div>' +
-        '<div class="abon-cards-wrap">' +
-        abonGroups.map(function(g, i){
-          return '<div class="abon-cards" data-abon-group="' + i + '"' + (groupVisible(i) ? '' : ' style="display:none;"') + '>' + renderAbonCards(g.items) + '</div>';
-        }).join('') +
-        '<div class="abon-none" style="display:' + (abonGroups.some(function(g, gi){ return groupVisible(gi); }) ? 'none' : 'block') + ';color:var(--text-dim);font-size:13px;padding:18px 4px;">Для цієї тривалості абонементів немає — запитайте в адміністратора.</div>' +
-        '<button type="button" class="abon-carousel-arrow abon-carousel-arrow--prev" data-abon-dir="-1" aria-label="Попередній пакет">&#8249;</button>' +
-        '<button type="button" class="abon-carousel-arrow abon-carousel-arrow--next" data-abon-dir="1" aria-label="Наступний пакет">&#8250;</button>' +
-        '</div>' +
-        '</div>' +
-        '</div>' +
-      '</div></div>';
-    } else if (minPrice != null) {
-      /* Абонементів у послуги немає — але ціну показати треба: раніше вона
-         дублювалась у шапці й у таблиці цін, обидва блоки прибрані, тож без
-         цієї гілки сторінка лишалась зовсім без ціни (напр. «Антивіковий
-         масаж обличчя»). Той самий блок, лише без правої колонки з картками. */
-      var soloR = realPriceFor(activeDurNum(), null);
-      html += '<div class="abon-section"><div class="abon-block abon-block--price-only">' +
-        '<div class="abon-price-col abon-price-col--solo">' +
-          durSwitchHtml() +
-          '<div class="abon-price-label">Ціна за візит</div>' +
-          '<div class="abon-price-big" id="abonPriceBig">' + priceBigHtml(soloR || { price: Math.round(minPrice / 100), exact: false }) + '</div>' +
-          '<a href="/booking.html" class="btn btn-primary" style="width:100%;justify-content:center;">Записатися →</a>' +
-        '</div>' +
-      '</div></div>';
-    }
-
-    // STEPS (перенесено вище, замість блока перків)
-    var stepItems = lines(p.steps_items).map(stepParts).filter(function(x){ return x.title; });
-    if (stepItems.length) {
-      /* Якщо хоч в одного кроку є фото — вирівнюємо решту: кроки без
-         картинки отримують порожнє місце тієї ж висоти, щоб заголовки
-         й номери стояли в один рядок, а не «стрибали». */
-      var anyStepPhoto = stepItems.some(function(s){ return s.photo; });
-      html += '<section class="block symptoms steps-section"><div class="wrap">' +
-        '<h2 class="block-title">' + esc(p.steps_title || 'Як проходить ваш сеанс') + '</h2>' +
-        '<div class="steps-row' + (anyStepPhoto ? ' steps-row--photos' : '') + '">' + stepItems.map(function(s, i){
-          return '<div class="step">' +
-            (anyStepPhoto ? '<div class="step-photo' + (s.photo ? '' : ' step-photo--empty') + '">' +
-              (s.photo ? '<img src="' + esc(s.photo) + '" alt="' + esc(s.title) + '" loading="lazy">' : '') +
-            '</div>' : '') +
-            '<div class="step-num">0' + (i+1) + '</div>' +
-            '<div class="step-title">' + esc(s.title) + '</div>' +
-            (s.text ? '<div class="step-text">' + esc(s.text) + '</div>' : '') +
-          '</div>';
-        }).join('') + '</div>' +
-      '</div></section>';
-    }
-
-    // SYMPTOMS
-    var symptomItems = lines(p.symptoms_items);
-    if (symptomItems.length) {
-      var symPhoto = p.symptoms_photo || p.hero_photo;
-      var symPhotoSizeCls = { square: ' symptoms-photo--square', wide: ' symptoms-photo--wide', tall: ' symptoms-photo--tall' }[p.symptoms_photo_size] || '';
-      html += '<section class="block symptoms"><div class="wrap"><div class="symptoms-grid">' +
-        '<div>' +
-          '<h2 class="block-title">' + esc(p.symptoms_title || 'Знайоме відчуття?') + '</h2>' +
-          '<div class="symptoms-list">' + symptomItems.map(function(x){ return '<div class="symptoms-item"><span class="dot"></span>' + esc(x) + '</div>'; }).join('') + '</div>' +
-          (p.symptoms_quote ? '<div class="symptoms-quote">' + esc(p.symptoms_quote) + '</div>' : '') +
-        '</div>' +
-        (symPhoto ? '<div class="symptoms-photo' + symPhotoSizeCls + '"><img src="' + esc(symPhoto) + '" alt=""></div>' : '') +
-      '</div></div></section>';
-    }
-
-    // BENEFITS
-    var benefitItems = lines(p.benefits_items).map(pair).filter(function(x){ return x.title; });
-    if (benefitItems.length) {
-      html += '<section class="block"><div class="wrap">' +
-        '<h2 class="block-title">' + esc(p.benefits_title || 'Що ви відчуєте після масажу') + '</h2>' +
-        '<div class="benefits-grid benefits-grid--last">' + benefitItems.map(function(b){
-          return '<div class="benefit-card"><div class="benefit-title">' + esc(b.title) + '</div>' + (b.text ? '<div class="benefit-text">' + esc(b.text) + '</div>' : '') + '</div>';
-        }).join('') + '</div>' +
-      '</div></section>';
-    }
-
-    // DETAIL + PRICING
-    var suitableItems = lines(p.suitable_items);
-    html += '<section class="block detail"><div class="wrap"><div class="detail-grid">' +
-      '<div>' +
-        '<div class="detail-eyebrow">Послуга</div>' +
-        '<h2 class="detail-title">' + esc(title) + '</h2>' +
-        (p.detail_description || p.hero_description ? '<p class="detail-desc">' + esc(p.detail_description || p.hero_description) + '</p>' : '') +
-      '</div>' +
-      '<div>' +
-        (suitableItems.length ? '<div class="suitable-title">Вам підійде цей масаж, якщо…</div><div class="suitable-list">' +
-          suitableItems.map(function(x){ return '<div class="suitable-item"><span class="check">✓</span>' + esc(x) + '</div>'; }).join('') +
-        '</div>' : '') +
-        '<div class="detail-loc">📍 Київ · Шулявська · район Індустріального мосту</div>' +
-      '</div>' +
-    '</div></div></section>';
-
-    // КОНТАКТИ (як на головній)
-    html += '<section class="contacts-section" id="contacts"><div class="wrap">' +
-      '<div class="section-label">Де нас знайти</div>' +
-      '<h2 class="section-title">Контакти</h2>' +
-      '<div class="contacts-grid">' +
-        '<div>' +
-          '<div class="contact-block">' +
-            '<a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="contact-value" style="display:block;">Київ, вул. Борщагівська, 145</a>' +
-            '<a href="https://maps.google.com/?q=50.3864358,30.4572199" target="_blank" rel="noopener" class="contact-value" style="display:block;margin-top:4px;">Київ, вул. Успішна, 8</a></div>' +
-          '<div class="contact-block"><div class="contact-label">Телефон</div><a href="tel:+380974340112" class="contact-value">+38 097 434 01 12</a></div>' +
-          '<div class="contact-block"><div class="contact-label">Графік роботи</div><div class="contact-value">Щодня 09:00 — 21:30</div></div>' +
-          '<div class="contact-block"><div class="contact-label">Пошта</div><a href="mailto:olivastudio96@gmail.com" class="contact-value">olivastudio96@gmail.com</a></div>' +
-          '<div class="social-row">' +
-            '<a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener" class="social-btn social-btn--instagram" title="Instagram"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>' +
-            '<a href="https://www.tiktok.com/@oliva_massage_studio" target="_blank" rel="noopener" class="social-btn social-btn--tiktok" title="TikTok"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg></a>' +
-            '<a href="https://wa.me/380974340112" target="_blank" rel="noopener" class="social-btn social-btn--whatsapp" title="WhatsApp"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg></a>' +
-            '<a href="https://viber.me/+380974340112" class="social-btn social-btn--viber" title="Viber"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.398.002C8.865-.03 3.73.734 1.37 5.885c-1.177 2.535-1.33 5.84-1.13 8.68.198 2.84.772 5.63 2.698 7.226 0 0 2.56 2.657 8.548 2.905v2.527s-.038.992.617.992c.803 0 1.288-.824 2.063-1.703.43-.485.98-1.154 1.4-1.648 3.87.327 6.842-.422 7.177-.533.78-.254 5.197-1.7 5.197-7.74 0-5.955-2.855-9.61-6.285-10.964-1.12-.44-2.98-.82-5.587-.863-.237-.003-.474-.004-.71-.003zM11.47 2.4c.23-.002.46 0 .687.004 2.306.038 3.982.375 4.946.762 2.817 1.104 5.127 4.146 5.127 9.265 0 5.093-3.55 6.15-4.177 6.354-.27.088-2.966.732-6.328.526 0 0-2.51 3.025-3.296 3.815-.124.125-.265.174-.36.15-.134-.034-.17-.19-.168-.42l.02-3.7s-.004 0 0 0c-4.995-.617-5.29-5.45-5.427-7.32-.136-1.872.006-4.834.994-7.006 1.933-4.163 6.197-4.434 7.98-4.43zm.194 3.217c-.327 0-.327.504 0 .508 3.09.02 4.855 1.816 4.873 4.982.003.33.51.327.507 0-.02-3.445-1.993-5.47-5.38-5.49zm-2.44 1.37c-.31-.018-.614.063-.9.24-.273.168-.443.366-.588.63l-.04.076c-.474.86-.456 1.712.007 2.706l.028.063c.393.87 1.24 2.107 2.367 3.093 1.133.99 2.552 1.882 4.01 2.155l.064.01c1.254.198 2.073-.05 2.648-.585l.012-.012c.22-.224.393-.434.545-.67.194-.3.217-.61.063-.87l-.013-.02c-.454-.706-1.264-1.358-1.714-1.533-.27-.104-.54-.06-.756.173l-.457.528c-.214.244-.534.224-.534.224-2.47-.638-3.138-3.163-3.138-3.163s-.023-.322.218-.535l.524-.46c.232-.218.274-.488.168-.757-.18-.452-.835-1.265-1.543-1.72-.19-.122-.39-.19-.592-.19-.003 0-.005 0-.007 0l-.002-.002zM12.2 7.617c-.33 0-.33.517 0 .52 1.96.016 2.917.993 2.93 2.99.003.33.52.327.516 0-.016-2.277-1.17-3.493-3.447-3.51z"/></svg></a>' +
-            '<a href="https://t.me/massage_oliva_kyiv" target="_blank" rel="noopener" class="social-btn social-btn--telegram" title="Telegram"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.96 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></a>' +
-            '<a href="https://youtube.com/@oliva_massage_studio" target="_blank" rel="noopener" class="social-btn social-btn--youtube" title="YouTube"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg></a>' +
-            '<a href="https://www.threads.net/@oliva_massage_studio" target="_blank" rel="noopener" class="social-btn social-btn--threads" title="Threads"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.028-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.044 0 5.49 1.045 7.148 3.01 1.504 1.788 2.267 4.184 2.267 7.123 0 .44-.015.877-.044 1.308l-.006.082c-.11 1.649-.547 3.051-1.3 4.172-.824 1.225-1.985 2.063-3.452 2.489a9.26 9.26 0 0 1-2.622.371zm3.553-9.48c-.232-1.225-.856-1.972-1.787-2.09a3.494 3.494 0 0 0-.439-.03c-.626 0-1.175.193-1.631.573-.508.424-.82 1.044-.916 1.793a5.65 5.65 0 0 0-.044.728c0 .18.007.357.022.527.09.917.425 1.657.971 2.127.456.395 1.045.601 1.7.601.11 0 .222-.007.336-.02.75-.09 1.328-.418 1.722-1.007.36-.542.543-1.261.543-2.137 0-.084-.002-.169-.006-.253l-.458-.564z"/></svg></a>' +
-          '</div>' +
-        '</div>' +
-        '<div>' +
-          '<div class="map-embed-wrap">' +
-            '<div class="map-embed-item">' +
-              '<div class="map-embed-label">Борщагівська, 145</div>' +
-              '<iframe src="https://maps.google.com/maps?q=Київ,+вул.+Борщагівська,+145&z=16&output=embed" width="100%" height="330" style="border:0;border-radius:16px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>' +
-              '<a href="https://maps.google.com/?q=Київ,+вул.+Борщагівська,+145" target="_blank" rel="noopener" class="map-open-link">Відкрити в Google Maps →</a>' +
-            '</div>' +
-            '<div class="map-embed-item">' +
-              '<div class="map-embed-label">Успішна, 8</div>' +
-              '<iframe src="https://maps.google.com/maps?q=50.3864358,30.4572199&z=16&output=embed" width="100%" height="330" style="border:0;border-radius:16px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>' +
-              '<a href="https://maps.google.com/?q=50.3864358,30.4572199" target="_blank" rel="noopener" class="map-open-link">Відкрити в Google Maps →</a>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div></section>';
-
-    content.innerHTML = html;
-
-    /* На мобільному картки абонементів — карусель; за замовчуванням видно
-       першу (5 сеансів), а саме "Найпопулярніший" (зазвичай середній,
-       10 сеансів) має бути головним, з рештою по боках. Центруємо його
-       в межах ЙОГО карусельного контейнера вручну через scrollLeft —
-       scrollIntoView({block:'nearest'}) тут не підходить: якщо картка ще
-       не потрапляє у вертикальну область перегляду (секція абонементів
-       нижче середини сторінки), браузер сам вирішує прокрутити НАЙБЛИЖЧОГО
-       скрольованого предка і за вертикаллю теж — а найближчий вертикально
-       скрольований предок це сама сторінка, тому вона стрибала на кількасот
-       пікселів вниз одразу при завантаженні, ховаючи шапку й опис. */
+    /* На мобільному картки абонементів — карусель; центруємо «Найпопулярніший»
+       вручну через scrollLeft (scrollIntoView стрибав сторінкою вниз). */
     function centerPopularCard(box) {
       if (!box || window.matchMedia('(min-width: 781px)').matches) return;
       var popular = box.querySelector('.abon-card--popular');
@@ -764,13 +428,10 @@
     content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
       if (box.style.display !== 'none') centerPopularCard(box);
     });
-
-    /* Стрілки-підказка, що можна гортати картки абонементів (мобільна
-       карусель) — самого "підгляду" країв сусідніх карток виявилось
-       недостатньо. Одна пара стрілок працює з тим блоком .abon-cards,
-       що зараз видимий (activeDurIdx). */
     function activeAbonBox() {
-      return content.querySelector('.abon-cards[data-abon-group="' + activeDurIdx + '"]');
+      var boxes = content.querySelectorAll('.abon-cards[data-abon-group]');
+      for (var i = 0; i < boxes.length; i++) if (boxes[i].style.display !== 'none') return boxes[i];
+      return null;
     }
     function updateArrowState() {
       var box = activeAbonBox();
@@ -788,10 +449,7 @@
         var card = box.querySelector('.abon-card');
         var cardWidth = card ? card.getBoundingClientRect().width : box.clientWidth * 0.82;
         var dir = parseInt(btn.getAttribute('data-abon-dir'), 10);
-        /* behavior:'smooth' тут ненадійний — у поєднанні зі
-           scroll-snap-type:x mandatory деякі рушії просто ігнорують
-           виклик і скрол не відбувається взагалі. 'instant' завжди
-           спрацьовує; сам снеп все одно згладжує позицію картки. */
+        /* 'instant' — з scroll-snap 'smooth' деякі рушії ігнорують. */
         box.scrollBy({ left: dir * (cardWidth + 14), behavior: 'instant' });
       });
     });
@@ -800,20 +458,18 @@
     });
     updateArrowState();
 
-    // Перемикачі тривалості й рівня майстра для абонементів — обидва
-    // впливають на велику цифру "Ціна за візит" зверху блока.
     function updateAbonPrice(){
       var big = content.querySelector('#abonPriceBig');
-      var r = realPriceFor(activeDurNum(), activeLevel);
-      if (big && r) big.innerHTML = priceBigHtml(r);
+      var pr = ctx.realPriceFor(ctx.activeDurNum(), st.level);
+      if (big && pr) big.innerHTML = ctx.priceBigHtml(pr);
     }
     content.querySelectorAll('.abon-duration-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
-        activeDurIdx = parseInt(btn.getAttribute('data-abon-dur'), 10);
+        st.durIdx = parseInt(btn.getAttribute('data-abon-dur'), 10);
         content.querySelectorAll('.abon-duration-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
         var anyShown = false;
         content.querySelectorAll('.abon-cards[data-abon-group]').forEach(function(box){
-          var isActive = groupVisible(parseInt(box.getAttribute('data-abon-group'), 10));
+          var isActive = ctx.groupVisible(parseInt(box.getAttribute('data-abon-group'), 10));
           box.style.display = isActive ? '' : 'none';
           if (isActive) { anyShown = true; centerPopularCard(box); }
         });
@@ -825,7 +481,7 @@
     });
     content.querySelectorAll('.abon-level-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
-        activeLevel = btn.getAttribute('data-abon-level');
+        st.level = btn.getAttribute('data-abon-level');
         content.querySelectorAll('.abon-level-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
         updateAbonPrice();
       });
