@@ -318,6 +318,15 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .svc-meta { color: rgba(212,207,198,0.58); font-size: .8rem; }
 .svc-more { display: inline-block; color: var(--gold); font-size: .78rem; text-decoration: none; opacity: .92; }
 .svc-more:hover { text-decoration: underline; }
+/* «Детальніше» розгортає опис прямо в картці: картка стає на всю ширину
+   сітки, щоб текст читався, а не тиснувся в половину екрана. */
+.svc-card.open { grid-column: 1 / -1; cursor: default; }
+.svc-desc { display: none; margin: 10px 0 4px; font-size: .84rem; line-height: 1.6; color: rgba(242,237,228,0.82); white-space: pre-line; }
+.svc-card.open .svc-desc { display: block; }
+.svc-actions { display: none; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.svc-card.open .svc-actions { display: flex; }
+.svc-pick { background: var(--gold); color: #1a140d; border: none; border-radius: 50px; padding: 9px 16px; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.svc-page { color: var(--gold); font-size: .8rem; align-self: center; text-decoration: none; }
 .showmore { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px 16px 0; width: calc(100% - 32px); padding: 15px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 14px; color: var(--text); font-size: .92rem; cursor: pointer; font-family: inherit; }
 
 /* Крок 3 — майстри */
@@ -1109,6 +1118,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     ["не вміщується у вільний час", "doesn't fit the available time"],
     ["Прибрати", "Remove"], ["Додати", "Add"],
     ["Детальніше →", "Learn more →"],
+    ["Детальніше", "Details"], ["Про цей масаж", "About this massage"],
     ["Завантаження…", "Loading…"],
     ["Помилка завантаження. Оновіть сторінку.", "Loading error. Please refresh the page."],
     ["Помилка завантаження.", "Loading error."],
@@ -1129,6 +1139,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     ["немає вільних віконець на цю дату. Спробуйте іншу дату або", "has no free slots on this date. Try another date or"],
     ["Послуга", "Service"], ["Майстер", "Therapist"], ["Додатково", "Extra"],
     ["Тривалість", "Duration"], ["Дата", "Date"], ["Час", "Time"], ["Вартість", "Cost"],
+    ["Обрати", "Choose"],
   ];
   function tr(text) {
     if (text == null) return text;
@@ -1166,8 +1177,10 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   Promise.all([
     fetch("/api/public/services").then(function(r) { return r.json(); }),
     fetch("/api/public/all-masters").then(function(r) { return r.json(); }),
-    fetch("/api/public/branches").then(function(r) { return r.json(); }).catch(function() { return { ok: false }; })
+    fetch("/api/public/branches").then(function(r) { return r.json(); }).catch(function() { return { ok: false }; }),
+    fetch("/api/service-pages/keys").then(function(r) { return r.json(); }).catch(function() { return { ok: false }; })
   ]).then(function(rs) {
+    if (rs[3] && rs[3].ok && rs[3].slugs) servicePageSlugs = rs[3].slugs;
     allServices = rs[0].ok ? rs[0].services : [];
     allMasters  = rs[1].ok ? rs[1].masters  : [];
     branches = (rs[2] && rs[2].ok) ? rs[2].branches : [];
@@ -1328,6 +1341,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   // Посилання «Детальніше» на опис послуги. ПОКИ всі ведуть на розділ послуг
   // головного сайту; згодом сюди можна додати конкретні якорі/сторінки per-категорія.
   var SERVICE_INFO_LINKS = {};
+  /* Базова назва послуги → slug опублікованої сторінки «Про цей масаж». */
+  var servicePageSlugs = {}; // заповнюється разом із прайсом (див. «Завантаження»)
   function serviceInfoUrl(cat) { return SERVICE_INFO_LINKS[cat] || "/#services"; }
 
   // Крок 2: Конкретні послуги (категорії) в межах обраної групи
@@ -1342,7 +1357,8 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
     availServices().forEach(function(s) {
       var p = parseName(s.name);
       if (resolveGroup(s, p.cat) !== state.group) return;
-      if (!cats[p.cat]) cats[p.cat] = { min: Infinity, dur: null, img: null, hit: false };
+      if (!cats[p.cat]) cats[p.cat] = { min: Infinity, dur: null, img: null, hit: false, desc: "" };
+      if (!cats[p.cat].desc && s.description) cats[p.cat].desc = s.description;
       if (s.price < cats[p.cat].min) { cats[p.cat].min = s.price; cats[p.cat].dur = p.dur || s.duration_min; }
       if (!cats[p.cat].img && s.image_url) cats[p.cat].img = s.image_url;
       if (s.featured) cats[p.cat].hit = true;
@@ -1358,13 +1374,34 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         (c.img ? '<img class="svc-photo" src="' + c.img + '" alt="" />' : '<div class="svc-photo-ph">' + (ICONS[cat] || "🌿") + '</div>') +
         (c.hit ? '<span class="svc-hit">' + tr("Хіт") + '</span>' : '') +
         '<div class="svc-info"><div class="svc-name">' + tr(cat) + '</div>' +
-          '<a class="svc-more" href="' + serviceInfoUrl(cat) + '" target="_blank" rel="noopener noreferrer">' + tr("Детальніше →") + '</a>' +
+          /* Раніше «Детальніше» відкривало головну сторінку сайту — клієнт
+             губив запис. Тепер опис розгортається прямо тут. */
+          (c.desc || servicePageSlugs[cat]
+            ? '<a class="svc-more" href="#" role="button">' + tr("Детальніше") + ' ▾</a>' +
+              (c.desc ? '<div class="svc-desc">' + esc(tr(c.desc)) + '</div>' : '') +
+              '<div class="svc-actions"><button type="button" class="svc-pick">' + tr("Обрати") + ' →</button>' +
+                (servicePageSlugs[cat] ? '<a class="svc-page" href="/service/' + esc(servicePageSlugs[cat]) + '" target="_blank" rel="noopener">' + tr("Про цей масаж") + ' ↗</a>' : '') +
+              '</div>'
+            : '') +
         '</div>';
-      var moreLink = card.querySelector(".svc-more");
-      if (moreLink) moreLink.addEventListener("click", function(e) { e.stopPropagation(); }); // відкрити опис, не обираючи послугу
-      card.addEventListener("click", function() {
+      function pick() {
         state.category = cat; state.master = null; state.service = null; state.start_min = null;
         renderMasters(); goStep(3);
+      }
+      var moreLink = card.querySelector(".svc-more");
+      if (moreLink) moreLink.addEventListener("click", function(e) {
+        e.preventDefault(); e.stopPropagation(); // розгорнути опис, не обираючи послугу
+        var open = card.classList.toggle("open");
+        moreLink.innerHTML = tr("Детальніше") + (open ? " ▴" : " ▾");
+        if (open) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+      var pickBtn = card.querySelector(".svc-pick");
+      if (pickBtn) pickBtn.addEventListener("click", function(e) { e.stopPropagation(); pick(); });
+      var pageLink = card.querySelector(".svc-page");
+      if (pageLink) pageLink.addEventListener("click", function(e) { e.stopPropagation(); });
+      card.addEventListener("click", function() {
+        if (card.classList.contains("open")) return; // у розгорнутій картці обирають кнопкою
+        pick();
       });
       box.appendChild(card);
     });

@@ -70,7 +70,7 @@ router.get("/branches", function (req, res) {
 /* Активні послуги */
 router.get("/services", function (req, res) {
   const rows = db.prepare(
-    "SELECT id, name, duration_min, price, image_url, category, featured FROM services WHERE active = 1 ORDER BY sort_order, id"
+    "SELECT id, name, duration_min, price, image_url, category, featured, description FROM services WHERE active = 1 ORDER BY sort_order, id"
   ).all();
   res.json({ ok: true, services: rows });
 });
