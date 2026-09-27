@@ -117,6 +117,8 @@
        послугу й категорію — клієнту лишається обрати майстра й час. */
     var cheapest = variants.slice().sort(function (a, b) { return a.price - b.price; })[0];
     var bookHref = cheapest ? "/booking.html?service=" + cheapest.id : "/booking.html";
+    /* Сертифікат одразу на цю послугу (certificate.html?service=<назва>). */
+    var certHref = "/certificate.html" + (variants.length ? "?service=" + encodeURIComponent(key) : "");
 
     var abonGroups = parseAbonemenItems(p.abonement_items);
     var abonLevels = collectRealLevels(variants);
@@ -197,7 +199,7 @@
         '<h1 class="hero-title">' + esc(title) + "</h1>" +
         '<div class="hero-btns">' +
           '<a href="' + bookHref + '" class="btn btn-primary">Записатися онлайн →</a>' +
-          '<a href="/certificate.html" class="btn btn-secondary">🎁 Подарувати сертифікат</a>' +
+          '<a href="' + certHref + '" class="btn btn-secondary">🎁 Подарувати сертифікат</a>' +
         "</div>" +
       "</div></div>" +
     "</section>";
@@ -349,7 +351,7 @@
     html += '<section class="block"><div class="wrap"><div class="cert-cta">' +
       '<div><h2 class="block-title" style="margin-bottom:8px;">Подарунковий сертифікат на ' + esc(title) + "</h2>" +
       '<p class="detail-desc" style="margin:0;">Можна подарувати саме цю процедуру або суму на будь-яку послугу студії — електронний чи паперовий сертифікат, з отриманням у студії або доставкою.</p></div>' +
-      '<a href="/certificate.html" class="btn btn-secondary">🎁 Оформити сертифікат</a>' +
+      '<a href="' + certHref + '" class="btn btn-secondary">🎁 Оформити сертифікат</a>' +
     "</div></div></section>";
 
     // FAQ

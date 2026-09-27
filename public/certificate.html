@@ -964,7 +964,27 @@
   fetch('/api/services').then(function(r){ return r.json(); }).then(function(res){
     var built = buildServicesFromPrice(res && (res.services || res));
     if (built && built.length) { SERVICES = built; renderInitialPickers(); }
-  }).catch(function(){});
+    applyServiceDeepLink();
+  }).catch(function(){ applyServiceDeepLink(); });
+
+  /* ?service=<назва послуги> — перехід із кнопки «Сертифікат» на сторінці
+     послуги чи SPA-підбірці: одразу відкриваємо саме цю послугу, клієнту
+     лишається обрати тривалість і заповнити контакти. Шукаємо вже в живому
+     прайсі (у запасному списку нових послуг може не бути). */
+  var deepLinkDone = false;
+  function applyServiceDeepLink() {
+    if (deepLinkDone) return;
+    deepLinkDone = true;
+    var want = new URLSearchParams(location.search).get('service');
+    if (!want) return;
+    var norm = function (x) { return String(x || '').toLowerCase().replace(/[«»"'“”]/g, '').replace(/\s+/g, ' ').trim(); };
+    var s = SERVICES.filter(function (x) { return x.name === want; })[0] ||
+            SERVICES.filter(function (x) { return norm(x.name) === norm(want); })[0];
+    if (!s) return;
+    selectCategory(s.id);
+    var box = document.getElementById('fg-service');
+    if (box) setTimeout(function () { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+  }
 
   /* ── ВКЛАДКИ ── */
   document.querySelectorAll('.picker-tab').forEach(function(tab){

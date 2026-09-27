@@ -180,14 +180,12 @@ function renderCategoryHtml(slug, services, branches, pagesByKey) {
           }).join("") + "</div>" +
           (c.where.length ? '<div class="cat-card-where">📍 ' + esc(c.where.join(" · ")) + "</div>" : "") +
           '<div class="cat-card-actions"><a href="' + c.book + '" class="btn btn-primary">Записатися →</a>' +
-          (c.href ? '<a href="' + esc(c.href) + '" class="btn btn-secondary">Детальніше</a>' : "") + "</div>" +
+          (c.href ? '<a href="' + esc(c.href) + '" class="btn btn-secondary">Детальніше</a>' : "") +
+          /* Сертифікат одразу на цю програму — окрему картку «Сертифікат на
+             SPA» прибрано на прохання власника. */
+          '<a href="/certificate.html?service=' + encodeURIComponent(c.key) + '" class="btn btn-secondary">🎁 Сертифікат</a>' + "</div>" +
         "</div></article>";
     }).join("") +
-    '<article class="cat-card cat-card--cert"><div class="cat-card-body">' +
-      '<h3 class="cat-card-title">Подарунковий сертифікат на SPA</h3>' +
-      '<p class="cat-card-desc">Сертифікат на будь-яку програму зі списку або на суму — електронний чи паперовий, з отриманням у студії або доставкою.</p>' +
-      '<div class="cat-card-actions"><a href="/certificate.html" class="btn btn-primary">🎁 Оформити</a></div>' +
-    "</div></article>" +
     "</div></div></section>";
 
   html += '<section class="block"><div class="wrap"><h2 class="block-title">Як обрати програму</h2><div class="benefits-grid">' +
