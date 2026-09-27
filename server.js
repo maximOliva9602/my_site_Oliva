@@ -162,7 +162,6 @@ app.get("/sitemap.xml", function (req, res) {
     { p: "/certificate", f: "monthly", pr: "0.7" },
     { p: "/office", f: "monthly", pr: "0.7" },
     { p: "/uspishna", f: "monthly", pr: "0.7" },
-    { p: "/masazh-solomyanskyi-rayon", f: "monthly", pr: "0.8" },
     { p: "/blog", f: "weekly", pr: "0.6" },
   ];
   try {
@@ -420,17 +419,14 @@ app.get("/master", function (req, res) {
 app.get("/office", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "office.html"));
 });
-/* Сторінки студій за районом: /uspishna, /masazh-solomyanskyi-rayon. */
-seoPages.LOCATION_SLUGS.forEach(function (slug) {
-  app.get("/" + slug, function (req, res) {
-    try {
-      res.set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, must-revalidate" });
-      res.send(seoPages.renderLocation(slug));
-    } catch (e) {
-      console.error("[location " + slug + "]", e.message);
-      res.redirect(302, "/#contacts");
-    }
-  });
+app.get("/uspishna", function (req, res) {
+  try {
+    res.set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache, must-revalidate" });
+    res.send(seoPages.renderUspishna());
+  } catch (e) {
+    console.error("[uspishna]", e.message);
+    res.redirect(302, "/#contacts");
+  }
 });
 
 // API для майстра — розклад

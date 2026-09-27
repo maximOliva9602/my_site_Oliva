@@ -292,73 +292,14 @@ function renderNotFound() {
   }, "/", null, { noindex: true });
 }
 
-/* ---- Сторінки студій за районом: /uspishna, /masazh-solomyanskyi-rayon ----
+/* ---- Сторінка філії «Успішна, 8» ----
    Показуємо лише послуги, які справді можна записати на цій адресі:
    послуги філії (branch_services; порожньо = усі) ∩ послуги майстрів,
    прив'язаних до філії (branch_masters → master_services). Ціни — саме ці
-   рядки прайсу, тобто за рівнем тих майстрів, що там приймають.
-   Текст під район — щоб сторінка знаходилась за запитами на кшталт
-   «масаж Солом'янський район» чи «масаж Іподром». */
-const LOCATIONS = {
-  "uspishna": {
-    branchRe: /успішн/i, photoKey: "page_photo_uspishna",
-    title: "Масаж на Успішній, 8 — Теремки, Іподром | Студія Oliva Київ",
-    keywords: "масаж Теремки, масаж Іподром Київ, масаж Успішна 8, масаж ЖК Лікоград, масаж Голосіївський район, масаж спини Теремки, антицелюлітний масаж Теремки",
-    metaDesc: "Студія масажу Oliva на вул. Успішна, 8 — Теремки, Голосіївський район, поруч метро «Іподром» і ЖК «Лікоград». Загально-оздоровчий, спортивний, антицелюлітний масаж, масаж спини та обличчя.",
-    h1: 'Oliva на <span class="nowrap">Успішній, 8</span>', h1Class: "us-h1--one",
-    sub: "Ваш простір спокою на Теремках — біля метро «Іподром» та ЖК «Лікоград».",
-    photoAlt: "Студія масажу Oliva на вул. Успішна, 8 (Теремки)", factPlace: "Теремки · Іподром",
-    menuServices: "Послуги на Успішній",
-    bizName: "Студія масажу Oliva — Успішна, 8 (Теремки)", street: "вул. Успішна, 8", district: "Голосіївський район",
-    geo: [50.3864358, 30.4572199],
-    nearHint: "Теремки, поруч ЖК «Лікоград» і станція метро «Іподром». Щодня 09:00–21:30.",
-    otherHref: "/masazh-solomyanskyi-rayon", otherLabel: "Борщагівська, 145 (Солом'янський район)",
-    aboutTitle: "Масаж на Теремках, біля метро «Іподром»",
-    about: [
-      "Студія Oliva на вул. Успішна, 8 — масажний кабінет для мешканців Теремків, ЖК «Лікоград» і всього Голосіївського району. Не потрібно їхати в центр міста: професійний масаж поруч із домом, біля станції метро «Іподром».",
-      "Тут приймають досвідчені майстри студії: загально-оздоровчий і релакс-масаж, масаж спини та шийно-комірцевої зони, спортивний, антицелюлітний і лімфодренажний масаж, масаж обличчя. Ціни на сторінці — актуальні, саме для цієї адреси.",
-      "Записатися можна онлайн за хвилину: оберіть послугу, тривалість і зручний час. Працюємо щодня з 9:00 до 21:30. SPA-програми з фітобочкою проходять у нашій другій студії — на <a href=\"/masazh-solomyanskyi-rayon\">Борщагівській, 145</a>.",
-    ],
-    faq: [
-      ["Як записатися саме на Успішну, 8?", "Натисніть «Записатися онлайн» на цій сторінці — запис відкриється з уже обраною адресою, і ви побачите вільний час саме тут. Або зателефонуйте: 097 434 01 12."],
-      ["Чому ціни тут можуть відрізнятися від Борщагівської?", "Ціна залежить від рівня майстра. На цій сторінці показані ціни саме тих майстрів, які приймають на Успішній, 8 — за нашим актуальним прайсом."],
-      ["Як нас знайти?", "Вул. Успішна, 8 — район Теремки, поруч ЖК «Лікоград», недалеко від станції метро «Іподром». Кнопка «Прокласти маршрут» нижче відкриє навігацію в Google Картах."],
-      ["Чи можна придбати подарунковий сертифікат з отриманням тут?", "Так. На сторінці сертифіката оберіть студію отримання «Успішна»."],
-    ],
-  },
-  "masazh-solomyanskyi-rayon": {
-    branchRe: /борщагівськ/i, photoKey: "page_photo_solomyanka",
-    title: "Масаж у Солом'янському районі — Шулявська, Борщагівська 145 | Oliva Київ",
-    keywords: "масаж Солом'янський район, масаж Шулявська, масаж Шулявка, масаж Борщагівська, масаж Солом'янка, масаж Відрадний, масаж Караваєві дачі, SPA Солом'янський район, фітобочка Київ",
-    metaDesc: "Студія масажу Oliva у Солом'янському районі Києва — вул. Борщагівська, 145, поруч метро «Шулявська». Класичний, спортивний, антицелюлітний, парний масаж, SPA-ритуали та фітобочка.",
-    h1: "Масаж у Солом'янському районі", h1Class: "",
-    sub: "Студія Oliva на Борщагівській, 145 — поруч із метро «Шулявська» та Індустріальним мостом.",
-    photoAlt: "Студія масажу Oliva на вул. Борщагівська, 145 — Солом'янський район", factPlace: "Солом'янка · Шулявська",
-    menuServices: "Послуги на Борщагівській",
-    bizName: "Студія масажу Oliva — Борщагівська, 145 (Солом'янський район)", street: "вул. Борщагівська, 145", district: "Солом'янський район",
-    geo: null,
-    nearHint: "Солом'янський район, поруч метро «Шулявська» та Індустріальний міст. Щодня 09:00–21:30.",
-    otherHref: "/uspishna", otherLabel: "Успішна, 8 (Теремки, Іподром)",
-    aboutTitle: "Масажний кабінет у Солом'янському районі Києва",
-    about: [
-      "Студія масажу Oliva працює на вул. Борщагівській, 145 — у Солом'янському районі, поруч із метро «Шулявська». До нас зручно дістатися з Шулявки, Солом'янки, Відрадного, Караваєвих дач, Чоколівки та Політехнічного: не потрібно їхати через усе місто, щоб потрапити до хорошого майстра.",
-      "Тут ви можете записатися на загально-оздоровчий і релакс-масаж, масаж спини та шийно-комірцевої зони, спортивний, антицелюлітний і лімфодренажний масаж, масаж обличчя. Саме на Борщагівській є фітобочка, тож тут проходять SPA-ритуали — як <a href=\"/spa-dlya-odnogo-kyiv\">для одного</a>, так і <a href=\"/spa-dlya-dvoh-kyiv\">для двох</a>, а також парний масаж, коли двоє майстрів працюють одночасно.",
-      "Вид масажу майстер допоможе підібрати під ваш стан і запит: зняти напругу після роботи за комп'ютером, відновитися після тренувань чи просто відпочити. Ціни на сторінці — актуальні, запис онлайн за хвилину, працюємо щодня з 9:00 до 21:30.",
-    ],
-    faq: [
-      ["Де знаходиться студія?", "Київ, вул. Борщагівська, 145 — Солом'янський район, поруч метро «Шулявська» та Індустріальний міст. Кнопка «Прокласти маршрут» нижче відкриє навігацію в Google Картах."],
-      ["Як записатися саме на Борщагівську?", "Натисніть «Записатися онлайн» на цій сторінці — запис відкриється з уже обраною адресою, і ви побачите вільний час саме тут. Або зателефонуйте: 097 434 01 12."],
-      ["Чи є тут SPA та фітобочка?", "Так, фітобочка і всі SPA-програми — саме на Борщагівській, 145. Дивіться <a href=\"/spa-dlya-dvoh-kyiv\">SPA для двох</a> і <a href=\"/spa-dlya-odnogo-kyiv\">SPA для одного</a>."],
-      ["Чи можна прийти на масаж удвох?", "Так. Парний масаж і SPA-програми для двох проходять в одному кабінеті: двоє майстрів працюють одночасно."],
-      ["Чи можна придбати подарунковий сертифікат?", "Так, на <a href=\"/certificate\">сторінці сертифіката</a> — на конкретну послугу або на суму."],
-    ],
-  },
-};
-function renderLocation(slug) {
-  const L = LOCATIONS[slug];
-  if (!L) return null;
-  const branch = publicBranches().filter(function (b) { return L.branchRe.test((b.address || "") + " " + (b.name || "")); })[0];
-  let tpl = fs.readFileSync(path.join(PUB, "location.html"), "utf8");
+   рядки прайсу, тобто за рівнем тих майстрів, що там приймають. */
+function renderUspishna() {
+  const branch = publicBranches().filter(function (b) { return /успішн/i.test(b.address || b.name || ""); })[0];
+  let tpl = fs.readFileSync(path.join(PUB, "uspishna.html"), "utf8");
   const services = publicServices();
   let allowed = null, masters = [];
   if (branch) {
@@ -413,51 +354,40 @@ function renderLocation(slug) {
 
   const minAll = massages.length ? Math.round(Math.min.apply(null, massages.map(function (c) { return Math.min.apply(null, c.rows.map(function (r) { return r.price; })); })) / 100) : null;
   const levels = masters.map(function (m) { return m.level; }).filter(function (l, i, a) { return l && a.indexOf(l) === i; });
-  const masterNote = masters.length && masters.length <= 4
+  const masterNote = masters.length
     ? "Приймає: " + masters.map(function (m) { return m.name + (m.level ? " (" + m.level + ")" : ""); }).join(", ") + ". Ціни — за прайсом " + (levels.length === 1 ? "рівня «" + levels[0] + "»" : "майстрів цієї адреси") + "."
     : "Ціни — за актуальним прайсом студії.";
-  const metaDesc = L.metaDesc + (minAll ? " Масаж від " + minAll + " грн." : "") + " Щодня 9:00–21:30, онлайн-запис.";
+  const metaDesc = "Студія масажу Oliva на вул. Успішна, 8 — Теремки, поруч метро «Іподром» і ЖК «Лікоград». Загально-оздоровчий, спортивний, антицелюлітний масаж, масаж спини та обличчя" +
+    (minAll ? " — від " + minAll + " грн" : "") + ". Щодня 9:00–21:30, онлайн-запис.";
   /* Фото шапки: з CRM («Головний екран» → «Фото сторінок»), інакше фото філії. */
-  const photo = setting(L.photoKey) || (branch && branch.photo ? branch.photo : "/assets/img/main_photo.jpg");
+  const photo = setting("page_photo_uspishna") || (branch && branch.photo ? branch.photo : "/assets/img/main_photo.jpg");
 
   const prices = list.map(function (s) { return Math.round(s.price / 100); });
   const jsonld = {
     "@context": "https://schema.org", "@type": "HealthAndBeautyBusiness",
-    "@id": BASE + "/" + slug + "#business", "name": L.bizName,
+    "@id": BASE + "/uspishna#business", "name": "Студія масажу Oliva — Успішна, 8 (Теремки)",
     "branchOf": { "@id": BASE + "/#business" },
-    "description": metaDesc, "url": BASE + "/" + slug, "image": photo.indexOf("http") === 0 ? photo : BASE + photo,
+    "description": metaDesc, "url": BASE + "/uspishna", "image": photo.indexOf("http") === 0 ? photo : BASE + photo,
     "telephone": "+380974340112",
     "priceRange": prices.length ? Math.min.apply(null, prices) + "–" + Math.max.apply(null, prices) + " грн" : undefined,
-    "address": { "@type": "PostalAddress", "streetAddress": L.street, "addressLocality": "Київ", "addressRegion": L.district, "addressCountry": "UA" },
-    "geo": L.geo ? { "@type": "GeoCoordinates", "latitude": L.geo[0], "longitude": L.geo[1] } : undefined,
+    "address": { "@type": "PostalAddress", "streetAddress": "вул. Успішна, 8", "addressLocality": "Київ", "addressCountry": "UA" },
+    "geo": { "@type": "GeoCoordinates", "latitude": 50.3864358, "longitude": 30.4572199 },
     "openingHoursSpecification": [{ "@type": "OpeningHoursSpecification",
       "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"], "opens": "09:00", "closes": "21:30" }],
-    "hasOfferCatalog": { "@type": "OfferCatalog", "name": "Послуги — " + L.street,
+    "hasOfferCatalog": { "@type": "OfferCatalog", "name": "Послуги на Успішній, 8",
       "itemListElement": main.slice(0, 12).map(function (c) {
         return { "@type": "Offer", "itemOffered": { "@type": "Service", "name": c.name },
           "price": String(Math.round(Math.min.apply(null, c.rows.map(function (r) { return r.price; })) / 100)), "priceCurrency": "UAH" };
       }) }
   };
 
-  const faqJsonld = { "@context": "https://schema.org", "@type": "FAQPage",
-    "mainEntity": L.faq.map(function (q) { return { "@type": "Question", "name": q[0], "acceptedAnswer": { "@type": "Answer", "text": q[1].replace(/<[^>]+>/g, "") } }; }) };
-  const place = L.geo ? L.geo.join(",") : encodeURIComponent("Київ, " + L.street);
   const rep = {
-    TITLE: esc(L.title), KEYWORDS: esc(L.keywords), CANONICAL: BASE + "/" + slug,
-    H1: L.h1, H1_CLASS: L.h1Class || "", SUB: esc(L.sub), PHOTO_ALT: esc(L.photoAlt), FACT_PLACE: esc(L.factPlace),
-    MENU_SERVICES: esc(L.menuServices), ABOUT_TITLE: esc(L.aboutTitle),
-    ABOUT_HTML: L.about.map(function (t) { return "<p>" + t + "</p>"; }).join(""),
-    FAQ_HTML: L.faq.map(function (q) { return "<details><summary>" + esc(q[0]) + "</summary><p>" + q[1] + "</p></details>"; }).join(""),
-    ADDR: esc("Київ, " + L.street), NEAR_HINT: esc(L.nearHint),
-    ROUTE_HREF: "https://www.google.com/maps/dir/?api=1&amp;destination=" + place,
-    MAP_EMBED: "https://maps.google.com/maps?q=" + place + "&amp;z=16&amp;output=embed",
-    OTHER_HREF: L.otherHref, OTHER_LABEL: esc(L.otherLabel),
     META_DESC: esc(metaDesc), OG_IMAGE: esc(photo.indexOf("http") === 0 ? photo : BASE + photo),
-    JSONLD: JSON.stringify([jsonld, faqJsonld]).replace(/</g, "\\u003c"),
+    JSONLD: JSON.stringify(jsonld).replace(/</g, "\\u003c"),
     BOOK_HREF: bookBase, PHOTO: esc(photo), MASTER_NOTE: esc(masterNote),
     SERVICES_TOP: top.map(row).join(""), SERVICES_MORE: restHtml, SERVICES_COUNT: String(cats.length),
   };
-  return tpl.replace(/\{\{([A-Z0-9_]+)\}\}/g, function (m, k) { return rep[k] != null ? rep[k] : ""; });
+  return tpl.replace(/\{\{([A-Z_]+)\}\}/g, function (m, k) { return rep[k] != null ? rep[k] : ""; });
 }
 
 /* Унікальний slug для сторінки (якщо зайнятий — додаємо -2, -3…). */
@@ -563,8 +493,6 @@ const FITO_FAQ = [
 
 module.exports = {
   migrate,
-  slugify, uniqueSlug, renderServicePage, renderCategory, renderNotFound, renderLocation,
-  renderUspishna: function () { return renderLocation("uspishna"); },
-  LOCATION_SLUGS: Object.keys(LOCATIONS),
+  slugify, uniqueSlug, renderServicePage, renderCategory, renderNotFound, renderUspishna,
   CATEGORY_SLUGS: Object.keys(CATEGORIES), categoryLinkFor, SG,
 };

@@ -3063,7 +3063,7 @@ router.post(
 
 /* Фото шапки окремих сторінок сайту (Успішна, SPA для двох/одного).
    Порожнє значення = типове фото сторінки. */
-const PAGE_PHOTO_SLOTS = { solomyanka: "page_photo_solomyanka", uspishna: "page_photo_uspishna", spa2: "page_photo_spa2", spa1: "page_photo_spa1" };
+const PAGE_PHOTO_SLOTS = { uspishna: "page_photo_uspishna", spa2: "page_photo_spa2", spa1: "page_photo_spa1" };
 router.get("/page-photos", owner, function (req, res) {
   const out = {};
   Object.keys(PAGE_PHOTO_SLOTS).forEach(function (k) { out[k] = heroGet(PAGE_PHOTO_SLOTS[k]); });

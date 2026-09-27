@@ -4917,7 +4917,6 @@
       box.appendChild(head);
       api("GET", "/api/crm/page-photos").then(function (r2) {
         var ph = (r2.j && r2.j.ok && r2.j.photos) || {};
-        box.appendChild(pagePhotoCard("solomyanka", "Студія на Борщагівській (Солом'янський район)", "/masazh-solomyanskyi-rayon", ph.solomyanka));
         box.appendChild(pagePhotoCard("uspishna", "Студія на Успішній", "/uspishna", ph.uspishna));
         box.appendChild(pagePhotoCard("spa2", "SPA для двох у Києві", "/spa-dlya-dvoh-kyiv", ph.spa2));
         box.appendChild(pagePhotoCard("spa1", "SPA для одного у Києві", "/spa-dlya-odnogo-kyiv", ph.spa1));
