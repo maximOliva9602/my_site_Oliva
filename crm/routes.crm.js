@@ -3061,6 +3061,42 @@ router.post(
   }
 );
 
+/* Фото шапки окремих сторінок сайту (Успішна, SPA для двох/одного).
+   Порожнє значення = типове фото сторінки. */
+const PAGE_PHOTO_SLOTS = { uspishna: "page_photo_uspishna", spa2: "page_photo_spa2", spa1: "page_photo_spa1" };
+router.get("/page-photos", owner, function (req, res) {
+  const out = {};
+  Object.keys(PAGE_PHOTO_SLOTS).forEach(function (k) { out[k] = heroGet(PAGE_PHOTO_SLOTS[k]); });
+  res.json({ ok: true, photos: out });
+});
+router.post("/page-photos/:slot", owner, express.raw({ type: "*/*", limit: "16mb" }), function (req, res) {
+  const key = PAGE_PHOTO_SLOTS[req.params.slot];
+  if (!key) return res.status(400).json({ ok: false, error: "bad slot" });
+  const ext = String(req.query.ext || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5);
+  if (!HERO_EXT.photo[ext]) return res.status(400).json({ ok: false, error: "Формат не підтримується" });
+  const buf = req.body;
+  if (!buf || !buf.length) return res.status(400).json({ ok: false, error: "Порожній файл" });
+  if (buf.length > HERO_MAX.photo) return res.status(413).json({ ok: false, error: "Файл завеликий (макс 12 МБ)" });
+  const filename = "page-" + req.params.slot + "-" + crypto.randomBytes(8).toString("hex") + "." + ext;
+  try {
+    fsMedia.mkdirSync(SITE_MEDIA_DIR, { recursive: true });
+    fsMedia.writeFileSync(pathMedia.join(SITE_MEDIA_DIR, filename), buf);
+  } catch (e) { return res.status(500).json({ ok: false, error: e.message }); }
+  const prev = heroGet(key);
+  const url = "/api/site-media/" + filename;
+  heroSet(key, url);
+  heroDropOld(prev);
+  res.json({ ok: true, url: url });
+});
+router.delete("/page-photos/:slot", owner, function (req, res) {
+  const key = PAGE_PHOTO_SLOTS[req.params.slot];
+  if (!key) return res.status(400).json({ ok: false, error: "bad slot" });
+  const prev = heroGet(key);
+  heroSet(key, "");
+  heroDropOld(prev);
+  res.json({ ok: true, url: "" });
+});
+
 /* Де на головному екрані стоїть текст: "left|center|right-top|middle|bottom".
    Порожньо = типове розташування (справа по центру). */
 router.put("/hero-text-pos", owner, function (req, res) {

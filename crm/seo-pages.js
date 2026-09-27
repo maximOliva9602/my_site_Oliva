@@ -38,6 +38,10 @@ function slugify(s) {
 }
 
 /* ---- Дані ---- */
+function setting(k) {
+  try { const r = db.prepare("SELECT value FROM app_settings WHERE key=?").get(k); return r && r.value ? r.value : ""; }
+  catch (e) { return ""; }
+}
 function publicServices() {
   return db.prepare(
     "SELECT id, name, duration_min, price, category, description, image_url, featured, in_carousel FROM services WHERE active=1 ORDER BY sort_order, id"
@@ -145,7 +149,11 @@ function renderCategoryHtml(slug, services, branches, pagesByKey) {
   const cfg = CATEGORIES[slug];
   const cards = categoryCards(cfg.group, services, branches, pagesByKey);
   let html = "";
-  html += '<section class="hero hero--compact"><div class="hero-bg-fallback"></div><div class="hero-overlay"></div>' +
+  /* Фото шапки задається в CRM («Головний екран» → «Фото сторінок»). */
+  const heroPhoto = setting("page_photo_" + cfg.group);
+  html += '<section class="hero hero--compact">' +
+    (heroPhoto ? '<img class="hero-bg" src="' + esc(heroPhoto) + '" alt="' + esc(cfg.h1) + '">' : '<div class="hero-bg-fallback"></div>') +
+    '<div class="hero-overlay"></div>' +
     '<div class="wrap"><div class="hero-inner">' +
     '<div class="hero-eyebrow">Студія масажу Oliva · Київ</div>' +
     '<h1 class="hero-title">' + esc(cfg.h1) + "</h1>" +
@@ -215,7 +223,7 @@ function renderCategoryHtml(slug, services, branches, pagesByKey) {
       ]
     }
   ];
-  return { html: html, seoTitle: cfg.title, description: cfg.description, jsonld: jsonld, ogImage: BASE + "/assets/img/og-image.jpg" };
+  return { html: html, seoTitle: cfg.title, description: cfg.description, jsonld: jsonld, ogImage: BASE + (heroPhoto || "/assets/img/og-image.jpg") };
 }
 
 /* ---- Обгортка в шаблон service.html (навігація, стилі, кнопки) ---- */
@@ -349,7 +357,8 @@ function renderUspishna() {
     : "Ціни — за актуальним прайсом студії.";
   const metaDesc = "Студія масажу Oliva на вул. Успішна, 8 — Теремки, поруч метро «Іподром» і ЖК «Лікоград». Загально-оздоровчий, спортивний, антицелюлітний масаж, масаж спини та обличчя" +
     (minAll ? " — від " + minAll + " грн" : "") + ". Щодня 9:00–21:30, онлайн-запис.";
-  const photo = branch && branch.photo ? branch.photo : "/assets/img/main_photo.jpg";
+  /* Фото шапки: з CRM («Головний екран» → «Фото сторінок»), інакше фото філії. */
+  const photo = setting("page_photo_uspishna") || (branch && branch.photo ? branch.photo : "/assets/img/main_photo.jpg");
 
   const prices = list.map(function (s) { return Math.round(s.price / 100); });
   const jsonld = {
@@ -434,6 +443,14 @@ function migrate() {
     const slug = want && !db.prepare("SELECT 1 FROM service_pages WHERE slug=?").get(want) ? want : uniqueSlug(p.service_key, p.service_key);
     db.prepare("UPDATE service_pages SET slug=? WHERE service_key=?").run(slug, p.service_key);
   });
+
+  /* Власник попросив поставити на сторінку Успішної фото майстра Максима. */
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key='migr_uspishna_photo_maksym'").get()) {
+    if (!setting("page_photo_uspishna")) {
+      db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES ('page_photo_uspishna','/assets/img/uspishna-maksym.jpg')").run();
+    }
+    db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES ('migr_uspishna_photo_maksym','1')").run();
+  }
 
   const FLAG = "migr_seo_fito_content";
   if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(FLAG)) {

@@ -4911,7 +4911,78 @@
       box.appendChild(heroPosCard(cur.pos || "", cur.photo));
       box.appendChild(heroCard("photo", "Фото-заставка (комп'ютер)", "image/*", "JPG, PNG або WebP, до 12 МБ. Рекомендовано широке фото від 1920 px.", cur.photo));
       box.appendChild(heroCard("video", "Відео (телефон)", "video/*", "MP4 або WebM, до 60 МБ. Відео програється без звуку по колу — коротке (10–20 с) вантажиться швидше.", cur.video));
+      /* Фото шапки інших сторінок сайту — щоб власник міг поміняти їх сам. */
+      var head = el("h3", null, "Фото сторінок");
+      head.style.cssText = "margin:26px 0 6px;font-family:'Playfair Display',serif;font-weight:500;color:var(--cream);";
+      box.appendChild(head);
+      api("GET", "/api/crm/page-photos").then(function (r2) {
+        var ph = (r2.j && r2.j.ok && r2.j.photos) || {};
+        box.appendChild(pagePhotoCard("uspishna", "Студія на Успішній", "/uspishna", ph.uspishna));
+        box.appendChild(pagePhotoCard("spa2", "SPA для двох у Києві", "/spa-dlya-dvoh-kyiv", ph.spa2));
+        box.appendChild(pagePhotoCard("spa1", "SPA для одного у Києві", "/spa-dlya-odnogo-kyiv", ph.spa1));
+      });
     });
+
+    /* Фото шапки окремої сторінки (Успішна, SPA-підбірки). Фото з телефона
+       стискаємо в браузері до 2000 px — інакше сторінка вантажиться довго. */
+    function pagePhotoCard(slot, title, pageUrl, current) {
+      var card = el("div", "item");
+      card.style.marginBottom = "14px";
+      card.appendChild(el("div", null, title)).style.cssText = "font-weight:600;color:var(--cream);margin-bottom:4px;";
+      var link = document.createElement("a");
+      link.href = pageUrl; link.target = "_blank"; link.rel = "noopener";
+      link.textContent = "massage-oliva.com" + pageUrl + " ↗";
+      link.style.cssText = "font-size:.8rem;color:var(--olive-light);display:inline-block;margin-bottom:10px;";
+      card.appendChild(link);
+      var prev = el("div", null);
+      prev.style.cssText = "border-radius:10px;overflow:hidden;background:#1c2415;max-width:420px;aspect-ratio:16/9;margin-bottom:10px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.8rem;";
+      card.appendChild(prev);
+      var msg = el("div", "sub"); msg.style.marginTop = "8px";
+      var row = el("div", null); row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
+      var pick = el("button", "btn btn-sm btn-primary", "Завантажити фото");
+      var reset = el("button", "btn btn-sm btn-ghost", "Прибрати фото");
+      var file = document.createElement("input"); file.type = "file"; file.accept = "image/*"; file.style.display = "none";
+      row.appendChild(pick); row.appendChild(reset); row.appendChild(file);
+      card.appendChild(row); card.appendChild(msg);
+      function paint(url) {
+        current = url || "";
+        prev.innerHTML = current ? '<img src="' + current + '" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">' : "Без фото — типове оформлення сторінки";
+        reset.style.display = current ? "" : "none";
+      }
+      paint(current);
+      pick.addEventListener("click", function () { file.click(); });
+      file.addEventListener("change", function () {
+        var f = file.files && file.files[0]; if (!f) return;
+        pick.disabled = reset.disabled = true;
+        msg.style.color = "var(--text-dim)"; msg.textContent = "Оптимізація фото…";
+        var done = function (blob, ext) {
+          msg.textContent = "Завантаження… " + Math.round(blob.size / 104857.6) / 10 + " МБ";
+          fetch("/api/crm/page-photos/" + slot + "?ext=" + ext, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: blob })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (j) {
+              pick.disabled = reset.disabled = false; file.value = "";
+              if (j && j.ok) { paint(j.url); msg.style.color = "var(--ok)"; msg.textContent = "✓ Збережено — оновіть сторінку сайту"; }
+              else { msg.style.color = "var(--err)"; msg.textContent = "✗ " + ((j && j.error) || "Не вдалося завантажити"); }
+            }).catch(function (e) { pick.disabled = reset.disabled = false; msg.style.color = "var(--err)"; msg.textContent = "✗ " + e.message; });
+        };
+        var fallback = function () { done(f, (f.name.split(".").pop() || "jpg").toLowerCase()); };
+        if (!window.createImageBitmap) return fallback();
+        createImageBitmap(f, { imageOrientation: "from-image" }).then(function (bmp) {
+          var k = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+          var cv = document.createElement("canvas");
+          cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+          cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+          cv.toBlob(function (blob) { blob && blob.size < f.size ? done(blob, "jpg") : fallback(); }, "image/jpeg", 0.85);
+        }, fallback);
+      });
+      reset.addEventListener("click", function () {
+        if (!confirm("Прибрати фото з шапки сторінки «" + title + "»?")) return;
+        api("DELETE", "/api/crm/page-photos/" + slot).then(function (res) {
+          if (res.j && res.j.ok) { paint(""); msg.style.color = "var(--ok)"; msg.textContent = "✓ Прибрано"; }
+        });
+      });
+      return card;
+    }
 
     /* Де на головному екрані стоїть текст («Студія масажу OLIVA…» і кнопки).
        Сітка 3×3 накладена на фото: тап по клітинці = зберегти. */

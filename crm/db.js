@@ -1279,9 +1279,13 @@ CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
     ['Композиція зі свічок', 'Композиція зі свічок 10 хв', 10, 15000,
       'Атмосфера спокою з ароматом теплих свічок.', '/assets/img/relaks-spa-programa-kyiv.jpg'],
     ['Душ', 'Душ 10 хв', 10, 15000,
-      'Рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.', '/assets/img/dush-oliva.png'],
+      'Рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.', '/assets/img/dush-oliva.jpg'],
   ];
-  var exists = db.prepare("SELECT 1 FROM services WHERE active=1 AND name LIKE ? LIMIT 1");
+  /* Шукаємо БУДЬ-ЯКИЙ рядок, у т.ч. видалений (active=0). Раніше перевірялись
+     лише активні — і послугу, яку власник видалив в адмінці, міграція при
+     кожному перезапуску сервера (тобто при кожному деплої) створювала знову:
+     «Глибоке прогрівання у ІЧ Сауні» так «воскресала» п'ять разів. */
+  var exists = db.prepare("SELECT 1 FROM services WHERE name LIKE ? LIMIT 1");
   var insert = db.prepare(
     "INSERT INTO services (name,duration_min,price,active,sort_order,created_at,category,description,image_url) VALUES (?,?,?,1,850,?,'Додаткові послуги',?,?)"
   );
@@ -1289,6 +1293,20 @@ CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
   additions.forEach(function(s) {
     if (!exists.get(s[0] + '%')) insert.run(s[1], s[2], s[3], now, s[4], s[5]);
   });
+
+  /* Разово прибрати вже «воскреслі» копії: якщо власник хоч раз видаляв
+     послугу (є рядок з active=0), активні дублікати з тією ж назвою — це
+     саме те, що міграція створила наново всупереч видаленню. */
+  var CLEAN_FLAG = "migr_addons_resurrect_cleanup";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(CLEAN_FLAG)) {
+    additions.forEach(function(s) {
+      var deleted = db.prepare("SELECT 1 FROM services WHERE active=0 AND name LIKE ? LIMIT 1").get(s[0] + '%');
+      if (!deleted) return;
+      var n = db.prepare("UPDATE services SET active=0 WHERE active=1 AND name LIKE ?").run(s[0] + '%').changes;
+      if (n) console.log("[db] «" + s[0] + "» була видалена власником — прибрано повторно створених: " + n);
+    });
+    db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(CLEAN_FLAG);
+  }
 
   var catalog = [
     ['Глибоке прогрівання у ІЧ Сауні%', 'Глибоке прогрівання організму, виведення токсинів і релакс.', '/assets/img/spa-sauna-kyiv.jpg'],
@@ -1300,7 +1318,7 @@ CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
     ['Масаж стоп%', 'Розслаблення втомлених ніг і стоп.', '/assets/img/masazh-shuliavska-kyiv.jpg'],
     ['Масаж зі зволожувальним кремом%', 'Живлення шкіри та ніжний догляд зі зволожувальним кремом.', '/assets/img/antystresovyi-masazh-kyiv.jpg'],
     ['Композиція зі свічок%', 'Атмосфера спокою з ароматом теплих свічок.', '/assets/img/relaks-spa-programa-kyiv.jpg'],
-    ['Душ%', 'Рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.', '/assets/img/dush-oliva.png'],
+    ['Душ%', 'Рушник, капці, шапочка, шампунь, кондиціонер та гель для душу.', '/assets/img/dush-oliva.jpg'],
   ];
   var update = db.prepare(
     "UPDATE services SET category='Додаткові послуги',sort_order=?,description=COALESCE(NULLIF(description,''),?),image_url=COALESCE(NULLIF(image_url,''),?) WHERE active=1 AND name LIKE ?"
@@ -1309,6 +1327,9 @@ CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
     catalog.forEach(function(s, i) { update.run(700 + i, s[1], s[2], s[0]); });
   })();
 })();
+
+/* Фото «Душ» було PNG на 3 МБ — замінено на стиснений JPG (130 КБ). */
+try { db.prepare("UPDATE services SET image_url='/assets/img/dush-oliva.jpg' WHERE image_url='/assets/img/dush-oliva.png'").run(); } catch (e) {}
 
 /* ---------------- Міграція: оновити майстрів ---------------- */
 (function updateMasters() {
