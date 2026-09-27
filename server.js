@@ -930,6 +930,11 @@ app.get("/blog", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "blog.html"));
 });
 app.get("/blog/:slug", function (req, res) {
+  /* Неіснуюча стаття — справжня 404, а не порожній шаблон із кодом 200
+     (Google вважав такі сторінки «м'якими 404»). */
+  var post = null;
+  try { post = stmtPostBySlug.get(req.params.slug); } catch (e) {}
+  if (!post) return res.status(404).set("Content-Type", "text/html; charset=utf-8").send(seoPages.renderNotFound());
   res.sendFile(path.join(__dirname, "public", "blog-post.html"));
 });
 /* Сторінка послуги — готовий HTML із сервера (заголовок, H1, ціни, текст,
@@ -1066,8 +1071,13 @@ app.post("/api/office-request", async function (req, res) {
   }
 });
 
-/* ---------------- Fallback ---------------- */
-app.get("*", serveHome);
+/* ---------------- Fallback ----------------
+   Раніше будь-яка невідома адреса віддавала головну з кодом 200. Для Google
+   це сотні дублікатів головної («м'які 404»), через що він не індексував
+   саму головну. Тепер — справжня 404-сторінка. */
+app.get("*", function (req, res) {
+  res.status(404).set("Content-Type", "text/html; charset=utf-8").send(seoPages.renderNotFound());
+});
 
 /* Реєстрація Telegram-вебхука при старті.
    Раніше це була ручна curl-команда, і поки її не виконали, Telegram
