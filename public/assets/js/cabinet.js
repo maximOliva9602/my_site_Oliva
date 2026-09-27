@@ -7573,7 +7573,11 @@
     }
 
     // ── ТИЖНЕВИЙ ──────────────────────────────────────
+    /* Лічильник відкритих вкладок: відповідь сервера для вкладки, яку вже
+       закрили (швидко перейшли на «На період»), не має перемальовувати нову. */
+    var tabSeq = 0;
     function renderWeeklyTab() {
+      var mySeq = ++tabSeq;
       tWeekly.style.borderBottomColor = "#1a2016"; tWeekly.style.color = "#1a2016";
       tDay.style.borderBottomColor = "transparent"; tDay.style.color = "#9aaa90";
       tPeriod.style.borderBottomColor = "transparent"; tPeriod.style.color = "#9aaa90";
@@ -7581,6 +7585,7 @@
       if (oldSave) oldSave.remove();
       content.innerHTML = '<div style="color:#aaa;font-size:.85rem;padding:8px 0;">Завантаження…</div>';
       api("GET", "/api/crm/masters/" + m.id + "/schedule" + brQ0).then(function(r) {
+        if (mySeq !== tabSeq) return;
         var existSched = r.j.schedule || [];
         content.innerHTML = "";
         var DOW_NAMES = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
@@ -7638,6 +7643,7 @@
     var dayStateArea;
 
     function renderDayTab() {
+      var mySeqD = ++tabSeq;
       tWeekly.style.borderBottomColor = "transparent"; tWeekly.style.color = "#9aaa90";
       tDay.style.borderBottomColor = "#1a2016"; tDay.style.color = "#1a2016";
       tPeriod.style.borderBottomColor = "transparent"; tPeriod.style.color = "#9aaa90";
@@ -7659,6 +7665,7 @@
       function loadDay(date) {
         dayStateArea.innerHTML = '<div style="color:#aaa;font-size:.85rem;padding:8px 0;">Завантаження…</div>';
         api("GET", "/api/crm/masters/" + m.id + "/day-override?date=" + date + brQ).then(function(r) {
+          if (mySeqD !== tabSeq) return;
           renderDayState(date, r.j.override, r.j.weekly);
         });
       }
@@ -7750,6 +7757,7 @@
 
     // ── НА ПЕРІОД ──────────────────────────────────────
     function renderPeriodTab() {
+      ++tabSeq;
       tWeekly.style.borderBottomColor = "transparent"; tWeekly.style.color = "#9aaa90";
       tPeriod.style.borderBottomColor = "#1a2016"; tPeriod.style.color = "#1a2016";
       tDay.style.borderBottomColor = "transparent"; tDay.style.color = "#9aaa90";
@@ -7792,24 +7800,45 @@
       // Weekday pills
       var selDays = [1,2,3,4,5];
       var daysRow = document.createElement("div");
-      daysRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;";
-      for (var dw = 0; dw < 7; dw++) {
+      daysRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center;";
+      var pillBtns = {};
+      function paintPill(d) {
+        var b3 = pillBtns[d], on = selDays.indexOf(d) !== -1;
+        b3.style.background = on ? "#3d5430" : "transparent";
+        b3.style.color = on ? "#fff" : "#1a2016";
+        b3.style.borderColor = on ? "#3d5430" : "#d8ddd4";
+      }
+      /* Порядок як в українському календарі — з понеділка, неділя остання.
+         Раніше «Нд» стояла першою, перед «Пн», і її легко було пропустити:
+         власник позначав «усі дні» від Пн до Сб, а неділя лишалась вихідним. */
+      [1,2,3,4,5,6,0].forEach(function(dw) {
         (function(d) {
           var btn2 = document.createElement("button");
           btn2.textContent = DOW2[d];
           var sel2 = selDays.indexOf(d) !== -1;
           btn2.style.cssText = "width:40px;height:40px;border-radius:50%;border:1.5px solid " + (sel2 ? "#3d5430" : "#d8ddd4") + ";background:" + (sel2 ? "#3d5430" : "transparent") + ";color:" + (sel2 ? "#fff" : "#1a2016") + ";font-size:.82rem;font-weight:600;cursor:pointer;";
+          pillBtns[d] = btn2;
           btn2.addEventListener("click", function() {
             var ix = selDays.indexOf(d);
             if (ix !== -1) selDays.splice(ix, 1); else selDays.push(d);
-            var s2 = selDays.indexOf(d) !== -1;
-            btn2.style.background = s2 ? "#3d5430" : "transparent";
-            btn2.style.color = s2 ? "#fff" : "#1a2016";
-            btn2.style.borderColor = s2 ? "#3d5430" : "#d8ddd4";
+            paintPill(d);
           });
           daysRow.appendChild(btn2);
         })(dw);
-      }
+      });
+      /* Одним натиском — усі 7 днів (повторно — зняти всі). */
+      var allBtn = document.createElement("button");
+      allBtn.type = "button"; allBtn.textContent = "Усі дні";
+      allBtn.style.cssText = "height:40px;padding:0 14px;border-radius:20px;border:1.5px solid #3d5430;background:transparent;color:#3d5430;font-size:.8rem;font-weight:600;cursor:pointer;";
+      allBtn.addEventListener("click", function() {
+        selDays = selDays.length === 7 ? [] : [0,1,2,3,4,5,6];
+        [0,1,2,3,4,5,6].forEach(paintPill);
+      });
+      daysRow.appendChild(allBtn);
+      var daysHint = document.createElement("div");
+      daysHint.textContent = "Непозначені дні в цьому періоді стануть вихідними.";
+      daysHint.style.cssText = "flex-basis:100%;font-size:.72rem;color:#6a7a60;margin-top:2px;";
+      daysRow.appendChild(daysHint);
       content.appendChild(daysRow);
 
       // Time range
