@@ -7273,6 +7273,8 @@
           var items = r.j.items || [];
           if (!items.length) { box.innerHTML = '<div class="empty">За цей місяць немає завершених візитів</div>'; return; }
           var KIND_LBL = { default: null, service_override: "своя ставка на послугу", subscription: "абонемент", client_override: "індивідуальна ставка клієнта" };
+          // Додаткова послуга (напр. обгортання) — окремий рядок того ж візиту.
+          var visits = items.filter(function (it, i) { return !items.slice(0, i).some(function (x) { return x.appointment_id === it.appointment_id; }); }).length;
           var rows = items.map(function (it) {
             var rateTxt = it.rate_mode === "fixed" ? "фікс. " + grn(it.rate_value) : (it.rate_value || 0) + "%";
             var kindTxt = KIND_LBL[it.kind];
@@ -7290,7 +7292,7 @@
           }).join("");
           box.innerHTML = '<div style="max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:0 10px;">' + rows + '</div>' +
             '<div style="display:flex;justify-content:space-between;padding:8px 2px 0;font-size:.85rem;font-weight:700;color:var(--cream);">' +
-              '<span>Разом (' + items.length + ' візит' + (items.length === 1 ? "" : "и") + ')</span><span>' + grn(r.j.total) + '</span></div>';
+              '<span>Разом (' + visits + ' візит' + (visits === 1 ? "" : "и") + ')</span><span>' + grn(r.j.total) + '</span></div>';
         });
       });
 

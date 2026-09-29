@@ -494,7 +494,7 @@ function masterEarningsDetail(masterId, from, to) {
   db.prepare("SELECT client_id, mode, value FROM master_client_pay WHERE master_id=?")
     .all(masterId).forEach(function (r) { clientOverrides[r.client_id] = r; });
   const rows = db.prepare(
-    `SELECT a.id, a.client_id, a.service_id, a.price, a.date, a.start_min, a.subscription_used,
+    `SELECT a.id, a.client_id, a.service_id, a.price, a.date, a.start_min, a.subscription_used, a.extra_services,
             c.name client_name, s.name service_name
        FROM appointments a
        JOIN clients c ON c.id = a.client_id
@@ -521,26 +521,43 @@ function masterEarningsDetail(masterId, from, to) {
         price: a.price, role: "primary", kind: "client_override", rate_mode: co.mode, rate_value: co.value, amount: amount });
       continue;
     }
-    const o = overrides[a.service_id];
+    /* Додаткові послуги запису (extra_services) входять у загальну ціну
+       a.price, але оплачуються майстру за СВОЄЮ ставкою: напр. обгортання
+       до масажу — фіксована сума, а не відсоток масажу від усієї суми.
+       Раніше відсоток основної послуги брався від ціни разом із ними. */
+    let extras = [];
+    try { extras = a.extra_services ? JSON.parse(a.extra_services) : []; } catch (e) { extras = []; }
+    if (!Array.isArray(extras)) extras = [];
+    const extrasSum = extras.reduce(function (sum, ex) { return sum + (parseInt(ex && ex.price, 10) || 0); }, 0);
+    const basePrice = Math.max(0, (a.price || 0) - extrasSum);
+    const isReturn = isGuest ? false : !!isRetStmt.get(a.client_id, masterId, a.id, a.date, a.date, a.start_min);
+    const base = { appointment_id: a.id, date: a.date, client_name: a.client_name, role: "primary" };
+    function rateItem(serviceId, serviceName, price, extra) {
+      const o = overrides[serviceId];
+      const it = Object.assign({}, base, { service_name: serviceName, price: price, is_return: isReturn });
+      if (extra) it.extra = true;
+      if (o) {
+        const val = (isReturn && o.value_return != null) ? o.value_return : o.value;
+        return Object.assign(it, { kind: "service_override", rate_mode: o.mode, rate_value: val,
+          amount: o.mode === "fixed" ? Math.round(val) : Math.round(price * val / 100) });
+      }
+      const pct = isReturn ? defRet : defNew;
+      return Object.assign(it, { kind: "default", rate_mode: "percent", rate_value: pct,
+        amount: pct ? Math.round(price * pct / 100) : 0 });
+    }
     if (a.subscription_used) {
       const pct = subOverrides[a.service_id] != null ? subOverrides[a.service_id] : defSub;
-      const amount = pct ? Math.round((a.price || 0) * pct / 100) : 0;
-      items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
-        price: a.price, role: "primary", kind: "subscription", rate_mode: "percent", rate_value: pct, amount: amount });
-      continue;
-    }
-    const isReturn = isGuest ? false : !!isRetStmt.get(a.client_id, masterId, a.id, a.date, a.date, a.start_min);
-    if (o) {
-      const val = (isReturn && o.value_return != null) ? o.value_return : o.value;
-      const amount = o.mode === "fixed" ? Math.round(val) : Math.round((a.price || 0) * val / 100);
-      items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
-        price: a.price, role: "primary", kind: "service_override", is_return: isReturn, rate_mode: o.mode, rate_value: val, amount: amount });
+      const amount = pct ? Math.round(basePrice * pct / 100) : 0;
+      items.push(Object.assign({}, base, { service_name: a.service_name, price: basePrice,
+        kind: "subscription", rate_mode: "percent", rate_value: pct, amount: amount }));
     } else {
-      const pct = isReturn ? defRet : defNew;
-      const amount = pct ? Math.round((a.price || 0) * pct / 100) : 0;
-      items.push({ appointment_id: a.id, date: a.date, client_name: a.client_name, service_name: a.service_name,
-        price: a.price, role: "primary", kind: "default", is_return: isReturn, rate_mode: "percent", rate_value: pct, amount: amount });
+      items.push(rateItem(a.service_id, a.service_name, basePrice, false));
     }
+    extras.forEach(function (ex) {
+      const price = parseInt(ex && ex.price, 10) || 0;
+      if (!price) return;
+      items.push(rateItem(parseInt(ex.id, 10) || 0, "+ " + String(ex.name || "Додаткова послуга"), price, true));
+    });
   }
   return items;
 }
