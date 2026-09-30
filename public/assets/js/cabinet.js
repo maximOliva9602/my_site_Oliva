@@ -6829,10 +6829,31 @@
     var add = el("button", "btn btn-primary", "+ Послуга");
     add.addEventListener("click", function () { serviceModal(null); });
     bar.appendChild(add); main.appendChild(bar);
+    /* Масова зміна цін на % — щоб не редагувати кожну послугу окремо. */
+    var bulkBar = el("div"); bulkBar.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;";
+    var bulkBtn = el("button", "btn btn-sm btn-ghost", "📈 Змінити ціни на %");
+    bulkBtn.addEventListener("click", function () { bulkPriceModal(lastServices); });
+    var undoBtn = el("button", "btn btn-sm btn-ghost", "↩ Повернути попередні ціни");
+    undoBtn.style.display = "none";
+    undoBtn.addEventListener("click", function () {
+      if (!confirm("Повернути ціни, які були до останньої масової зміни?")) return;
+      api("POST", "/api/crm/services/bulk-price/undo").then(function (r) {
+        if (r.j && r.j.ok) { alert("Повернуто попередні ціни: " + r.j.restored + " послуг"); load(); }
+        else alert("Немає чого повертати");
+      });
+    });
+    bulkBar.appendChild(bulkBtn); bulkBar.appendChild(undoBtn); main.appendChild(bulkBar);
+    var lastServices = [];
     var listEl = el("div", "list"); main.appendChild(listEl);
     function load() {
       listEl.innerHTML = '<div class="empty">Завантаження…</div>';
+      api("GET", "/api/crm/services/bulk-price/backup").then(function (r) {
+        var b = r.j && r.j.backup;
+        undoBtn.style.display = b ? "" : "none";
+        if (b) undoBtn.textContent = "↩ Повернути попередні ціни (" + (b.percent > 0 ? "+" : "") + b.percent + "%, " + b.count + " посл.)";
+      });
       api("GET", "/api/crm/services").then(function (res) {
+        lastServices = res.j.services || [];
         listEl.innerHTML = "";
         (res.j.services || []).forEach(function (s) {
           var item = el("div", "item"); var row = el("div", "row1");
@@ -6849,6 +6870,64 @@
       });
     }
     window.__reloadServices = load; load();
+  }
+  function bulkPriceModal(services) {
+    var list = (services || []).filter(function (s) { return s.price > 0; });
+    openModal(
+      '<h3>Змінити ціни на %</h3>' +
+      '<div class="grid2"><div><label>На скільки % (напр. 5 або -5)</label><input type="number" id="bpPct" step="1" value="5" /></div>' +
+      '<div><label>Округлення</label><select id="bpStep"><option value="1000">до 10 грн</option><option value="5000">до 50 грн</option><option value="100">до 1 грн</option></select></div></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px;font-size:.8rem;">' +
+        '<span class="muted" id="bpCount"></span><button type="button" class="btn btn-sm btn-ghost" id="bpAll">Зняти всі</button></div>' +
+      '<div id="bpList" style="max-height:48vh;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:0 10px;"></div>' +
+      '<div class="muted" style="font-size:.75rem;margin-top:8px;">Ціни в уже створених записах не зміняться. Якщо щось не так — кнопка «Повернути попередні ціни».</div>' +
+      '<div class="err" id="bpErr"></div>' +
+      '<div class="modal-foot"><button class="btn btn-ghost" id="bpCancel">Скасувати</button><button class="btn btn-primary" id="bpApply">Застосувати</button></div>'
+    );
+    var off = {};
+    function calc(price) {
+      var pct = parseFloat($("bpPct").value), step = parseInt($("bpStep").value, 10);
+      if (!isFinite(pct)) return price;
+      return Math.max(0, Math.round(price * (1 + pct / 100) / step) * step);
+    }
+    function draw() {
+      var n = 0;
+      $("bpList").innerHTML = list.map(function (s) {
+        var np = calc(s.price), on = !off[s.id];
+        if (on && np !== s.price) n++;
+        return '<label style="display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:.8rem;cursor:pointer;">' +
+          '<input type="checkbox" data-bp="' + s.id + '"' + (on ? " checked" : "") + ' style="width:auto;margin:0;" />' +
+          '<span style="flex:1;min-width:0;">' + String(s.name).replace(/&/g, "&amp;").replace(/</g, "&lt;") + '</span>' +
+          '<span style="white-space:nowrap;' + (on ? "" : "opacity:.45;") + '">' + money(s.price) + ' → <b>' + money(on ? np : s.price) + '</b></span></label>';
+      }).join("");
+      $("bpCount").textContent = "Зміниться: " + n + " з " + list.length;
+      $("bpList").querySelectorAll("[data-bp]").forEach(function (cb) {
+        cb.addEventListener("change", function () { off[cb.getAttribute("data-bp")] = !cb.checked; draw(); });
+      });
+    }
+    $("bpPct").addEventListener("input", draw);
+    $("bpStep").addEventListener("change", draw);
+    $("bpAll").addEventListener("click", function () {
+      var anyOn = list.some(function (s) { return !off[s.id]; });
+      list.forEach(function (s) { off[s.id] = anyOn; });
+      $("bpAll").textContent = anyOn ? "Вибрати всі" : "Зняти всі";
+      draw();
+    });
+    $("bpCancel").addEventListener("click", closeModal);
+    $("bpApply").addEventListener("click", function () {
+      var pct = parseFloat($("bpPct").value);
+      if (!isFinite(pct) || pct === 0 || pct < -50 || pct > 100) { $("bpErr").textContent = "Вкажіть відсоток від -50 до 100"; return; }
+      var ids = list.filter(function (s) { return !off[s.id]; }).map(function (s) { return s.id; });
+      if (!ids.length) { $("bpErr").textContent = "Не вибрано жодної послуги"; return; }
+      if (!confirm("Змінити ціни на " + (pct > 0 ? "+" : "") + pct + "% для " + ids.length + " послуг?")) return;
+      $("bpApply").disabled = true;
+      api("POST", "/api/crm/services/bulk-price", { percent: pct, step: parseInt($("bpStep").value, 10), ids: ids }).then(function (r) {
+        $("bpApply").disabled = false;
+        if (!(r.j && r.j.ok)) { $("bpErr").textContent = "Не вдалося зберегти"; return; }
+        closeModal(); alert("Ціни змінено: " + r.j.changed + " послуг"); window.__reloadServices();
+      });
+    });
+    draw();
   }
   function serviceModal(s) {
     openModal(

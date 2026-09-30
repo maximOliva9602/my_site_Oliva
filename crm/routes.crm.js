@@ -1720,6 +1720,58 @@ router.delete("/services/:id", owner, function (req, res) {
   res.json({ ok: true });
 });
 
+/* Масова зміна цін на % (напр. підняття цін) — щоб не редагувати кожну
+   послугу окремо. Нова ціна = стара × (1 + %/100), округлена до кроку
+   (у копійках: 1000 = 10 грн). Перед зміною зберігаємо попередні ціни —
+   «Повернути попередні ціни» відкочує останню масову зміну. Ціни в уже
+   створених записах не змінюються (у записі своя ціна). */
+function bulkPriceCalc(price, percent, step) {
+  const raw = price * (1 + percent / 100);
+  return Math.max(0, Math.round(raw / step) * step);
+}
+router.post("/services/bulk-price", owner, function (req, res) {
+  const d = req.body || {};
+  const percent = Number(d.percent);
+  const step = [100, 1000, 5000].indexOf(parseInt(d.step, 10)) !== -1 ? parseInt(d.step, 10) : 1000;
+  if (!isFinite(percent) || percent === 0 || percent < -50 || percent > 100) return res.status(400).json({ ok: false, error: "bad percent" });
+  const ids = Array.isArray(d.ids) ? d.ids.map(function (x) { return parseInt(x, 10); }).filter(Boolean) : [];
+  if (!ids.length) return res.status(400).json({ ok: false, error: "no services" });
+  const get = db.prepare("SELECT id, price FROM services WHERE id=? AND active=1");
+  const upd = db.prepare("UPDATE services SET price=? WHERE id=?");
+  const backup = [];
+  db.transaction(function () {
+    ids.forEach(function (id) {
+      const s = get.get(id);
+      if (!s || !s.price) return;
+      const np = bulkPriceCalc(s.price, percent, step);
+      if (np === s.price) return;
+      backup.push({ id: s.id, price: s.price });
+      upd.run(np, s.id);
+    });
+    db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES ('price_bulk_backup',?)")
+      .run(JSON.stringify({ at: Date.now(), percent: percent, items: backup }));
+  })();
+  res.json({ ok: true, changed: backup.length });
+});
+router.get("/services/bulk-price/backup", owner, function (req, res) {
+  const r = db.prepare("SELECT value FROM app_settings WHERE key='price_bulk_backup'").get();
+  let b = null;
+  try { b = r && r.value ? JSON.parse(r.value) : null; } catch (e) {}
+  res.json({ ok: true, backup: b && b.items && b.items.length ? { at: b.at, percent: b.percent, count: b.items.length } : null });
+});
+router.post("/services/bulk-price/undo", owner, function (req, res) {
+  const r = db.prepare("SELECT value FROM app_settings WHERE key='price_bulk_backup'").get();
+  let b = null;
+  try { b = r && r.value ? JSON.parse(r.value) : null; } catch (e) {}
+  if (!b || !b.items || !b.items.length) return res.status(400).json({ ok: false, error: "nothing to undo" });
+  const upd = db.prepare("UPDATE services SET price=? WHERE id=?");
+  db.transaction(function () {
+    b.items.forEach(function (it) { upd.run(it.price, it.id); });
+    db.prepare("DELETE FROM app_settings WHERE key='price_bulk_backup'").run();
+  })();
+  res.json({ ok: true, restored: b.items.length });
+});
+
 /* ---- Клієнти ---- */
 router.get("/clients", any, function (req, res) {
   const q = clean(req.query.q, 60);
