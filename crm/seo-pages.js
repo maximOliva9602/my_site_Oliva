@@ -137,8 +137,17 @@ function categoryCards(group, services, branches, pagesByKey) {
       return !(b.service_ids || []).length || b.service_ids.some(function (id) { return ids.indexOf(id) !== -1; });
     }).map(SP.branchLabel);
     const cheapest = c.rows.slice().sort(function (a, b) { return a.price - b.price; })[0];
+    /* Розширений опис програми — з того, що власник уже заповнив на
+       сторінці послуги в адмінці: етапи («Що входить»), «Кому підійде»
+       і розгорнутий текст. Без сторінки — лише опис послуги з прайсу. */
+    const lines = function (v) { return String(v || "").split("\n").map(function (x) { return x.trim(); }).filter(Boolean); };
+    const steps = page ? lines(page.steps_items).filter(function (l) { return l.indexOf("::") !== -1; })
+      .map(function (l) { return l.split("::")[0].trim(); }).filter(Boolean).slice(0, 6) : [];
+    const suitable = page ? lines(page.suitable_items).filter(function (l) { return l.length <= 110; }).slice(0, 4) : [];
+    const more = page ? lines(page.detail_description).slice(0, 3) : [];
     return {
       key: k, title: page && page.hero_title ? page.hero_title : k,
+      steps: steps, suitable: suitable, more: more,
       image: (page && page.hero_photo) || c.image,
       description: (page && page.hero_description) || c.description,
       durs: Object.keys(durs).map(Number).sort(function (a, b) { return a - b; }).map(function (d) { return { dur: d, price: durs[d] }; }),
@@ -175,6 +184,8 @@ function renderCategoryHtml(slug, services, branches, pagesByKey) {
         '<div class="cat-card-body">' +
           '<h3 class="cat-card-title">' + (c.href ? '<a href="' + esc(c.href) + '">' + esc(c.title) + "</a>" : esc(c.title)) + "</h3>" +
           (c.description ? '<p class="cat-card-desc">' + esc(c.description) + "</p>" : "") +
+          (c.steps.length ? '<p class="cat-card-steps"><b>Що входить:</b> ' + c.steps.map(esc).join(" → ") + "</p>" : "") +
+          (c.suitable.length ? '<ul class="cat-card-suit">' + c.suitable.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : "") +
           '<div class="cat-card-prices">' + c.durs.map(function (d) {
             return '<div class="detail-price-row"><span>' + esc(SP.fmtDur(d.dur)) + "</span><b>" + Math.round(d.price / 100) + " грн</b></div>";
           }).join("") + "</div>" +
@@ -187,6 +198,16 @@ function renderCategoryHtml(slug, services, branches, pagesByKey) {
         "</div></article>";
     }).join("") +
     "</div></div></section>";
+
+  const withMore = cards.filter(function (c) { return c.more.length; });
+  if (withMore.length) {
+    html += '<section class="block"><div class="wrap"><h2 class="block-title">Детальніше про програми</h2><div class="prog-more">' +
+      withMore.map(function (c) {
+        return "<h3>" + esc(c.title) + "</h3>" + c.more.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") +
+          (c.href ? '<a class="prog-link" href="' + esc(c.href) + '">Усе про програму, етапи й ціни →</a>' : "");
+      }).join("") +
+      "</div></div></section>";
+  }
 
   html += '<section class="block"><div class="wrap"><h2 class="block-title">Як обрати програму</h2><div class="benefits-grid">' +
     cfg.howTo.map(function (h) { return '<div class="benefit-card"><h3 class="benefit-title">' + esc(h[0]) + '</h3><div class="benefit-text">' + esc(h[1]) + "</div></div>"; }).join("") +
