@@ -385,6 +385,14 @@
     .option-chip:hover { border-color: var(--olive-light); background: rgba(122,145,86,0.1); }
     .option-chip.active { background: rgba(74,94,46,0.3); border-color: var(--olive-light); }
     .form-group.invalid .option-chip { border-color: rgba(224,112,112,0.4); }
+    /* Вибір студії (останній крок) пульсує, як кнопка «Подарунковий сертифікат»
+       на головній, — поки студію не обрано. */
+    @keyframes cert-pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(122,145,86,0.55); }
+      50% { box-shadow: 0 0 0 10px rgba(122,145,86,0); }
+    }
+    #branchChips:not(:has(.active)) .option-chip { animation: cert-pulse-glow 2s ease-in-out infinite; border-color: var(--olive-light); }
+    @media (prefers-reduced-motion: reduce) { #branchChips .option-chip { animation: none !important; } }
   </style>
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Сертифікат можна оформити на конкретну послугу?", "acceptedAnswer": {"@type": "Answer", "text": "Так — на будь-яку послугу студії: масаж, парний масаж, SPA-ритуал, фітобочку, стоун-терапію тощо. Або на суму, щоб отримувач обрав процедуру сам."}}, {"@type": "Question", "name": "Сертифікат електронний чи паперовий?", "acceptedAnswer": {"@type": "Answer", "text": "На ваш вибір: електронний або паперовий у красивому оформленні. Паперовий можна забрати в студії, отримати Новою Поштою або таксі."}}, {"@type": "Question", "name": "Скільки діє сертифікат?", "acceptedAnswer": {"@type": "Answer", "text": "2 місяці з дня купівлі."}}, {"@type": "Question", "name": "Де можна використати сертифікат?", "acceptedAnswer": {"@type": "Answer", "text": "У студіях Oliva в Києві: вул. Борщагівська, 145 (Солом'янський район, метро «Шулявська») та вул. Успішна, 8 (Теремки, метро «Іподром»)."}}, {"@type": "Question", "name": "Як отримувачу записатися?", "acceptedAnswer": {"@type": "Answer", "text": "Зателефонувати 097 434 01 12 або записатися онлайн і повідомити адміністратору, що є подарунковий сертифікат. На візит сертифікат потрібно взяти з собою."}}]}</script>
 </head>
