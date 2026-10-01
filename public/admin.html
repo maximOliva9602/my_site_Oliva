@@ -960,6 +960,10 @@
      повторювались у кожному рядку окремо на кожен рівень і читались як
      дублікати. Тут кожна тривалість — рівно один рядок. */
   var svcMatrixRows = []; // [{ duration, cells: { level: {id, price} } }]
+  /* Послуги з рядків, прибраних кнопкою ✕. Раніше рядок просто зникав із
+     svcMatrixRows, і збереження його вже не бачило — послуги лишались у
+     базі й поверталися при наступному відкритті (Медовий масаж 90/120 хв). */
+  var svcMatrixRemovedIds = [];
   var svcMatrixBody = document.getElementById("svcMatrixBody");
 
   function emptyMatrixRow(dur) { return { duration: dur || "", cells: {} }; }
@@ -1033,7 +1037,10 @@
       var rmTd = document.createElement("td");
       var rm = document.createElement("button");
       rm.type = "button"; rm.className = "sm-row-remove"; rm.title = "Прибрати цю тривалість (усі рівні)"; rm.textContent = "✕";
-      rm.addEventListener("click", function () { svcMatrixRows.splice(ri, 1); renderSvcMatrix(); });
+      rm.addEventListener("click", function () {
+        Object.keys(row.cells).forEach(function (lv) { if (row.cells[lv] && row.cells[lv].id) svcMatrixRemovedIds.push(row.cells[lv].id); });
+        svcMatrixRows.splice(ri, 1); renderSvcMatrix();
+      });
       rmTd.appendChild(rm);
       tr.appendChild(rmTd);
       svcMatrixBody.appendChild(tr);
@@ -1272,6 +1279,7 @@
     /* Матриця тривалість×рівень одразу включає й саму цю послугу (вона
        теж один із сиблінгів за базовою назвою) — окремих полів
        рівень/ціна/тривалість більше немає, усе тут. */
+    svcMatrixRemovedIds = [];
     svcMatrixRows = svc ? buildMatrixFromSiblings(base) : [emptyMatrixRow(60)];
     if (svc && !svcMatrixRows.length) {
       var row = emptyMatrixRow(parsed ? parsed.dur : svc.duration_min);
@@ -1293,6 +1301,7 @@
     svcFilter.style.display = '';
     document.getElementById('svcNewBtn').style.display = '';
     svcMatrixRows = [];
+    svcMatrixRemovedIds = [];
     renderSvcMatrix();
   }
 
@@ -1334,6 +1343,9 @@
       alert('Вкажіть ціну хоча б для одного рівня й тривалості.');
       return;
     }
+    svcMatrixRemovedIds.forEach(function (id) {
+      jobs.push(fetch('/api/admin/services/' + id, { method: 'DELETE' }));
+    });
 
     var btn = this;
     btn.textContent = 'Збереження...'; btn.disabled = true;
