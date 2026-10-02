@@ -3165,6 +3165,28 @@ router.post("/page-videos/:slot/:orient", owner, express.raw({ type: "*/*", limi
   heroDropOld(prev);
   res.json({ ok: true, url: url });
 });
+/* Одноразово: відео SPA-комплексів, яке власник завантажив .mov на 15 МБ
+   (те саме в обох слотах), замінюємо стиснутою копією з репозиторію
+   (mp4, 1 МБ, без звуку — на першому екрані воно й так беззвучне). */
+(function migratePageVideos() {
+  try {
+    const OPT = { "page-spa1-video-h-b187e5f8d193c8c5.mov": "/assets/video/spa-kompleksy-hero.mp4" };
+    const DUP = { "page-spa1-video-v-6e97fa242eae2304.mov": 1 };
+    ["spa1", "spa2"].forEach(function (slot) {
+      ["h", "v"].forEach(function (o) {
+        const key = pageVideoKey(slot, o), cur = heroGet(key);
+        const base = cur ? pathMedia.basename(cur) : "";
+        if (OPT[base] && fsMedia.existsSync(pathMedia.join(__dirname, "..", "public", OPT[base]))) {
+          heroSet(key, OPT[base]); heroDropOld(cur);
+          console.log("[page-video] " + key + ": " + cur + " → " + OPT[base]);
+        } else if (DUP[base]) {
+          heroSet(key, ""); heroDropOld(cur);
+          console.log("[page-video] " + key + ": прибрано дубль " + cur);
+        }
+      });
+    });
+  } catch (e) { console.error("[page-video] міграція:", e.message); }
+})();
 router.delete("/page-videos/:slot/:orient", owner, function (req, res) {
   const key = pageVideoKey(req.params.slot, req.params.orient);
   if (!key) return res.status(400).json({ ok: false, error: "bad slot" });
