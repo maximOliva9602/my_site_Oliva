@@ -325,7 +325,7 @@ function renderUspishna() {
   let allowed = null, masters = [];
   if (branch) {
     masters = db.prepare(
-      "SELECT m.id, m.name, m.level FROM masters m JOIN branch_masters bm ON bm.master_id=m.id WHERE bm.branch_id=? AND m.active=1 ORDER BY m.sort_order, m.id"
+      "SELECT m.id, m.name, m.level, m.photo, m.show_on_site FROM masters m JOIN branch_masters bm ON bm.master_id=m.id WHERE bm.branch_id=? AND m.active=1 ORDER BY m.sort_order, m.id"
     ).all(branch.id);
     const mSvc = new Set();
     const st = db.prepare("SELECT service_id FROM master_services WHERE master_id=?");
@@ -361,6 +361,17 @@ function renderUspishna() {
       '<div class="us-row__meta">від <b>' + Math.round(min / 100) + " грн</b> · " + (dMin === dMax ? dMin : dMin + "–" + dMax) + " хв</div></div>" +
       '<span class="us-row__arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>';
   }
+  const ARROW = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  /* Картка з фото для сітки «Оберіть свій масаж» (макет власника). */
+  function card(c) {
+    const min = Math.min.apply(null, c.rows.map(function (r) { return r.price; }));
+    const cheapest = c.rows.filter(function (r) { return r.price === min; })[0];
+    const href = "/booking.html?service=" + cheapest.id + (branch ? "&branch=" + branch.id : "");
+    return '<a class="us-card" href="' + href + '">' +
+      '<div class="us-card__img">' + (c.img ? '<img src="' + esc(c.img) + '" alt="' + esc(c.name) + ' — Успішна, 8" loading="lazy">' : "") + "</div>" +
+      '<div class="us-card__foot"><div><div class="us-card__name">' + esc(c.name) + '</div><div class="us-card__meta">від ' + Math.round(min / 100) + " грн</div></div>" +
+      '<span class="us-arrow">' + ARROW + "</span></div></a>";
+  }
   /* Нагорі — масажі (спершу популярні), решта згорнута за групами. */
   const main = cats.filter(function (c) { return c.group !== "extra"; });
   /* Нагорі — саме масажі (кінезіотейпування тощо — у згорнутому списку). */
@@ -376,8 +387,21 @@ function renderUspishna() {
   const minAll = massages.length ? Math.round(Math.min.apply(null, massages.map(function (c) { return Math.min.apply(null, c.rows.map(function (r) { return r.price; })); })) / 100) : null;
   const levels = masters.map(function (m) { return m.level; }).filter(function (l, i, a) { return l && a.indexOf(l) === i; });
   const masterNote = masters.length
-    ? "Приймає: " + masters.map(function (m) { return m.name + (m.level ? " (" + m.level + ")" : ""); }).join(", ") + ". Ціни — за прайсом " + (levels.length === 1 ? "рівня «" + levels[0] + "»" : "майстрів цієї адреси") + "."
+    ? "Ціни — за прайсом " + (levels.length === 1 ? "рівня «" + levels[0] + "»" : "майстрів цієї адреси") + "."
     : "Ціни — за актуальним прайсом студії.";
+  /* «Майстри на Успішній»: справжні фото й рівень з CRM; «Обрати час» —
+     онлайн-запис на цю адресу з цим майстром першим у списку. */
+  const shownMasters = masters.filter(function (m) { return m.show_on_site == null || m.show_on_site; });
+  const mastersSection = shownMasters.length
+    ? '<section class="us-section" id="masters"><div class="us-sec-head"><h2 class="us-h2">Майстри на Успішній</h2></div><div class="us-masters">' +
+      shownMasters.map(function (m) {
+        return '<div class="us-master"><div class="us-master__photo">' +
+          (m.photo ? '<img src="' + esc(m.photo) + '" alt="' + esc(m.name) + ' — майстер масажу, Успішна, 8" loading="lazy">' : "") + "</div>" +
+          '<div class="us-master__body"><div class="us-master__name">' + esc(m.name) + "</div>" +
+          '<div class="us-master__lvl">' + esc(m.level || "Майстер") + "</div>" +
+          '<a class="btn" href="' + bookBase + (bookBase.indexOf("?") === -1 ? "?" : "&") + "master=" + m.id + '">Обрати час ' + ARROW + "</a></div></div>";
+      }).join("") + "</div></section>"
+    : "";
   const metaDesc = "Масаж на Теремках: студія Oliva на вул. Успішна, 8 — поруч метро «Іподром» і «Виставковий центр», ВДНГ, ЖК «Лікоград». Загально-оздоровчий, спортивний, антицелюлітний масаж, масаж спини та обличчя" +
     (minAll ? " — від " + minAll + " грн" : "") + ". Щодня 9:00–21:30, онлайн-запис.";
   /* Фото шапки: з CRM («Головний екран» → «Фото сторінок»), інакше фото філії. */
@@ -406,7 +430,8 @@ function renderUspishna() {
     META_DESC: esc(metaDesc), OG_IMAGE: esc(photo.indexOf("http") === 0 ? photo : BASE + photo),
     JSONLD: JSON.stringify(jsonld).replace(/</g, "\\u003c"),
     BOOK_HREF: bookBase, PHOTO: esc(photo), MASTER_NOTE: esc(masterNote),
-    SERVICES_TOP: top.map(row).join(""), SERVICES_MORE: restHtml, SERVICES_COUNT: String(cats.length),
+    SERVICES_TOP: top.map(card).join(""), SERVICES_MORE: restHtml, SERVICES_COUNT: String(cats.length),
+    MASTERS_SECTION: mastersSection,
   };
   return tpl.replace(/\{\{([A-Z_]+)\}\}/g, function (m, k) { return rep[k] != null ? rep[k] : ""; });
 }

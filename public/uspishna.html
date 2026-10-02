@@ -26,191 +26,244 @@
   <script type="application/ld+json">{{JSONLD}}</script>
 
 <style>
-/* ── Сторінка «Oliva на Успішній, 8». Структура — за макетом власника,
-   кольори й шрифти — фірмові, ті самі, що в styles.css (--black, --olive,
-   --olive-light, --cream, Playfair Display + Inter). ── */
+/* ── «Масаж на Успішній, 8» — за макетом власника (жовтень 2026): шапка з
+   меню, перший екран «текст + фото», смуга адреси, сітка карток масажів,
+   майстри, питання, оливковий блок «Завітайте» з картою. Кольори/шрифти —
+   фірмові (Playfair Display + Inter, темно-оливкова палітра). ── */
 :root {
-  --bg: #080A07; --bg-2: #0e120c; --card: #121810; --ink: #F2EDE4; --text: #D4CFC6; --dim: #8A8880;
-  --line: rgba(122,145,86,0.18); --olive: #7A9156; --olive-2: #8FA864; --olive-deep: #2E3D22;
-  --olive-soft: rgba(122,145,86,.14); --ph: #1a2115;
+  --bg: #0d110b; --bg-2: #121810; --card: #161d13; --ink: #F2EDE4; --text: #D4CFC6; --dim: #9a978e;
+  --line: rgba(122,145,86,0.22); --olive: #6f8650; --olive-2: #8FA864; --olive-btn: #5f7345; --olive-deep: #55683e;
+  --olive-soft: rgba(122,145,86,.16); --ph: #1a2115;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 body { background: var(--bg); color: var(--ink); font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.5; }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
 .serif { font-family: 'Playfair Display', serif; }
+.nowrap { white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: var(--olive-btn); color: var(--ink); border-radius: 10px; padding: 14px 22px; font-weight: 500; font-size: .95rem; transition: background .2s; border: 0; cursor: pointer; }
+.btn:hover { background: var(--olive); }
+.btn svg { flex-shrink: 0; }
 
-/* Навігація */
-.us-nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
-.us-logo { display: flex; align-items: center; gap: 10px; }
-.us-logo img { width: 42px; height: 42px; object-fit: contain; }
-.us-logo span { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 500; color: var(--ink); line-height: 1; }
-.us-logo span b { color: var(--olive); font-weight: 500; }
+/* Шапка */
+.us-head { position: sticky; top: 0; z-index: 50; background: rgba(13,17,11,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.us-nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+.us-logo { font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 400; letter-spacing: .01em; color: var(--ink); }
+.us-links { display: none; gap: 34px; font-size: .9rem; color: var(--text); }
+.us-links a { padding: 6px 0; border-bottom: 1px solid transparent; }
+.us-links a:hover, .us-links a.on { border-color: var(--olive-2); color: var(--ink); }
+.us-head .btn { padding: 10px 18px; font-size: .88rem; }
+.us-head-cta { display: none; }
 .us-burger { width: 44px; height: 44px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; justify-content: center; gap: 7px; align-items: flex-end; }
-.us-burger span { display: block; width: 28px; height: 1.5px; background: var(--ink); }
-.us-menu { display: none; position: absolute; left: 16px; right: 16px; top: 68px; z-index: 50; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px; box-shadow: 0 12px 34px rgba(0,0,0,.5); }
+.us-burger span { display: block; width: 26px; height: 1.5px; background: var(--ink); }
+.us-menu { display: none; position: absolute; left: 16px; right: 16px; top: 70px; z-index: 60; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px; box-shadow: 0 12px 34px rgba(0,0,0,.5); }
 .us-menu.open { display: block; }
-.us-menu a { display: block; padding: 12px 14px; border-radius: 10px; font-size: .98rem; }
+.us-menu a { display: block; padding: 12px 14px; border-radius: 10px; }
 .us-menu a:hover { background: var(--olive-soft); }
-.us-nav-desk { display: none; gap: 26px; font-size: .9rem; color: var(--dim); }
-.us-nav-desk a:hover { color: var(--olive); }
 
 /* Перший екран */
-.us-eyebrow { font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: var(--olive); margin: 6px 0 8px; }
-.us-h1 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(2rem, 8.4vw, 3.3rem); line-height: 1.1; margin-bottom: 10px; }
-.us-sub { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.12rem; line-height: 1.4; color: var(--text); margin-bottom: 18px; }
-.us-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--olive); color: var(--bg); border-radius: 50px; padding: 15px 18px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 1rem; transition: background .2s; }
-.us-cta:hover { background: var(--olive-2); }
-.us-hero-photo { margin: 18px -16px 0; aspect-ratio: 16/10; overflow: hidden; background: var(--ph); }
-.us-hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
-/* «Успішній, 8» не рветься: раніше «8» сама падала на новий рядок. */
-.nowrap { white-space: nowrap; }
-.us-facts { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); margin: 0 -16px; background: var(--card); }
-.us-fact { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 8px; font-size: .92rem; color: var(--text); text-align: center; }
-.us-fact svg { color: var(--olive); }
-.us-fact + .us-fact { border-left: 1px solid var(--line); }
-.us-fact svg { flex-shrink: 0; }
+.us-hero { display: grid; grid-template-columns: 1fr; }
+.us-hero__text { padding: 30px 16px 26px; }
+.us-eyebrow { font-size: .72rem; letter-spacing: .24em; text-transform: uppercase; color: var(--text); margin-bottom: 12px; }
+.us-h1 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(2.3rem, 9.5vw, 4.1rem); line-height: 1.05; margin-bottom: 14px; }
+.us-sub { font-size: 1.12rem; color: var(--text); margin-bottom: 22px; }
+.us-place { display: flex; align-items: flex-start; gap: 8px; margin-top: 18px; font-size: .82rem; color: var(--dim); line-height: 1.5; }
+.us-place span { flex: 1; min-width: 0; }
+.us-place svg { color: var(--text); flex-shrink: 0; }
+.us-hero__photo { aspect-ratio: 4 / 3; overflow: hidden; background: var(--ph); }
+.us-hero__photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
 
-/* Послуги */
-.us-section { padding: 30px 0 8px; }
-.us-h2 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(1.8rem, 6.4vw, 2.4rem); line-height: 1.15; margin-bottom: 6px; }
-.us-note { font-size: .86rem; color: var(--dim); margin-bottom: 16px; }
-.us-list { display: flex; flex-direction: column; gap: 10px; }
-.us-row { display: flex; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-height: 84px; transition: box-shadow .2s, transform .2s; }
-.us-row:hover { border-color: rgba(122,145,86,.5); transform: translateY(-1px); }
-.us-row__img { width: 30%; max-width: 170px; align-self: stretch; flex-shrink: 0; background: var(--ph); }
-.us-row__img img { width: 100%; height: 100%; object-fit: cover; }
-.us-row__body { flex: 1; min-width: 0; padding: 12px 14px; }
-.us-row__name { font-family: 'Playfair Display', serif; font-size: 1.08rem; line-height: 1.25; color: var(--ink); }
-.us-row__meta { font-size: .8rem; color: var(--dim); margin-top: 3px; }
-.us-row__meta b { color: var(--olive); font-weight: 600; }
-.us-row__arrow { width: 38px; height: 38px; border-radius: 50%; background: var(--olive-soft); color: var(--olive); display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
-.us-more { display: none; }
+/* Смуга адреси */
+.us-bar { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-2); }
+.us-bar .wrap { display: flex; justify-content: center; align-items: center; gap: 18px; flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; font-size: .88rem; color: var(--text); }
+.us-bar__item { display: flex; align-items: center; gap: 8px; }
+.us-bar__sep { width: 1px; height: 18px; background: var(--line); }
+
+/* Секції */
+.us-section { padding: 34px 0 10px; }
+#services, #masters, #visit { scroll-margin-top: 72px; }
+.us-section + .us-section { border-top: 1px solid var(--line); margin-top: 26px; }
+.us-sec-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; margin-bottom: 18px; }
+.us-h2 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(1.9rem, 6.6vw, 2.7rem); line-height: 1.1; }
+.us-sec-note { font-size: .84rem; color: var(--dim); }
+
+/* Картки масажів */
+.us-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.us-card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; transition: border-color .2s, transform .2s; }
+.us-card:hover { border-color: rgba(143,168,100,.55); transform: translateY(-2px); }
+.us-card__img { aspect-ratio: 16 / 10; background: var(--ph); overflow: hidden; }
+.us-card__img img { width: 100%; height: 100%; object-fit: cover; }
+.us-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; flex: 1; }
+.us-card__name { font-size: .92rem; line-height: 1.3; color: var(--ink); }
+.us-card__meta { font-size: .76rem; color: var(--dim); margin-top: 3px; }
+.us-arrow { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--olive-soft); color: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* Усі послуги (згорнуто) */
+.us-more { display: none; margin-top: 8px; }
 .us-more.open { display: block; }
 .us-group-title { font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); margin: 22px 0 10px; }
-.us-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-family: 'Inter', sans-serif; font-size: .95rem; border-bottom: 1px solid rgba(122,145,86,.5); padding-bottom: 2px; background: none; border-top: 0; border-left: 0; border-right: 0; cursor: pointer; color: var(--olive); }
+.us-list { display: flex; flex-direction: column; gap: 8px; }
+.us-row { display: flex; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 72px; }
+.us-row:hover { border-color: rgba(143,168,100,.55); }
+.us-row__img { width: 26%; max-width: 140px; align-self: stretch; flex-shrink: 0; background: var(--ph); }
+.us-row__img img { width: 100%; height: 100%; object-fit: cover; }
+.us-row__body { flex: 1; min-width: 0; padding: 10px 12px; }
+.us-row__name { font-size: .95rem; color: var(--ink); }
+.us-row__meta { font-size: .78rem; color: var(--dim); margin-top: 2px; }
+.us-row__meta b { color: var(--olive-2); font-weight: 600; }
+.us-row__arrow { width: 32px; height: 32px; border-radius: 50%; background: var(--olive-soft); display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
+.us-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: .92rem; color: var(--olive-2); background: none; border: 0; border-bottom: 1px solid rgba(143,168,100,.5); padding: 0 0 2px; cursor: pointer; font-family: inherit; }
 
-/* Ми поруч */
-.us-near { margin-top: 34px; background: var(--olive-deep); border-top: 1px solid var(--line); color: var(--ink); padding: 28px 0 30px; position: relative; overflow: hidden; }
-.us-near__eyebrow { font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: var(--olive-2); margin-bottom: 6px; }
-.us-near__addr { font-family: 'Playfair Display', serif; font-size: clamp(1.9rem, 7vw, 2.5rem); line-height: 1.1; margin-bottom: 8px; }
-.us-near__hint { font-size: .9rem; color: var(--text); margin-bottom: 14px; max-width: 520px; }
-.us-near a.us-link { color: var(--ink); border-color: rgba(242,237,228,.5); margin-top: 0; margin-right: 22px; }
-.us-near__map { margin-top: 22px; border-radius: 12px; overflow: hidden; height: 260px; }
-.us-near__map iframe { width: 100%; height: 100%; border: 0; display: block; }
+/* Майстри */
+.us-masters { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.us-master { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+.us-master__photo { aspect-ratio: 4 / 3; background: var(--ph); overflow: hidden; }
+.us-master__photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 25%; }
+.us-master__body { padding: 14px 16px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.us-master__name { font-family: 'Playfair Display', serif; font-size: 1.35rem; }
+.us-master__lvl { font-size: .86rem; color: var(--text); margin-bottom: 10px; }
+.us-master .btn { margin-top: auto; width: 100%; padding: 12px; }
 
-/* FAQ */
-.us-faq details { border-bottom: 1px solid var(--line); }
-.us-faq summary { cursor: pointer; list-style: none; padding: 16px 30px 16px 0; position: relative; font-family: 'Playfair Display', serif; font-size: 1.08rem; color: var(--ink); }
+/* Питання */
+.us-faq details { border: 1px solid var(--line); border-radius: 8px; background: var(--bg-2); margin-bottom: 8px; }
+.us-faq summary { cursor: pointer; list-style: none; padding: 12px 44px 12px 16px; position: relative; font-size: .95rem; color: var(--ink); }
 .us-faq summary::-webkit-details-marker { display: none; }
-.us-faq summary::after { content: '+'; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 1.4rem; color: var(--olive); }
-.us-faq details[open] summary::after { content: '−'; }
-.us-faq p { color: var(--dim); font-size: .92rem; line-height: 1.7; padding-bottom: 16px; }
+.us-faq summary::after { content: ''; position: absolute; right: 18px; top: 50%; width: 8px; height: 8px; border-right: 1.5px solid var(--text); border-bottom: 1.5px solid var(--text); transform: translateY(-70%) rotate(45deg); transition: transform .2s; }
+.us-faq details[open] summary::after { transform: translateY(-30%) rotate(-135deg); }
+.us-faq p { color: var(--dim); font-size: .9rem; line-height: 1.7; padding: 0 16px 14px; }
 
-.us-foot { padding: 26px 16px 110px; font-size: .8rem; color: var(--dim); display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+/* Завітайте */
+.us-visit { margin-top: 34px; background: var(--olive-deep); }
+.us-visit .wrap { display: grid; grid-template-columns: 1fr; gap: 20px; padding-top: 28px; padding-bottom: 28px; }
+.us-visit h2 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(1.9rem, 6.6vw, 2.6rem); line-height: 1.1; margin-bottom: 6px; }
+.us-visit p { color: rgba(242,237,228,.85); margin-bottom: 12px; }
+.us-visit__addr { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.us-visit .btn { background: rgba(13,17,11,.35); }
+.us-visit .btn:hover { background: rgba(13,17,11,.55); }
+.us-visit__links { display: flex; gap: 10px; flex-wrap: wrap; }
+.us-map { border-radius: 12px; overflow: hidden; height: 240px; border: 1px solid rgba(13,17,11,.3); }
+.us-map iframe { width: 100%; height: 100%; border: 0; display: block; filter: invert(92%) hue-rotate(180deg) brightness(.95) contrast(.9); }
 
-/* Липка кнопка запису на телефоні — з'являється, коли верхня кнопка пішла з екрана */
+.us-foot { padding: 22px 16px 100px; font-size: .8rem; color: var(--dim); display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+/* Липка кнопка запису на телефоні */
 .us-sticky { position: fixed; left: 16px; right: 16px; bottom: 14px; z-index: 40; opacity: 0; transform: translateY(120%); transition: opacity .25s, transform .25s; pointer-events: none; }
 .us-sticky.show { opacity: 1; transform: none; pointer-events: auto; }
-.us-sticky .us-cta { box-shadow: 0 8px 24px rgba(122,145,86,.35); }
+.us-sticky .btn { width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
 
+@media (min-width: 640px) {
+  .us-masters { grid-template-columns: repeat(3, 1fr); }
+  .us-master__photo { aspect-ratio: 1 / 1; }
+}
 @media (min-width: 900px) {
   .wrap { padding: 0 28px; }
+  .us-links, .us-head-cta { display: flex; }
   .us-burger, .us-menu { display: none !important; }
-  .us-nav-desk { display: flex; }
-  .us-hero { display: grid; grid-template-columns: 1fr 1.1fr; gap: 40px; align-items: center; padding: 20px 0 30px; }
-  .us-hero-photo { margin: 0; border-radius: 14px; aspect-ratio: 4/3; }
-  /* На комп'ютері заголовок уміщується в один рядок. */
-  .us-h1 { font-size: clamp(2rem, 3.4vw, 2.9rem); white-space: nowrap; }
-  .us-cta { width: auto; display: inline-flex; padding: 14px 34px; }
-  .us-facts { margin: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .us-hero { grid-template-columns: 0.95fr 1.05fr; height: 420px; }
+  .us-hero__text { padding: 38px 28px 34px max(28px, calc((100vw - 1180px) / 2 + 28px)); align-self: center; }
+  .us-hero__photo { aspect-ratio: auto; height: 420px; }
+  .us-hero__photo img { object-position: 50% 25%; }
+  .us-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .us-list { display: grid; grid-template-columns: 1fr 1fr; }
-  .us-more .us-list { grid-template-columns: 1fr 1fr; }
-  .us-near__inner { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
-  .us-near__map { margin-top: 0; height: 300px; }
+  .us-visit .wrap { grid-template-columns: 1fr 1.25fr; gap: 40px; align-items: center; }
+  .us-visit .wrap > div:first-child { border-right: 1px solid rgba(242,237,228,.18); padding-right: 30px; }
+  .us-map { height: 260px; }
   .us-sticky { display: none; }
-  .us-foot { padding: 26px 28px 40px; }
+  .us-foot { padding: 22px 28px 34px; }
 }
+@media (prefers-reduced-motion: reduce) { .us-card, .btn { transition: none; } }
 </style>
 </head>
 <body>
 
-<div class="wrap" style="position:relative;">
-  <nav class="us-nav">
-    <a href="/" class="us-logo" aria-label="Oliva — головна"><img src="/assets/img/logo.png" alt="Oliva" /><span>Oliva<b>.</b></span></a>
-    <div class="us-nav-desk">
-      <a href="/">Головна</a><a href="#services">Послуги</a><a href="#near">Як дістатися</a><a href="/certificate.html">Сертифікат</a><a href="tel:+380974340112">097 434 01 12</a>
-    </div>
+<header class="us-head">
+  <div class="wrap us-nav" style="position:relative;">
+    <a href="/" class="us-logo" aria-label="Oliva — головна">Oliva</a>
+    <nav class="us-links"><a href="/" class="on">Головна</a><a href="#services">Послуги</a><a href="#visit">Контакти</a></nav>
+    <a href="{{BOOK_HREF}}" class="btn us-head-cta">Записатися <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     <button class="us-burger" id="usBurger" aria-label="Меню"><span></span><span></span><span></span></button>
-  </nav>
-  <div class="us-menu" id="usMenu">
-    <a href="/">Головна</a>
-    <a href="#services">Послуги на Успішній</a>
-    <a href="#near">Як дістатися</a>
-    <a href="{{BOOK_HREF}}">Записатися онлайн</a>
-    <a href="/certificate.html">Подарунковий сертифікат</a>
-    <a href="tel:+380974340112">📞 097 434 01 12</a>
-  </div>
-
-  <header class="us-hero">
-    <div>
-      <div class="us-eyebrow">Студія масажу · Київ</div>
-      <h1 class="us-h1">Oliva на <span class="nowrap">Успішній, 8</span></h1>
-      <p class="us-sub">Ваш простір спокою на Теремках — біля метро «Іподром» і «Виставковий центр», поруч ВДНГ та ЖК «Лікоград».</p>
-      <a href="{{BOOK_HREF}}" class="us-cta" id="usTopCta">Записатися онлайн →</a>
+    <div class="us-menu" id="usMenu">
+      <a href="/">Головна</a>
+      <a href="#services">Послуги на Успішній</a>
+      <a href="#masters">Майстри</a>
+      <a href="#visit">Контакти та маршрут</a>
+      <a href="{{BOOK_HREF}}">Записатися онлайн</a>
+      <a href="/certificate">Подарунковий сертифікат</a>
+      <a href="tel:+380974340112">📞 097 434 01 12</a>
     </div>
-    <div class="us-hero-photo"><img src="{{PHOTO}}" alt="Студія масажу Oliva на вул. Успішна, 8 (Теремки)" /></div>
-  </header>
+  </div>
+</header>
 
-  <div class="us-facts">
-    <div class="us-fact">
+<section class="us-hero">
+  <div class="us-hero__text">
+    <div class="us-eyebrow">Студія масажу · Київ</div>
+    <h1 class="us-h1">Масаж<br>на <span class="nowrap">Успішній, 8</span></h1>
+    <p class="us-sub">Час для себе. Турбота про тіло.</p>
+    <a href="{{BOOK_HREF}}" class="btn" id="usTopCta">Записатися онлайн <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <div class="us-place">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-      Теремки · Іподром
-    </div>
-    <div class="us-fact">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      Щодня 09:00–21:30
+      <span>Теремки · Іподром · Виставковий центр · ВДНГ · Лікоград</span>
     </div>
   </div>
+  <div class="us-hero__photo"><img src="{{PHOTO}}" alt="Студія масажу Oliva на вул. Успішна, 8 (Теремки)" /></div>
+</section>
 
+<div class="us-bar">
+  <div class="wrap">
+    <span class="us-bar__item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Успішна, 8</span>
+    <span class="us-bar__sep"></span>
+    <span class="us-bar__item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Щодня 09:00–21:30</span>
+  </div>
+</div>
+
+<main class="wrap">
   <section class="us-section" id="services">
-    <h2 class="us-h2">Оберіть свій масаж</h2>
-    <p class="us-note">{{MASTER_NOTE}}</p>
-    <div class="us-list">{{SERVICES_TOP}}</div>
+    <div class="us-sec-head">
+      <h2 class="us-h2">Оберіть свій масаж</h2>
+      <p class="us-sec-note">{{MASTER_NOTE}}</p>
+    </div>
+    <div class="us-grid">{{SERVICES_TOP}}</div>
     <div class="us-more" id="usMore">{{SERVICES_MORE}}</div>
     <button type="button" class="us-link" id="usMoreBtn">Усі послуги ({{SERVICES_COUNT}}) →</button>
   </section>
 
-  <section class="us-section us-faq">
-    <h2 class="us-h2" style="margin-bottom:10px;">Часті питання</h2>
-    <details><summary>Як записатися саме на Успішну, 8?</summary><p>Натисніть «Записатися онлайн» на цій сторінці — запис відкриється з уже обраною адресою, і ви побачите вільний час саме тут. Або зателефонуйте: 097 434 01 12.</p></details>
-    <details><summary>Чому ціни тут можуть відрізнятися від Борщагівської?</summary><p>Ціна залежить від рівня майстра. На цій сторінці показані ціни саме тих майстрів, які приймають на Успішній, 8 — за нашим актуальним прайсом.</p></details>
-    <details><summary>Як нас знайти?</summary><p>Вул. Успішна, 8 — район Теремки, поруч ЖК «Лікоград» і ВДНГ, недалеко від станцій метро «Іподром» та «Виставковий центр». Кнопка «Прокласти маршрут» нижче відкриє навігацію в Google Картах.</p></details>
-    <details><summary>Чи можна придбати подарунковий сертифікат з отриманням тут?</summary><p>Так. На сторінці сертифіката оберіть студію отримання «Успішна».</p></details>
-  </section>
-</div>
+  {{MASTERS_SECTION}}
 
-<section class="us-near" id="near">
-  <div class="wrap us-near__inner">
-    <div>
-      <div class="us-near__eyebrow">Ми поруч</div>
-      <div class="us-near__addr">Київ, вул. Успішна, 8</div>
-      <p class="us-near__hint">Теремки, поруч ЖК «Лікоград» і ВДНГ, станції метро «Іподром» та «Виставковий центр». Щодня 09:00–21:30.</p>
-      <a class="us-link" href="https://www.google.com/maps/dir/?api=1&amp;destination=50.3864358,30.4572199" target="_blank" rel="noopener">Прокласти маршрут →</a>
-      <a class="us-link" href="tel:+380974340112">097 434 01 12</a>
+  <section class="us-section us-faq">
+    <div class="us-sec-head">
+      <h2 class="us-h2">Часті питання</h2>
+      <p class="us-sec-note">Ми зібрали відповіді на найпопулярніші запитання.</p>
     </div>
-    <div class="us-near__map"><iframe src="https://maps.google.com/maps?q=50.3864358,30.4572199&amp;z=16&amp;output=embed" loading="lazy" title="Студія масажу Oliva на вул. Успішна, 8"></iframe></div>
+    <details><summary>Як записатися?</summary><p>Натисніть «Записатися онлайн» на цій сторінці — запис відкриється з уже обраною адресою, і ви побачите вільний час саме тут. Або зателефонуйте: 097 434 01 12.</p></details>
+    <details><summary>Як нас знайти?</summary><p>Вул. Успішна, 8 — район Теремки, поруч ЖК «Лікоград» і ВДНГ, недалеко від станцій метро «Іподром» та «Виставковий центр». Кнопка «Прокласти маршрут» нижче відкриє навігацію в Google Картах.</p></details>
+    <details><summary>Чи можна придбати сертифікат?</summary><p>Так. На <a href="/certificate" style="color:var(--olive-2);">сторінці сертифіката</a> оберіть послугу або суму, а в способі отримання — студію «Успішна».</p></details>
+    <details><summary>Чому ціни тут можуть відрізнятися від Борщагівської?</summary><p>Ціна залежить від рівня майстра. На цій сторінці показані ціни саме тих майстрів, які приймають на Успішній, 8 — за нашим актуальним прайсом.</p></details>
+  </section>
+</main>
+
+<section class="us-visit" id="visit">
+  <div class="wrap">
+    <div>
+      <h2>Завітайте до Oliva</h2>
+      <p>Чекаємо на вас у нашій студії масажу. Щодня 09:00–21:30.</p>
+      <div class="us-visit__addr"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Київ, вул. Успішна, 8</div>
+      <div class="us-visit__links">
+        <a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=50.3864358,30.4572199" target="_blank" rel="noopener">Прокласти маршрут <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn" href="tel:+380974340112">097 434 01 12</a>
+      </div>
+    </div>
+    <div class="us-map"><iframe src="https://maps.google.com/maps?q=50.3864358,30.4572199&amp;z=16&amp;output=embed" loading="lazy" title="Студія масажу Oliva на вул. Успішна, 8"></iframe></div>
   </div>
 </section>
 
 <div class="wrap us-foot">
   <span>© 2026 Студія масажу Oliva · Київ</span>
-  <a href="/" style="color:var(--olive);">← Головна · друга студія: Борщагівська, 145</a>
+  <a href="/" style="color:var(--olive-2);">← Головна · друга студія: Борщагівська, 145</a>
 </div>
 
-<div class="us-sticky" id="usSticky"><a href="{{BOOK_HREF}}" class="us-cta">Записатися онлайн →</a></div>
+<div class="us-sticky" id="usSticky"><a href="{{BOOK_HREF}}" class="btn">Записатися онлайн →</a></div>
 
 <script>
 (function () {
@@ -220,11 +273,11 @@ img { display: block; max-width: 100%; }
 
   var more = document.getElementById('usMore'), btn = document.getElementById('usMoreBtn');
   if (!more.textContent.trim()) btn.style.display = 'none';
+  btn.setAttribute('data-label', btn.textContent);
   btn.addEventListener('click', function () {
     var open = more.classList.toggle('open');
     btn.textContent = open ? 'Згорнути ↑' : btn.getAttribute('data-label');
   });
-  btn.setAttribute('data-label', btn.textContent);
 
   /* Липка кнопка — лише коли верхня вже не на екрані. */
   var sticky = document.getElementById('usSticky'), top = document.getElementById('usTopCta');
