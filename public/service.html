@@ -21,9 +21,11 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --black: #080A07; --black-2: #0e120c; --olive: #2E3D22; --olive-light: #7A9156;
-      --cream: #F2EDE4; --warm: #E8DFD0; --text-dim: rgba(242,237,228,0.6); --line: rgba(122,145,86,0.18);
-      --panel: rgba(242,237,228,0.04);
+      /* Палітра SPA-сторінок і Успішної (жовтень 2026): темне зелено-сіре
+         тло замість чорного, приглушена олива. */
+      --black: #141d1a; --black-2: #1c2520; --olive: #3c4434; --olive-light: #a8b07f;
+      --cream: #F0E8E0; --warm: #E8DFD0; --text-dim: rgba(240,232,224,0.62); --line: rgba(196,204,178,0.14);
+      --panel: #17201c; --olive-btn: #5b6241;
     }
     html, body { min-height: 100vh; background: var(--black); color: var(--cream); font-family: 'Inter', sans-serif; overflow-x: hidden; }
     img { max-width: 100%; display: block; }
@@ -31,21 +33,38 @@
        контактні посилання лишались підкресленими. */
     a { color: inherit; text-decoration: none; }
 
-    .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--black); z-index: 10; }
-    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-    .nav-logo img { width: 36px; height: 36px; object-fit: contain; }
-    .nav-logo span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--cream); }
-    .nav-back { font-size: 13px; color: var(--olive-light); text-decoration: none; }
-    .nav-back:hover { color: var(--cream); }
+    /* Шапка — як на SPA-сторінках: логотип, меню, «Записатися». */
+    .nav { position: sticky; top: 0; z-index: 20; background: rgba(21,29,27,.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+    .nav-in { max-width: 1180px; margin: 0 auto; padding: 0 16px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: relative; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--cream); }
+    .nav-logo img { width: 38px; height: 38px; object-fit: contain; }
+    .nav-logo span { font-family: 'Playfair Display', serif; font-size: 1.45rem; letter-spacing: .14em; line-height: 1; display: flex; flex-direction: column; }
+    .nav-logo small { font-family: 'Inter', sans-serif; font-size: .58rem; letter-spacing: .26em; color: var(--text-dim); margin-top: 4px; }
+    .nav-links { display: none; gap: 30px; font-size: .9rem; color: rgba(240,232,224,.85); }
+    .nav-links a { padding: 6px 0; border-bottom: 1px solid transparent; }
+    .nav-links a:hover { border-color: var(--olive-light); color: var(--cream); }
+    .nav-cta { display: none !important; padding: 10px 18px !important; font-size: .88rem !important; animation: none !important; }
+    .nav-burger { width: 44px; height: 44px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; justify-content: center; gap: 7px; align-items: flex-end; }
+    .nav-burger span { display: block; width: 26px; height: 1.5px; background: var(--cream); }
+    .nav-menu { display: none; position: absolute; left: 16px; right: 16px; top: 70px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px; box-shadow: 0 12px 34px rgba(0,0,0,.5); }
+    .nav-menu.open { display: block; }
+    .nav-menu a { display: block; padding: 12px 14px; border-radius: 10px; color: var(--cream); }
+    .nav-menu a:hover { background: rgba(168,176,127,.14); }
+    @media (min-width: 900px) {
+      .nav-in { padding: 0 28px; }
+      .nav-links { display: flex; }
+      .nav-cta { display: inline-flex !important; }
+      .nav-burger, .nav-menu { display: none !important; }
+    }
 
     .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
     .loading { text-align: center; padding: 100px 24px; color: var(--text-dim); }
 
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; border-radius: 50px; font-size: 15px; font-weight: 600; text-decoration: none; transition: all .2s; white-space: nowrap; }
-    .btn-primary { background: var(--olive-light); color: var(--black); border: none; }
-    .btn-primary:hover { background: var(--cream); }
-    .btn-secondary { background: rgba(8,10,7,0.45); border: 1.5px solid var(--olive-light); color: var(--olive-light); }
-    .btn-secondary:hover { background: rgba(122,145,86,0.25); color: var(--cream); border-color: var(--cream); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 500; text-decoration: none; transition: all .2s; white-space: nowrap; }
+    .btn-primary { background: var(--olive-btn); color: var(--cream); border: 1px solid transparent; }
+    .btn-primary:hover { background: #6a7150; }
+    .btn-secondary { background: rgba(20,29,26,0.55); border: 1px solid var(--line); color: var(--cream); }
+    .btn-secondary:hover { background: rgba(168,176,127,0.14); border-color: rgba(168,176,127,.4); }
 
     @keyframes btnPulse {
       0% { box-shadow: 0 0 0 0 rgba(122,145,86,0.75); transform: scale(1); }
@@ -61,7 +80,7 @@
     .hero--compact { min-height: 52vh; }
     .hero--tall { min-height: 92vh; }
     .hero-bg { position: absolute; inset: 0; object-fit: cover; width: 100%; height: 100%; z-index: 0; }
-    .hero-bg-fallback { position: absolute; inset: 0; background: linear-gradient(160deg, #1c2415, var(--black)); z-index: 0; }
+    .hero-bg-fallback { position: absolute; inset: 0; background: linear-gradient(160deg, #1f2925, var(--black)); z-index: 0; }
     /* На десктопі фото свідомо кадроване так, щоб під заголовком і кнопками
        лишалась темна ділянка — оверлей там зайвий. На вузьких екранах те
        саме фото кадрується інакше (object-fit:cover обрізає вужче й вище),
@@ -76,7 +95,7 @@
     .hero-inner { position: relative; z-index: 2; max-width: 640px; }
     .hero-inner--right { margin-left: auto; margin-right: -140px; max-width: 620px; }
     .hero-eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 14px; font-weight: 600; }
-    .hero-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.12; margin-bottom: 14px; text-transform: uppercase; }
+    .hero-title { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.1; margin-bottom: 14px; }
     .hero-tagline { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.4rem); color: var(--cream); opacity: .92; margin-bottom: 18px; line-height: 1.4; }
     .hero-desc { font-size: 15px; color: var(--text-dim); line-height: 1.7; max-width: 520px; margin-bottom: 26px; }
     .hero-sub { padding: 44px 24px 0; text-align: center; }
@@ -219,7 +238,7 @@
         display: flex; align-items: center; justify-content: center;
         position: absolute; top: 50%; transform: translateY(-50%);
         width: 34px; height: 34px; border-radius: 50%;
-        background: rgba(8,10,7,0.75); border: 1px solid rgba(122,145,86,0.5);
+        background: rgba(20,29,26,0.75); border: 1px solid rgba(122,145,86,0.5);
         color: var(--cream); font-size: 20px; line-height: 1; cursor: pointer;
         z-index: 6; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
       }
@@ -228,7 +247,7 @@
       .abon-carousel-arrow[disabled] { opacity: .35; pointer-events: none; }
     }
 
-    .contacts-section { padding: 72px 24px; background: rgba(14,18,12,0.9); border-top: 1px solid var(--line); }
+    .contacts-section { padding: 72px 24px; background: rgba(28,37,32,0.9); border-top: 1px solid var(--line); }
     .contacts-section .wrap { max-width: 1080px; margin: 0 auto; }
     .contacts-section .section-label { display: flex; align-items: center; gap: 10px; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--olive-light); margin-bottom: 10px; }
     .contacts-section .section-label::before { content: ''; width: 24px; height: 1px; background: var(--olive-light); }
@@ -325,7 +344,7 @@
       .hero { min-height: 60vh; padding-top: 320px; }
       /* Мобільне кадрування фото не лишає темної ділянки під текстом —
          затемнюємо низ, де сидять заголовок і кнопки, градієнтом. */
-      .hero-overlay { display: block; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(5,7,4,0.05) 0%, rgba(5,7,4,0.55) 45%, rgba(5,7,4,0.85) 100%); }
+      .hero-overlay { display: block; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(16,23,21,0.05) 0%, rgba(16,23,21,0.55) 45%, rgba(16,23,21,0.85) 100%); }
       /* Для сторінок із текстом праворуч margin-right:-140px навмисно
          "виливає" блок за контейнер на десктопі — на вузькому екрані це
          виштовхувало кнопки й текст за правий край екрана (обрізались). */
@@ -386,12 +405,18 @@
 <body>
 
 <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/assets/img/logo.png" alt="Oliva" />
-    <span>Oliva.</span>
-  </a>
-  <a href="/#services" class="nav-back">← До послуг</a>
+  <div class="nav-in">
+    <a href="/" class="nav-logo"><img src="/assets/img/logo.png" alt="Oliva" /><span>OLIVA<small>студія масажу</small></span></a>
+    <div class="nav-links"><a href="/">Головна</a><a href="/#services">Послуги</a><a href="/spa-kompleksy-kyiv">SPA-комплекси</a><a href="/spa-dlya-dvoh-kyiv">SPA для двох</a><a href="#contacts">Контакти</a></div>
+    <a href="/booking.html" class="btn btn-primary nav-cta">Записатися →</a>
+    <button class="nav-burger" id="navBurger" aria-label="Меню"><span></span><span></span><span></span></button>
+    <div class="nav-menu" id="navMenu">
+      <a href="/">Головна</a><a href="/#services">Усі послуги</a><a href="/spa-kompleksy-kyiv">SPA-комплекси</a><a href="/spa-dlya-dvoh-kyiv">SPA для двох</a>
+      <a href="/booking.html">Записатися онлайн</a><a href="/certificate">Подарунковий сертифікат</a><a href="#contacts">Контакти</a>
+    </div>
+  </div>
 </nav>
+<script>(function(){var b=document.getElementById('navBurger'),m=document.getElementById('navMenu');b.addEventListener('click',function(){m.classList.toggle('open');});m.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){m.classList.remove('open');});});})();</script>
 
 <div id="pageContent"><div class="loading">Завантаження…</div></div>
 
