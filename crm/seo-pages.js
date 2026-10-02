@@ -731,6 +731,29 @@ function migrate() {
     db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(FLAG_TOP);
   }
 
+  /* «Фіто-оновлення тіла» для двох: теплий душ — в кінці ритуалу (прохання
+     власника). Лише якщо етапи ще не редагували в адмінці. */
+  const FLAG_SHOWER = "migr_fito2_shower_last";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(FLAG_SHOWER)) {
+    const key2 = 'SPA Ритуал "Фіто-оновлення тіла"(для двох)';
+    const pg = db.prepare("SELECT steps_items FROM service_pages WHERE service_key=?").get(key2);
+    if (pg && pg.steps_items) {
+      const parts = pg.steps_items.split(/\n\s*\n/);
+      const i = parts.findIndex(function (x) { return /^Теплий душ\s*::/.test(x.trim()); });
+      if (i !== -1 && i !== parts.length - 1) {
+        let shower = parts.splice(i, 1)[0].replace(
+          "Після скрабування ви приймаєте душ, змиваючи залишки скрабу та готуючись до наступної частини ритуалу.",
+          "Наостанок — теплий душ, щоб освіжитися після ритуалу.");
+        parts.push(shower);
+        const next = parts.join("\n\n").replace(
+          "Завершуємо ритуал масажем усього тіла для двох.", "Далі — масаж усього тіла для двох.");
+        db.prepare("UPDATE service_pages SET steps_items=?, updated_at=? WHERE service_key=?").run(next, Date.now(), key2);
+        console.log("[seo] «Фіто-оновлення для двох»: теплий душ перенесено в кінець");
+      }
+      db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(FLAG_SHOWER);
+    }
+  }
+
   /* Орієнтири біля філій (показуються в «Де проходить» на сторінках послуг).
      Міняємо лише якщо власник не редагував стандартний текст. */
   const FLAG_NEAR = "migr_branch_nearby_seo";
