@@ -3133,10 +3133,45 @@ router.post(
 /* Фото шапки окремих сторінок сайту (Успішна, SPA для двох/одного).
    Порожнє значення = типове фото сторінки. */
 const PAGE_PHOTO_SLOTS = { uspishna: "page_photo_uspishna", spa2: "page_photo_spa2", spa1: "page_photo_spa1" };
+/* Відео першого екрана SPA-сторінок: горизонтальне (комп'ютер) і
+   вертикальне (телефон) — окремо, бо одне й те саме відео в обох форматах
+   обрізалось би. Ключ: page_video_<slot>_<h|v>. */
+const PAGE_VIDEO_SLOTS = { spa2: 1, spa1: 1 };
+function pageVideoKey(slot, orient) {
+  return PAGE_VIDEO_SLOTS[slot] && (orient === "h" || orient === "v") ? "page_video_" + slot + "_" + orient : null;
+}
 router.get("/page-photos", owner, function (req, res) {
-  const out = {};
+  const out = {}, videos = {};
   Object.keys(PAGE_PHOTO_SLOTS).forEach(function (k) { out[k] = heroGet(PAGE_PHOTO_SLOTS[k]); });
-  res.json({ ok: true, photos: out });
+  Object.keys(PAGE_VIDEO_SLOTS).forEach(function (k) { videos[k] = { h: heroGet(pageVideoKey(k, "h")), v: heroGet(pageVideoKey(k, "v")) }; });
+  res.json({ ok: true, photos: out, videos: videos });
+});
+router.post("/page-videos/:slot/:orient", owner, express.raw({ type: "*/*", limit: "64mb" }), function (req, res) {
+  const key = pageVideoKey(req.params.slot, req.params.orient);
+  if (!key) return res.status(400).json({ ok: false, error: "bad slot" });
+  const ext = String(req.query.ext || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5);
+  if (!HERO_EXT.video[ext]) return res.status(400).json({ ok: false, error: "Формат не підтримується (mp4, mov, webm)" });
+  const buf = req.body;
+  if (!buf || !buf.length) return res.status(400).json({ ok: false, error: "Порожній файл" });
+  if (buf.length > HERO_MAX.video) return res.status(413).json({ ok: false, error: "Файл завеликий (макс 60 МБ)" });
+  const filename = "page-" + req.params.slot + "-video-" + req.params.orient + "-" + crypto.randomBytes(8).toString("hex") + "." + ext;
+  try {
+    fsMedia.mkdirSync(SITE_MEDIA_DIR, { recursive: true });
+    fsMedia.writeFileSync(pathMedia.join(SITE_MEDIA_DIR, filename), buf);
+  } catch (e) { return res.status(500).json({ ok: false, error: e.message }); }
+  const prev = heroGet(key);
+  const url = "/api/site-media/" + filename;
+  heroSet(key, url);
+  heroDropOld(prev);
+  res.json({ ok: true, url: url });
+});
+router.delete("/page-videos/:slot/:orient", owner, function (req, res) {
+  const key = pageVideoKey(req.params.slot, req.params.orient);
+  if (!key) return res.status(400).json({ ok: false, error: "bad slot" });
+  const prev = heroGet(key);
+  heroSet(key, "");
+  heroDropOld(prev);
+  res.json({ ok: true, url: "" });
 });
 router.post("/page-photos/:slot", owner, express.raw({ type: "*/*", limit: "16mb" }), function (req, res) {
   const key = PAGE_PHOTO_SLOTS[req.params.slot];

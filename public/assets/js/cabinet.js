@@ -4917,11 +4917,60 @@
       box.appendChild(head);
       api("GET", "/api/crm/page-photos").then(function (r2) {
         var ph = (r2.j && r2.j.ok && r2.j.photos) || {};
+        var vids = (r2.j && r2.j.videos) || {};
         box.appendChild(pagePhotoCard("uspishna", "Студія на Успішній", "/uspishna", ph.uspishna));
-        box.appendChild(pagePhotoCard("spa2", "SPA для двох у Києві", "/spa-dlya-dvoh-kyiv", ph.spa2));
-        box.appendChild(pagePhotoCard("spa1", "SPA для одного у Києві", "/spa-dlya-odnogo-kyiv", ph.spa1));
+        var c2 = pagePhotoCard("spa2", "SPA для двох у Києві", "/spa-dlya-dvoh-kyiv", ph.spa2);
+        pageVideoRows(c2, "spa2", vids.spa2 || {}); box.appendChild(c2);
+        var c1 = pagePhotoCard("spa1", "SPA для одного у Києві", "/spa-dlya-odnogo-kyiv", ph.spa1);
+        pageVideoRows(c1, "spa1", vids.spa1 || {}); box.appendChild(c1);
       });
     });
+
+    /* Відео першого екрана SPA-сторінок: горизонтальне — на комп'ютері,
+       вертикальне — на телефоні. Якщо є лише одне — воно й показується
+       скрізь; без відео — фото. */
+    function pageVideoRows(card, slot, cur) {
+      [["h", "Відео горизонтальне (для комп'ютера)"], ["v", "Відео вертикальне (для телефона)"]].forEach(function (o) {
+        var orient = o[0], current = cur[orient] || "";
+        var wrap = el("div", null); wrap.style.cssText = "margin-top:14px;padding-top:12px;border-top:1px solid var(--line);";
+        wrap.appendChild(el("div", null, o[1])).style.cssText = "font-size:.85rem;color:var(--cream);margin-bottom:6px;";
+        var info = el("div", "sub"); wrap.appendChild(info);
+        var row = el("div", null); row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;";
+        var pick = el("button", "btn btn-sm btn-primary", "Завантажити відео");
+        var del = el("button", "btn btn-sm btn-ghost", "Прибрати відео");
+        var file = document.createElement("input"); file.type = "file"; file.accept = "video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"; file.style.display = "none";
+        row.appendChild(pick); row.appendChild(del); row.appendChild(file); wrap.appendChild(row);
+        var msg = el("div", "sub"); msg.style.marginTop = "6px"; wrap.appendChild(msg);
+        function paint(url) {
+          current = url || "";
+          info.innerHTML = current ? '✓ Відео стоїть · <a href="' + current + '" target="_blank" style="color:var(--olive-light);">переглянути</a>' : "Немає — показується фото";
+          del.style.display = current ? "" : "none";
+        }
+        paint(current);
+        pick.addEventListener("click", function () { file.click(); });
+        file.addEventListener("change", function () {
+          var f = file.files && file.files[0]; if (!f) return;
+          if (f.size > 60 * 1048576) { msg.style.color = "var(--err)"; msg.textContent = "✗ Файл завеликий (макс 60 МБ). Краще до 20 МБ, щоб сторінка швидко вантажилась."; file.value = ""; return; }
+          var ext = (f.name.split(".").pop() || "mp4").toLowerCase();
+          pick.disabled = del.disabled = true;
+          msg.style.color = "var(--text-dim)"; msg.textContent = "Завантаження… " + Math.round(f.size / 104857.6) / 10 + " МБ";
+          fetch("/api/crm/page-videos/" + slot + "/" + orient + "?ext=" + ext, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (j) {
+              pick.disabled = del.disabled = false; file.value = "";
+              if (j && j.ok) { paint(j.url); msg.style.color = "var(--ok)"; msg.textContent = "✓ Збережено — оновіть сторінку сайту"; }
+              else { msg.style.color = "var(--err)"; msg.textContent = "✗ " + ((j && j.error) || "Не вдалося завантажити"); }
+            }).catch(function (e) { pick.disabled = del.disabled = false; msg.style.color = "var(--err)"; msg.textContent = "✗ " + e.message; });
+        });
+        del.addEventListener("click", function () {
+          if (!confirm("Прибрати це відео зі сторінки?")) return;
+          api("DELETE", "/api/crm/page-videos/" + slot + "/" + orient).then(function (res) {
+            if (res.j && res.j.ok) { paint(""); msg.style.color = "var(--ok)"; msg.textContent = "✓ Прибрано"; }
+          });
+        });
+        card.appendChild(wrap);
+      });
+    }
 
     /* Фото шапки окремої сторінки (Успішна, SPA-підбірки). Фото з телефона
        стискаємо в браузері до 2000 px — інакше сторінка вантажиться довго. */

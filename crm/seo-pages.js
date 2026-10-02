@@ -300,10 +300,118 @@ function renderServicePage(page) {
   return wrap(r, pathname, data);
 }
 
+/* SPA-сторінки в стилі сторінки Успішної (прохання власника, жовтень 2026):
+   перший екран «текст + фото/відео», перемикач «Для двох / Для одного» у
+   програмах, картки з етапами, описи, питання, блок «Завітайте» з картою.
+   Відео першого екрана власник завантажує в CRM («Фото сторінок»). */
 function renderCategory(slug) {
-  if (!CATEGORIES[slug]) return null;
-  const r = renderCategoryHtml(slug, publicServices(), publicBranches(), pagesByKey(true));
-  return wrap(r, "/" + slug, null);
+  const cfg = CATEGORIES[slug];
+  if (!cfg) return null;
+  const services = publicServices(), branches = publicBranches(), pages = pagesByKey(true);
+  const meta = renderCategoryHtml(slug, services, branches, pages); // title, опис, JSON-LD
+  const A = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  const PIN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+  const CLOCK = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  const spaBranch = branches.filter(function (b) { return /борщаг/i.test((b.address || "") + " " + (b.name || "")); })[0];
+  const bookFor = function (g) { return "/booking.html" + (spaBranch ? "?branch=" + spaBranch.id + "&group=" + g : ""); };
+  const book = bookFor(cfg.group);
+
+  /* Перший екран: відео (гориз./верт.) або фото. */
+  const photo = setting("page_photo_" + cfg.group);
+  const vh = setting("page_video_" + cfg.group + "_h"), vv = setting("page_video_" + cfg.group + "_v");
+  const media = (vh || vv)
+    ? '<video id="heroVideo" muted autoplay loop playsinline preload="metadata"' + (photo ? ' poster="' + esc(photo) + '"' : "") +
+        (vh ? ' data-h="' + esc(vh) + '"' : "") + (vv ? ' data-v="' + esc(vv) + '"' : "") + "></video>"
+    : (photo ? '<img src="' + esc(photo) + '" alt="' + esc(cfg.h1) + '">' : "");
+
+  /* Програми обох підбірок — для перемикача. */
+  const tabOrder = ["spa2", "spa1"];
+  const TAB_LABEL = { spa2: "Для двох", spa1: "Для одного" };
+  const slugOf = function (g) { return Object.keys(CATEGORIES).filter(function (k) { return CATEGORIES[k].group === g; })[0]; };
+  function pcard(c) {
+    return '<article class="p-card">' +
+      (c.image ? '<div class="p-card__img"><img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="lazy"></div>' : "") +
+      '<div class="p-card__body">' +
+        '<h3 class="p-card__title">' + (c.href ? '<a href="' + esc(c.href) + '">' + esc(c.title) + "</a>" : esc(c.title)) + "</h3>" +
+        (c.description ? '<p class="p-card__desc">' + esc(c.description) + "</p>" : "") +
+        (c.steps.length ? '<p class="p-card__steps"><b>Що входить:</b> ' + c.steps.map(esc).join(" → ") + "</p>" : "") +
+        (c.suitable.length ? '<ul class="p-card__suit">' + c.suitable.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : "") +
+        '<div class="p-card__prices">' + c.durs.map(function (d) {
+          return '<div class="p-card__price"><span>' + esc(SP.fmtDur(d.dur)) + "</span><b>" + Math.round(d.price / 100) + " грн</b></div>";
+        }).join("") + "</div>" +
+        (c.where.length ? '<div class="p-card__where">📍 ' + esc(c.where.join(" · ")) + "</div>" : "") +
+        '<div class="p-card__actions"><a href="' + c.book + '" class="btn">Записатися ' + A + "</a>" +
+          (c.href ? '<a href="' + esc(c.href) + '" class="btn btn--ghost">Детальніше</a>' : "") +
+          '<a href="/certificate.html?service=' + encodeURIComponent(c.key) + '" class="btn btn--ghost">🎁 Сертифікат</a></div>' +
+      "</div></article>";
+  }
+  const panels = tabOrder.map(function (g) {
+    const cards = categoryCards(g, services, branches, pages);
+    const other = slugOf(g);
+    return '<div class="us-panel' + (g === cfg.group ? " on" : "") + '" data-panel="' + g + '" role="tabpanel">' +
+      (cards.length ? '<div class="p-grid">' + cards.map(pcard).join("") + "</div>" : '<p class="us-sec-note">Програми скоро з\'являться.</p>') +
+      (g !== cfg.group && other ? '<p class="us-panel__more"><a href="/' + other + '">Сторінка «' + esc(CATEGORIES[other].h1) + "» →</a></p>" : "") +
+      "</div>";
+  }).join("");
+  const tabs = '<div class="us-tabs" role="tablist">' + tabOrder.map(function (g) {
+    const on = g === cfg.group;
+    return '<button type="button" class="us-tab' + (on ? " on" : "") + '" role="tab" aria-selected="' + on + '" data-tab="' + g + '">' + TAB_LABEL[g] + "</button>";
+  }).join("") + "</div>";
+
+  const ownCards = categoryCards(cfg.group, services, branches, pages);
+  const withMore = ownCards.filter(function (c) { return c.more.length; });
+  const other = Object.keys(CATEGORIES).filter(function (k) { return k !== slug; });
+
+  let m = "";
+  m += '<section class="us-hero"><div class="us-hero__text">' +
+    '<div class="us-eyebrow">Студія масажу Oliva · Київ</div>' +
+    '<h1 class="us-h1">' + esc(cfg.h1) + "</h1>" +
+    '<p class="us-sub">' + esc(cfg.tagline) + "</p>" +
+    '<div class="us-hero__btns"><a href="' + book + '" class="btn" id="usTopCta">Записатися онлайн ' + A + "</a>" +
+      '<a href="/certificate" class="btn btn--ghost">🎁 Подарувати сертифікат</a></div>' +
+    '<div class="us-place">' + PIN + "<span>Борщагівська, 145 · Шулявська · Берестейська · КПІ · Солом'янський район</span></div>" +
+    '</div><div class="us-hero__media">' + media + "</div></section>";
+  m += '<div class="us-bar"><div class="wrap"><span class="us-bar__item">' + PIN.replace('width="18" height="18"', 'width="17" height="17"') + "Борщагівська, 145</span>" +
+    '<span class="us-bar__sep"></span><span class="us-bar__item">' + CLOCK + "Щодня 09:00–21:30</span></div></div>";
+  m += '<main class="wrap">';
+  m += '<nav class="crumbs" aria-label="Навігація"><a href="/">Головна</a><span>›</span><a href="/#services">Послуги</a><span>›</span>' + esc(cfg.crumb) + "</nav>";
+  m += '<section class="us-section us-intro">' + cfg.intro.map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("") + "</section>";
+  m += '<section class="us-section" id="programs"><div class="us-sec-head"><h2 class="us-h2">Програми та ціни</h2></div>' + tabs + panels + "</section>";
+  if (withMore.length) {
+    m += '<section class="us-section"><div class="us-sec-head"><h2 class="us-h2">Детальніше про програми</h2></div><div class="p-more">' +
+      withMore.map(function (c) {
+        return "<h3>" + esc(c.title) + "</h3>" + c.more.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("") +
+          (c.href ? '<a href="' + esc(c.href) + '">Усе про програму, етапи й ціни →</a>' : "");
+      }).join("") + "</div></section>";
+  }
+  m += '<section class="us-section"><div class="us-sec-head"><h2 class="us-h2">Як обрати програму</h2></div><div class="h-grid">' +
+    cfg.howTo.map(function (h) { return '<div class="h-card"><h3>' + esc(h[0]) + "</h3><p>" + esc(h[1]) + "</p></div>"; }).join("") + "</div></section>";
+  m += '<section class="us-section us-faq" id="faq"><div class="us-sec-head"><h2 class="us-h2">Часті питання</h2>' +
+    '<p class="us-sec-note">Ми зібрали відповіді на найпопулярніші запитання.</p></div>' +
+    cfg.faq.map(function (f) { return "<details><summary>" + esc(f[0]) + "</summary><p>" + esc(f[1]) + "</p></details>"; }).join("") +
+    '<div class="us-related" style="margin-top:18px;">' +
+      other.map(function (k) { return '<a class="btn btn--ghost" href="/' + k + '">' + esc(CATEGORIES[k].h1) + " →</a>"; }).join("") +
+      '<a class="btn btn--ghost" href="/#services">Усі послуги студії →</a></div></section>';
+  m += "</main>";
+  const addr = "Київ, вул. Борщагівська, 145";
+  m += '<section class="us-visit" id="visit"><div class="wrap"><div>' +
+    "<h2>Завітайте до Oliva</h2><p>SPA-програми з фітобочкою — у нашій студії на Борщагівській. Щодня 09:00–21:30.</p>" +
+    '<div class="us-visit__addr">' + PIN + addr + "</div>" +
+    '<div class="us-visit__links"><a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=' + encodeURIComponent(addr) + '" target="_blank" rel="noopener">Прокласти маршрут ' + A + "</a>" +
+    '<a class="btn" href="tel:+380974340112">097 434 01 12</a></div></div>' +
+    '<div class="us-map"><iframe src="https://maps.google.com/maps?q=' + encodeURIComponent(addr) + '&amp;z=16&amp;output=embed" loading="lazy" title="Студія масажу Oliva — Борщагівська, 145"></iframe></div>' +
+    "</div></section>";
+  m += '<div class="wrap us-foot"><span>© 2026 Студія масажу Oliva · Київ</span><a href="/uspishna" style="color:var(--olive-2);">Друга студія: Успішна, 8 (Теремки) →</a></div>';
+
+  const tpl = fs.readFileSync(path.join(PUB, "spa-category.html"), "utf8");
+  const rep = {
+    TITLE: esc(meta.seoTitle), META_DESC: esc(meta.description), CANONICAL: BASE + "/" + slug, OG_IMAGE: esc(meta.ogImage),
+    JSONLD_TAGS: (meta.jsonld || []).map(function (j) {
+      return '<script type="application/ld+json">' + JSON.stringify(j).replace(/</g, "\\u003c") + "</script>";
+    }).join("\n  "),
+    BOOK_HREF: book, ARROW: A, MAIN: m,
+  };
+  return tpl.replace(/\{\{([A-Z0-9_]+)\}\}/g, function (x, k) { return rep[k] != null ? rep[k] : ""; });
 }
 
 function renderNotFound() {
