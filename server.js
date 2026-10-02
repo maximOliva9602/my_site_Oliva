@@ -133,6 +133,11 @@ function heroSetting(k) {
 function serveHome(req, res) {
   var html;
   try { html = fs.readFileSync(HOME_FILE, "utf8"); } catch (e) { return res.sendFile(HOME_FILE); }
+  /* /?theme=olive — попередній перегляд головної в палітрі Успішної/SPA-сторінок
+     (лише для перегляду власником; без параметра головна як і була). */
+  if (req.query && req.query.theme === "olive") {
+    html = html.replace("</head>", '<link rel="stylesheet" href="/assets/css/theme-olive.css?v=1" />\n<meta name="robots" content="noindex" />\n</head>');
+  }
   var photo = heroSetting("hero_photo_url"), video = heroSetting("hero_video_url"), pos = heroSetting("hero_text_pos");
   var okUrl = /^\/(api\/site-media|assets\/(img|video))\/[\w.\-]+$/;
   if (okUrl.test(photo)) {
@@ -960,6 +965,10 @@ app.get("/service/:key", function (req, res) {
   }
 });
 /* Категорійні SEO-сторінки: «SPA для двох у Києві», «SPA для одного у Києві». */
+/* Перейменовані SPA-сторінки: стара адреса → нова (301, щоб Google переніс). */
+Object.keys(seoPages.CATEGORY_REDIRECTS || {}).forEach(function (from) {
+  app.get("/" + from, function (req, res) { res.redirect(301, "/" + seoPages.CATEGORY_REDIRECTS[from]); });
+});
 seoPages.CATEGORY_SLUGS.forEach(function (slug) {
   app.get("/" + slug, function (req, res) {
     try {

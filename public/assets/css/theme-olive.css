@@ -1,0 +1,34 @@
+/* Попередній перегляд головної в палітрі сторінки Успішної / SPA-сторінок
+   (тло темне зелено-сіре замість чорного). Підключається лише за
+   посиланням /?theme=olive — жива головна не змінюється, доки власник не
+   вирішить. Згенеровано з styles.css: ті самі правила, інші кольори. */
+:root {
+  --black: #141d1a; --black-2: #1c2520;
+  --olive: #51563f; --olive-mid: #5b6241; --olive-light: #a8b07f;
+  --cream: #F0E8E0; --text: #d3d0c7; --text-dim: #9d9f97;
+  --line: rgba(196,204,178,0.14);
+}
+body { background: #141d1a !important; }
+:root { --black: #141d1a !important; --black-2: #1c2520 !important; }
+nav.scrolled { background: rgba(20,29,26,0.96) !important; }
+.hero-badge { background: rgba(20,29,26,0.85) !important; }
+.srv-carousel-arrow { background: rgba(20,29,26,0.7) !important; }
+/* Спільний блок керування (вкладки + рівень майстра) — липкий скрізь,
+   не лише на мобільному: тримається під навігацією, поки гортаєш ціни,
+   і сам відпускає, коли блок послуг закінчується (природна поведінка
+   position:sticky — межа задається батьківським .container). */
+/* Вкладки й перемикач рівня — в один рядок. Тісно стає лише на вузьких
+   екранах, там переносимо в стовпчик (див. медіазапит нижче). */
+.srv-sticky { background: rgba(20,29,26,0.94) !important; }
+.srv-list-item { background: rgba(27,36,31,0.5) !important; }
+/* ── GALLERY ── */
+.gallery-section { background: rgba(28,37,32,0.6) !important; }
+.phyto-badge { background: rgba(20,29,26,0.85) !important; }
+.promo-block { background: rgba(27,36,31,0.8) !important; }
+.rules-item { background: rgba(27,36,31,0.8) !important; }
+/* ── TEAM ── */
+.team-section { background: rgba(28,37,32,0.8) !important; }
+.team-card-overlay { background: linear-gradient(to top, rgba(20,29,26,0.9) 0%, rgba(20,29,26,0.2) 50%, transparent 100%) !important; }
+.why-stat { background: rgba(20,29,26,0.9) !important; }
+/* ── CONTACTS ── */
+.contacts-section { background: rgba(28,37,32,0.9) !important; }

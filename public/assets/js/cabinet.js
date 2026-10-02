@@ -4921,7 +4921,7 @@
         box.appendChild(pagePhotoCard("uspishna", "Студія на Успішній", "/uspishna", ph.uspishna));
         var c2 = pagePhotoCard("spa2", "SPA для двох у Києві", "/spa-dlya-dvoh-kyiv", ph.spa2);
         pageVideoRows(c2, "spa2", vids.spa2 || {}); box.appendChild(c2);
-        var c1 = pagePhotoCard("spa1", "SPA для одного у Києві", "/spa-dlya-odnogo-kyiv", ph.spa1);
+        var c1 = pagePhotoCard("spa1", "SPA-комплекси в Києві", "/spa-kompleksy-kyiv", ph.spa1);
         pageVideoRows(c1, "spa1", vids.spa1 || {}); box.appendChild(c1);
       });
     });

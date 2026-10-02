@@ -87,29 +87,34 @@ const CATEGORIES = {
       ["Кому краще утриматися від прогрівання?", "Фітобочка й гаряче каміння — це тепло. За вагітності, підвищеної температури, гострих запалень, серцево-судинних захворювань чи інших хронічних станів проконсультуйтеся з лікарем і попередьте адміністратора під час запису."],
     ],
   },
-  "spa-dlya-odnogo-kyiv": {
+  /* Колишня «SPA для одного» — за даними Планувальника ключових слів
+     так ніхто не шукає, тому це основна SPA-сторінка «SPA-комплекси в Києві»
+     (стара адреса веде сюди 301-м редиректом). */
+  "spa-kompleksy-kyiv": {
     group: "spa1",
-    crumb: "SPA для одного",
-    h1: "SPA для одного у Києві",
-    title: "SPA для одного у Києві — SPA-ритуали, фітобочка, стоун-масаж | Oliva",
-    description: "SPA для одного у Києві: SPA-ритуал «Фіто-оновлення тіла», масаж гарячим камінням, фітобочка на травах. Індивідуальний релакс у студії Oliva, Солом'янський район: Шулявська, Берестейська, КПІ, Відрадний, Караваєві дачі. Онлайн-запис.",
-    tagline: "Час, присвячений тільки собі",
+    layout: "complex",
+    crumb: "SPA-комплекси",
+    h1: "SPA-комплекси в Києві",
+    title: "SPA-комплекси в Києві — фітобочка, SPA-ритуали, стоун-масаж | Oliva",
+    description: "SPA-комплекси в Києві від студії Oliva: SPA-ритуал «Фіто-оновлення тіла» (фітобочка, скраб, душ, масаж), стоун-масаж гарячим камінням, SPA для двох. Борщагівська, 145 — Шулявська, Солом'янський район. Онлайн-запис.",
+    tagline: "Фітобочка, масаж і догляд за тілом — час для вашого відпочинку.",
     intro: [
-      "SPA для одного — це індивідуальні програми, коли вся увага майстра належить лише вам. Тепло фітобочки на травах, делікатне скрабування, масаж гарячим камінням і завершальний масаж послідовно знімають напругу й повертають відчуття легкості.",
-      "Такі ритуали обирають після напруженого тижня, перед важливою подією або як регулярний спосіб відновитися. Нижче — усі SPA-програми для одного з актуальними цінами й тривалістю.",
-      "SPA для одного проходить у студії Oliva на вул. Борщагівській, 145 — Солом'янський район Києва, поруч із метро «Шулявська», «Берестейська», КПІ та Індустріальним мостом. До нас зручно дістатися з Шулявки, Відрадного, Караваєвих дач, Солом'янки та району КПІ.",
+      "SPA-комплекс у студії Oliva — це кілька процедур за один візит: паріння у фітобочці на травах, скрабування тіла, душ і професійний масаж. Тепло, догляд за шкірою й масаж послідовно знімають напругу й повертають відчуття легкості — без поїздки за місто чи до великого SPA-центру.",
+      "SPA-комплекси обирають після напруженого тижня, перед важливою подією, у холодний сезон, коли хочеться як слід прогрітися, або як подарунок. Для пар є окремі програми — SPA для двох, коли двоє майстрів працюють одночасно в одному просторі.",
+      "SPA-комплекси проходять у студії Oliva на вул. Борщагівській, 145 — Солом'янський район Києва, поруч із метро «Шулявська», «Берестейська», КПІ та Індустріальним мостом. До нас зручно дістатися з Шулявки, Відрадного, Караваєвих дач, Солом'янки та району КПІ.",
     ],
     howTo: [
       ["Потрібне повне перезавантаження", "SPA-ритуал «Фіто-оновлення тіла»: фітобочка, скраб, душ і масаж в одному сеансі — 90 або 130 хвилин."],
-      ["Хочеться глибокого тепла", "Масаж гарячим камінням прогріває м'язи й допомагає розслабитися навіть там, де звичайний масаж не дістає."],
-      ["Мало часу", "Паріння у фітобочці можна взяти окремо або додати до будь-якого масажу."],
-      ["Шукаєте подарунок", "Подарунковий сертифікат — на конкретний ритуал або на суму."],
+      ["Хочеться глибокого тепла", "Стоун-масаж гарячим камінням прогріває м'язи й допомагає розслабитися навіть там, де звичайний масаж не дістає."],
+      ["Хочете вдвох", "SPA для двох — парні програми, коли майстри працюють одночасно в одному кабінеті."],
+      ["Шукаєте подарунок", "Подарунковий сертифікат — на конкретний SPA-комплекс або на суму."],
     ],
     faq: [
+      ["Як обрати SPA-комплекс?", "Якщо хочеться повного перезавантаження — SPA-ритуал «Фіто-оновлення тіла»: фітобочка, скраб, душ і масаж за 90 або 130 хвилин. Якщо потрібне глибоке тепло для м'язів — стоун-масаж гарячим камінням. Не знаєте, що обрати, — зателефонуйте 097 434 01 12, підкажемо."],
+      ["Як проходить SPA для двох?", "Ви відпочиваєте разом в одному просторі, двоє майстрів працюють одночасно. Усі програми для пар — на сторінці «SPA для двох у Києві»."],
+      ["Чи можна придбати сертифікат?", "Так — на конкретний SPA-комплекс або на суму. Електронний чи паперовий, з отриманням у студії, Новою Поштою або таксі."],
       ["Що входить у SPA-ритуал «Фіто-оновлення тіла»?", "Паріння у фітобочці на травах, скрабування, душ і масаж. У варіанті 90 хвилин — 20 хвилин фітобочки, 10 хвилин скрабу й 60 хвилин масажу; у варіанті 130 хвилин — 30, 10 і 90 хвилин відповідно."],
-      ["Чим SPA відрізняється від звичайного масажу?", "SPA-програма — це кілька етапів: прогрівання, догляд за шкірою й масаж. Тіло розслабляється поступово, тож ефект глибший і тримається довше."],
-      ["Де знаходиться студія?", "Київ, вул. Борщагівська, 145 — Солом'янський район, поруч із метро «Шулявська» та «Берестейська», КПІ, Відрадним і Караваєвими дачами. SPA-програми з фітобочкою проходять саме тут."],
-      ["Чи можна прийти вдвох?", "Так, для пар є окремі програми — дивіться сторінку «SPA для двох у Києві»."],
+      ["Де знаходиться студія?", "Київ, вул. Борщагівська, 145 — Солом'янський район, поруч із метро «Шулявська» та «Берестейська», КПІ, Відрадним і Караваєвими дачами. SPA-комплекси з фітобочкою проходять саме тут."],
       ["Кому краще утриматися від прогрівання?", "За вагітності, підвищеної температури, гострих запалень, серцево-судинних захворювань чи інших хронічних станів проконсультуйтеся з лікарем і попередьте адміністратора під час запису."],
     ],
   },
@@ -300,6 +305,71 @@ function renderServicePage(page) {
   return wrap(r, pathname, data);
 }
 
+/* «SPA-комплекси в Києві» — за макетом власника: герой на всю ширину з
+   відео/фото, банер «Відпочинок удвох» → SPA для двох, картки програм,
+   «Тепло. Спокій. Турбота.» з сертифікатом, текст для пошуку, питання. */
+function renderSpaComplexMain(cfg, slug, o) {
+  const A = o.A, PIN = o.PIN;
+  const cards = categoryCards(cfg.group, o.services, o.branches, o.pages);
+  const pairCards = categoryCards("spa2", o.services, o.branches, o.pages);
+  const spa2Slug = o.slugOf("spa2");
+  const pairImg = setting("page_photo_spa2") || (pairCards[0] && pairCards[0].image) || "";
+  const shortTitle = function (c) {
+    return String(c.key).replace(/^SPA[\s-]*ритуал\s*/i, "").replace(/["«»]/g, "").trim();
+  };
+  const subOf = function (c) {
+    if (c.steps.length) return c.steps.slice(0, 4).map(function (x) { return x.split(" ")[0]; }).join(" · ");
+    const d = String(c.description || "").split(/[—.]/)[0].trim();
+    return d.length > 70 ? d.slice(0, 67) + "…" : d;
+  };
+  const minPrice = function (c) { return Math.round(Math.min.apply(null, c.durs.map(function (d) { return d.price; })) / 100); };
+  const LEAF = '<svg class="cx-leaf" width="60" height="14" viewBox="0 0 60 14" fill="none" stroke="currentColor" stroke-width="1"><path d="M0 7h22M38 7h22"/><path d="M30 2c-4 2-6 4-6 5s2 3 6 5c4-2 6-4 6-5s-2-3-6-5z"/></svg>';
+  const aboutImg = (cards[1] && cards[1].image) || (cards[0] && cards[0].image) || "";
+  let m = "";
+  m += '<section class="cx-hero"><div class="cx-hero__media">' + o.media + "</div>" +
+    '<div class="cx-hero__text"><div class="us-eyebrow">Студія масажу Oliva</div>' +
+    '<h1 class="us-h1">' + esc(cfg.h1).replace(" в ", "<br>в ") + "</h1>" +
+    '<p class="us-sub" style="font-style:normal;font-family:Inter,sans-serif;font-size:1.05rem;">' + esc(cfg.tagline) + "</p>" +
+    '<div class="us-hero__btns"><a href="#programs" class="btn" id="usTopCta">Обрати SPA-комплекс ' + A + "</a>" +
+    '<a href="/certificate" class="btn btn--ghost">🎁 Подарувати сертифікат</a></div>' +
+    '<div class="us-place">' + PIN + "<span>Борщагівська, 145 · Шулявська</span></div></div></section>";
+  m += '<main class="wrap">';
+  if (spa2Slug) {
+    m += '<a class="cx-banner" href="/' + spa2Slug + '"><div class="cx-banner__img">' + (pairImg ? '<img src="' + esc(pairImg) + '" alt="SPA для двох у Києві" loading="lazy">' : "") + "</div>" +
+      '<div class="cx-banner__text"><div class="cx-eyebrow">SPA для двох</div><h2>Відпочинок удвох</h2>' +
+      "<p>Для пари, друзів або мами з донькою.</p>" +
+      '<span class="btn btn--ghost">Переглянути SPA для двох ' + A + "</span></div></a>";
+  }
+  m += '<section class="us-section cx-center" id="programs"><div class="cx-eyebrow">Наші програми</div>' +
+    '<h2 class="us-h2">Оберіть програму для себе</h2>' + LEAF +
+    '<div class="cx-grid" style="text-align:left;">' + cards.map(function (c) {
+      return '<article class="cx-card">' +
+        (c.image ? '<div class="cx-card__img"><img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="lazy"></div>' : "") +
+        '<div class="cx-card__body"><h3 class="cx-card__title">' + esc(shortTitle(c)) + "</h3>" +
+        '<div class="cx-card__sub">' + esc(subOf(c)) + "</div>" +
+        '<div class="cx-card__price">від ' + minPrice(c) + " грн · " + c.durs.map(function (d) { return esc(SP.fmtDur(d.dur)); }).join(" / ") + "</div>" +
+        '<div class="cx-card__btns">' + (c.href ? '<a href="' + esc(c.href) + '" class="btn btn--ghost">Детальніше</a>' : '<a href="/certificate.html?service=' + encodeURIComponent(c.key) + '" class="btn btn--ghost">🎁 Сертифікат</a>') +
+        '<a href="' + c.book + '" class="btn">Записатися</a></div></div></article>';
+    }).join("") + "</div></section>";
+  m += '<section class="cx-about"><div class="cx-about__img">' + (aboutImg ? '<img src="' + esc(aboutImg) + '" alt="SPA-комплекси в студії Oliva" loading="lazy">' : "") + "</div>" +
+    '<div class="cx-about__text"><div class="cx-eyebrow">Про нас</div><h2>Тепло. Спокій.<br>Турбота.</h2>' +
+    "<p>Оберіть окрему процедуру або комплекс для відпочинку.</p>" +
+    '<div class="cx-gift"><div><div class="cx-eyebrow">Подарункові сертифікати</div><h3>Подаруйте SPA-відпочинок</h3>' +
+    '<a href="/certificate" class="btn">Обрати сертифікат ' + A + "</a></div>" +
+    '<img src="/assets/img/cert.jpg" alt="Подарунковий сертифікат Oliva" loading="lazy"></div></div></section>';
+  /* Текст для пошуку — щоб сторінку знаходили за «SPA-комплекси», «фітобочка». */
+  const withMore = cards.filter(function (c) { return c.more.length; });
+  m += '<section class="us-section cx-seo"><h2 class="us-h2" style="margin-bottom:14px;">SPA-комплекси в студії Oliva</h2>' +
+    cfg.intro.map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("") +
+    withMore.map(function (c) { return "<h3>" + esc(c.title) + "</h3>" + c.more.slice(0, 2).map(function (t) { return "<p>" + esc(t) + "</p>"; }).join(""); }).join("") +
+    "</section>";
+  m += '<section class="us-section us-faq" id="faq"><div class="cx-center"><div class="cx-eyebrow">Часті питання</div><h2 class="us-h2" style="margin-bottom:18px;">Маєте запитання?</h2></div>' +
+    cfg.faq.map(function (f) { return "<details><summary>" + esc(f[0]) + "</summary><p>" + esc(f[1]) + "</p></details>"; }).join("") +
+    "</section>";
+  m += "</main>";
+  return m;
+}
+
 /* SPA-сторінки в стилі сторінки Успішної (прохання власника, жовтень 2026):
    перший екран «текст + фото/відео», перемикач «Для двох / Для одного» у
    програмах, картки з етапами, описи, питання, блок «Завітайте» з картою.
@@ -326,7 +396,7 @@ function renderCategory(slug) {
 
   /* Програми обох підбірок — для перемикача. */
   const tabOrder = ["spa2", "spa1"];
-  const TAB_LABEL = { spa2: "Для двох", spa1: "Для одного" };
+  const TAB_LABEL = { spa2: "Для двох", spa1: "Для себе" };
   const slugOf = function (g) { return Object.keys(CATEGORIES).filter(function (k) { return CATEGORIES[k].group === g; })[0]; };
   function pcard(c) {
     return '<article class="p-card">' +
@@ -363,6 +433,9 @@ function renderCategory(slug) {
   const other = Object.keys(CATEGORIES).filter(function (k) { return k !== slug; });
 
   let m = "";
+  if (cfg.layout === "complex") {
+    m = renderSpaComplexMain(cfg, slug, { media: media, book: book, A: A, PIN: PIN, CLOCK: CLOCK, services: services, branches: branches, pages: pages, bookFor: bookFor, slugOf: slugOf });
+  } else {
   m += '<section class="us-hero"><div class="us-hero__text">' +
     '<div class="us-eyebrow">Студія масажу Oliva · Київ</div>' +
     '<h1 class="us-h1">' + esc(cfg.h1) + "</h1>" +
@@ -401,7 +474,7 @@ function renderCategory(slug) {
     '<a class="btn" href="tel:+380974340112">097 434 01 12</a></div></div>' +
     '<div class="us-map"><iframe src="https://maps.google.com/maps?q=' + encodeURIComponent(addr) + '&amp;z=16&amp;output=embed" loading="lazy" title="Студія масажу Oliva — Борщагівська, 145"></iframe></div>' +
     "</div></section>";
-  m += '<div class="wrap us-foot"><span>© 2026 Студія масажу Oliva · Київ</span><a href="/uspishna" style="color:var(--olive-2);">Друга студія: Успішна, 8 (Теремки) →</a></div>';
+  }
 
   const tpl = fs.readFileSync(path.join(PUB, "spa-category.html"), "utf8");
   const rep = {
@@ -410,6 +483,7 @@ function renderCategory(slug) {
       return '<script type="application/ld+json">' + JSON.stringify(j).replace(/</g, "\\u003c") + "</script>";
     }).join("\n  "),
     BOOK_HREF: book, ARROW: A, MAIN: m,
+    NAV_ON_SPA1: cfg.group === "spa1" ? ' class="on"' : "", NAV_ON_SPA2: cfg.group === "spa2" ? ' class="on"' : "",
   };
   return tpl.replace(/\{\{([A-Z0-9_]+)\}\}/g, function (x, k) { return rep[k] != null ? rep[k] : ""; });
 }
@@ -762,5 +836,6 @@ const FITO_FAQ = [
 module.exports = {
   migrate,
   slugify, uniqueSlug, renderServicePage, renderCategory, renderNotFound, renderUspishna,
-  CATEGORY_SLUGS: Object.keys(CATEGORIES), categoryLinkFor, SG,
+  CATEGORY_SLUGS: Object.keys(CATEGORIES),
+  CATEGORY_REDIRECTS: { "spa-dlya-odnogo-kyiv": "spa-kompleksy-kyiv" }, categoryLinkFor, SG,
 };

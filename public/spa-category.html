@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Шаблон SPA-сторінок (/spa-dlya-dvoh-kyiv, /spa-dlya-odnogo-kyiv) у
+  <!-- Шаблон SPA-сторінок (/spa-kompleksy-kyiv, /spa-dlya-dvoh-kyiv) у
        стилі сторінки Успішної. Збирає crm/seo-pages.js → renderCategory:
        маркери у фігурних дужках замінюються живими даними з CRM. -->
   <title>{{TITLE}}</title>
@@ -39,7 +39,11 @@ img, video { display: block; max-width: 100%; }
 /* Шапка */
 .us-head { position: sticky; top: 0; z-index: 50; background: rgba(21,29,27,.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .us-nav { display: flex; align-items: center; justify-content: space-between; height: 64px; position: relative; }
-.us-logo { font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 400; color: var(--ink); }
+.us-logo { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+.us-logo img { width: 38px; height: 38px; object-fit: contain; }
+.us-logo span { font-family: 'Playfair Display', serif; font-size: 1.45rem; letter-spacing: .14em; line-height: 1; display: flex; flex-direction: column; }
+.us-logo small { font-family: 'Inter', sans-serif; font-size: .58rem; letter-spacing: .26em; color: var(--dim); margin-top: 4px; }
+.us-links a.on { border-color: var(--olive-2); color: var(--ink); }
 .us-links { display: none; gap: 34px; font-size: .9rem; color: var(--text); }
 .us-links a { padding: 6px 0; border-bottom: 1px solid transparent; }
 .us-links a:hover { border-color: var(--olive-2); color: var(--ink); }
@@ -145,7 +149,51 @@ img, video { display: block; max-width: 100%; }
 .us-visit__links { display: flex; gap: 10px; flex-wrap: wrap; }
 .us-map { border-radius: 12px; overflow: hidden; height: 240px; border: 1px solid rgba(13,17,11,.3); }
 .us-map iframe { width: 100%; height: 100%; border: 0; display: block; filter: invert(92%) hue-rotate(180deg) brightness(.95) contrast(.9); }
-.us-foot { padding: 22px 16px 100px; font-size: .8rem; color: var(--dim); display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.us-footer { border-top: 1px solid var(--line); background: var(--bg); padding: 26px 0 100px; margin-top: 34px; }
+.us-visit + .us-footer { margin-top: 0; }
+.us-footer__in { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: center; }
+.us-footer__addr { display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; color: var(--text); }
+.us-footer__addr span { font-size: .8rem; color: var(--dim); }
+.us-footer__nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: .86rem; color: var(--text); }
+.us-footer__nav a:hover, .us-footer__soc a:hover { color: var(--olive-2); }
+.us-footer__soc { display: flex; gap: 14px; color: var(--text); }
+
+/* ── SPA-комплекси (макет власника): герой на всю ширину з текстом поверх ── */
+.cx-hero { position: relative; overflow: hidden; background: var(--ph); }
+.cx-hero__media { position: relative; aspect-ratio: 16 / 10; }
+.cx-hero__media.is-vertical { aspect-ratio: 4 / 5; }
+.cx-hero__media img, .cx-hero__media video { width: 100%; height: 100%; object-fit: cover; }
+.cx-hero__text { padding: 26px 16px 28px; background: var(--bg); }
+.cx-banner { display: grid; grid-template-columns: minmax(0,1fr); background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-top: 26px; }
+.cx-banner__img { aspect-ratio: 16 / 9; background: var(--ph); }
+.cx-banner__img img { width: 100%; height: 100%; object-fit: cover; }
+.cx-banner__text { padding: 20px; }
+.cx-eyebrow { font-size: .7rem; letter-spacing: .24em; text-transform: uppercase; color: var(--olive-2); margin-bottom: 8px; }
+.cx-banner h2 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(1.8rem, 6vw, 2.5rem); line-height: 1.1; margin-bottom: 8px; }
+.cx-banner p { color: var(--text); margin-bottom: 16px; }
+.cx-center { text-align: center; }
+.cx-center .us-h2 { margin: 2px 0 6px; }
+.cx-leaf { display: block; margin: 0 auto 20px; color: var(--olive-2); opacity: .8; }
+.cx-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.cx-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.cx-card__img { aspect-ratio: 16 / 9; background: var(--ph); }
+.cx-card__img img { width: 100%; height: 100%; object-fit: cover; }
+.cx-card__body { padding: 16px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.cx-card__title { font-family: 'Playfair Display', serif; font-weight: 500; font-size: 1.45rem; }
+.cx-card__sub { color: var(--text); font-size: .92rem; }
+.cx-card__price { color: var(--dim); font-size: .82rem; }
+.cx-card__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.cx-card__btns .btn { padding: 12px; }
+.cx-about { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 30px; }
+.cx-about__img { border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--ph); }
+.cx-about__img img { width: 100%; height: 100%; object-fit: cover; }
+.cx-about__text h2 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(2rem, 6.6vw, 2.8rem); line-height: 1.08; margin-bottom: 10px; }
+.cx-about__text > p { color: var(--text); margin-bottom: 18px; }
+.cx-gift { display: grid; grid-template-columns: 1fr 120px; gap: 14px; align-items: center; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow: hidden; }
+.cx-gift h3 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: 1.5rem; line-height: 1.15; margin-bottom: 12px; }
+.cx-gift img { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; }
+.cx-seo p { color: var(--text); line-height: 1.8; max-width: 860px; margin-bottom: 14px; }
+.cx-seo h3 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: 1.3rem; margin: 22px 0 8px; }
 
 .us-sticky { position: fixed; left: 16px; right: 16px; bottom: 14px; z-index: 40; opacity: 0; transform: translateY(120%); transition: opacity .25s, transform .25s; pointer-events: none; }
 .us-sticky.show { opacity: 1; transform: none; pointer-events: auto; }
@@ -153,6 +201,7 @@ img, video { display: block; max-width: 100%; }
 
 @media (min-width: 700px) {
   .p-grid { grid-template-columns: 1fr 1fr; }
+  .cx-grid { grid-template-columns: 1fr 1fr; }
   .h-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (min-width: 900px) {
@@ -167,7 +216,20 @@ img, video { display: block; max-width: 100%; }
   .us-visit .wrap > div:first-child { border-right: 1px solid rgba(242,237,228,.18); padding-right: 30px; }
   .us-map { height: 260px; }
   .us-sticky { display: none; }
-  .us-foot { padding: 22px 28px 34px; }
+  .us-footer { padding: 26px 0 30px; }
+  .us-footer__in { grid-template-columns: auto 1fr auto auto; gap: 30px; }
+  .cx-hero { height: 460px; }
+  .cx-hero__media, .cx-hero__media.is-vertical { position: absolute; inset: 0; aspect-ratio: auto; }
+  .cx-hero__media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20,29,26,.96) 0%, rgba(20,29,26,.82) 30%, rgba(20,29,26,.15) 62%, rgba(20,29,26,0) 100%); }
+  .cx-hero__text { position: relative; z-index: 2; background: none; max-width: 1180px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 0 28px; }
+  .cx-hero__text > * { max-width: 520px; }
+  .cx-banner { grid-template-columns: 1.1fr 1fr; align-items: center; }
+  .cx-banner__img { aspect-ratio: auto; height: 280px; }
+  .cx-banner__img img { object-position: 50% 35%; }
+  .cx-banner__text { padding: 30px 40px; }
+  .cx-about { grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; }
+  .cx-about__img { aspect-ratio: auto; height: 420px; }
+  .cx-about__text { display: flex; flex-direction: column; justify-content: center; padding: 10px 0 10px 20px; }
 }
 @media (prefers-reduced-motion: reduce) { .btn, .us-tab { transition: none; } }
 </style>
@@ -176,15 +238,17 @@ img, video { display: block; max-width: 100%; }
 
 <header class="us-head">
   <div class="wrap us-nav">
-    <a href="/" class="us-logo" aria-label="Oliva — головна">Oliva</a>
-    <nav class="us-links"><a href="/">Головна</a><a href="#programs">Програми та ціни</a><a href="#visit">Контакти</a></nav>
+    <a href="/" class="us-logo" aria-label="Oliva — головна"><img src="/assets/img/logo.png" alt="" width="38" height="38"><span>OLIVA<small>студія масажу</small></span></a>
+    <nav class="us-links"><a href="/">Головна</a><a href="/spa-kompleksy-kyiv"{{NAV_ON_SPA1}}>SPA-комплекси</a><a href="/spa-dlya-dvoh-kyiv"{{NAV_ON_SPA2}}>SPA для двох</a><a href="#contacts">Контакти</a></nav>
     <a href="{{BOOK_HREF}}" class="btn us-head-cta">Записатися {{ARROW}}</a>
     <button class="us-burger" id="usBurger" aria-label="Меню"><span></span><span></span><span></span></button>
     <div class="us-menu" id="usMenu">
       <a href="/">Головна</a>
+      <a href="/spa-kompleksy-kyiv">SPA-комплекси</a>
+      <a href="/spa-dlya-dvoh-kyiv">SPA для двох</a>
       <a href="#programs">Програми та ціни</a>
       <a href="#faq">Часті питання</a>
-      <a href="#visit">Контакти та маршрут</a>
+      <a href="#contacts">Контакти</a>
       <a href="{{BOOK_HREF}}">Записатися онлайн</a>
       <a href="/certificate">Подарунковий сертифікат</a>
       <a href="tel:+380974340112">📞 097 434 01 12</a>
@@ -193,6 +257,19 @@ img, video { display: block; max-width: 100%; }
 </header>
 
 {{MAIN}}
+
+<footer class="us-footer" id="contacts">
+  <div class="wrap us-footer__in">
+    <a href="/" class="us-logo"><img src="/assets/img/logo.png" alt="Oliva" width="38" height="38"><span>OLIVA<small>студія масажу</small></span></a>
+    <div class="us-footer__addr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      <div>Борщагівська, 145 · Шулявська<br><span>Київ, Україна · <a href="tel:+380974340112">097 434 01 12</a></span></div></div>
+    <nav class="us-footer__nav"><a href="/">Головна</a><a href="/spa-kompleksy-kyiv">SPA-комплекси</a><a href="/spa-dlya-dvoh-kyiv">SPA для двох</a><a href="/uspishna">Успішна, 8</a></nav>
+    <div class="us-footer__soc">
+      <a href="https://www.instagram.com/oliva_massage_studio/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+      <a href="https://t.me/massage_oliva_kyiv" target="_blank" rel="noopener" aria-label="Telegram"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21.9 4.3 18.6 19.9c-.2 1.1-.9 1.4-1.8.9l-5-3.7-2.4 2.3c-.3.3-.5.5-1 .5l.4-5.1 9.3-8.4c.4-.4-.1-.6-.6-.2L6 13.4 1 11.8c-1.1-.3-1.1-1.1.2-1.6L20.6 2.8c.9-.3 1.7.2 1.3 1.5z"/></svg></a>
+    </div>
+  </div>
+</footer>
 
 <div class="us-sticky" id="usSticky"><a href="{{BOOK_HREF}}" class="btn">Записатися онлайн →</a></div>
 
