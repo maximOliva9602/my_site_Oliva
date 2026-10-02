@@ -67,7 +67,7 @@ img, video { display: block; max-width: 100%; }
 .us-place span { flex: 1; min-width: 0; }
 .us-place svg { color: var(--text); flex-shrink: 0; }
 .us-hero__media { aspect-ratio: 16 / 10; overflow: hidden; background: var(--ph); }
-.us-hero__media.is-vertical { aspect-ratio: 4 / 5; }
+.us-hero__media.is-vertical { aspect-ratio: 1 / 1; }
 .us-hero__media img, .us-hero__media video { width: 100%; height: 100%; object-fit: cover; }
 
 /* Смуга адреси */
@@ -161,7 +161,7 @@ img, video { display: block; max-width: 100%; }
 /* ── SPA-комплекси (макет власника): герой на всю ширину з текстом поверх ── */
 .cx-hero { position: relative; overflow: hidden; background: var(--ph); }
 .cx-hero__media { position: relative; aspect-ratio: 16 / 10; }
-.cx-hero__media.is-vertical { aspect-ratio: 4 / 5; }
+.cx-hero__media.is-vertical { aspect-ratio: 1 / 1; }
 .cx-hero__media img, .cx-hero__media video { width: 100%; height: 100%; object-fit: cover; }
 .cx-hero__text { padding: 26px 16px 28px; background: var(--bg); }
 .cx-banner { display: grid; grid-template-columns: minmax(0,1fr); background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-top: 26px; }
@@ -293,10 +293,12 @@ img, video { display: block; max-width: 100%; }
      комп'ютері — вантажимо лише потрібне. */
   var v = document.getElementById('heroVideo');
   if (v) {
-    var mob = window.matchMedia('(max-width: 899px)').matches;
-    var src = (mob ? v.getAttribute('data-v') : v.getAttribute('data-h')) || v.getAttribute('data-h') || v.getAttribute('data-v');
+    /* І на телефоні спершу горизонтальне відео — вертикальне на весь екран
+       закривало сторінку (прохання власника). Лише вертикальне — показуємо
+       його в квадраті (~пів екрана), обрізаним по центру. */
+    var src = v.getAttribute('data-h') || v.getAttribute('data-v');
     var box = v.parentNode;
-    if (mob && v.getAttribute('data-v')) box.classList.add('is-vertical');
+    if (!v.getAttribute('data-h') && v.getAttribute('data-v')) box.classList.add('is-vertical');
     v.src = src;
     var p = v.play && v.play();
     if (p && p.catch) p.catch(function () {});
