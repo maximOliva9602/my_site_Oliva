@@ -324,9 +324,21 @@ function renderUspishna() {
   const services = publicServices();
   let allowed = null, masters = [];
   if (branch) {
+    /* Хто працює на цій адресі: прив'язка до філії, тижневий графік саме в
+       цій філії, робочі дні тут (від місяця тому й далі) або записи тут за
+       останні 2 місяці й майбутні. Раніше бралась лише прив'язка до філії —
+       і на сторінці був один Максим, хоча тут приймають і інші майстри. */
+    const ago = function (days) { return new Date(Date.now() - days * 864e5).toISOString().slice(0, 10); };
     masters = db.prepare(
-      "SELECT m.id, m.name, m.level, m.photo, m.show_on_site FROM masters m JOIN branch_masters bm ON bm.master_id=m.id WHERE bm.branch_id=? AND m.active=1 ORDER BY m.sort_order, m.id"
-    ).all(branch.id);
+      `SELECT m.id, m.name, m.level, m.photo, m.show_on_site FROM masters m
+        WHERE m.active=1 AND m.id IN (
+          SELECT master_id FROM branch_masters WHERE branch_id=?
+          UNION SELECT master_id FROM master_schedule WHERE branch_id=?
+          UNION SELECT master_id FROM master_day_overrides WHERE branch_id=? AND is_off=0 AND date>=?
+          UNION SELECT master_id FROM appointments WHERE branch_id=? AND status<>'cancelled' AND date>=? AND pair_parent_id IS NULL
+        )
+        ORDER BY m.sort_order, m.id`
+    ).all(branch.id, branch.id, branch.id, ago(30), branch.id, ago(60));
     const mSvc = new Set();
     const st = db.prepare("SELECT service_id FROM master_services WHERE master_id=?");
     masters.forEach(function (m) { st.all(m.id).forEach(function (r) { mSvc.add(r.service_id); }); });
@@ -385,10 +397,8 @@ function renderUspishna() {
   }).join("");
 
   const minAll = massages.length ? Math.round(Math.min.apply(null, massages.map(function (c) { return Math.min.apply(null, c.rows.map(function (r) { return r.price; })); })) / 100) : null;
-  const levels = masters.map(function (m) { return m.level; }).filter(function (l, i, a) { return l && a.indexOf(l) === i; });
-  const masterNote = masters.length
-    ? "Ціни — за прайсом " + (levels.length === 1 ? "рівня «" + levels[0] + "»" : "майстрів цієї адреси") + "."
-    : "Ціни — за актуальним прайсом студії.";
+  /* Підзаголовок як у макеті (без пояснень про ціни — власник просив прибрати). */
+  const masterNote = "Професійна турбота для гармонії тіла та розуму.";
   /* «Майстри на Успішній»: справжні фото й рівень з CRM; «Обрати час» —
      онлайн-запис на цю адресу з цим майстром першим у списку. */
   const shownMasters = masters.filter(function (m) { return m.show_on_site == null || m.show_on_site; });
