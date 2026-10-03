@@ -3072,6 +3072,41 @@ function heroDropOld(url) {
   try { fsMedia.unlinkSync(pathMedia.join(SITE_MEDIA_DIR, pathMedia.basename(url))); } catch (_) {}
 }
 
+/* Стиснення відео для сайту. Власник завантажує з телефона .mov на 15–30 МБ —
+   сторінки з таким відео на першому екрані вантажились дуже довго. Після
+   завантаження у фоні робимо mp4 (до 1280 px, без звуку — на сайті ці відео
+   й так грають беззвучно) і, коли готово, підставляємо його замість
+   оригіналу. Поки стискається — показується оригінал. */
+let ffmpegPath = null;
+try { ffmpegPath = require("ffmpeg-static"); } catch (_) { ffmpegPath = null; }
+const videoJobs = {};
+function compressSiteVideo(key, url) {
+  if (!ffmpegPath || !url || url.indexOf("/api/site-media/") !== 0) return;
+  const src = pathMedia.join(SITE_MEDIA_DIR, pathMedia.basename(url));
+  if (/-opt\.mp4$/.test(src) || videoJobs[src] || !fsMedia.existsSync(src)) return;
+  const out = src.replace(/\.[a-z0-9]+$/i, "") + "-opt.mp4";
+  videoJobs[src] = 1;
+  const args = ["-y", "-loglevel", "error", "-i", src, "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "26",
+    "-vf", "scale='min(1280,iw)':-2", "-pix_fmt", "yuv420p", "-movflags", "+faststart", out];
+  const started = Date.now();
+  require("child_process").execFile(ffmpegPath, args, { timeout: 10 * 60 * 1000 }, function (err) {
+    delete videoJobs[src];
+    let inSize = 0, outSize = 0;
+    try { inSize = fsMedia.statSync(src).size; outSize = fsMedia.statSync(out).size; } catch (_) {}
+    if (err || !outSize || outSize >= inSize) {
+      console.error("[video] стиснення не вдалось:", url, err ? err.message : "розмір не зменшився");
+      try { fsMedia.unlinkSync(out); } catch (_) {}
+      return;
+    }
+    if (heroGet(key) !== url) { try { fsMedia.unlinkSync(out); } catch (_) {} return; } // власник уже замінив відео
+    const newUrl = "/api/site-media/" + pathMedia.basename(out);
+    heroSet(key, newUrl);
+    heroDropOld(url);
+    console.log("[video] " + key + ": " + Math.round(inSize / 1048576 * 10) / 10 + " → " +
+      Math.round(outSize / 1048576 * 10) / 10 + " МБ за " + Math.round((Date.now() - started) / 1000) + " с");
+  });
+}
+
 /* Одноразова міграція: файли головного екрану, які власник завантажив ДО
    появи стиснення (фото 9,6 МБ, відео 27 МБ .mov), замінюємо їх стиснутими
    копіями з репозиторію — візуально ті самі (SSIM ≈ 0,99), але сайт
@@ -3126,6 +3161,7 @@ router.post(
     const url = "/api/site-media/" + filename;
     heroSet(HERO_KEYS[kind], url);
     heroDropOld(prev);
+    if (kind === "video") compressSiteVideo(HERO_KEYS.video, url);
     res.json({ ok: true, kind: kind, url: url });
   }
 );
@@ -3163,7 +3199,8 @@ router.post("/page-videos/:slot/:orient", owner, express.raw({ type: "*/*", limi
   const url = "/api/site-media/" + filename;
   heroSet(key, url);
   heroDropOld(prev);
-  res.json({ ok: true, url: url });
+  compressSiteVideo(key, url);
+  res.json({ ok: true, url: url, compressing: !!ffmpegPath });
 });
 /* Одноразово: відео SPA-комплексів, яке власник завантажив .mov на 15 МБ
    (те саме в обох слотах), замінюємо стиснутою копією з репозиторію
@@ -3187,6 +3224,18 @@ router.post("/page-videos/:slot/:orient", owner, express.raw({ type: "*/*", limi
     });
   } catch (e) { console.error("[page-video] міграція:", e.message); }
 })();
+/* При старті — стиснути вже завантажені важкі відео (оригінали з телефона). */
+setTimeout(function () {
+  const keys = [HERO_KEYS.video];
+  Object.keys(PAGE_VIDEO_SLOTS).forEach(function (k) { keys.push(pageVideoKey(k, "h"), pageVideoKey(k, "v")); });
+  keys.forEach(function (key) {
+    const url = heroGet(key);
+    if (!url || url.indexOf("/api/site-media/") !== 0) return;
+    let size = 0;
+    try { size = fsMedia.statSync(pathMedia.join(SITE_MEDIA_DIR, pathMedia.basename(url))).size; } catch (_) {}
+    if (size > 4 * 1048576 || /\.(mov|webm)$/i.test(url)) compressSiteVideo(key, url);
+  });
+}, 5000);
 router.delete("/page-videos/:slot/:orient", owner, function (req, res) {
   const key = pageVideoKey(req.params.slot, req.params.orient);
   if (!key) return res.status(400).json({ ok: false, error: "bad slot" });
