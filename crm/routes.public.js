@@ -35,10 +35,10 @@ router.get("/all-masters", function (req, res) {
     "SELECT id, name, photo, level, experience_years, branch_id FROM masters WHERE active = 1 ORDER BY sort_order, id"
   ).all();
   const svcStmt = db.prepare("SELECT service_id FROM master_services WHERE master_id = ?");
-  const branchStmt = db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=? ORDER BY branch_id");
   masters.forEach(function (m) {
     m.service_ids = svcStmt.all(m.id).map(function (r) { return r.service_id; });
-    m.branch_ids = branchStmt.all(m.id).map(function (r) { return r.branch_id; });
+    /* Де майстер працює — прив'язка або графік у філії (див. slots.masterBranchIds). */
+    m.branch_ids = slots.masterBranchIds(m.id);
     attachStats(m);
   });
   res.json({ ok: true, masters: masters });
@@ -279,8 +279,8 @@ router.post("/book", function (req, res) {
          філією — це однозначно вона; якщо за кількома — філія
          невідома, і краще лишити запис "без філії" (branch_id=0,
          спільний графік), ніж мовчки вгадати неправильну. */
-      const ownBranches = db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=?").all(masterId);
-      if (ownBranches.length === 1) branchId = ownBranches[0].branch_id;
+      const ownBranches = slots.masterBranchIds(masterId);
+      if (ownBranches.length === 1) branchId = ownBranches[0];
       else if (!ownBranches.length) branchId = m.branch_id || null;
     }
     /* Захист від розсинхрону клієнта (напр. перемикання майстра на кроці
@@ -293,13 +293,10 @@ router.post("/book", function (req, res) {
 
   // Обрана філія повинна бути однією з філій цього майстра.
   if (branchId) {
-    const membership = db.prepare(
-      `SELECT 1
-         FROM branch_masters bm
-         JOIN branches b ON b.id=bm.branch_id
-        WHERE bm.master_id=? AND bm.branch_id=? AND b.active=1`
-    ).get(masterId, branchId);
-    if (!membership) return res.status(400).json({ ok: false, error: "master not in branch" });
+    const activeBranch = db.prepare("SELECT 1 FROM branches WHERE id=? AND active=1").get(branchId);
+    if (!activeBranch || slots.masterBranchIds(masterId).indexOf(branchId) === -1) {
+      return res.status(400).json({ ok: false, error: "master not in branch" });
+    }
   }
 
   const now = Date.now();

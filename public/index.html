@@ -122,7 +122,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=10" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=11" />
   <!-- Світліше зелено-сіре тло замість чорного (прохання власника, як на SPA-сторінках). -->
   <link rel="stylesheet" href="/assets/css/theme-olive.css?v=1" />
 </head>
@@ -1749,12 +1749,18 @@ function toggleRule(btn) {
          Максима, і кожен новий майстер без фото «отримував» його обличчя. */
       var photo = m.photo || FALLBACK_PHOTO[m.name] || 'assets/img/master-no-photo.jpg';
       var role  = m.level || 'Майстер';
-      var bookBtn = '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>';
-      return '<div class="team-card visible">' +
-        '<img src="' + photo + '" alt="' + m.name + ' — ' + role + ' студії Oliva" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" />' +
-        '<div class="team-card-overlay">' +
+      /* Ім'я, посада, локація й кнопка — під фото, а не поверх (на фоні
+         фото й бейджика їх погано видно — прохання власника). «Записатися»
+         відкриває запис з цим майстром першим у списку. */
+      var href = m.id ? BOOKING_URL + '?master=' + m.id : BOOKING_URL;
+      var bookBtn = '<a href="' + href + '" onclick="openBookingDrawer(event, \'' + href + '\')">Записатися</a>';
+      var where = (m.branches && m.branches.length) ? '<div class="team-where">📍 ' + m.branches.join(' · ') + '</div>' : '';
+      return '<div class="team-card team-card--below visible">' +
+        '<div class="team-photo"><img src="' + photo + '" alt="' + m.name + ' — ' + role + ' студії Oliva" loading="lazy" /></div>' +
+        '<div class="team-info">' +
           '<div class="team-name">' + m.name + '</div>' +
           '<div class="team-role">' + role.toUpperCase() + '</div>' +
+          where +
           bookBtn +
         '</div>' +
       '</div>';

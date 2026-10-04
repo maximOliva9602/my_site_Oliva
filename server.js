@@ -821,6 +821,19 @@ app.get("/api/masters", function (req, res) {
   var rows = db.prepare(
     "SELECT id, name, level, photo, mono_link FROM masters WHERE active=1 AND (show_on_site=1 OR id=?) ORDER BY sort_order, id"
   ).all(withId);
+  /* Де працює майстер — для картки на головній (прохання власника: видно
+     локацію). Коротка назва філії з адреси, напр. «Успішна, 8». */
+  try {
+    var slotsLib = require("./crm/slots");
+    var br = {};
+    db.prepare("SELECT id, name, address FROM branches WHERE active=1").all().forEach(function (b) {
+      br[b.id] = String(b.address || b.name || "").replace(/^OLIVA за адресою:\s*/i, "").replace(/м\.\s*Київ,?\s*/i, "")
+        .replace(/^вул\.\s*/i, "").trim();
+    });
+    rows.forEach(function (m) {
+      m.branches = slotsLib.masterBranchIds(m.id).map(function (id) { return br[id]; }).filter(Boolean);
+    });
+  } catch (e) { console.error("[masters] branches:", e.message); }
   res.json({ ok: true, masters: rows });
 });
 

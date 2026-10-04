@@ -136,6 +136,27 @@ function mastersForService(serviceId) {
   ).all(serviceId).map(function (r) { return r.id; });
 }
 
+/* Філії, де майстер реально працює: прив'язка (branch_masters) + графік
+   у конкретній філії (тижневий або на дні з сьогодні). Якщо прив'язок
+   немає зовсім, а графік заведено на «усі філії» (branch_id=0), — усі філії.
+   Раніше бралась лише прив'язка: нову майстриню без неї (Соломія) онлайн-
+   запис не пропонував ніде, хоча в CRM у неї були вільні віконця. */
+function masterBranchIds(masterId) {
+  const set = new Set();
+  db.prepare("SELECT branch_id FROM branch_masters WHERE master_id=?").all(masterId)
+    .forEach(function (r) { set.add(r.branch_id); });
+  const today = tz.nowKyiv().date;
+  let anyBranchSchedule = false;
+  db.prepare("SELECT DISTINCT branch_id FROM master_schedule WHERE master_id=?").all(masterId)
+    .forEach(function (r) { if (r.branch_id) set.add(r.branch_id); else anyBranchSchedule = true; });
+  db.prepare("SELECT DISTINCT branch_id FROM master_day_overrides WHERE master_id=? AND is_off=0 AND date>=?").all(masterId, today)
+    .forEach(function (r) { if (r.branch_id) set.add(r.branch_id); else anyBranchSchedule = true; });
+  if (!set.size && anyBranchSchedule) {
+    db.prepare("SELECT id FROM branches WHERE active=1").all().forEach(function (r) { set.add(r.id); });
+  }
+  return Array.from(set).sort(function (a, b) { return a - b; });
+}
+
 /* "Будь-який майстер": об'єднання стартів. Повертає
    [{ start_min, masterIds:[...] }] відсортовано за часом. */
 function freeSlotsAny(serviceId, date, durationMin, nowMs, branchId) {
@@ -145,9 +166,8 @@ function freeSlotsAny(serviceId, date, durationMin, nowMs, branchId) {
   let ids = mastersForService(serviceId);
   const b = parseInt(branchId, 10) || 0;
   if (b) {
-    const inBranch = db.prepare("SELECT master_id FROM branch_masters WHERE branch_id=?")
-      .all(b).map(function (r) { return r.master_id; });
-    if (inBranch.length) ids = ids.filter(function (id) { return inBranch.indexOf(id) !== -1; });
+    const inBranch = ids.filter(function (id) { return masterBranchIds(id).indexOf(b) !== -1; });
+    if (inBranch.length) ids = inBranch;
   }
   const map = new Map(); // start_min -> Set(masterId)
   for (const id of ids) {
@@ -187,5 +207,5 @@ function maxDurationFrom(masterId, date, startMin, branchId) {
 module.exports = {
   STEP, LEAD_MIN, BUFFER_MIN,
   computeSlots, blockedIntervals,
-  workWindow, freeSlots, freeSlotsAny, mastersForService, isSlotFree, maxDurationFrom,
+  workWindow, freeSlots, freeSlotsAny, mastersForService, isSlotFree, maxDurationFrom, masterBranchIds,
 };
