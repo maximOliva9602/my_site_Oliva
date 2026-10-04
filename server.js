@@ -135,7 +135,7 @@ function serveHome(req, res) {
   try { html = fs.readFileSync(HOME_FILE, "utf8"); } catch (e) { return res.sendFile(HOME_FILE); }
   /* /?theme=olive — попередній перегляд головної в палітрі Успішної/SPA-сторінок
      (лише для перегляду власником; без параметра головна як і була). */
-  if (req.query && req.query.theme === "olive") {
+  if (false && req.query && req.query.theme === "olive") { // тепер палітра ввімкнена на головній завжди
     html = html.replace("</head>", '<link rel="stylesheet" href="/assets/css/theme-olive.css?v=1" />\n<meta name="robots" content="noindex" />\n</head>');
   }
   var photo = heroSetting("hero_photo_url"), video = heroSetting("hero_video_url"), pos = heroSetting("hero_text_pos");
