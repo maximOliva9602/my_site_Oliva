@@ -1743,7 +1743,9 @@ function toggleRule(btn) {
     var grid = document.getElementById('teamGrid');
     if (!grid) return;
     grid.innerHTML = list.map(function (m) {
-      var photo = m.photo || FALLBACK_PHOTO[m.name] || 'assets/img/master-maksym.jpg';
+      /* Немає фото — нейтральна заглушка з логотипом. Раніше тут стояло фото
+         Максима, і кожен новий майстер без фото «отримував» його обличчя. */
+      var photo = m.photo || FALLBACK_PHOTO[m.name] || 'assets/img/master-no-photo.jpg';
       var role  = m.level || 'Майстер';
       var bookBtn = '<a href="' + BOOKING_URL + '" onclick="openBookingDrawer(event)">Записатися</a>';
       return '<div class="team-card visible">' +
