@@ -62,6 +62,11 @@ function groupOfKey(key, services) {
 const CATEGORIES = {
   "spa-dlya-dvoh-kyiv": {
     group: "spa2",
+    layout: "complex",
+    heroBtn: "Обрати програму для двох",
+    programsTitle: "Оберіть програму для двох",
+    seoHeading: "SPA для двох у студії Oliva",
+    banner: { group: "spa1", eyebrow: "SPA-комплекси", title: "Час для себе", text: "Фітобочка, SPA-ритуали та стоун-масаж — для одного.", btn: "Переглянути SPA-комплекси" },
     crumb: "SPA для двох",
     h1: "SPA для двох у Києві",
     title: "SPA для двох у Києві — парні SPA-програми та масаж | Oliva",
@@ -93,6 +98,10 @@ const CATEGORIES = {
   "spa-kompleksy-kyiv": {
     group: "spa1",
     layout: "complex",
+    heroBtn: "Обрати SPA-комплекс",
+    programsTitle: "Оберіть програму для себе",
+    seoHeading: "SPA-комплекси в студії Oliva",
+    banner: { group: "spa2", eyebrow: "SPA для двох", title: "Відпочинок удвох", text: "Для пари, друзів або мами з донькою.", btn: "Переглянути SPA для двох" },
     crumb: "SPA-комплекси",
     h1: "SPA-комплекси в Києві",
     title: "SPA-комплекси в Києві — фітобочка, SPA-ритуали, стоун-масаж | Oliva",
@@ -311,14 +320,17 @@ function renderServicePage(page) {
 function renderSpaComplexMain(cfg, slug, o) {
   const A = o.A, PIN = o.PIN;
   const cards = categoryCards(cfg.group, o.services, o.branches, o.pages);
-  const pairCards = categoryCards("spa2", o.services, o.branches, o.pages);
-  const spa2Slug = o.slugOf("spa2");
-  const pairImg = setting("page_photo_spa2") || (pairCards[0] && pairCards[0].image) || "";
+  const bn = cfg.banner || {};
+  const otherCards = bn.group ? categoryCards(bn.group, o.services, o.branches, o.pages) : [];
+  const otherSlug = bn.group ? o.slugOf(bn.group) : null;
+  const otherImg = (bn.group && setting("page_photo_" + bn.group)) || (otherCards[0] && otherCards[0].image) || "";
   const shortTitle = function (c) {
-    return String(c.key).replace(/^SPA[\s-]*ритуал\s*/i, "").replace(/["«»]/g, "").trim();
+    let t = String(c.key).replace(/^SPA[\s-]*ритуал\s*/i, "").replace(/^Тепловий\s+/i, "").replace(/["«»]/g, "");
+    if (cfg.group === "spa2") t = t.replace(/\s*\(?\s*для двох\s*\)?\s*/gi, " ");
+    return t.replace(/\s+/g, " ").trim();
   };
   const subOf = function (c) {
-    if (c.steps.length) return c.steps.slice(0, 4).map(function (x) { return x.split(" ")[0]; }).join(" · ");
+    if (c.steps.length) return c.steps.slice(0, 5).join(" · ");
     const d = String(c.description || "").split(/[—.]/)[0].trim();
     return d.length > 70 ? d.slice(0, 67) + "…" : d;
   };
@@ -328,20 +340,20 @@ function renderSpaComplexMain(cfg, slug, o) {
   let m = "";
   m += '<section class="cx-hero"><div class="cx-hero__media">' + o.media + "</div>" +
     '<div class="cx-hero__text"><div class="us-eyebrow">Студія масажу Oliva</div>' +
-    '<h1 class="us-h1">' + esc(cfg.h1).replace(" в ", "<br>в ") + "</h1>" +
+    '<h1 class="us-h1">' + esc(cfg.h1).replace(/ (в|у) (Києві)$/, "<br>$1 $2") + "</h1>" +
     '<p class="us-sub" style="font-style:normal;font-family:Inter,sans-serif;font-size:1.05rem;">' + esc(cfg.tagline) + "</p>" +
-    '<div class="us-hero__btns"><a href="#programs" class="btn" id="usTopCta">Обрати SPA-комплекс ' + A + "</a>" +
+    '<div class="us-hero__btns"><a href="#programs" class="btn" id="usTopCta">' + esc(cfg.heroBtn || "Обрати програму") + " " + A + "</a>" +
     '<a href="/certificate" class="btn btn--ghost">🎁 Подарувати сертифікат</a></div>' +
     '<div class="us-place">' + PIN + "<span>Борщагівська, 145 · Шулявська</span></div></div></section>";
   m += '<main class="wrap">';
-  if (spa2Slug) {
-    m += '<a class="cx-banner" href="/' + spa2Slug + '"><div class="cx-banner__img">' + (pairImg ? '<img src="' + esc(pairImg) + '" alt="SPA для двох у Києві" loading="lazy">' : "") + "</div>" +
-      '<div class="cx-banner__text"><div class="cx-eyebrow">SPA для двох</div><h2>Відпочинок удвох</h2>' +
-      "<p>Для пари, друзів або мами з донькою.</p>" +
-      '<span class="btn btn--ghost">Переглянути SPA для двох ' + A + "</span></div></a>";
+  if (otherSlug) {
+    m += '<a class="cx-banner" href="/' + otherSlug + '"><div class="cx-banner__img">' + (otherImg ? '<img src="' + esc(otherImg) + '" alt="' + esc(CATEGORIES[otherSlug].h1) + '" loading="lazy">' : "") + "</div>" +
+      '<div class="cx-banner__text"><div class="cx-eyebrow">' + esc(bn.eyebrow) + "</div><h2>" + esc(bn.title) + "</h2>" +
+      "<p>" + esc(bn.text) + "</p>" +
+      '<span class="btn btn--ghost">' + esc(bn.btn) + " " + A + "</span></div></a>";
   }
   m += '<section class="us-section cx-center" id="programs"><div class="cx-eyebrow">Наші програми</div>' +
-    '<h2 class="us-h2">Оберіть програму для себе</h2>' + LEAF +
+    '<h2 class="us-h2">' + esc(cfg.programsTitle || "Наші програми") + "</h2>" + LEAF +
     '<div class="cx-grid" style="text-align:left;">' + cards.map(function (c) {
       return '<article class="cx-card">' +
         (c.image ? '<div class="cx-card__img"><img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="lazy"></div>' : "") +
@@ -359,7 +371,7 @@ function renderSpaComplexMain(cfg, slug, o) {
     '<img src="/assets/img/cert.jpg" alt="Подарунковий сертифікат Oliva" loading="lazy"></div></div></section>';
   /* Текст для пошуку — щоб сторінку знаходили за «SPA-комплекси», «фітобочка». */
   const withMore = cards.filter(function (c) { return c.more.length; });
-  m += '<section class="us-section cx-seo"><h2 class="us-h2" style="margin-bottom:14px;">SPA-комплекси в студії Oliva</h2>' +
+  m += '<section class="us-section cx-seo"><h2 class="us-h2" style="margin-bottom:14px;">' + esc(cfg.seoHeading || cfg.h1) + "</h2>" +
     cfg.intro.map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("") +
     withMore.map(function (c) { return "<h3>" + esc(c.title) + "</h3>" + c.more.slice(0, 2).map(function (t) { return "<p>" + esc(t) + "</p>"; }).join(""); }).join("") +
     "</section>";
