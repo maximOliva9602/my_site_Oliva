@@ -122,7 +122,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=11" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=12" />
   <!-- Світліше зелено-сіре тло замість чорного (прохання власника, як на SPA-сторінках). -->
   <link rel="stylesheet" href="/assets/css/theme-olive.css?v=1" />
 </head>
@@ -830,8 +830,31 @@
 
   var _autoTimer = null;
 
+  /* Комп'ютер: нативне гортання рядка + автопрокрутка на одну картку. */
+  function initDesktopCarousel(){
+    var carousel = document.getElementById('srvCarousel');
+    var wrap = carousel.parentElement;
+    var oldPrev = document.getElementById('srvPrev'), oldNext = document.getElementById('srvNext');
+    var prevBtn = oldPrev.cloneNode(true), nextBtn = oldNext.cloneNode(true);
+    oldPrev.parentNode.replaceChild(prevBtn, oldPrev); oldNext.parentNode.replaceChild(nextBtn, oldNext);
+    if (_autoTimer) clearInterval(_autoTimer);
+    function step(){ var s = carousel.querySelector('.srv-slide'); return s ? s.offsetWidth + 16 : 300; }
+    function next(){
+      var atEnd = carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 8;
+      if (atEnd) carousel.scrollTo({ left: 0, behavior: 'smooth' });
+      else carousel.scrollBy({ left: step(), behavior: 'smooth' });
+    }
+    function prev(){ carousel.scrollBy({ left: -step(), behavior: 'smooth' }); }
+    function start(){ clearInterval(_autoTimer); _autoTimer = setInterval(next, 3500); }
+    prevBtn.addEventListener('click', function(){ prev(); start(); });
+    nextBtn.addEventListener('click', function(){ next(); start(); });
+    wrap.addEventListener('mouseenter', function(){ clearInterval(_autoTimer); });
+    wrap.addEventListener('mouseleave', start);
+    start();
+  }
+
   function initCarousel(){
-    if (window.innerWidth >= 900) return;
+    if (window.innerWidth >= 900) { initDesktopCarousel(); return; }
 
     var carousel = document.getElementById('srvCarousel');
     var wrap     = carousel.parentElement;
