@@ -573,7 +573,8 @@ function renderUspishna() {
   /* Нагорі — масажі (спершу популярні), решта згорнута за групами. */
   const main = cats.filter(function (c) { return c.group !== "extra"; });
   /* Нагорі — саме масажі (кінезіотейпування тощо — у згорнутому списку). */
-  const massages = main.filter(function (c) { return /масаж/i.test(c.name); });
+  /* Лише звичайні масажі — парні/SPA (групи spa2/spa1) ідуть у «Усі послуги». */
+  const massages = main.filter(function (c) { return /масаж/i.test(c.name) && (c.group === "general" || c.group === "body"); });
   const top = massages.filter(function (c) { return c.featured; }).concat(massages.filter(function (c) { return !c.featured; })).slice(0, 6);
   const rest = cats.filter(function (c) { return top.indexOf(c) === -1; });
   const GROUP_TITLE = { general: "Масажі", body: "Корекція фігури", spa2: "Для двох", spa1: "SPA", extra: "Додаткові послуги" };
