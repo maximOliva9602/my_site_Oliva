@@ -1097,6 +1097,11 @@ app.post("/api/office-request", async function (req, res) {
    Раніше будь-яка невідома адреса віддавала головну з кодом 200. Для Google
    це сотні дублікатів головної («м'які 404»), через що він не індексував
    саму головну. Тепер — справжня 404-сторінка. */
+/* Ідентифікатор цього процесу: так сервер перевіряє, що massage-oliva.com
+   зараз обслуговує саме він, а не інший деплой. */
+const INSTANCE_ID = crypto.randomBytes(8).toString("hex");
+app.get("/api/instance-id", function (req, res) { res.set("Cache-Control", "no-store").json({ id: INSTANCE_ID }); });
+
 app.get("*", function (req, res) {
   res.status(404).set("Content-Type", "text/html; charset=utf-8").send(seoPages.renderNotFound());
 });
@@ -1109,12 +1114,31 @@ app.get("*", function (req, res) {
    бойового бота на localhost, і сповіщення зникли б у всіх. */
 async function registerTelegramWebhook() {
   if ((!IS_PROD && !IS_RAILWAY) || !TG_TOKEN) return;
+  try {
+    const r = await fetch(PRIMARY_SITE_URL + "/api/instance-id?t=" + Date.now());
+    const j = await r.json().catch(function () { return {}; });
+    if (j.id !== INSTANCE_ID) {
+      console.warn("[telegram] massage-oliva.com обслуговує інший процес — вебхук не реєструю.");
+      return;
+    }
+  } catch (e) {
+    console.warn("[telegram] не вдалось перевірити, чи цей сервер основний:", e.message);
+    return;
+  }
   /* Після перенесення домену в Railway могла лишитися стара SITE_URL.
      Telegram приймає її без перевірки доступності, але тоді всі /start
      ідуть на вже відключений домен і бот мовчить. Канонізуємо адресу так
      само, як для посилань адмін-чату вище. */
-  const base = String(process.env.SITE_URL || PRIMARY_SITE_URL)
-    .replace(LEGACY_SITE_HOST, "massage-oliva.com").replace(/\/+$/, "");
+  /* Вебхук завжди веде на основний домен. Якщо в цього сервера SITE_URL
+     вказує на іншу адресу (другий/старий деплой на Railway зі своєю базою) —
+     вебхук не чіпаємо: інакше бот відповідав зі старої бази, і нова майстриня
+     (Соломія) отримувала «Код недійсний», хоча код у CRM був свіжий. */
+  const own = String(process.env.SITE_URL || "").replace(LEGACY_SITE_HOST, "massage-oliva.com");
+  if (own && own.indexOf("massage-oliva.com") === -1) {
+    console.warn("[telegram] SITE_URL=" + own + " — це не основний сервер, вебхук не реєструю.");
+    return;
+  }
+  const base = String(PRIMARY_SITE_URL).replace(/\/+$/, "");
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
   if (!secret) {
     console.warn("[telegram] TELEGRAM_WEBHOOK_SECRET не задано — вебхук реєструється без підпису.");
@@ -1144,5 +1168,10 @@ server.listen(PORT, function () {
   console.log("Кабінет CRM: http://localhost:" + PORT + "/cabinet");
   console.log("Онлайн-запис: http://localhost:" + PORT + "/booking");
   scheduler.start(); // нагадування Viber/SMS
-  registerTelegramWebhook();
+  /* Реєструємо, коли домен уже переключився на цей процес (Railway
+     перемикає трафік не одразу після старту), і далі щогодини — якщо інший
+     деплой перехопив вебхук, бот за годину знову відповідає з основної бази. */
+  setTimeout(registerTelegramWebhook, 60 * 1000);
+  setTimeout(registerTelegramWebhook, 5 * 60 * 1000);
+  setInterval(registerTelegramWebhook, 60 * 60 * 1000);
 });

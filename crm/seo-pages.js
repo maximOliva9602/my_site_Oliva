@@ -518,21 +518,13 @@ function renderUspishna() {
   const services = publicServices();
   let allowed = null, masters = [];
   if (branch) {
-    /* Хто працює на цій адресі: прив'язка до філії, тижневий графік саме в
-       цій філії, робочі дні тут (від місяця тому й далі) або записи тут за
-       останні 2 місяці й майбутні. Раніше бралась лише прив'язка до філії —
-       і на сторінці був один Максим, хоча тут приймають і інші майстри. */
-    const ago = function (days) { return new Date(Date.now() - days * 864e5).toISOString().slice(0, 10); };
-    masters = db.prepare(
-      `SELECT m.id, m.name, m.level, m.photo, m.show_on_site FROM masters m
-        WHERE m.active=1 AND m.id IN (
-          SELECT master_id FROM branch_masters WHERE branch_id=?
-          UNION SELECT master_id FROM master_schedule WHERE branch_id=?
-          UNION SELECT master_id FROM master_day_overrides WHERE branch_id=? AND is_off=0 AND date>=?
-          UNION SELECT master_id FROM appointments WHERE branch_id=? AND status<>'cancelled' AND date>=? AND pair_parent_id IS NULL
-        )
-        ORDER BY m.sort_order, m.id`
-    ).all(branch.id, branch.id, branch.id, ago(30), branch.id, ago(60));
+    /* Хто працює на цій адресі — те саме правило, що й в онлайн-записі
+       (slots.masterBranchIds): прив'язка до філії або графік тут, зокрема
+       «усі філії». Раніше графік «усі філії» не враховувався, і на сторінці
+       були лише ціни Максима (від 1000), хоча тут приймає й Соломія (від 750). */
+    const slotsLib = require("./slots");
+    masters = db.prepare("SELECT id, name, level, photo, show_on_site FROM masters WHERE active=1 ORDER BY sort_order, id").all()
+      .filter(function (m) { return slotsLib.masterBranchIds(m.id).indexOf(branch.id) !== -1; });
     const mSvc = new Set();
     const st = db.prepare("SELECT service_id FROM master_services WHERE master_id=?");
     masters.forEach(function (m) { st.all(m.id).forEach(function (r) { mSvc.add(r.service_id); }); });
