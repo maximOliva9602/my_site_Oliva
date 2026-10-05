@@ -1331,7 +1331,16 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         '<div class="grp-body"><div class="grp-title">' + tr(g.name) + '</div><div class="grp-sub">' + tr(g.sub) + '</div></div>' +
         '<div class="grp-arrow">›</div>';
       btn.addEventListener("click", function() {
-        state.group = g.key; state.category = null; state.master = null; state.service = null; state.start_min = null; state.branch = null;
+        state.group = g.key; state.category = null; state.master = null; state.service = null; state.start_min = null;
+        /* Філію, обрану раніше, пам'ятаємо: повернувся з «SPA для двох» і
+           обрав «Масажі» — одразу до послуг, без повторного «Оберіть філію»
+           (власник: клієнт ходив по колу). Питаємо знову лише тоді, коли в
+           обраній філії цієї групи послуг немає. */
+        if (state.branch && availServices().some(function(s) { return resolveGroup(s, parseName(s.name).cat) === g.key; })) {
+          renderCats(); goStep(2);
+          return;
+        }
+        state.branch = null;
         if (branchStepEnabled && branches.length > 1) {
           renderBranches(); goStep("branch");
         } else {
