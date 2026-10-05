@@ -291,6 +291,16 @@ router.post("/book", function (req, res) {
     if (!offers) return res.status(400).json({ ok: false, error: "master does not offer this service" });
   }
 
+  /* Послуга має бути в переліку цієї філії (порожній перелік = усі послуги).
+     Без перевірки пройшов тестовий запис на «Фіто-оновлення тіла» на
+     Успішну, де фітобочки немає. */
+  if (branchId) {
+    const svcList = db.prepare("SELECT service_id FROM branch_services WHERE branch_id=?").all(branchId);
+    if (svcList.length && !svcList.some(function (r) { return r.service_id === serviceId; })) {
+      return res.status(400).json({ ok: false, error: "service not available in branch" });
+    }
+  }
+
   // Обрана філія повинна бути однією з філій цього майстра.
   if (branchId) {
     const activeBranch = db.prepare("SELECT 1 FROM branches WHERE id=? AND active=1").get(branchId);
