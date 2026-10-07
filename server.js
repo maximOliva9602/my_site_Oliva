@@ -978,6 +978,12 @@ app.get("/service/:key", function (req, res) {
   }
 });
 /* Категорійні SEO-сторінки: «SPA для двох у Києві», «SPA для одного у Києві». */
+/* Сторінки старого сайту (WordPress), які Google досі показує в пошуку:
+   /прайси/ мала кліки — ведемо на прайс на головній, а не на 404. */
+app.get(["/прайси", "/прайси/", "/%D0%BF%D1%80%D0%B0%D0%B9%D1%81%D0%B8", "/%D0%BF%D1%80%D0%B0%D0%B9%D1%81%D0%B8/"], function (req, res) {
+  res.redirect(301, "/#services");
+});
+
 /* Перейменовані SPA-сторінки: стара адреса → нова (301, щоб Google переніс). */
 Object.keys(seoPages.CATEGORY_REDIRECTS || {}).forEach(function (from) {
   app.get("/" + from, function (req, res) { res.redirect(301, "/" + seoPages.CATEGORY_REDIRECTS[from]); });
