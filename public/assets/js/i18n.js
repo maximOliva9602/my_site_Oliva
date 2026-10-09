@@ -26,7 +26,7 @@
       "hero.cta1": "Записатися онлайн", "hero.cta2": "Переглянути послуги",
       "hero.badgeAddr1": "Борщагівська, 145", "hero.badgeAddr2": "Успішна, 8", "hero.badgeDaily": "щодня",
 
-      "mq.1": "Загально-оздоровчий масаж", "mq.2": "Парний масаж", "mq.3": "Антицелюлітний масаж",
+      "mq.0": "⚡ Працюємо автономно", "mq.1": "Загально-оздоровчий масаж", "mq.2": "Парний масаж", "mq.3": "Антицелюлітний масаж",
       "mq.4": "SPA-ритуали", "mq.5": "Спортивний масаж", "mq.6": "Фітобочка",
       "mq.7": "Масаж обличчя", "mq.8": "Топ майстри",
 
@@ -248,7 +248,7 @@
       "hero.cta1": "Book online", "hero.cta2": "View services",
       "hero.badgeAddr1": "Borshchahivska, 145", "hero.badgeAddr2": "Uspishna, 8", "hero.badgeDaily": "daily",
 
-      "mq.1": "Wellness massage", "mq.2": "Couples massage", "mq.3": "Anti-cellulite massage",
+      "mq.0": "⚡ Open during blackouts", "mq.1": "Wellness massage", "mq.2": "Couples massage", "mq.3": "Anti-cellulite massage",
       "mq.4": "SPA rituals", "mq.5": "Sports massage", "mq.6": "Phyto-barrel",
       "mq.7": "Face massage", "mq.8": "Top therapists",
 

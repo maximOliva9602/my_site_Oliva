@@ -249,6 +249,8 @@ section { padding: 100px 0; }
 .marquee-track { display: flex; animation: marquee 28s linear infinite; width: max-content; }
 .marquee-item { font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim); padding: 0 40px; display: flex; align-items: center; gap: 16px; }
 .marquee-item::after { content: '✦'; color: var(--olive-light); font-size: 0.6rem; }
+/* «Працюємо автономно» — виділено, щоб кидалось в очі під час відключень. */
+.marquee-item--accent { color: var(--olive-light); font-weight: 600; }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* ── SERVICES CAROUSEL ── */
