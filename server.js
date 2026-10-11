@@ -138,6 +138,32 @@ function serveHome(req, res) {
   if (false && req.query && req.query.theme === "olive") { // тепер палітра ввімкнена на головній завжди
     html = html.replace("</head>", '<link rel="stylesheet" href="/assets/css/theme-olive.css?v=1" />\n<meta name="robots" content="noindex" />\n</head>');
   }
+  /* Ціни в мікророзмітці (JSON-LD) — з живого прайсу, «від–до» по послузі.
+     Статичні числа розходилися з прайсом на сторінці (напр. парний масаж
+     2700 у розмітці й від 3000 у прайсі), а Google радить, щоб розмітка
+     точно відповідала видимому вмісту. */
+  try {
+    var KEYS = ["Загально-оздоровчий масаж", "Антицелюлітний масаж", "Спортивний масаж", "Парний масаж", "Паріння у фітобочці", "Класичний масаж обличчя"];
+    var svcRows = db.prepare("SELECT name, price FROM services WHERE active=1 AND price>0").all();
+    var range = {}, all = [];
+    svcRows.forEach(function (r) {
+      var base = seoPages.SG.parseName(r.name).cat;
+      if (KEYS.indexOf(base) === -1) return;
+      all.push(r.price);
+      if (!range[base]) range[base] = [r.price, r.price];
+      range[base][0] = Math.min(range[base][0], r.price); range[base][1] = Math.max(range[base][1], r.price);
+    });
+    if (all.length) {
+      var lo = Math.round(Math.min.apply(null, all) / 100), hi = Math.round(Math.max.apply(null, all) / 100);
+      html = html.replace(/"priceRange": "[^"]*"/, '"priceRange": "' + lo + "–" + hi + ' грн"');
+      var items = KEYS.filter(function (k) { return range[k]; }).map(function (k) {
+        return { "@type": "AggregateOffer", "itemOffered": { "@type": "Service", "name": k },
+          "lowPrice": String(Math.round(range[k][0] / 100)), "highPrice": String(Math.round(range[k][1] / 100)), "priceCurrency": "UAH" };
+      });
+      html = html.replace(/"hasOfferCatalog":\s*\{[\s\S]*?\]\s*\}/, '"hasOfferCatalog": ' +
+        JSON.stringify({ "@type": "OfferCatalog", "name": "Послуги масажу", "itemListElement": items }));
+    }
+  } catch (e) { console.error("[home jsonld]", e.message); }
   var photo = heroSetting("hero_photo_url"), video = heroSetting("hero_video_url"), pos = heroSetting("hero_text_pos");
   var okUrl = /^\/(api\/site-media|assets\/(img|video))\/[\w.\-]+$/;
   if (okUrl.test(photo)) {
