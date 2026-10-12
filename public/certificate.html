@@ -275,6 +275,12 @@
     .variant-label { font-size: 13px; color: var(--cream); }
     .variant-price { font-size: 15px; font-weight: 600; color: var(--olive-light); margin-top: 2px; }
 
+    /* Перемикач «Для одного / Для двох» у Популярних */
+    .who-switch { display: flex; gap: 8px; margin-bottom: 12px; }
+    .who-btn { flex: 1; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; cursor: pointer; transition: background .2s, border-color .2s; }
+    .who-btn:hover { border-color: rgba(168,176,127,.5); }
+    .who-btn.active { background: var(--olive-btn); border-color: var(--olive-light); color: var(--ink); }
+
     /* Вибір майстра */
     .master-grid { display: flex; gap: 10px; flex-wrap: wrap; }
     .master-btn {
@@ -360,7 +366,7 @@
     .us-hero { display: grid; grid-template-columns: 1fr; }
     .us-hero__text { padding: 30px 16px 26px; }
     .us-eyebrow { font-size: .72rem; letter-spacing: .24em; text-transform: uppercase; color: var(--text); margin-bottom: 12px; }
-    .us-h1 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(2.2rem, 9vw, 3.8rem); line-height: 1.05; margin-bottom: 14px; }
+    .us-h1 { font-family: 'Playfair Display', serif; font-weight: 500; font-size: clamp(2.4rem, 10vw, 4.6rem); line-height: 1.05; margin-bottom: 14px; }
     .us-h1 em { font-style: italic; color: var(--olive-light); }
     .us-sub { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.15rem; color: var(--text); margin-bottom: 22px; }
     .us-hero__btns { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -487,6 +493,10 @@
 
       <!-- Популярні: великі кнопки -->
       <div id="popularPanel">
+        <div class="who-switch" id="whoSwitch" role="group" aria-label="Для кого">
+          <button type="button" class="who-btn active" data-who="one">👤 Для одного</button>
+          <button type="button" class="who-btn" data-who="two">👥 Для двох</button>
+        </div>
         <div class="popular-grid" id="popularGrid"></div>
       </div>
 
@@ -952,7 +962,14 @@
   var activeTab = 'popular';
 
   /* ── ПОПУЛЯРНІ ── */
-  var POPULAR_IDS = ['zagalno','parnyi','antyvikovy','antistres','kaminnnya','fitobochka','spa_fito','spa_dvoh'];
+  /* Популярні — з перемикачем «Для одного / Для двох»; «Паріння у фітобочці»
+     прибрано (замовлень немає), лишились основні процедури студії. */
+  var POPULAR_BY_WHO = {
+    one: ['zagalno','antistres','antyvikovy','kaminnnya','spa_fito'],
+    two: ['parnyi','spa_dvoh']
+  };
+  var popularWho = 'one';
+  function popularIds(){ return POPULAR_BY_WHO[popularWho]; }
 
   var SERVICE_IMG = {
     zagalno:      'ozdorovchyi-masazh-kyiv.jpg',
@@ -1007,7 +1024,7 @@
      цим самим викликом уже з живими даними (нижче, після fetch). */
   function renderInitialPickers(){
     popularGrid.innerHTML = '';
-    POPULAR_IDS.forEach(function(pid){
+    popularIds().forEach(function(pid){
       var s = SERVICES.find(function(s){ return s.id === pid; });
       if (!s) return;
       var durCount = s.variants.length === 1 ? s.variants[0].dur : s.variants.length + ' варіантів';
@@ -1606,6 +1623,14 @@
     }
   }
 
+  document.querySelectorAll('.who-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      popularWho = b.getAttribute('data-who');
+      document.querySelectorAll('.who-btn').forEach(function(x){ x.classList.toggle('active', x === b); });
+      renderCertServiceLists(getLang());
+    });
+  });
+
   function renderCertServiceLists(lang) {
     var tr = (window.OlivaI18n && lang !== 'uk')
       ? function(t) { return window.OlivaI18n.translate(t, lang); }
@@ -1614,7 +1639,7 @@
 
     // Popular grid
     popularGrid.innerHTML = '';
-    POPULAR_IDS.forEach(function(pid) {
+    popularIds().forEach(function(pid) {
       var s = SERVICES.find(function(s){ return s.id === pid; });
       if (!s) return;
       var durCount = s.variants.length === 1
