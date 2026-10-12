@@ -914,6 +914,8 @@
       var g = byCat[p.cat];
       if (!g[p.dur]) g[p.dur] = [];
       g[p.dur].push({ level: p.level, price: Math.round(s.price / 100) });
+      if (s.cert_who && !byCat[p.cat].__who) Object.defineProperty(byCat[p.cat], '__who', { value: s.cert_who, enumerable: false });
+      if (s.image_url && !byCat[p.cat].__img) Object.defineProperty(byCat[p.cat], '__img', { value: s.image_url, enumerable: false });
     });
     var used = {};
     return order.map(function (cat) {
@@ -930,7 +932,7 @@
       });
       var id = ID_BY_NAME[cat] || slugifyCertId(cat, used);
       used[id] = true;
-      return { id: id, name: cat, variants: variants };
+      return { id: id, name: cat, variants: variants, who: g.__who || 0, img: g.__img || '' };
     });
   }
   var SERVICES = FALLBACK_SERVICES; // до відповіді /api/services — щоб сторінка не була порожньою
@@ -968,7 +970,17 @@
     two: ['parnyi','spa_dvoh']
   };
   var popularWho = 'one';
-  function popularIds(){ return POPULAR_BY_WHO[popularWho]; }
+  /* Якщо в адмінці вже відмічено послуги для сертифіката (cert_who) — беремо їх,
+     інакше запасний набір вище. */
+  function popularIds(){
+    var w = popularWho === 'two' ? 2 : 1;
+    var flagged = SERVICES.some(function(s){ return s.who; });
+    if (!flagged) return POPULAR_BY_WHO[popularWho];
+    return SERVICES.filter(function(s){ return s.who === w; }).map(function(s){ return s.id; });
+  }
+  function popularImg(s){
+    return SERVICE_IMG[s.id] ? 'assets/img/' + SERVICE_IMG[s.id] : (s.img || '');
+  }
 
   var SERVICE_IMG = {
     zagalno:      'ozdorovchyi-masazh-kyiv.jpg',
@@ -1031,7 +1043,7 @@
       btn.type = 'button';
       btn.className = 'popular-btn';
       btn.setAttribute('data-id', s.id);
-      if (SERVICE_IMG[s.id]) btn.style.backgroundImage = 'url(assets/img/' + SERVICE_IMG[s.id] + ')';
+      if (popularImg(s)) btn.style.backgroundImage = 'url(' + popularImg(s) + ')';
       btn.innerHTML =
         '<div class="popular-btn-top"><span class="popular-btn-name">' + s.name + '</span></div>' +
         '<div class="popular-btn-meta">' + durCount + '</div>';
@@ -1648,7 +1660,7 @@
       btn.type = 'button';
       btn.className = 'popular-btn' + (activeCatId === s.id ? ' active' : '');
       btn.setAttribute('data-id', s.id);
-      if (SERVICE_IMG[s.id]) btn.style.backgroundImage = 'url(assets/img/' + SERVICE_IMG[s.id] + ')';
+      if (popularImg(s)) btn.style.backgroundImage = 'url(' + popularImg(s) + ')';
       btn.innerHTML =
         '<div class="popular-btn-top"><span class="popular-btn-name">' + tr(s.name) + '</span></div>' +
         '<div class="popular-btn-meta">' + durCount + '</div>';

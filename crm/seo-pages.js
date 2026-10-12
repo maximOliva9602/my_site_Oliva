@@ -44,7 +44,7 @@ function setting(k) {
 }
 function publicServices() {
   return db.prepare(
-    "SELECT id, name, duration_min, price, category, description, image_url, featured, in_carousel FROM services WHERE active=1 ORDER BY sort_order, id"
+    "SELECT id, name, duration_min, price, category, description, image_url, featured, in_carousel, cert_who FROM services WHERE active=1 ORDER BY sort_order, id"
   ).all();
 }
 function publicBranches() {
@@ -734,6 +734,20 @@ function migrate() {
       console.log("[seo] створено сторінку послуги «" + key + "»");
     });
     db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(FLAG_TOP);
+  }
+
+  /* Популярні на сторінці сертифіката тепер керуються з адмінки (cert_who).
+     Одноразово переносимо туди поточний набір, щоб вигляд не змінився. */
+  const FLAG_CERT = "migr_cert_who";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(FLAG_CERT)) {
+    const ONE = ["Загально-оздоровчий масаж", "Антистресовий масаж", "Антивіковий масаж обличчя", "Масаж гарячим камінням", 'SPA Ритуал "Фіто-оновлення тіла"'];
+    const TWO = ["Парний масаж", 'Тепловий SPA-ритуал "Глибоке прогрівання для двох"'];
+    db.prepare("SELECT id, name FROM services").all().forEach(function (r) {
+      const c = SG.parseName(r.name).cat;
+      const who = ONE.indexOf(c) !== -1 ? 1 : (TWO.indexOf(c) !== -1 ? 2 : 0);
+      if (who) db.prepare("UPDATE services SET cert_who=? WHERE id=?").run(who, r.id);
+    });
+    db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(FLAG_CERT);
   }
 
   /* «Фіто-оновлення тіла» для двох: теплий душ — в кінці ритуалу (прохання

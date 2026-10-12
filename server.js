@@ -913,7 +913,7 @@ app.get("/api/hero-media", function (req, res) {
 /* ---- Публічний список активних послуг (для сайту) ---- */
 app.get("/api/services", function (req, res) {
   var rows = db.prepare(
-    "SELECT id, name, duration_min, price, category, description, image_url, featured, in_carousel FROM services WHERE active=1 ORDER BY sort_order, id"
+    "SELECT id, name, duration_min, price, category, description, image_url, featured, in_carousel, cert_who FROM services WHERE active=1 ORDER BY sort_order, id"
   ).all();
   res.json({ ok: true, services: rows });
 });
@@ -941,7 +941,7 @@ app.put("/api/admin/services/:id", requireAdmin, function (req, res) {
   if (!s) return res.status(404).json({ ok: false });
   var d = req.body || {};
   db.prepare(
-    "UPDATE services SET name=?,duration_min=?,price=?,category=?,description=?,image_url=?,sort_order=?,featured=?,in_carousel=? WHERE id=?"
+    "UPDATE services SET name=?,duration_min=?,price=?,category=?,description=?,image_url=?,sort_order=?,featured=?,in_carousel=?,cert_who=? WHERE id=?"
   ).run(
     d.name !== undefined ? (cleanSvc(d.name, 150) || s.name) : s.name,
     d.duration_min !== undefined ? (parseInt(d.duration_min, 10) || s.duration_min) : s.duration_min,
@@ -952,6 +952,7 @@ app.put("/api/admin/services/:id", requireAdmin, function (req, res) {
     d.sort_order !== undefined ? (parseInt(d.sort_order, 10) || 0) : s.sort_order,
     d.featured !== undefined ? (parseInt(d.featured, 10) ? 1 : 0) : (s.featured || 0),
     d.in_carousel !== undefined ? (parseInt(d.in_carousel, 10) ? 1 : 0) : (s.in_carousel || 0),
+    d.cert_who !== undefined ? ([1, 2].indexOf(parseInt(d.cert_who, 10)) !== -1 ? parseInt(d.cert_who, 10) : 0) : (s.cert_who || 0),
     id
   );
   res.json({ ok: true });

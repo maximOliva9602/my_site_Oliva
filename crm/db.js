@@ -352,6 +352,7 @@ try { db.exec("ALTER TABLE services ADD COLUMN description TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN image_url TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN featured INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE services ADD COLUMN in_carousel INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE services ADD COLUMN cert_who INTEGER NOT NULL DEFAULT 0"); } catch(e) {} // сторінка сертифіката: 0 — ні, 1 — «Для одного», 2 — «Для двох»
 try { db.exec("ALTER TABLE appointments ADD COLUMN paid INTEGER NOT NULL DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN pay_method TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN color_marker TEXT"); } catch(e) {}

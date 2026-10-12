@@ -1177,6 +1177,8 @@
         .filter(function (d, i, a) { return a.indexOf(d) === i; }).sort(function (a, b) { return a - b; });
       var anyFeatured = sibs.some(function (s) { return s.featured; });
       var anyCarousel = sibs.some(function (s) { return s.in_carousel; });
+      var certWho = (sibs.filter(function (s) { return s.cert_who; })[0] || {}).cert_who || 0;
+      function certLabel(w) { return w === 1 ? '🎁 Сертифікат: для одного' : (w === 2 ? '🎁 Сертифікат: для двох' : '○ У сертифікат'); }
       var anyNoPhoto  = sibs.some(function (s) { return !s.image_url; });
       var anyNoPrice  = sibs.some(function (s) { return !s.price; });
 
@@ -1208,6 +1210,7 @@
             '<button data-edit>✏️ Редагувати</button>' +
             '<button class="btn-feat-svc" data-feat title="Показувати у вкладці Популярні">' + (anyFeatured ? '⭐ Популярне' : '☆ Популярне') + '</button>' +
             '<button class="btn-carousel-svc" data-carousel title="Показувати у каруселі на головній">' + (anyCarousel ? '🎠 В каруселі' : '○ В карусель') + '</button>' +
+            '<button class="btn-carousel-svc" data-cert title="Популярні на сторінці подарункового сертифіката: Для одного → Для двох → вимкнено">' + certLabel(certWho) + '</button>' +
             '<button class="btn-del-svc" data-del>🗑 Видалити</button>' +
           '</div>' +
         '</div>';
@@ -1238,6 +1241,16 @@
           btn.textContent = newVal ? '🎠 В каруселі' : '○ В карусель';
           card.classList.toggle('is-carousel', !!newVal);
         });
+      });
+      card.querySelector('[data-cert]').addEventListener('click', function () {
+        var btn = this;
+        certWho = (certWho + 1) % 3;
+        var val = certWho;
+        Promise.all(sibs.map(function (s) {
+          return fetch('/api/admin/services/' + s.id, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cert_who: val })
+          }).then(function () { s.cert_who = val; });
+        })).then(function () { btn.textContent = certLabel(val); });
       });
       card.querySelector('[data-del]').addEventListener('click', function () {
         var msg = sibs.length > 1
