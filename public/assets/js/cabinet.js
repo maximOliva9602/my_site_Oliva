@@ -4824,14 +4824,25 @@
           countEl.appendChild(statTile("Використано", used, "var(--olive-light)"));
           countEl.appendChild(statTile("Ще не використано", pending, "var(--warn)"));
           if (cancelled) countEl.appendChild(statTile("Скасовано", cancelled, "var(--err)"));
-          // Куплено за період — кількість і сума (так само рахує Аналітика:
-          // усі записи за датою створення).
-          var nowMs = Date.now(), DAY = 86400000;
-          [["За 7 днів", 7], ["За 30 днів", 30], ["За рік", 365]].forEach(function(p) {
-            var part = all.filter(function(c) { return c.created_at >= nowMs - p[1] * DAY; });
-            var sum = part.reduce(function(a, c) { return a + (c.amount || 0); }, 0);
-            countEl.appendChild(statTile(p[0] + " · " + money(sum), part.length));
-          });
+          // Куплено за період: вибір дат (за замовчуванням — поточний місяць),
+          // рахуються всі записи за датою створення, як і в Аналітиці.
+          var pr = countEl.parentNode.querySelector(".cert-period");
+          if (!pr) {
+            pr = el("div", "cert-period");
+            pr.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;";
+            var t0 = new Date(), mStart = new Date(t0.getFullYear(), t0.getMonth(), 1);
+            pr.innerHTML = '<span class="sub">Куплено за період:</span>' +
+              '<input type="date" class="cp-from" value="' + ymdLocal(mStart.getTime()) + '">' +
+              '<span>—</span><input type="date" class="cp-to" value="' + ymdLocal(t0.getTime()) + '">' +
+              '<button class="btn btn-primary btn-sm cp-apply">Застосувати</button>' +
+              '<span class="cp-res" style="font-weight:600;color:var(--cream);"></span>';
+            countEl.parentNode.insertBefore(pr, countEl.nextSibling);
+            pr.querySelector(".cp-apply").addEventListener("click", load);
+          }
+          var f = pr.querySelector(".cp-from").value, tt = pr.querySelector(".cp-to").value;
+          var inRange = all.filter(function(c) { var d = ymdLocal(c.created_at); return (!f || d >= f) && (!tt || d <= tt); });
+          var rsum = inRange.reduce(function(a, c) { return a + (c.amount || 0); }, 0);
+          pr.querySelector(".cp-res").textContent = inRange.length + " шт. · " + money(rsum);
         }
 
         var certs = statusSel.value ? all.filter(function(c) { return c.status === statusSel.value; }) : all;
