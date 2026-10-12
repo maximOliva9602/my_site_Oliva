@@ -4824,6 +4824,14 @@
           countEl.appendChild(statTile("Використано", used, "var(--olive-light)"));
           countEl.appendChild(statTile("Ще не використано", pending, "var(--warn)"));
           if (cancelled) countEl.appendChild(statTile("Скасовано", cancelled, "var(--err)"));
+          // Куплено за період — кількість і сума (так само рахує Аналітика:
+          // усі записи за датою створення).
+          var nowMs = Date.now(), DAY = 86400000;
+          [["За 7 днів", 7], ["За 30 днів", 30], ["За рік", 365]].forEach(function(p) {
+            var part = all.filter(function(c) { return c.created_at >= nowMs - p[1] * DAY; });
+            var sum = part.reduce(function(a, c) { return a + (c.amount || 0); }, 0);
+            countEl.appendChild(statTile(p[0] + " · " + money(sum), part.length));
+          });
         }
 
         var certs = statusSel.value ? all.filter(function(c) { return c.status === statusSel.value; }) : all;
