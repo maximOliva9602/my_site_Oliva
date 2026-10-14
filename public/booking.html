@@ -531,6 +531,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .secure-note { display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; color: rgba(212,207,198,0.5); font-size: .8rem; padding: 4px 0 8px; }
 .secure-note svg { width: 15px; height: 15px; color: var(--gold); }
 </style>
+  <script src="/assets/js/ga4.js?v=1"></script>
 </head>
 <body>
 <div class="lang-switch" id="langSwitch" role="group" aria-label="Мова">
@@ -1175,7 +1176,22 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       el.classList.toggle("on", parseInt(el.dataset.s) <= num);
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
+    gaStep(n);
   }
+
+  /* Google Analytics: події кроків запису (без персональних даних). */
+  function ga(name, p) { if (window.olivaGA) window.olivaGA(name, p); }
+  var gaSeen = {};
+  function gaStep(n) {
+    var svc = state.category || (state.service && parseName(state.service.name).cat) || "";
+    if (n === 2 && !gaSeen.start) { gaSeen.start = 1; ga("booking_start", { booking_group: state.group || "" }); }
+    else if (n === 3) ga("service_select", { service_name: svc });
+    else if ((n === 4 || n === 5) && state.master && gaSeen.master !== state.master.id) {
+      gaSeen.master = state.master.id;
+      ga("master_select", { service_name: svc, master_name: state.master.name });
+    }
+  }
+  ga("booking_open", {});
 
   // Завантаження
   Promise.all([
@@ -1955,6 +1971,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
           b.addEventListener("click", function() {
             grid.querySelectorAll(".slot2").forEach(function(x) { x.classList.remove("sel"); });
             b.classList.add("sel"); state.start_min = s.start_min;
+            ga("time_select", { booking_date: state.date, booking_time: String(Math.floor(s.start_min/60)).padStart(2,"0") + ":" + String(s.start_min%60).padStart(2,"0") });
             fetchMaxDur(function() { renderExtras(); goStep("extras"); }); // час обрано → додаткові
           });
           grid.appendChild(b);
@@ -2178,6 +2195,18 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         if (res.code === 409) { err.textContent = tr("Це віконце щойно зайняли. Оберіть інший час."); setTimeout(function() { renderDateStep(); goStep(5); }, 1000); return; }
         if (!res.j.ok) { err.textContent = tr("Помилка. Спробуйте ще раз."); return; }
         bookedPublicId = res.j.public_id || null;
+        /* Успішний запис — одна подія на запис (захист від повторної відправки) */
+        try {
+          var gaKey = String(res.j.public_id || res.j.id || "");
+          var gaDone = JSON.parse(localStorage.getItem("oliva_ga_done") || "[]");
+          if (gaKey && gaDone.indexOf(gaKey) === -1) {
+            gaDone.push(gaKey); localStorage.setItem("oliva_ga_done", JSON.stringify(gaDone.slice(-30)));
+            var gaP = { service_name: parseName(state.service.name).cat, master_name: state.master.name, value: Math.round((state.service.price || 0) / 100), currency: "UAH", transaction_id: gaKey };
+            var at = window.olivaGAAttr ? window.olivaGAAttr() : {};
+            for (var k in at) gaP[k] = at[k];
+            ga("booking_success", gaP);
+          }
+        } catch (e) {}
         var p = parseName(state.service.name);
         var h = Math.floor(state.start_min/60), m = state.start_min%60;
         $("doneText").innerHTML = "<b>" + tr(p.cat) + "</b> · " + state.master.name + "<br>" + state.date.split("-").reverse().slice(0,2).join(".") + ", " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");

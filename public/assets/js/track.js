@@ -10,6 +10,13 @@
   // Не трекаємо CRM/адмін
   if (/\/(cabinet|admin)/.test(location.pathname)) return;
 
+  /* Google Analytics 4 — окремий файл, один раз на сторінку (див. ga4.js) */
+  if (!window.__olivaGA) {
+    var ga = document.createElement('script');
+    ga.src = '/assets/js/ga4.js?v=1';
+    document.head.appendChild(ga);
+  }
+
   /* ---- Сесія (зберігається 30 хв, потім нова) ---- */
   function getSession() {
     var KEY = '_oliva_sid';
