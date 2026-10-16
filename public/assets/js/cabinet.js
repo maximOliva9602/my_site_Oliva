@@ -1028,7 +1028,10 @@
 
     // Власник: "" = усі майстри (дефолт). Майстер: власний id = тільки свої
     // записи (дефолт), "all" = усі майстри (щоб бачити накладки).
-    var activeMasterFilter = ME.role === "owner" ? "" : String(ME.masterId);
+    /* Акаунт майстра без прив'язки до картки (ME.masterId == null) раніше давав
+       фільтр "null" → порожній розклад без жодного пояснення. Тепер за
+       замовчуванням "all" + видиме попередження нижче. */
+    var activeMasterFilter = ME.role === "owner" ? "" : (ME.masterId ? String(ME.masterId) : "all");
     /* Замість окремого перемикача філії — адреса філії прямо біля імені
        майстра в шапці денного календаря (loadCalendar). branchAddrById
        заповнюється нижче для власника й читається звідти по m.branch_ids. */
@@ -1059,8 +1062,13 @@
     } else {
       var selM = el("select");
       selM.style.cssText = "flex:1 1 auto;min-width:0;";
-      selM.appendChild(new Option("Тільки я", String(ME.masterId)));
+      if (ME.masterId) selM.appendChild(new Option("Тільки я", String(ME.masterId)));
       selM.appendChild(new Option("Усі майстри", "all"));
+      if (!ME.masterId) {
+        var unlinkedWarn = el("div", "", "⚠️ Ваш акаунт не прив'язано до майстра, тому «Тільки я» недоступно і записувати клієнтів не вийде. Попросіть власника: Доступи → Змінити → обрати майстра.");
+        unlinkedWarn.style.cssText = "background:#fff4e0;border:1px solid #e6c789;border-radius:10px;padding:9px 12px;margin:8px 0;font-size:.8rem;color:#8a6414;line-height:1.4;";
+        main.insertBefore(unlinkedWarn, masterFilterWrap.nextSibling);
+      }
       selM.value = activeMasterFilter;
       selM.addEventListener("change", function () { activeMasterFilter = selM.value; reloadView(selM.value); });
       var mLbl2 = el("span", "muted", "Перегляд:");
@@ -8089,7 +8097,13 @@
           var mn = masters.find(function (x) { return x.id === u.master_id; });
           var info = el("div");
           info.appendChild(el("div", "t", u.username + (u.active ? "" : " (вимкнено)")));
-          info.appendChild(el("div", "sub", (u.role === "owner" ? "власник" : "майстер") + (mn ? " · " + mn.name : "")));
+          var subEl = el("div", "sub", (u.role === "owner" ? "власник" : "майстер") + (mn ? " · " + mn.name : ""));
+          /* Раніше такий акаунт нічим не відрізнявся, а майстер бачив порожній розклад. */
+          if (u.role !== "owner" && u.active && !mn) {
+            subEl.textContent += " · ⚠ не прив'язано до майстра — натисніть «Змінити» й оберіть";
+            subEl.style.color = "var(--err)";
+          }
+          info.appendChild(subEl);
           r.appendChild(info); r.appendChild(el("span", "sp"));
           var ed = el("button", "btn btn-sm btn-ghost", "Змінити"); ed.addEventListener("click", function () { userModal(u, masters); });
           var del = el("button", "btn btn-sm btn-ghost", "Вимкнути");
@@ -8113,7 +8127,9 @@
         '<div class="err" id="uErr"></div>' +
         '<div class="modal-foot"><button class="btn btn-ghost" id="uCancel">Скасувати</button><button class="btn btn-primary" id="uSave">Зберегти</button></div>'
       );
-      var sel = $("uMaster"); sel.appendChild(new Option("— без прив'язки —", ""));
+      /* Без майстра акаунт не працює: «Тільки я» у розкладі порожній, записати
+         клієнта неможливо. Тому пункт «без прив'язки» прибрано — обов'язковий вибір. */
+      var sel = $("uMaster"); sel.appendChild(new Option("— оберіть майстра —", ""));
       ms.forEach(function (m) { sel.appendChild(new Option(m.name, m.id)); });
       if (u) { $("uName").value = u.username; if (u.master_id) sel.value = u.master_id; }
       $("uPassEye").addEventListener("click", function () {
@@ -8130,13 +8146,18 @@
       $("uSave").addEventListener("click", function () {
         var name = $("uName").value.trim(), pass = $("uPass").value, mid = sel.value ? parseInt(sel.value, 10) : null;
         if (!name) { $("uErr").textContent = "Вкажіть логін"; return; }
+        if (!mid) { $("uErr").textContent = "Оберіть майстра — без цього акаунт не бачитиме свій розклад"; return; }
         var body = { username: name, role: "worker", masterId: mid };
         if (pass) body.password = pass;
         var p;
         if (u) p = api("PUT", "/api/crm/users/" + u.id, body);
         else { if (!pass || pass.length < 4) { $("uErr").textContent = "Пароль від 4 символів"; return; } p = api("POST", "/api/crm/users", body); }
         p.then(function (res) {
-          if (!res.j.ok) { $("uErr").textContent = res.j.error === "username taken" ? "Логін зайнятий" : "Помилка"; return; }
+          if (!res.j.ok) {
+            $("uErr").textContent = res.j.error === "username taken" ? "Логін зайнятий"
+              : (res.j.error === "master required" || res.j.error === "master not found") ? "Оберіть активного майстра" : "Помилка";
+            return;
+          }
           closeModal(); window.__reloadUsers();
         });
       });

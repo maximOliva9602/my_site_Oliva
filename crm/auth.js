@@ -111,12 +111,24 @@ function listUsers() {
     "SELECT id, username, role, master_id, active, created_at FROM users ORDER BY id"
   ).all();
 }
+/* Акаунт майстра (role='worker') МУСИТЬ бути прив'язаний до активної картки
+   майстра. Без цього "Тільки я" у розкладі шукає майстра з id=null — сітки
+   нема, записи не видно, записати клієнта неможливо (баг у Соломії:
+   у формі «Доступи» типовим був пункт «— без прив'язки —»). */
+function masterLinkError(role, masterId) {
+  if (role !== "worker") return null;
+  if (!masterId || !isFinite(masterId)) return "master required";
+  const m = db.prepare("SELECT id FROM masters WHERE id=? AND active=1").get(masterId);
+  return m ? null : "master not found";
+}
 function createUser(d) {
   const username = String(d.username || "").trim();
   const password = String(d.password || "");
   const role = d.role === "owner" ? "owner" : "worker";
   const masterId = d.masterId == null ? null : Number(d.masterId);
   if (!username || password.length < 4) return { ok: false, error: "bad input" };
+  const linkErr = masterLinkError(role, masterId);
+  if (linkErr) return { ok: false, error: linkErr };
   try {
     const info = db.prepare(
       "INSERT INTO users (username, password_hash, role, master_id, active, created_at) VALUES (?,?,?,?,1,?)"
@@ -134,6 +146,10 @@ function updateUser(id, d) {
   const role = d.role !== undefined ? (d.role === "owner" ? "owner" : "worker") : u.role;
   const masterId = d.masterId !== undefined ? (d.masterId == null ? null : Number(d.masterId)) : u.master_id;
   const active = d.active !== undefined ? (d.active ? 1 : 0) : u.active;
+  if (active) {
+    const linkErr = masterLinkError(role, masterId);
+    if (linkErr) return { ok: false, error: linkErr };
+  }
   try {
     db.prepare("UPDATE users SET username=?, role=?, master_id=?, active=? WHERE id=?")
       .run(username, role, masterId, active, id);

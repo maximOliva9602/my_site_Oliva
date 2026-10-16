@@ -333,7 +333,15 @@ router.post("/book", function (req, res) {
         ).run(phone, name, now);
         client = { id: info.lastInsertRowid };
       } else {
-        db.prepare("UPDATE clients SET name = COALESCE(NULLIF(?,''), name) WHERE id = ?").run(name, client.id);
+        /* Ім'я ІСНУЮЧОЇ картки не перезаписуємо тим, що ввів клієнт у формі:
+           персонал заводить «Прізвище Ім'я», а сам клієнт при записі пише
+           лише ім'я — і кожен самозапис стирав виправлену вручну картку.
+           Підставляємо ім'я лише коли в картці його фактично нема. */
+        const cur = db.prepare("SELECT name FROM clients WHERE id = ?").get(client.id);
+        const curName = String((cur && cur.name) || "").trim();
+        if (!curName || /^(гість|клієнт|—|-)$/i.test(curName)) {
+          db.prepare("UPDATE clients SET name = COALESCE(NULLIF(?,''), name) WHERE id = ?").run(name, client.id);
+        }
       }
       clientId = client.id;
       publicId = crypto.randomBytes(8).toString("hex");
