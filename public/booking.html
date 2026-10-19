@@ -270,6 +270,15 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 .other-m-wrap { margin: 16px 16px 0; }
 .other-m-toggle { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 12px; border: 1px dashed rgba(217,185,120,0.4); background: transparent; color: var(--gold); font-size: .88rem; font-weight: 600; font-family: inherit; cursor: pointer; }
 .other-m-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+/* Немає вільних віконець — помітна картка, а не сірий дрібний текст: клієнти
+   її не помічали, не розуміли, що треба обрати іншу дату/майстра, і йшли. */
+.no-slots { display: flex; gap: 14px; align-items: flex-start; margin: 16px 16px 0; padding: 16px 16px; border-radius: 16px; border: 1.5px solid var(--gold); background: rgba(217,185,120,0.13); box-shadow: 0 0 0 0 rgba(217,185,120,0.45); animation: noSlotsPulse 1.6s ease-out 2; text-align: left; }
+.no-slots-ico { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--gold); color: #1a140d; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.15rem; line-height: 1; }
+.no-slots-t { color: var(--cream); font-size: 1rem; font-weight: 600; line-height: 1.35; }
+.no-slots-s { color: var(--gold); font-size: .9rem; font-weight: 600; line-height: 1.4; margin-top: 6px; }
+.other-m-list.attn .other-m-chip { border-color: rgba(217,185,120,0.6); background: rgba(217,185,120,0.08); }
+@keyframes noSlotsPulse { 0% { box-shadow: 0 0 0 0 rgba(217,185,120,0.5); } 100% { box-shadow: 0 0 0 14px rgba(217,185,120,0); } }
+@media (prefers-reduced-motion: reduce) { .no-slots { animation: none; } }
 .other-m-chip { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 10px 13px; min-height: 52px; border-radius: 11px; border: 1.5px solid var(--line); background: rgba(46,61,34,0.16); color: var(--cream); font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left; }
 .other-m-chip small { color: var(--text-dim); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .03em; }
 .other-m-chip.sel { border-color: var(--gold); background: rgba(217,185,120,0.16); }
@@ -1952,19 +1961,27 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
         if (!j.ok || !j.slots.length) {
           var otherCount = eligibleMasters().eligible.filter(function(m){ return !state.master || m.id !== state.master.id; }).length;
           var isEn5 = curLang() === "en";
-          var msg = state.master && otherCount
-            ? (isEn5
-                ? state.master.name + " has no free slots on this date. Try another date or choose another therapist below — possibly a bit pricier."
-                : 'У ' + state.master.name + ' немає вільних віконець на цю дату. Спробуйте іншу дату або оберіть іншого майстра нижче — можливо, трохи дорожчого.')
-            : tr('На цю дату вільних віконець немає. Спробуйте іншу дату.');
-          wrap.innerHTML = '<div class="empty" style="padding:28px 16px;">' + msg + '</div>';
-          if (state.master && otherCount) {
-            var oml = $("otherMList"), omt = $("otherMToggle");
-            if (oml) oml.classList.remove("hide");
+          var withOthers = !!(state.master && otherCount);
+          /* Було «У Олена немає…» (ім'я в називному після «У») — тепер
+             «У майстра Олена», без відмінювання імені. */
+          var ttl = withOthers
+            ? (isEn5 ? state.master.name + " has no free slots on this date"
+                     : 'У майстра ' + state.master.name + ' немає вільних віконець на цю дату')
+            : (isEn5 ? "No free slots on this date" : 'На цю дату вільних віконець немає');
+          var sub = withOthers
+            ? (isEn5 ? "Choose another therapist below (possibly a bit pricier) or another date"
+                     : 'Оберіть іншого майстра нижче (можливо, трохи дорожчого) або іншу дату')
+            : (isEn5 ? "Please try another date" : 'Спробуйте іншу дату');
+          wrap.innerHTML = '<div class="no-slots" role="alert"><span class="no-slots-ico">!</span>' +
+            '<div><div class="no-slots-t">' + ttl + '</div><div class="no-slots-s">' + sub + (withOthers ? ' ↓' : '') + '</div></div></div>';
+          var oml = $("otherMList"), omt = $("otherMToggle");
+          if (withOthers) {
+            if (oml) { oml.classList.remove("hide"); oml.classList.add("attn"); }
             if (omt) omt.textContent = tr("Приховати інших майстрів");
-          }
+          } else if (oml) { oml.classList.remove("attn"); }
           return;
         }
+        var omlOk = $("otherMList"); if (omlOk) omlOk.classList.remove("attn");
         var grid = document.createElement("div"); grid.className = "slot-grid";
         j.slots.forEach(function(s) {
           var b = document.createElement("div"); b.className = "slot2"; b.textContent = s.time;
