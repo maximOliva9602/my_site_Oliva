@@ -537,9 +537,23 @@ app.post("/api/certificate", async function (req, res) {
     return res.status(400).json({ ok: false, error: "missing fields" });
   }
 
-  var deliveryLine = delivery === "Отримаю у студії"
-    ? `🏠 <b>Отримання:</b> У студії` + (address ? ` — ${address}` : "")
-    : `📦 <b>Доставка:</b> ${delivery}` + (address ? ` — ${address}` : "");
+  /* Електронний сертифікат: «Месенджер» / «E-mail» — у address лежить
+     контакт, куди його надіслати (номер/@нік або пошта). Без нього замовлення
+     безглузде, тож відхиляємо. Для e-mail перевіряємо формат. */
+  var isDigitalDelivery = delivery === "Месенджер" || delivery === "E-mail";
+  if (isDigitalDelivery) {
+    if (!address) return res.status(400).json({ ok: false, error: "missing contact" });
+    if (delivery === "E-mail" && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(address)) {
+      return res.status(400).json({ ok: false, error: "bad email" });
+    }
+  }
+  var escTg = function (t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+
+  var deliveryLine = isDigitalDelivery
+    ? `📨 <b>Надіслати електронно:</b> ${escTg(delivery)} — ${escTg(address)}`
+    : delivery === "Отримаю у студії"
+      ? `🏠 <b>Отримання:</b> У студії` + (address ? ` — ${address}` : "")
+      : `📦 <b>Доставка:</b> ${delivery}` + (address ? ` — ${address}` : "");
 
   var serviceLine = service2
     ? `💆 <b>Послуга 1:</b> ${service} — ${price} грн\n💆 <b>Послуга 2:</b> ${service2} — ${price2} грн`

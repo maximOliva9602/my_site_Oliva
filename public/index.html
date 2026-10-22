@@ -359,8 +359,8 @@
       <div class="srv-tier reveal" id="srvTier">
         <span class="srv-tier-label" data-i18n="srv.tier.label">Рівень майстра:</span>
         <div class="srv-tier-switch">
-          <button class="srv-tier-btn" data-tier="master" data-i18n="srv.tier.master">Майстер</button>
-          <button class="srv-tier-btn active" data-tier="top" data-i18n="srv.tier.top">Топ Майстер</button>
+          <button class="srv-tier-btn active" data-tier="master" data-i18n="srv.tier.master">Майстер</button>
+          <button class="srv-tier-btn" data-tier="top" data-i18n="srv.tier.top">Топ Майстер</button>
           <button class="srv-tier-btn" data-tier="expert" data-i18n="srv.tier.expert">Експерт</button>
         </div>
       </div>
@@ -969,7 +969,7 @@
 })();
 </script>
 <script src="assets/js/service-groups.js?v=6"></script>
-<script src="assets/js/i18n.js?v=9"></script>
+<script src="assets/js/i18n.js?v=10"></script>
 <script src="assets/js/script.js?v=6"></script>
 <!-- Socket.IO (роздається сервером). На file:// буде 404 — тоді чат лишається у режимі месенджерів. -->
 <script src="/socket.io/socket.io.js"></script>
@@ -1427,7 +1427,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBook
     function stripTier(name) {
       return name.replace(/\s*\(\s*(?:Топ\s+)?Майстер\s*\)\s*/gi, ' ').replace(/\s*\(\s*Експерт\s*\)\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim();
     }
-    var curTier = 'top';   // за замовчуванням показуємо ціни Топ Майстра
+    var curTier = 'master';   // за замовчуванням — ціни рівня «Майстер» (дешевші; власник просив)
     /* Сторінки послуг ("Про цей масаж"): множина назв послуг, для яких
        є опублікована сторінка (заповнюється з /api/service-pages/keys). */
     var svcArticles = {};

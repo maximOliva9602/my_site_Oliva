@@ -143,6 +143,7 @@
       "cert.typeDigital": "📱 Електронний", "cert.typePaper": "📄 Паперовий",
       "cert.labelDelivery": "Спосіб отримання *",
       "cert.deliveryNp": "📦 Нова Пошта", "cert.deliveryTaxi": "🚕 Таксі", "cert.deliveryStudio": "🏠 У студії",
+      "cert.deliveryMsg": "💬 Месенджер", "cert.deliveryEmail": "✉️ E-mail",
       "cert.labelWishes": "Побажання до сертифіката",
       "cert.phName": "Наприклад: Олег",
       "cert.phRecipient": "Ім'я отримувача",
@@ -187,6 +188,7 @@
       "cert.errDelivery": "Оберіть спосіб отримання",
       "cert.addrLabel": "Адреса *",
       "cert.errAddress": "Вкажіть адресу",
+      "cert.errContact": "Вкажіть, куди надіслати сертифікат",
       "cert.labelBranch": "У якій студії заберете? *",
       "cert.errBranch": "Оберіть студію",
 
@@ -365,6 +367,7 @@
       "cert.typeDigital": "📱 Digital", "cert.typePaper": "📄 Printed",
       "cert.labelDelivery": "Delivery method *",
       "cert.deliveryNp": "📦 Nova Poshta", "cert.deliveryTaxi": "🚕 Taxi", "cert.deliveryStudio": "🏠 Studio pickup",
+      "cert.deliveryMsg": "💬 Messenger", "cert.deliveryEmail": "✉️ E-mail",
       "cert.labelWishes": "Wishes for the certificate",
       "cert.phName": "E.g.: Alex",
       "cert.phRecipient": "Recipient's name",
@@ -409,6 +412,7 @@
       "cert.errDelivery": "Please select delivery method",
       "cert.addrLabel": "Address *",
       "cert.errAddress": "Please enter address",
+      "cert.errContact": "Please enter where to send the certificate",
       "cert.labelBranch": "Which studio will you pick it up from? *",
       "cert.errBranch": "Please select a studio",
 

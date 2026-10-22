@@ -198,6 +198,10 @@
     .form-group.invalid input,
     .form-group.invalid select { border-color: #e07070; }
     .form-group.invalid .field-error { display: block; }
+    /* Месенджер/e-mail: показуємо власний текст помилки замість «Вкажіть адресу» */
+    #fg-address .err-contact { display: none; }
+    #fg-address.contact-mode.invalid .err-contact { display: block; }
+    #fg-address.contact-mode.invalid .err-std { display: none; }
 
     /* ── SERVICE PICKER ── */
     .service-picker-wrap { margin-bottom: 20px; }
@@ -569,8 +573,12 @@
     <div class="form-group" id="fg-delivery">
       <label data-i18n="cert.labelDelivery">Спосіб отримання *</label>
       <div class="option-chips" id="deliveryChips">
-        <button type="button" class="option-chip" data-val="Нова Пошта" data-i18n="cert.deliveryNp">📦 Нова Пошта</button>
-        <button type="button" class="option-chip" data-val="Таксі" data-i18n="cert.deliveryTaxi">🚕 Таксі</button>
+        <!-- data-only: показуємо лише для відповідного типу сертифіката
+             (електронний не відправиш Новою Поштою; паперовий — месенджером) -->
+        <button type="button" class="option-chip" data-only="paper" data-val="Нова Пошта" data-i18n="cert.deliveryNp">📦 Нова Пошта</button>
+        <button type="button" class="option-chip" data-only="paper" data-val="Таксі" data-i18n="cert.deliveryTaxi">🚕 Таксі</button>
+        <button type="button" class="option-chip" data-only="digital" data-val="Месенджер" data-i18n="cert.deliveryMsg" style="display:none">💬 Месенджер</button>
+        <button type="button" class="option-chip" data-only="digital" data-val="E-mail" data-i18n="cert.deliveryEmail" style="display:none">✉️ E-mail</button>
         <button type="button" class="option-chip" data-val="Отримаю у студії" data-i18n="cert.deliveryStudio">🏠 У студії</button>
       </div>
       <input type="hidden" id="inp-delivery" />
@@ -581,7 +589,8 @@
     <div class="form-group" id="fg-address" style="display:none">
       <label for="inp-address" id="addressLabel" data-i18n="cert.addrLabel">Адреса *</label>
       <input type="text" id="inp-address" placeholder="" />
-      <div class="field-error" data-i18n="cert.errAddress">Вкажіть адресу</div>
+      <div class="field-error err-std" data-i18n="cert.errAddress">Вкажіть адресу</div>
+      <div class="field-error err-contact" data-i18n="cert.errContact">Вкажіть, куди надіслати сертифікат</div>
     </div>
 
     <!-- ЛОКАЦІЯ СТУДІЇ (тільки коли "Отримаю у студії" і філій більше однієї) -->
@@ -712,6 +721,10 @@
     uk: {
       addrNP:        'Відділення Нової Пошти *',
       addrDelivery:  'Адреса доставки *',
+      addrMsg:       'Куди надіслати: номер телефону або @нік у Telegram / Viber / WhatsApp *',
+      addrEmail:     'E-mail, на який надіслати сертифікат *',
+      phAddrMsg:     '+380… або @нік',
+      phAddrEmail:   'name@example.com',
       chooseDur:     'оберіть тривалість:',
       chooseMaster:  'Оберіть майстра:',
       chooseService: 'Оберіть послугу:',
@@ -727,6 +740,10 @@
     en: {
       addrNP:        'Nova Poshta branch *',
       addrDelivery:  'Delivery address *',
+      addrMsg:       'Where to send: phone number or @username in Telegram / Viber / WhatsApp *',
+      addrEmail:     'E-mail to send the certificate to *',
+      phAddrMsg:     '+380… or @username',
+      phAddrEmail:   'name@example.com',
       chooseDur:     'choose duration:',
       chooseMaster:  'Choose master:',
       chooseService: 'Choose service:',
@@ -1407,6 +1424,7 @@
       inpCertType.value = btn.getAttribute('data-val');
       document.getElementById('fg-cert-type').classList.remove('invalid');
       updateTotal();
+      applyDeliveryForType();
     });
   });
 
@@ -1415,6 +1433,40 @@
   var fgAddress = document.getElementById('fg-address');
   var inpAddress = document.getElementById('inp-address');
   var addressLabel = document.getElementById('addressLabel');
+
+  /* Електронний сертифікат не відправиш Новою Поштою чи таксі — йому
+     потрібні «Месенджер» / «E-mail» (клієнти писали в студію з проханням
+     надіслати на пошту, щоб не їхати). Паперовий — навпаки. Чіпи з
+     data-only показуємо лише для свого типу; якщо вже обраний спосіб
+     став недоступним — скидаємо вибір і пов'язані поля. */
+  function applyDeliveryForType() {
+    var isDigital = inpCertType.value === 'Електронний';
+    var chips = document.getElementById('deliveryChips');
+    var cur = inpDelivery.value, curHidden = false;
+    chips.querySelectorAll('.option-chip').forEach(function(c){
+      var only = c.getAttribute('data-only');
+      var hide = (only === 'digital' && !isDigital) || (only === 'paper' && isDigital);
+      c.style.display = hide ? 'none' : '';
+      if (hide && c.getAttribute('data-val') === cur) curHidden = true;
+    });
+    if (curHidden) {
+      inpDelivery.value = '';
+      chips.querySelectorAll('.option-chip').forEach(function(b){ b.classList.remove('active'); });
+      fgAddress.style.display = 'none'; fgAddress.classList.remove('contact-mode');
+      inpAddress.value = ''; inpAddress.type = 'text';
+      fgBranch.style.display = 'none'; inpBranch.value = '';
+    }
+  }
+  /* Поле «адреса» у режимі месенджера/e-mail: інший підпис, підказка й тип
+     (для e-mail — type=email, щоб телефон показав клавіатуру з @). */
+  function setContactMode(val) {
+    var isEmail = val === 'E-mail';
+    fgAddress.classList.add('contact-mode');
+    addressLabel.textContent = tx(isEmail ? 'addrEmail' : 'addrMsg');
+    inpAddress.placeholder = tx(isEmail ? 'phAddrEmail' : 'phAddrMsg');
+    inpAddress.type = isEmail ? 'email' : 'text';
+    inpAddress.setAttribute('autocomplete', isEmail ? 'email' : 'off');
+  }
 
   /* ── ЛОКАЦІЯ СТУДІЇ (для "Отримаю у студії") ──
      Раніше при виборі "У студії" ми просто не питали більше нічого —
@@ -1471,7 +1523,20 @@
       inpDelivery.value = val;
       document.getElementById('fg-delivery').classList.remove('invalid');
 
-      if (val === 'Нова Пошта') {
+      var isContact = (val === 'Месенджер' || val === 'E-mail');
+      if (!isContact) { fgAddress.classList.remove('contact-mode'); inpAddress.type = 'text'; inpAddress.removeAttribute('autocomplete'); }
+      // Перемкнулись між видами (контакт ↔ адреса ↔ студія, або месенджер ↔ e-mail) —
+      // старий текст не підходить. НП ↔ Таксі лишаємо як було (обидва — адреса).
+      var kind = isContact ? val : ((val === 'Нова Пошта' || val === 'Таксі') ? 'addr' : 'none');
+      if ((inpAddress.getAttribute('data-kind') || 'none') !== kind) inpAddress.value = '';
+      inpAddress.setAttribute('data-kind', kind);
+
+      if (isContact) {
+        fgAddress.style.display = 'block';
+        setContactMode(val);
+        fgBranch.style.display = 'none';
+        inpBranch.value = '';
+      } else if (val === 'Нова Пошта') {
         fgAddress.style.display = 'block';
         addressLabel.textContent = tx('addrNP');
         inpAddress.placeholder = tx('phAddrNP');
@@ -1528,6 +1593,13 @@
     // адреса — тільки якщо НП або Таксі
     if (inpDelivery.value === 'Нова Пошта' || inpDelivery.value === 'Таксі') {
       ok = validateField('address', function(){ return inpAddress.value.trim().length > 3; }, 'Адреса доставки', missing) && ok;
+    }
+    // месенджер / e-mail — куди надіслати електронний сертифікат
+    if (inpDelivery.value === 'Месенджер') {
+      ok = validateField('address', function(){ return inpAddress.value.trim().length >= 3; }, 'Куди надіслати сертифікат', missing) && ok;
+    }
+    if (inpDelivery.value === 'E-mail') {
+      ok = validateField('address', function(){ return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(inpAddress.value.trim()); }, 'E-mail', missing) && ok;
     }
     // локація студії — тільки якщо "У студії" і філій більше однієї
     if (inpDelivery.value === 'Отримаю у студії' && branchesList.length > 1) {
@@ -1631,6 +1703,8 @@
     } else if (deliveryVal === 'Таксі') {
       addressLabel.textContent = addrDelivery;
       document.getElementById('inp-address').placeholder = phAddrTaxi;
+    } else if (deliveryVal === 'Месенджер' || deliveryVal === 'E-mail') {
+      setContactMode(deliveryVal);
     }
   }
 
@@ -1697,7 +1771,7 @@
   });
 </script>
 
-<script src="assets/js/i18n.js"></script>
+<script src="assets/js/i18n.js?v=10"></script>
 <script>
   // ── Lang switch buttons ───────────────────────────────────
   var langSwitch = document.getElementById('langSwitch');
