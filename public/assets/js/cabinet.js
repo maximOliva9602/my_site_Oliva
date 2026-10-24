@@ -6331,13 +6331,53 @@
               if (!isExpired) {
                 var useBtn = el("button", "btn btn-sm btn-primary", "✓ Списати сеанс");
                 useBtn.addEventListener("click", function() {
+                  /* Візит, позначений «Завершено», списує сеанс САМ. Ця кнопка —
+                     лише для сеансу поза записом; якщо натиснути її за візит, який
+                     вже завершено (або буде завершено пізніше), сеанс спишеться двічі. */
+                  if (!confirm("Списати 1 сеанс вручну?\n\nЯкщо цей візит уже позначено «Завершено» (або ви позначите його пізніше) — сеанс спишеться сам, цю кнопку тоді натискати не потрібно.")) return;
+                  useBtn.disabled = true;
                   api("PATCH", "/api/crm/subscriptions/" + sub.id + "/use").then(function(r) {
-                    if (!r.j.ok) return;
+                    if (r.code === 409) { alert("Сеанс щойно вже списано вручну — повторне списання пропущено."); renderSubs(); return; }
+                    if (!r.j.ok) { useBtn.disabled = false; return; }
                     renderSubs();
                   });
                 });
                 actsDiv.appendChild(useBtn);
               }
+              var histBtn = el("button", "btn btn-sm btn-ghost", "Історія списань");
+              var histBox = el("div", "");
+              histBox.style.cssText = "display:none;margin-top:8px;font-size:.78rem;color:var(--text-dim);line-height:1.5;";
+              histBtn.addEventListener("click", function() {
+                if (histBox.style.display === "block") { histBox.style.display = "none"; return; }
+                histBox.style.display = "block"; histBox.textContent = "Завантаження…";
+                api("GET", "/api/crm/subscriptions/" + sub.id + "/history").then(function(r) {
+                  var h = r.j;
+                  if (!h || !h.ok) { histBox.textContent = "Не вдалося завантажити"; return; }
+                  var KIND = { manual: "вручну кнопкою «Списати сеанс»", auto: "автоматично при «Завершено»", visit: "відмітка у картці візиту",
+                    create: "при створенні (разом із візитом)", create_init: "початкове значення при створенні", refund: "повернено (візит більше не «Завершено»)" };
+                  function dmy(d) { var p = String(d).split("-"); return p[2] + "." + p[1] + "." + p[0]; }
+                  var out = ['<div style="color:var(--cream);font-weight:600;margin-bottom:4px;">Використано ' + h.used + ' із ' + h.total + '</div>'];
+                  out.push('<div>Візитів, за якими списано сеанс: <b>' + h.visits.length + '</b></div>');
+                  h.visits.forEach(function(v) {
+                    out.push('<div style="padding-left:10px;">• ' + dmy(v.date) + ' · ' + fmtMin(v.start_min) + ' · ' + v.master_name +
+                      (v.subscription_session_no ? ' · сеанс №' + v.subscription_session_no : '') + (v.status !== "completed" ? ' · <span style="color:var(--err);">' + (STATUS_LABEL[v.status] || v.status) + '</span>' : '') + '</div>');
+                  });
+                  if (h.manual) out.push('<div>Списано вручну (без візиту): <b>' + h.manual + '</b></div>');
+                  if (h.unexplained > 0) out.push('<div style="color:var(--err);margin-top:4px;">Без пояснення: <b>' + h.unexplained + '</b> — списано до появи журналу, внесено як початкове значення (напр. з Bookon) або вручну раніше.</div>');
+                  if (h.log.length) {
+                    out.push('<div style="margin-top:6px;color:var(--cream);">Журнал змін:</div>');
+                    h.log.forEach(function(l) {
+                      out.push('<div style="padding-left:10px;">• ' + new Date(l.created_at).toLocaleString("uk-UA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) +
+                        ' · ' + (l.delta > 0 ? "+" : "") + l.delta + ' · ' + (KIND[l.kind] || l.kind) + ' · ' + l.who + '</div>');
+                    });
+                  } else {
+                    out.push('<div style="margin-top:6px;">Журнал порожній: змін після його запровадження ще не було.</div>');
+                  }
+                  histBox.innerHTML = out.join("");
+                });
+              });
+              actsDiv.appendChild(histBtn);
+              actsDiv.parentNode.appendChild(histBox);
               if (ME.role === "owner") {
                 var delBtn = el("button", "btn btn-sm btn-ghost", "Видалити");
                 delBtn.style.color = "#c04040";

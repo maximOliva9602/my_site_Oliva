@@ -82,6 +82,19 @@ function subServiceIds(serviceId) {
   return ids.length ? ids : [serviceId];
 }
 function inList(n) { return new Array(n).fill("?").join(","); }
+/* Запис у журнал абонементу (див. subscription_log у db.js). session може бути
+   null (автоматичні дії без користувача). Збій журналу не має ламати списання. */
+function logSub(subId, delta, kind, apptId, session) {
+  try {
+    let who = "авто";
+    if (session) {
+      who = session.role === "owner" ? "власник"
+        : ((db.prepare("SELECT name FROM masters WHERE id=?").get(session.masterId) || {}).name || "майстер");
+    }
+    db.prepare("INSERT INTO subscription_log (subscription_id, delta, kind, appointment_id, who, created_at) VALUES (?,?,?,?,?,?)")
+      .run(subId, delta, kind, apptId || null, who, Date.now());
+  } catch (e) { console.error("[sublog]", e.message); }
+}
 function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const name = String(serviceName || "");
   const isExpert = name.includes("(Експерт)");
@@ -651,6 +664,7 @@ function setStatus(id, status, session, options) {
     if (sub) {
       db.prepare("UPDATE subscriptions SET used_sessions=used_sessions-1 WHERE id=?").run(sub.id);
       db.prepare("UPDATE appointments SET subscription_used=0, subscription_session_no=NULL, subscription_session_total=NULL WHERE id=?").run(id);
+      logSub(sub.id, -1, "refund", id, session);
     }
   }
   if (status === "confirmed" && settingOn("notif_confirm", true)) {
@@ -715,6 +729,7 @@ function setStatus(id, status, session, options) {
         // не "їхав" услід за подальшими візитами клієнта по цьому абонементу.
         db.prepare("UPDATE appointments SET subscription_used=1, subscription_session_no=?, subscription_session_total=? WHERE id=?")
           .run(sub.used_sessions + 1, sub.total_sessions, id);
+        logSub(sub.id, 1, "auto", id, session);
       }
     }
     /* Запит відгуку йде клієнту в Telegram, а не через SMS-драйвер.
@@ -1034,6 +1049,7 @@ router.patch("/appointments/:id", any, function (req, res) {
       db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(sub.id);
       db.prepare("UPDATE appointments SET subscription_used=1, subscription_session_no=?, subscription_session_total=? WHERE id=?")
         .run(sub.used_sessions + 1, sub.total_sessions, id);
+      logSub(sub.id, 1, "visit", id, req.session);
     }
   }
 
@@ -2556,6 +2572,7 @@ router.post("/subscriptions", any, function (req, res) {
       "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at) VALUES (?,?,?,?,?,?,?)"
     ).run(clientId, serviceId, total, usedInit, price, note, Date.now());
     subId = info.lastInsertRowid;
+    if (usedInit > 0) logSub(subId, usedInit, appointmentId ? "create" : "create_init", appointmentId, req.session);
     if (appointmentId && usedInit > 0) {
       const appt = db.prepare("SELECT id, client_id FROM appointments WHERE id=?").get(appointmentId);
       if (appt && appt.client_id === clientId) {
@@ -2572,8 +2589,45 @@ router.patch("/subscriptions/:id/use", any, function (req, res) {
   const sub = db.prepare("SELECT * FROM subscriptions WHERE id=?").get(id);
   if (!sub) return res.status(404).json({ ok: false });
   if (sub.used_sessions >= sub.total_sessions) return res.status(400).json({ ok: false, error: "exhausted" });
+  /* Подвійний клік / повторний запит: друге ручне списання за 20 с — майже
+     напевно випадковість, а не другий сеанс. */
+  const recent = db.prepare(
+    "SELECT id FROM subscription_log WHERE subscription_id=? AND kind='manual' AND created_at>? LIMIT 1"
+  ).get(id, Date.now() - 20000);
+  if (recent) return res.status(409).json({ ok: false, error: "duplicate" });
   db.prepare("UPDATE subscriptions SET used_sessions=used_sessions+1 WHERE id=?").run(id);
+  logSub(id, 1, "manual", null, req.session);
   res.json({ ok: true, remaining: sub.total_sessions - sub.used_sessions - 1 });
+});
+
+/* Звідки взялось число «використано»: візити, за якими сеанс списано
+   (subscription_used=1, ті самі клієнт і послуга), + ручні/службові записи
+   журналу. Різниця — сеанси без пояснення (внесені до появи журналу,
+   початкове значення з іншої системи тощо). */
+router.get("/subscriptions/:id/history", any, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const sub = db.prepare(
+    "SELECT sub.*, s.name service_name FROM subscriptions sub JOIN services s ON s.id=sub.service_id WHERE sub.id=?"
+  ).get(id);
+  if (!sub) return res.status(404).json({ ok: false });
+  const ids = subServiceIds(sub.service_id);
+  const visits = db.prepare(
+    `SELECT a.id, a.date, a.start_min, a.status, a.subscription_session_no, m.name master_name
+       FROM appointments a JOIN masters m ON m.id=a.master_id
+      WHERE a.client_id=? AND a.subscription_used=1 AND a.service_id IN (${inList(ids.length)})
+      ORDER BY a.date, a.start_min`
+  ).all(sub.client_id, ...ids);
+  const log = db.prepare(
+    "SELECT delta, kind, appointment_id, who, created_at FROM subscription_log WHERE subscription_id=? ORDER BY id"
+  ).all(id);
+  const manual = log.filter(function (l) { return l.kind === "manual"; }).length;
+  const initial = log.filter(function (l) { return l.kind === "create_init"; })
+    .reduce(function (n, l) { return n + l.delta; }, 0);
+  const unexplained = sub.used_sessions - visits.length - manual - initial;
+  res.json({
+    ok: true, used: sub.used_sessions, total: sub.total_sessions, created_at: sub.created_at,
+    visits: visits, log: log, manual: manual, unexplained: Math.max(0, unexplained),
+  });
 });
 
 router.delete("/subscriptions/:id", owner, function (req, res) {

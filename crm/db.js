@@ -462,6 +462,22 @@ db.exec(`CREATE TABLE IF NOT EXISTS master_subscription_pay (
   FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 )`);
 
+/* Журнал змін лічильника абонементу (used_sessions): хто, коли і за який
+   візит списав/повернув сеанс. Без нього розбіжність «візитів 6, а
+   використано 9 із 10» неможливо розслідувати — джерел списання кілька
+   (автоматично при «Завершено», кнопка «Списати сеанс» на картці клієнта,
+   відмітка у картці візиту, початкове значення при створенні). */
+db.exec(`CREATE TABLE IF NOT EXISTS subscription_log (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  subscription_id INTEGER NOT NULL,
+  delta           INTEGER NOT NULL,
+  kind            TEXT NOT NULL,
+  appointment_id  INTEGER,
+  who             TEXT,
+  created_at      INTEGER NOT NULL
+)`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_sublog_sub ON subscription_log(subscription_id)");
+
 /* Індивідуальна ставка майстра для КОНКРЕТНОГО клієнта — напр. знайомий,
    постійний клієнт з окремою домовленістю тощо. Найвищий пріоритет:
    якщо задано, діє для ВСІХ візитів цього клієнта в цього майстра,
