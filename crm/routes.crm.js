@@ -656,7 +656,14 @@ function setStatus(id, status, session, options) {
      запис) — повертаємо сеанс абонементу, якщо його вже списали.
      Немає FK на конкретний subscription_id, тому шукаємо евристично:
      останній (за id) абонемент клієнта на цю послугу, з used_sessions>0. */
-  if (wasCompleted && status !== "completed" && a.subscription_used && a.client_id && a.service_id) {
+  /* Сеанс списується не лише при «Завершено», а й відміткою «Списати сеанс за
+     цей візит» у картці ще НЕ завершеного візиту. Якщо такий візит потім
+     скасували / клієнт не прийшов, сеанс раніше НЕ повертався (повернення
+     працювало лише для переходу «завершено» → інше): візит скасований, а
+     сеанс згорів — так «губились» сеанси в абонементах (у клієнтів було
+     видно 6 візитів при 9 використаних сеансах). Повертаємо і тут. */
+  const dropsSession = (wasCompleted && status !== "completed") || status === "cancelled" || status === "no_show";
+  if (dropsSession && a.subscription_used && a.client_id && a.service_id) {
     const refundIds = subServiceIds(a.service_id);
     const sub = db.prepare(
       `SELECT id FROM subscriptions WHERE client_id=? AND service_id IN (${inList(refundIds.length)}) AND used_sessions>0 ORDER BY id DESC LIMIT 1`
