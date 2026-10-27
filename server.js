@@ -576,6 +576,14 @@ app.post("/api/certificate", async function (req, res) {
     var txn = db.transaction(function () {
       var row = db.prepare("SELECT value FROM app_settings WHERE key='cert_order_seq'").get();
       var next = (row ? parseInt(row.value, 10) : 999) + 1;
+      /* Номер уже може бути зайнятий: персонал вносить у CRM сертифікати
+         вручну зі своїми номерами (напр. з паперового бланка). Раніше
+         INSERT падав на UNIQUE(code), транзакція відкочувалась разом із
+         лічильником — і КОЖНЕ наступне замовлення знову впиралось у той
+         самий номер (клієнти бачили «Помилка. Зателефонуйте»). Пропускаємо
+         зайняті номери. */
+      var codeTaken = db.prepare("SELECT 1 FROM certificates WHERE code=?");
+      while (codeTaken.get(String(next))) next++;
       db.prepare("INSERT INTO app_settings (key,value) VALUES ('cert_order_seq',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
         .run(String(next));
       certCode = String(next);
