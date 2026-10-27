@@ -452,6 +452,17 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
 /* Крок 5 — дата та час */
 .day-strip { display: flex; gap: 8px; padding: 10px 16px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .day-strip::-webkit-scrollbar { display: none; }
+/* Стрічка з 30 днів гортається лише вбік; на комп'ютері (миша, без дотику)
+   прихована смуга прокрутки й відсутність стрілок не давали дійти далі
+   перших ~8 днів. Стрілки показуємо лише там, де є миша. */
+.day-strip-wrap { position: relative; }
+.day-nav { display: none; position: absolute; top: 10px; bottom: 0; width: 34px; z-index: 2; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 12px; color: var(--gold); background: rgba(20,15,10,0.88); font-size: 1.5rem; line-height: 1; cursor: pointer; font-family: inherit; padding: 0 0 3px; }
+.day-nav-l { left: 4px; } .day-nav-r { right: 4px; }
+.day-nav.off { opacity: .25; }
+@media (hover: hover) and (pointer: fine) {
+  .day-nav { display: flex; }
+  .day-strip { padding-left: 44px; padding-right: 44px; }
+}
 .day-cell { flex: 0 0 auto; min-width: 46px; display: flex; flex-direction: column; align-items: center; gap: 5px; background: rgba(20,15,10,0.5); border: 1px solid var(--line); border-radius: 14px; padding: 11px 6px; cursor: pointer; }
 .day-cell.sel { background: linear-gradient(160deg, #E8C877, #C9A24E); border-color: transparent; }
 .day-dow { font-size: .72rem; color: rgba(212,207,198,0.62); }
@@ -656,7 +667,11 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       <div class="ssub" data-i18n="book.step5.sub">Оберіть зручний час</div>
       <div class="sprog"><i class="sseg" data-s="1"></i><i class="sseg" data-s="2"></i><i class="sseg" data-s="3"></i><i class="sseg" data-s="4"></i><i class="sseg" data-s="5"></i><i class="sseg" data-s="6"></i><i class="sseg" data-s="7"></i></div>
     </div>
-    <div class="day-strip" id="dayStrip"></div>
+    <div class="day-strip-wrap" id="dayStripWrap">
+      <button type="button" class="day-nav day-nav-l" id="dayNavL" aria-label="Раніші дні">&#8249;</button>
+      <div class="day-strip" id="dayStrip"></div>
+      <button type="button" class="day-nav day-nav-r" id="dayNavR" aria-label="Пізніші дні">&#8250;</button>
+    </div>
     <div id="slotsWrap"><div class="empty">Завантаження…</div></div>
     <div class="other-m-wrap">
       <button type="button" class="other-m-toggle" id="otherMToggle" data-i18n="book.othermasters">Показати час інших майстрів</button>
@@ -1886,6 +1901,41 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
   // Крок 5: Дата (стрічка днів) + слоти
   var DOW_STRIP = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
   function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+  /* Стрілки ‹ › і прокрутка колесом миші для стрічки днів (див. CSS .day-nav). */
+  var dayNavBound = false;
+  function initDayStripNav(strip) {
+    var bl = $("dayNavL"), br = $("dayNavR");
+    if (!bl || !br) return;
+    function upd() {
+      // Лише візуально приглушуємо (клас), а не блокуємо кнопку: стан міг
+      // застаріти, і заблокована стрілка залишила б людину без виходу.
+      bl.classList.toggle("off", strip.scrollLeft <= 2);
+      br.classList.toggle("off", strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 2);
+    }
+    if (!dayNavBound) {
+      dayNavBound = true;
+      function step(dir) { strip.scrollBy({ left: dir * Math.max(120, strip.clientWidth - 90), behavior: "smooth" }); }
+      bl.addEventListener("click", function () { step(-1); setTimeout(upd, 450); });
+      br.addEventListener("click", function () { step(1); setTimeout(upd, 450); });
+      strip.addEventListener("scroll", upd, { passive: true });
+      window.addEventListener("resize", upd);
+      // Колесо миші над стрічкою гортає її вбік (інакше гортається вся сторінка).
+      strip.addEventListener("wheel", function (e) {
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        var atStart = strip.scrollLeft <= 0 && e.deltaY < 0;
+        var atEnd = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 1 && e.deltaY > 0;
+        if (atStart || atEnd) return;
+        strip.scrollLeft += e.deltaY; e.preventDefault();
+      }, { passive: false });
+    }
+    strip.scrollLeft = 0;
+    upd();
+    /* Екран кроку ще може бути прихований (clientWidth = 0) — стан стрілок
+       перераховуємо, коли він уже відмальований. */
+    window.requestAnimationFrame(upd);
+    setTimeout(upd, 150); setTimeout(upd, 500);
+    strip._dayNavUpd = upd;
+  }
   function renderDateStep() {
     var min = new Date(); min.setHours(0,0,0,0);
     var minStr = ymd(min);
@@ -1907,6 +1957,7 @@ a.back-site { display: inline-block; margin-top: 22px; color: var(--gold); text-
       });
       strip.appendChild(cell);
     }
+    initDayStripNav(strip);
     renderOtherMasters();
     // скинути перемикач інших майстрів у згорнутий стан
     var oml = $("otherMList"), omt = $("otherMToggle");
