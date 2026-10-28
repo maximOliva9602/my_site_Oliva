@@ -1258,8 +1258,9 @@ router.get("/schedule", any, function (req, res) {
   const sql = "SELECT a.id, a.date, a.start_min, a.end_min, a.duration_min, a.status, a.master_id, a.second_master_id, a.pair_parent_id, a.service_id, a.client_id, a.price, a.paid, a.color_marker, a.comment, a.extra_services, " +
               "a.subscription_used, a.subscription_session_no, a.subscription_session_total, " +
               "c.name client_name, c.phone client_phone, c.visit_count client_visit_count, s.name service_name, m.name master_name, m2.name second_master_name, pc.name pair_client_name, pm.name pair_master_name, " +
-              "r.rating review_rating, r.comment review_comment " +
+              "r.rating review_rating, r.comment review_comment, cert.code cert_code " +
               "FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id JOIN masters m ON m.id=a.master_id " +
+              "LEFT JOIN certificates cert ON cert.used_by_appointment_id=a.id " +
               "LEFT JOIN masters m2 ON m2.id=a.second_master_id " +
               "LEFT JOIN appointments pa ON pa.id=a.pair_parent_id LEFT JOIN clients pc ON pc.id=pa.client_id LEFT JOIN masters pm ON pm.id=pa.master_id " +
               "LEFT JOIN reviews r ON r.appointment_id=a.id " +
