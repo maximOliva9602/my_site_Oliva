@@ -385,8 +385,11 @@ function createAppointment(d, session) {
         }
       }
       if (!client) {
-        // Без телефону (і без вибору картки зі списку) — заводимо нового
-        // клієнта лише з іменем; phone=NULL (дозволено, UNIQUE не заважає).
+        /* Новий клієнт ОБОВ'ЯЗКОВО з телефоном (крім «Гість» — він іде окремою
+           гілкою вище). Раніше можна було зберегти запис лише з іменем: картка
+           лишалась без номера, у ній писало «телефон приховано» і клієнта
+           було не знайти й не нагадати. */
+        if (phone.length < 7) { const err = new Error("PHONE_REQUIRED"); err.code = "PHONE_REQUIRED"; throw err; }
         const info = db.prepare("INSERT INTO clients (phone,name,visit_count,created_at) VALUES (?,?,0,?)").run(phone.length ? phone : null, name, now);
         client = { id: info.lastInsertRowid };
       } else {
@@ -426,6 +429,7 @@ function createAppointment(d, session) {
     if (e.code === "SLOT_TAKEN") return { status: 409, body: { ok: false, error: "SLOT_TAKEN" } };
     if (e.code === "CLIENT_NOT_FOUND") return { status: 404, body: { ok: false, error: "CLIENT_NOT_FOUND" } };
     if (e.code === "BRANCH_REQUIRED") return { status: 400, body: { ok: false, error: "BRANCH_REQUIRED" } };
+    if (e.code === "PHONE_REQUIRED") return { status: 400, body: { ok: false, error: "PHONE_REQUIRED" } };
     return { status: 500, body: { ok: false, error: e.message } };
   }
   // Сповіщення адміну в Telegram + PWA push

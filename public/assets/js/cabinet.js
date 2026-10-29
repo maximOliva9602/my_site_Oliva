@@ -2509,7 +2509,7 @@
     var html = '<h3>' + a.client_name + '</h3>' +
       (dateLine ? '<div class="sub" style="margin-bottom:4px;font-weight:600;color:var(--cream);">📅 ' + dateLine + '</div>' : '') +
       '<div class="sub" style="margin-bottom:12px;">' + a.service_name + ' · ' + fmtMin(a.start_min) + '–' + fmtMin(a.end_min || (a.start_min + a.duration_min)) + ' · ' + a.master_name + '</div>' +
-      '<div class="sub">' + (a.client_phone || '<span style="color:#aaa;">🔒 телефон приховано</span>') + '</div>' +
+      '<div class="sub">' + (a.client_phone || '<span style="color:#aaa;">📵 телефон не вказано</span>') + '</div>' +
       extrasHtml +
       (a.comment ? '<div class="sub" style="margin-top:8px;">💬 ' + a.comment + '</div>' : '') +
       (a.cert_code
@@ -3053,7 +3053,7 @@
           (a.client_name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase() +
         '</div>' +
         '<div><div style="font-weight:600;font-size:.9rem;color:var(--cream);">' + (a.client_name||'') + '</div>' +
-        '<div style="font-size:.75rem;color:var(--text-dim);">' + (a.client_phone || '<span style="color:#aaa;">🔒 приховано</span>') + '</div></div>' +
+        '<div style="font-size:.75rem;color:var(--text-dim);">' + (a.client_phone || '<span style="color:#aaa;">📵 не вказано</span>') + '</div></div>' +
       '</div>' +
       // Майстер
       '<div id="eMasterRow"><label>Майстер</label><select id="eMaster"></select></div>' +
@@ -3989,7 +3989,7 @@
       var chip = $("mClientChip");
       chip.style.display = "flex";
       $("mChipName").textContent = c.name;
-      $("mChipPhone").textContent = c.phone || (ME.can_see_phones ? "" : "🔒 приховано");
+      $("mChipPhone").textContent = c.phone || "📵 не вказано";
       refreshSubSection();
     }
 
@@ -4084,7 +4084,7 @@
               '<div style="width:32px;height:32px;border-radius:50%;background:var(--olive-light);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;">' + (initials||"?") + '</div>' +
               '<div style="flex:1;min-width:0;">' +
                 '<div style="font-size:.88rem;font-weight:600;color:var(--cream);">' + c.name + '</div>' +
-                '<div style="font-size:.75rem;color:var(--text-dim);">' + (c.phone ? c.phone : (ME.can_see_phones ? "" : '<span style="color:#aaa;">🔒 приховано</span>')) + ' · ' + clientSubtitle(c) + '</div>' +
+                '<div style="font-size:.75rem;color:var(--text-dim);">' + (c.phone ? c.phone : '<span style="color:#aaa;">📵 не вказано</span>') + ' · ' + clientSubtitle(c) + '</div>' +
               '</div>';
             row.addEventListener("mousedown", function(e) { e.preventDefault(); showChip(c); drop.style.display = "none"; });
             drop.appendChild(row);
@@ -4339,7 +4339,10 @@
         phone = ($("mPhone") ? $("mPhone").value.trim() : "");
         var phoneDigits = phone.replace(/\D/g, "");
         if (!firstName) { err.textContent = "Вкажіть ім'я"; return; }
-        if (phoneDigits.length > 0 && phoneDigits.length < 9) { err.textContent = "Перевірте номер телефону"; return; }
+        /* Без номера клієнта потім не знайти й не нагадати про запис, а картка
+           лишається з написом «телефон не вказано». Для разового візиту без
+           контактів є окрема кнопка «Без контактних даних». */
+        if (phoneDigits.length < 9) { err.textContent = "Вкажіть номер телефону (мінімум 9 цифр) або оберіть «Без контактних даних»"; return; }
         name = lastName ? firstName + " " + lastName : firstName;
       }
       if (!name) { err.textContent = "Оберіть або введіть клієнта"; return; }
@@ -4368,6 +4371,7 @@
         }
         if (res.code === 409 && res.j.error === "SECOND_MASTER_BUSY") { err.textContent = res.j.message || "Другий майстер зайнятий у цей час"; saveBtn.disabled = false; return; }
         if (res.code === 409) { err.textContent = "Це віконце вже зайняте"; saveBtn.disabled = false; return; }
+        if (res.j && res.j.error === "PHONE_REQUIRED") { err.textContent = "Вкажіть номер телефону клієнта"; saveBtn.disabled = false; return; }
         if (res.code === 404 && res.j.error === "CLIENT_NOT_FOUND") { err.textContent = "Клієнта не знайдено. Спробуйте обрати ще раз."; saveBtn.disabled = false; return; }
         if (res.code === 400 && res.j.error === "BRANCH_REQUIRED") { err.textContent = "Оберіть філію — цей майстер працює у кількох студіях"; saveBtn.disabled = false; return; }
         if (!res.j.ok) { err.textContent = "Помилка: " + (res.j.error || ""); saveBtn.disabled = false; return; }
