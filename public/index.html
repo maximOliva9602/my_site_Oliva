@@ -1710,6 +1710,7 @@ function toggleRule(btn) {
   var sendBtn = document.getElementById('callSend');
   var phoneInput = document.getElementById('callPhone');
   var msg = document.getElementById('callMsg');
+  var okText = msg.textContent;
 
   btn.addEventListener('click', function(){
     var isOpen = popup.classList.toggle('open');
@@ -1732,11 +1733,22 @@ function toggleRule(btn) {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({phone: phone})
-    }).catch(function(){}).finally(function(){
-      msg.style.display = 'block';
-      sendBtn.style.display = 'none';
-      phoneInput.style.display = 'none';
-    });
+    }).then(function(r){ return r.json().catch(function(){ return {ok:false}; }); })
+      .catch(function(){ return {ok:false}; })
+      .then(function(j){
+        if (j && j.ok) {
+          msg.textContent = okText;
+          if (window.olivaTrack) window.olivaTrack('callback_success', { transaction_id: 'cb' + Date.now() });
+          msg.style.display = 'block';
+          sendBtn.style.display = 'none';
+          phoneInput.style.display = 'none';
+        } else {
+          // Раніше показувало «Дякуємо» навіть коли заявка не дійшла — тепер чесно.
+          msg.textContent = 'Не вдалося надіслати. Спробуйте ще раз або зателефонуйте: 097 434 01 12';
+          msg.style.display = 'block';
+          sendBtn.disabled = false;
+        }
+      });
   });
   document.addEventListener('click', function(e){
     if (!popup.contains(e.target) && !btn.contains(e.target)) {
@@ -1746,7 +1758,7 @@ function toggleRule(btn) {
 })();
 </script>
 
-<script src="assets/js/track.js"></script>
+<script src="assets/js/track.js?v=2"></script>
 <script>
 /* ---- Динамічний блок майстрів ---- */
 (function () {

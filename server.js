@@ -622,7 +622,7 @@ app.post("/api/certificate", async function (req, res) {
     // Замовлення вже в базі — відсутність Telegram-сповіщення не має
     // ламати клієнту сам процес оформлення.
   }
-  res.json({ ok: true });
+  res.json({ ok: true, code: certCode });
 });
 
 /* ---------------- API: Анонімний відгук ---------------- */

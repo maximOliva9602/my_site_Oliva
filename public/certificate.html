@@ -1650,6 +1650,13 @@
     .then(function(r){ return r.json(); })
     .then(function(res){
       if (res.ok) {
+        if (window.olivaTrack) {
+          window.olivaTrack('certificate_success', {
+            value: (activeVariant ? activeVariant.price : 0) + (activeVariant2 ? activeVariant2.price : 0) + (inpCertType.value === 'Паперовий' ? 150 : 0),
+            currency: 'UAH', cert_type: inpCertType.value, delivery_method: inpDelivery.value,
+            transaction_id: res.code || ('cert' + Date.now())
+          });
+        }
         form.style.display='none';
         var formTitle = document.querySelector('.form-title');
         if (formTitle) formTitle.style.display = 'none';
@@ -1794,6 +1801,6 @@
   }
 </script>
 
-<script src="assets/js/track.js"></script>
+<script src="assets/js/track.js?v=2"></script>
 </body>
 </html>

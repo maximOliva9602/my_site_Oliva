@@ -201,7 +201,7 @@
   .of-lead { font-size: .95rem; }
 }
 </style>
-  <script src="/assets/js/ga4.js?v=1"></script>
+  <script src="/assets/js/analytics.js?v=1"></script>
 </head>
 <body>
 
@@ -790,6 +790,7 @@
       .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (j) {
         if (!j.ok) throw new Error(j.error || "fail");
+        if (window.olivaTrack) window.olivaTrack("office_request_success", { transaction_id: "of" + Date.now() });
         form.style.display = "none";
         document.getElementById("ofOk").style.display = "block";
       })

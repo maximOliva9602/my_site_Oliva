@@ -10,10 +10,10 @@
   // Не трекаємо CRM/адмін
   if (/\/(cabinet|admin)/.test(location.pathname)) return;
 
-  /* Google Analytics 4 — окремий файл, один раз на сторінку (див. ga4.js) */
+  /* Аналітика (GTM, GA4, Meta Pixel, згода) — окремий файл, один раз на сторінку (див. analytics.js) */
   if (!window.__olivaGA) {
     var ga = document.createElement('script');
-    ga.src = '/assets/js/ga4.js?v=1';
+    ga.src = '/assets/js/analytics.js?v=1';
     document.head.appendChild(ga);
   }
 
