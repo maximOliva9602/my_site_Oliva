@@ -1825,8 +1825,16 @@
            каже перетягуванню й "+Новий запис", у яку філію записувати. */
         var columns = [];
         masters.forEach(function(m) {
-          var bl = masterApptBranches[m.id];
-          if (bl && bl.length === 2) {
+          /* Дві колонки — коли майстер цього дня у двох філіях: або за графіком
+             (є вікно роботи в кожній), або вже має записи в обох. Раніше лише за
+             записами, тож без записів не було видно, що він у двох філіях. */
+          var bl = (masterApptBranches[m.id] || []).slice();
+          Object.keys(schedBr[m.id] || {}).forEach(function(b) {
+            var bid = parseInt(b, 10);
+            if (bid && bl.indexOf(bid) === -1) bl.push(bid);
+          });
+          bl.sort(function(a, b) { return a - b; });
+          if (bl.length === 2) {
             bl.forEach(function(bid) { columns.push({ master: m, branchId: bid }); });
           } else {
             columns.push({ master: m, branchId: null });
