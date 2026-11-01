@@ -1512,24 +1512,43 @@
            вікном в обох колонках. schedMap[майстер] лишається ОБ'ЄДНАННЯМ
            вікон — ним користується решта коду (хто працює цього дня). */
         var schedBr = {}, schedMap = {}, breaksBy = {};
-        dayScheds.forEach(function(s) {
-          (schedBr[s.master_id] || (schedBr[s.master_id] = {}))[s.branch_id || 0] = { ws: s.work_start, we: s.work_end };
-        });
         dayBreaks.forEach(function(b) { (breaksBy[b.master_id] || (breaksBy[b.master_id] = [])).push({ s: b.break_start, e: b.break_end }); });
 
-        // Застосовуємо day overrides (з урахуванням філії): is_off → прибрати
-        // вікно цієї філії (0 = усі); години → замінити вікно цієї філії.
-        var offIds = {};
+        /* Години рахуємо ТАК САМО, як вкладка «Графік»: для кожної філії
+           майстра — override цієї філії, інакше спільний override (0), інакше
+           тижневий графік цієї філії, інакше спільний тижневий. Раніше рядки
+           різних філій і «усіх філій» зливались в одне вікно (Людмила з 17:30
+           показувалась з 9:00), а вихідний, виставлений для філії, не діяв
+           (Олена/Марина у вихідний мали вільний час). */
+        var wkBy = {}, ovBy = {};
+        dayScheds.forEach(function(s) {
+          (wkBy[s.master_id] || (wkBy[s.master_id] = {}))[s.branch_id || 0] = { ws: s.work_start, we: s.work_end };
+        });
         dayOvs.forEach(function(ov) {
-          var mid = ov.master_id, ob = ov.branch_id || 0;
-          if (ov.is_off) {
-            if (ob === 0) { delete schedBr[mid]; offIds[mid] = true; }
-            else if (schedBr[mid]) { delete schedBr[mid][ob]; if (!Object.keys(schedBr[mid]).length) { delete schedBr[mid]; offIds[mid] = true; } }
-          } else if (ov.work_start != null && ov.work_end != null) {
-            var w = { ws: ov.work_start, we: ov.work_end };
-            if (ob === 0) schedBr[mid] = { 0: w };
-            else (schedBr[mid] || (schedBr[mid] = {}))[ob] = w;
-          }
+          (ovBy[ov.master_id] || (ovBy[ov.master_id] = {}))[ov.branch_id || 0] = ov;
+        });
+        var offIds = {};
+        var allMids = {};
+        Object.keys(wkBy).forEach(function(k) { allMids[k] = true; });
+        Object.keys(ovBy).forEach(function(k) { allMids[k] = true; });
+        Object.keys(allMids).forEach(function(midS) {
+          var mid = parseInt(midS, 10);
+          var wk = wkBy[mid] || {}, ovs = ovBy[mid] || {};
+          var bids = [];
+          Object.keys(wk).concat(Object.keys(ovs)).forEach(function(k) {
+            var n = parseInt(k, 10);
+            if (n && bids.indexOf(n) === -1) bids.push(n);
+          });
+          if (!bids.length) bids = [0];
+          var res = {};
+          bids.forEach(function(bid) {
+            var ov = ovs[bid] || ovs[0];
+            var w = null;
+            if (ov) { if (!ov.is_off && ov.work_start != null && ov.work_end != null) w = { ws: ov.work_start, we: ov.work_end }; }
+            else w = wk[bid] || wk[0] || null;
+            if (w) res[bid] = w;
+          });
+          if (Object.keys(res).length) schedBr[mid] = res; else offIds[mid] = true;
         });
         Object.keys(schedBr).forEach(function(mid) {
           var ws = null, we = null;
@@ -1565,8 +1584,9 @@
           if (!cur) { todayBranchByMaster[masterId] = { ids: [branchId] }; return; }
           if (cur.ids.indexOf(branchId) === -1) cur.ids.push(branchId);
         }
-        dayScheds.forEach(function(s) { noteBranch(s.master_id, s.branch_id); });
-        dayOvs.forEach(function(ov) { if (!ov.is_off) noteBranch(ov.master_id, ov.branch_id); });
+        Object.keys(schedBr).forEach(function(mid) {
+          Object.keys(schedBr[mid]).forEach(function(b) { noteBranch(parseInt(mid, 10), parseInt(b, 10)); });
+        });
 
         /* Старі записи (зроблені до фіксу, який почав зберігати branch_id)
            не мають філії в базі. Замість змушувати власника вручну
@@ -1581,8 +1601,12 @@
           if (!branchId || ws == null || we == null) return;
           (branchWindowsByMaster[masterId] || (branchWindowsByMaster[masterId] = [])).push({ id: branchId, ws: ws, we: we });
         }
-        dayScheds.forEach(function(s) { noteWindow(s.master_id, s.branch_id, s.work_start, s.work_end); });
-        dayOvs.forEach(function(ov) { if (!ov.is_off) noteWindow(ov.master_id, ov.branch_id, ov.work_start, ov.work_end); });
+        Object.keys(schedBr).forEach(function(mid) {
+          Object.keys(schedBr[mid]).forEach(function(b) {
+            var w = schedBr[mid][b];
+            noteWindow(parseInt(mid, 10), parseInt(b, 10), w.ws, w.we);
+          });
+        });
         function inferBranch(a) {
           var wins = branchWindowsByMaster[a.master_id];
           if (!wins || wins.length < 2) return null;
@@ -6294,7 +6318,9 @@
                 }).join("");
                 var html = '<h3>🎟 Новий абонемент</h3>' +
                   '<div class="muted" style="margin-bottom:10px;">' + c.name + '</div>' +
-                  '<label>Послуга</label><select id="sbSvc">' + opts + '</select>' +
+                  '<label>Послуга</label><select id="sbSvc" style="display:none;">' + opts + '</select>' +
+                  '<div style="position:relative;"><input type="text" id="sbSvcQ" placeholder="Пошук послуги: частина назви…" autocomplete="off">' +
+                  '<div id="sbSvcDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:240px;overflow-y:auto;margin-top:3px;"></div></div>' +
                   '<label style="margin-top:10px;display:block;">К-ть сеансів</label>' +
                   '<input type="number" id="sbSess" value="10" min="1" max="100">' +
                   '<label style="margin-top:10px;display:block;">Сума оплати (грн)</label>' +
@@ -6321,6 +6347,40 @@
                     : "";
                 }
                 $("sbSvc").addEventListener("change", recalcSb);
+                /* Пошук послуги за частиною назви (замість довгого прокручування списку) */
+                (function() {
+                  var sel = $("sbSvc"), q = $("sbSvcQ"), drop = $("sbSvcDrop");
+                  var svcList = [].slice.call(sel.options).map(function(o) { return { id: o.value, name: o.textContent }; });
+                  function curName() { var o = sel.options[sel.selectedIndex]; return o ? o.textContent : ""; }
+                  q.value = curName();
+                  function renderDrop() {
+                    var term = q.value.trim().toLowerCase();
+                    if (term === curName().toLowerCase()) term = "";
+                    var found = svcList.filter(function(x) { return !term || x.name.toLowerCase().indexOf(term) !== -1; });
+                    drop.innerHTML = "";
+                    if (!found.length) {
+                      var none = document.createElement("div");
+                      none.style.cssText = "padding:10px 12px;color:#999;font-size:.85rem;";
+                      none.textContent = "Нічого не знайдено";
+                      drop.appendChild(none);
+                    }
+                    found.forEach(function(x) {
+                      var it = document.createElement("div");
+                      it.style.cssText = "padding:10px 12px;font-size:.88rem;cursor:pointer;border-bottom:1px solid #f0f0ec;";
+                      it.textContent = x.name;
+                      it.addEventListener("mousedown", function(e) {
+                        e.preventDefault();
+                        sel.value = x.id; q.value = x.name; drop.style.display = "none";
+                        recalcSb();
+                      });
+                      drop.appendChild(it);
+                    });
+                    drop.style.display = "block";
+                  }
+                  q.addEventListener("focus", function() { q.select(); renderDrop(); });
+                  q.addEventListener("input", renderDrop);
+                  q.addEventListener("blur", function() { drop.style.display = "none"; q.value = curName(); });
+                })();
                 $("sbSess").addEventListener("input", recalcSb);
                 recalcSb();
                 $("sbSave").addEventListener("click", function() {
