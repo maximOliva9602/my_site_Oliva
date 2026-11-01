@@ -1505,20 +1505,51 @@
           ? allMasters.filter(function(m) { return String(m.id) === String(masterFilter); })
           : allMasters;
 
-        var schedMap = {};
-        dayScheds.forEach(function(s) { schedMap[s.master_id] = { ws: s.work_start, we: s.work_end, bks: [] }; });
-        dayBreaks.forEach(function(b) { if (schedMap[b.master_id]) schedMap[b.master_id].bks.push({ s: b.break_start, e: b.break_end }); });
+        /* Години роботи майстра ПО ФІЛІЯХ: schedBr[майстер][філія] = {ws,we}
+           (філія 0 = «усі філії»). Раніше був один запис на майстра, і години
+           другої філії перезаписували/розтягували перші: Максим 10:00–21:30 на
+           Борщагівській і 12:00–13:10 на Успішній показувався з однаковим
+           вікном в обох колонках. schedMap[майстер] лишається ОБ'ЄДНАННЯМ
+           вікон — ним користується решта коду (хто працює цього дня). */
+        var schedBr = {}, schedMap = {}, breaksBy = {};
+        dayScheds.forEach(function(s) {
+          (schedBr[s.master_id] || (schedBr[s.master_id] = {}))[s.branch_id || 0] = { ws: s.work_start, we: s.work_end };
+        });
+        dayBreaks.forEach(function(b) { (breaksBy[b.master_id] || (breaksBy[b.master_id] = [])).push({ s: b.break_start, e: b.break_end }); });
 
-        // Застосовуємо day overrides: is_off=1 → видаляємо з schedMap; is_off=0 → оновлюємо години
+        // Застосовуємо day overrides (з урахуванням філії): is_off → прибрати
+        // вікно цієї філії (0 = усі); години → замінити вікно цієї філії.
         var offIds = {};
         dayOvs.forEach(function(ov) {
+          var mid = ov.master_id, ob = ov.branch_id || 0;
           if (ov.is_off) {
-            delete schedMap[ov.master_id];
-            offIds[ov.master_id] = true;
+            if (ob === 0) { delete schedBr[mid]; offIds[mid] = true; }
+            else if (schedBr[mid]) { delete schedBr[mid][ob]; if (!Object.keys(schedBr[mid]).length) { delete schedBr[mid]; offIds[mid] = true; } }
           } else if (ov.work_start != null && ov.work_end != null) {
-            schedMap[ov.master_id] = { ws: ov.work_start, we: ov.work_end, bks: (schedMap[ov.master_id] || {}).bks || [] };
+            var w = { ws: ov.work_start, we: ov.work_end };
+            if (ob === 0) schedBr[mid] = { 0: w };
+            else (schedBr[mid] || (schedBr[mid] = {}))[ob] = w;
           }
         });
+        Object.keys(schedBr).forEach(function(mid) {
+          var ws = null, we = null;
+          Object.keys(schedBr[mid]).forEach(function(b) {
+            var w = schedBr[mid][b];
+            ws = ws == null ? w.ws : Math.min(ws, w.ws);
+            we = we == null ? w.we : Math.max(we, w.we);
+          });
+          schedMap[mid] = { ws: ws, we: we, bks: breaksBy[mid] || [] };
+        });
+        /* Вікно майстра для КОЛОНКИ: колонка конкретної філії бере години саме
+           цієї філії (або «усіх філій»); якщо цього дня в цій філії його немає —
+           день недоступний. Колонка без філії — об'єднання. */
+        function winFor(mid, branchId) {
+          var u = schedMap[mid];
+          if (!u) return null;
+          if (branchId == null || !schedBr[mid]) return u;
+          var w = schedBr[mid][branchId] || schedBr[mid][0];
+          return w ? { ws: w.ws, we: w.we, bks: u.bks } : null;
+        }
         /* Яка філія майстра діє САМЕ ЦЬОГО ДНЯ — а не статичний перелік
            усіх філій, до яких його колись прикріпили (це давало абсурдний
            напис на кшталт "Борщагівська, Успішна" одночасно). Пріоритет:
@@ -1621,7 +1652,7 @@
         }
 
         function isUnavail(mid, absMin, branchId) {
-          var s = schedMap[mid];
+          var s = winFor(mid, branchId);
           if (!s) return true;
           if (absMin < s.ws || absMin >= s.we) return true;
           for (var i = 0; i < s.bks.length; i++) { if (absMin >= s.bks[i].s && absMin < s.bks[i].e) return true; }
@@ -1989,7 +2020,7 @@
           }
 
           // Штрихування для неробочих проміжків
-          var sched = schedMap[master.id];
+          var sched = winFor(master.id, colBranchId);
           var unavRanges = [];
           if (!sched) {
             unavRanges.push({ s: HOUR_START * 60, e: HOUR_END * 60 });

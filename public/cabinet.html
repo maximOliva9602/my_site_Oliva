@@ -153,7 +153,11 @@
     .topbar .logout { display:none !important; }
     .topbar { padding:max(8px, env(safe-area-inset-top, 8px)) 12px 8px; gap:8px; }
     /* Головний контент: відступ знизу для nav-bar */
-    .main { padding-bottom:84px; padding-left:10px; padding-right:10px; }
+    /* Нижня панель на iPhone вища (відступ під «домашню смужку» ~34px), тож
+       фіксованих 84px не вистачало — останній рядок довгих сторінок (напр.
+       «Графік», Максим на Успішній) лишався під панеллю, і доскролити до нього
+       було неможливо. Запас тепер з урахуванням безпечної зони. */
+    .main { padding-bottom:calc(120px + env(safe-area-inset-bottom, 0px)); padding-left:10px; padding-right:10px; }
     /* Модалка: відступ знизу щоб клавіатура не перекривала */
     /* safe flex-end, не просто flex-end: коли картка вища за екран (напр.
        графік на 7 днів), звичайний flex-end анкорить її знизу і робить
@@ -283,7 +287,7 @@
 <div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
 <script src="assets/js/service-groups.js?v=6"></script>
-<script src="assets/js/cabinet.js?v=227"></script>
+<script src="assets/js/cabinet.js?v=228"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(){});
