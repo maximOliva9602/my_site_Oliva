@@ -3614,7 +3614,7 @@
       '<div id="mSvcWrap" style="display:none;position:relative;margin-top:4px;">' +
         '<button type="button" id="mSvcGroupBack" class="btn btn-ghost btn-sm" style="margin-bottom:7px;">← Усі категорії</button>' +
         '<input type="text" id="mSvcQ" placeholder="Пошук послуги…" autocomplete="off">' +
-        '<div id="mSvcDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:300;max-height:200px;overflow-y:auto;margin-top:3px;"></div>' +
+        '<div id="mSvcDrop" style="display:none;background:#fff;border:1px solid var(--line);border-radius:10px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;margin-top:6px;"></div>' +
       '</div>' +
       // Кнопка додати ще (з'являється після вибору 1-ї послуги)
       '<div id="mAddSvcWrap" style="display:none;margin-top:4px;">' +
@@ -3993,7 +3993,9 @@
           $("mSvcQ").value = "";
           $("mSvcQ").placeholder = "Пошук у категорії «" + group.title + "»…";
           renderSvcDrop("");
-          $("mSvcQ").focus();
+          /* На телефоні клавіатура не відкривається сама: вона закриває
+             половину екрана й збиває прокрутку довгого списку послуг. */
+          if (!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches)) $("mSvcQ").focus();
         });
         box.appendChild(btn);
       });
@@ -4009,6 +4011,8 @@
     $("mSvcQ").addEventListener("input", function() { renderSvcDrop(this.value.trim()); });
     $("mSvcQ").addEventListener("focus", function() { renderSvcDrop(this.value.trim()); });
     $("mSvcQ").addEventListener("blur", function() {
+      // На телефоні список лишається, поки не оберуть послугу чи «← Усі категорії»
+      if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) return;
       setTimeout(function() { var d = $("mSvcDrop"); if (d) d.style.display = "none"; }, 150);
     });
 
