@@ -3132,6 +3132,13 @@
       '<label style="margin-top:10px;display:block;">Час</label>' +
       '<div id="eSlots" class="muted">Завантаження…</div>' +
       '<div id="eChosenTime" style="display:none;margin-top:4px;padding:6px 10px;background:var(--panel-2);border-radius:8px;font-size:.85rem;font-weight:600;color:var(--cream);"></div>' +
+      /* Ручний час: коли вільних віконець немає (вихідний, перерва, поза графіком)
+         або потрібен час не з сітки — як і в «Новий запис». */
+      '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;">' +
+        '<input type="time" id="eCustomTime" step="300" style="flex:1;margin:0;" />' +
+        '<button type="button" id="eCustomTimeBtn" class="btn btn-ghost" style="white-space:nowrap;padding:8px 12px;font-size:.82rem;">Свій час</button>' +
+      '</div>' +
+      '<div style="font-size:.68rem;color:var(--text-dim);margin-top:4px;">Інший час — вручну, у т. ч. поза графіком майстра</div>' +
       // Послуга (редагована)
       '<label style="margin-top:10px;display:block;">Послуга</label>' +
       '<select id="eService"></select>' +
@@ -3247,6 +3254,19 @@
     var ct = $("eChosenTime");
     ct.style.display = "block";
     ct.textContent = "⏰ Час: " + fmtMin(a.start_min);
+
+    $("eCustomTimeBtn").addEventListener("click", function() {
+      var err = $("eErr");
+      var m = /^(\d{1,2}):(\d{2})$/.exec(($("eCustomTime").value || "").trim());
+      if (!m) { err.textContent = "Вкажіть час у форматі ГГ:ХВ"; return; }
+      var min = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      if (!(min >= 0 && min < 24 * 60)) { err.textContent = "Некоректний час"; return; }
+      err.textContent = "";
+      chosenMin = min;
+      var box = $("eSlots");
+      if (box) box.querySelectorAll(".slot").forEach(function(x) { x.classList.toggle("sel", x.textContent === fmtMin(min)); });
+      var ct3 = $("eChosenTime"); ct3.style.display = "block"; ct3.textContent = "⏰ Час: " + fmtMin(min);
+    });
 
     function loadESlots() {
       var mid = $("eMaster").value, date = $("eDate").value, sid = $("eService").value;

@@ -95,6 +95,45 @@ function logSub(subId, delta, kind, apptId, session) {
       .run(subId, delta, kind, apptId || null, who, Date.now());
   } catch (e) { console.error("[sublog]", e.message); }
 }
+/* Одноразово: скасовані / «не прийшов» візити, що ЩЕ ДО виправлення так і
+   лишились списаними з абонементу (refund працював лише для завершених).
+   Повертаємо сеанс і знімаємо відмітку — саме так тепер це робить setStatus.
+   Прапорець у app_settings, щоб не чіпати нічого вдруге. */
+try {
+  const REFUND_FLAG = "mig_refund_cancelled_sessions_v1";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(REFUND_FLAG)) {
+    const stale = db.prepare(
+      "SELECT id, client_id, service_id FROM appointments WHERE subscription_used=1 AND status IN ('cancelled','no_show') AND client_id IS NOT NULL AND service_id IS NOT NULL"
+    ).all();
+    let fixed = 0;
+    /* Страховка: повна копія бази ПЕРЕД зміною (поруч із файлом бази, на тому
+       ж томі). Якщо копію зробити не вдалось — нічого не чіпаємо. */
+    if (stale.length) {
+      const path = require("path");
+      const bdir = path.join(path.dirname(db.name), "backups");
+      require("fs").mkdirSync(bdir, { recursive: true });
+      const bfile = path.join(bdir, "oliva-before-refund-" + new Date().toISOString().replace(/[:.]/g, "-") + ".db");
+      db.exec("VACUUM INTO '" + bfile.replace(/'/g, "''") + "'");
+      console.log("[migrate] резервна копія бази: " + bfile);
+    }
+    db.transaction(function () {
+      stale.forEach(function (a) {
+        const ids = subServiceIds(a.service_id);
+        const sub = db.prepare(
+          `SELECT id FROM subscriptions WHERE client_id=? AND service_id IN (${inList(ids.length)}) AND used_sessions>0 ORDER BY id DESC LIMIT 1`
+        ).get(a.client_id, ...ids);
+        if (!sub) return;
+        db.prepare("UPDATE subscriptions SET used_sessions=used_sessions-1 WHERE id=?").run(sub.id);
+        db.prepare("UPDATE appointments SET subscription_used=0, subscription_session_no=NULL, subscription_session_total=NULL WHERE id=?").run(a.id);
+        db.prepare("INSERT INTO subscription_log (subscription_id, delta, kind, appointment_id, who, created_at) VALUES (?,?,?,?,?,?)")
+          .run(sub.id, -1, "refund", a.id, "авто (виправлення)", Date.now());
+        fixed++;
+      });
+      db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(REFUND_FLAG);
+    })();
+    console.log("[migrate] повернено сеансів зі скасованих візитів: " + fixed + " з " + stale.length);
+  }
+} catch (e) { console.error("[migrate] refund cancelled:", e.message); }
 function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const name = String(serviceName || "");
   const isExpert = name.includes("(Експерт)");
