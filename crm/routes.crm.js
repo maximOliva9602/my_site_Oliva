@@ -134,6 +134,57 @@ try {
     console.log("[migrate] повернено сеансів зі скасованих візитів: " + fixed + " з " + stale.length);
   }
 } catch (e) { console.error("[migrate] refund cancelled:", e.message); }
+/* Номери сеансів на картках візитів (subscription_session_no) після повернення
+   сеансу за скасований візит мали б «діру» (1,2,3,5). Перераховуємо 1..N за
+   датою — але ЛИШЕ коли це однозначно: у клієнта один абонемент на цю послугу,
+   немає ручних/початкових сеансів у журналі, і кількість візитів = used_sessions.
+   Інакше номери лишаємо як є (їх неможливо відновити без здогадок). */
+function renumberSubscription(subId) {
+  try {
+    const sub = db.prepare("SELECT id, client_id, service_id, used_sessions FROM subscriptions WHERE id=?").get(subId);
+    if (!sub) return false;
+    const ids = subServiceIds(sub.service_id);
+    const same = db.prepare(
+      `SELECT COUNT(*) n FROM subscriptions WHERE client_id=? AND service_id IN (${inList(ids.length)})`
+    ).get(sub.client_id, ...ids).n;
+    if (same !== 1) return false;
+    const odd = db.prepare(
+      "SELECT COUNT(*) n FROM subscription_log WHERE subscription_id=? AND kind IN ('manual','create_init')"
+    ).get(subId).n;
+    if (odd) return false;
+    const visits = db.prepare(
+      `SELECT id, subscription_session_no no FROM appointments
+        WHERE client_id=? AND subscription_used=1 AND status NOT IN ('cancelled','no_show') AND service_id IN (${inList(ids.length)})
+        ORDER BY date, start_min, id`
+    ).all(sub.client_id, ...ids);
+    if (visits.length !== sub.used_sessions) return false;
+    const upd = db.prepare("UPDATE appointments SET subscription_session_no=? WHERE id=?");
+    let changed = 0;
+    visits.forEach(function (v, i) { if (v.no !== i + 1) { upd.run(i + 1, v.id); changed++; } });
+    return changed;
+  } catch (e) { console.error("[renumber]", e.message); return false; }
+}
+/* Одноразово: перенумерувати існуючі абонементи (після старих повернень). */
+try {
+  const RENUM_FLAG = "mig_renumber_sessions_v1";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(RENUM_FLAG)) {
+    const subs = db.prepare("SELECT id FROM subscriptions").all();
+    // Рахуємо, що змінилось би, і лише тоді робимо резервну копію
+    let total = 0;
+    const plan = db.transaction(function () {
+      subs.forEach(function (x) { const c = renumberSubscription(x.id); if (c) total += c; });
+    });
+    const path = require("path");
+    const bdir = path.join(path.dirname(db.name), "backups");
+    require("fs").mkdirSync(bdir, { recursive: true });
+    const bfile = path.join(bdir, "oliva-before-renumber-" + new Date().toISOString().replace(/[:.]/g, "-") + ".db");
+    db.exec("VACUUM INTO '" + bfile.replace(/'/g, "''") + "'");
+    console.log("[migrate] резервна копія бази: " + bfile);
+    plan();
+    db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(RENUM_FLAG);
+    console.log("[migrate] перенумеровано сеансів на візитах: " + total);
+  }
+} catch (e) { console.error("[migrate] renumber:", e.message); }
 function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const name = String(serviceName || "");
   const isExpert = name.includes("(Експерт)");
@@ -715,6 +766,7 @@ function setStatus(id, status, session, options) {
       db.prepare("UPDATE subscriptions SET used_sessions=used_sessions-1 WHERE id=?").run(sub.id);
       db.prepare("UPDATE appointments SET subscription_used=0, subscription_session_no=NULL, subscription_session_total=NULL WHERE id=?").run(id);
       logSub(sub.id, -1, "refund", id, session);
+      renumberSubscription(sub.id);
     }
   }
   if (status === "confirmed" && settingOn("notif_confirm", true)) {
