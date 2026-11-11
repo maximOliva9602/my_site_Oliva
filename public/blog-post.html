@@ -150,6 +150,54 @@ fetch('/api/posts/' + slug)
     document.querySelector('meta[property="og:url"]').content = pageUrl;
     document.querySelector('meta[property="og:image"]').content = ogImg;
     document.querySelector('link[rel="canonical"]').href = pageUrl;
+
+  /* Очищення HTML статті: прибирає кольори, фони, шрифти й службові обгортки,
+     що приїжджають із Google Docs / Notes / Word / ChatGPT при вставці. Через
+     них темний текст на темному фоні сайту був нечитабельний. Лишає
+     структуру: p, h2, списки, посилання, фото, FAQ-блоки. */
+  function cleanBlogHtml(html, forEditor) {
+    try {
+      var doc = new DOMParser().parseFromString('<div id="r">' + String(html || '') + '</div>', 'text/html');
+      var root = doc.getElementById('r');
+      root.querySelectorAll('script,style,meta,link,title,head').forEach(function (n) { n.remove(); });
+      // жирний/курсив зі span-стилів (Google Docs) → <strong>/<em>
+      Array.prototype.slice.call(root.querySelectorAll('span')).forEach(function (n) {
+        var st = n.getAttribute('style') || '';
+        var bold = /font-weight\s*:\s*(bold|[6-9]00)/i.test(st), ital = /font-style\s*:\s*italic/i.test(st);
+        if (!bold && !ital) return;
+        var inner = doc.createElement(bold ? 'strong' : 'em');
+        while (n.firstChild) inner.appendChild(n.firstChild);
+        if (bold && ital) { var e2 = doc.createElement('em'); while (inner.firstChild) e2.appendChild(inner.firstChild); inner.appendChild(e2); }
+        n.parentNode.replaceChild(inner, n);
+      });
+      var KEEP = /^(display|max-width|width|height|border-radius|margin(-top|-bottom|-left|-right)?|object-fit)$/;
+      Array.prototype.slice.call(root.querySelectorAll('*')).forEach(function (n) {
+        var tag = n.tagName.toLowerCase();
+        // службова обгортка Google Docs: <b style="font-weight:normal" id="docs-internal-guid-...">
+        if (tag === 'b' && /font-weight\s*:\s*(normal|400)/i.test(n.getAttribute('style') || '')) { n.setAttribute('data-unwrap', '1'); }
+        ['color', 'bgcolor', 'face', 'size', 'align'].forEach(function (a) { n.removeAttribute(a); });
+        var st = n.getAttribute('style');
+        if (st) {
+          var kept = st.split(';').map(function (d) { return d.trim(); }).filter(function (d) {
+            var p = d.split(':')[0].trim().toLowerCase();
+            return d && KEEP.test(p);
+          }).join(';');
+          if (kept) n.setAttribute('style', kept); else n.removeAttribute('style');
+        }
+        n.removeAttribute('id');
+      });
+      // розгортаємо span/font без класу та помічені обгортки Google Docs
+      Array.prototype.slice.call(root.querySelectorAll('span,font,[data-unwrap]')).forEach(function (n) {
+        var tag = n.tagName.toLowerCase();
+        var plain = n.hasAttribute('data-unwrap') || ((tag === 'span' || tag === 'font') && !n.getAttribute('class'));
+        if (!plain) return;
+        while (n.firstChild) n.parentNode.insertBefore(n.firstChild, n);
+        n.remove();
+      });
+      return root.innerHTML;
+    } catch (e) { return String(html || ''); }
+  }
+
     var months = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
     var parts = (p.date||'').split('-');
     var dateStr = parts.length === 3 ? parseInt(parts[2]) + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0] : '';
@@ -159,7 +207,7 @@ fetch('/api/posts/' + slug)
       '<div class="post-date">' + dateStr + '</div>' +
       '<h1 class="post-title">' + p.title + '</h1>' +
       (p.cover ? '<img class="post-cover" src="' + p.cover + '" alt="' + p.title + '" />' : '') +
-      '<div class="post-body">' + (p.body || '') + '</div>' +
+      '<div class="post-body">' + cleanBlogHtml(p.body || '') + '</div>' +
       '<div class="post-cta">' +
         '<h3>Хочете спробувати?</h3>' +
         '<p>Запишіться на масаж або подаруйте сертифікат близькій людині</p>' +

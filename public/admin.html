@@ -1663,6 +1663,74 @@
     this.value = '';
   });
 
+
+  /* Очищення HTML статті: прибирає кольори, фони, шрифти й службові обгортки,
+     що приїжджають із Google Docs / Notes / Word / ChatGPT при вставці. Через
+     них темний текст на темному фоні сайту був нечитабельний. Лишає
+     структуру: p, h2, списки, посилання, фото, FAQ-блоки. */
+  function cleanBlogHtml(html, forEditor) {
+    try {
+      var doc = new DOMParser().parseFromString('<div id="r">' + String(html || '') + '</div>', 'text/html');
+      var root = doc.getElementById('r');
+      root.querySelectorAll('script,style,meta,link,title,head').forEach(function (n) { n.remove(); });
+      // жирний/курсив зі span-стилів (Google Docs) → <strong>/<em>
+      Array.prototype.slice.call(root.querySelectorAll('span')).forEach(function (n) {
+        var st = n.getAttribute('style') || '';
+        var bold = /font-weight\s*:\s*(bold|[6-9]00)/i.test(st), ital = /font-style\s*:\s*italic/i.test(st);
+        if (!bold && !ital) return;
+        var inner = doc.createElement(bold ? 'strong' : 'em');
+        while (n.firstChild) inner.appendChild(n.firstChild);
+        if (bold && ital) { var e2 = doc.createElement('em'); while (inner.firstChild) e2.appendChild(inner.firstChild); inner.appendChild(e2); }
+        n.parentNode.replaceChild(inner, n);
+      });
+      var KEEP = /^(display|max-width|width|height|border-radius|margin(-top|-bottom|-left|-right)?|object-fit)$/;
+      Array.prototype.slice.call(root.querySelectorAll('*')).forEach(function (n) {
+        var tag = n.tagName.toLowerCase();
+        // службова обгортка Google Docs: <b style="font-weight:normal" id="docs-internal-guid-...">
+        if (tag === 'b' && /font-weight\s*:\s*(normal|400)/i.test(n.getAttribute('style') || '')) { n.setAttribute('data-unwrap', '1'); }
+        ['color', 'bgcolor', 'face', 'size', 'align'].forEach(function (a) { n.removeAttribute(a); });
+        var st = n.getAttribute('style');
+        if (st) {
+          var kept = st.split(';').map(function (d) { return d.trim(); }).filter(function (d) {
+            var p = d.split(':')[0].trim().toLowerCase();
+            return d && KEEP.test(p);
+          }).join(';');
+          if (kept) n.setAttribute('style', kept); else n.removeAttribute('style');
+        }
+        n.removeAttribute('id');
+      });
+      // розгортаємо span/font без класу та помічені обгортки Google Docs
+      Array.prototype.slice.call(root.querySelectorAll('span,font,[data-unwrap]')).forEach(function (n) {
+        var tag = n.tagName.toLowerCase();
+        var plain = n.hasAttribute('data-unwrap') || ((tag === 'span' || tag === 'font') && !n.getAttribute('class'));
+        if (!plain) return;
+        while (n.firstChild) n.parentNode.insertBefore(n.firstChild, n);
+        n.remove();
+      });
+      return root.innerHTML;
+    } catch (e) { return String(html || ''); }
+  }
+
+  /* Вставка в редактор — завжди «чиста»: без кольорів, фонів і шрифтів з
+     Google Docs / Notes / Word / ChatGPT (раніше через них новий текст був
+     темним на темному і нечитабельним). */
+  edBody.addEventListener("paste", function (e) {
+    var cd = e.clipboardData || window.clipboardData;
+    if (!cd) return;
+    e.preventDefault();
+    var html = cd.getData("text/html");
+    var text = cd.getData("text/plain") || "";
+    var out;
+    if (html) {
+      out = cleanBlogHtml(html, true);
+    } else {
+      out = text.split(/\n{2,}/).map(function (par) {
+        return "<p>" + par.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>") + "</p>";
+      }).join("");
+    }
+    document.execCommand("insertHTML", false, out);
+  });
+
   /* -- Вставка HTML в редактор (гарантує курсор всередині edBody) -- */
   function insertIntoEditor(html) {
     edBody.focus();
@@ -1796,7 +1864,7 @@
     editingId = post ? post.id : null;
     edTitle.value       = post ? post.title : '';
     edExcerpt.value     = post ? (post.excerpt || '') : '';
-    edBody.innerHTML    = post ? (post.body || '') : '';
+    edBody.innerHTML    = post ? cleanBlogHtml(post.body || '', true) : '';
     edCover.value       = post ? (post.cover || '') : '';
     edPublished.checked = post ? !!post.published : false;
     edServiceRow.style.display = blogMode === 'service' ? '' : 'none';
@@ -1838,7 +1906,7 @@
     var data = {
       title: title,
       excerpt: edExcerpt.value.trim(),
-      body: edBody.innerHTML,
+      body: cleanBlogHtml(edBody.innerHTML, true),
       cover: edCover.value.trim(),
       published: edPublished.checked
     };
