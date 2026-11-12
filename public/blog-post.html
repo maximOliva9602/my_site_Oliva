@@ -180,6 +180,8 @@ fetch('/api/posts/' + slug)
         if (st) {
           var kept = st.split(';').map(function (d) { return d.trim(); }).filter(function (d) {
             var p = d.split(':')[0].trim().toLowerCase();
+            // відступи зберігаємо лише для фото; у тексті вони зі вставки злипають абзаци
+            if (/^margin/.test(p) && tag !== 'img') return false;
             return d && KEEP.test(p);
           }).join(';');
           if (kept) n.setAttribute('style', kept); else n.removeAttribute('style');
