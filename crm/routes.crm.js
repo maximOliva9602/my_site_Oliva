@@ -236,6 +236,55 @@ try {
     }
   }
 } catch (e) { console.error("[migrate] restore valeria:", e.message); }
+/* Одноразово (v2): відновлення абонемента клієнтки Валерія (+380989570037) під
+   справжній стан бази. Після видалення абонемента на візитах лишились його
+   відмітки (subscription_used=1, номери сеансів, «з 10»). Абонемент був на 10
+   сеансів, відмічених візитів 7 (було використано 7, лишалось 3). Створюємо
+   абонемент рівно під ці відмічені візити; номери сеансів не чіпаємо. Лише
+   якщо відмічені візити — рівно очікувані, абонемента ще немає; перед змінами
+   — повна копія бази. Сума 0 (справжня невідома), дата створення = перший візит. */
+try {
+  const FLAG = "mig_restore_valeria0037_v2";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(FLAG)) {
+    const CLIENT = 433, SERVICE = 54, TOTAL = 10;
+    const EXPECT = [200, 280, 476, 489, 721, 956, 958];
+    const cl = db.prepare("SELECT id, name, phone FROM clients WHERE id=?").get(CLIENT);
+    if (cl && /0037$/.test(String(cl.phone || "")) && /Валері/i.test(String(cl.name || ""))) {
+      const svc = db.prepare("SELECT id FROM services WHERE id=?").get(SERVICE);
+      const ids = svc ? subServiceIds(SERVICE) : [];
+      const existing = ids.length ? db.prepare(
+        `SELECT COUNT(*) n FROM subscriptions WHERE client_id=? AND service_id IN (${inList(ids.length)})`
+      ).get(CLIENT, ...ids).n : -1;
+      const marked = ids.length ? db.prepare(
+        `SELECT id, date, start_min, status, subscription_session_no FROM appointments WHERE client_id=? AND subscription_used=1 AND service_id IN (${inList(ids.length)}) ORDER BY date, start_min`
+      ).all(CLIENT, ...ids) : [];
+      const sameSet = marked.length === EXPECT.length && EXPECT.every(function (id) { return marked.some(function (m) { return m.id === id; }); });
+      if (svc && existing === 0 && sameSet && marked.every(function (m) { return m.status === "completed"; })) {
+        const path = require("path");
+        const bdir = path.join(path.dirname(db.name), "backups");
+        require("fs").mkdirSync(bdir, { recursive: true });
+        const bfile = path.join(bdir, "oliva-before-restore-valeria-v2-" + new Date().toISOString().replace(/[:.]/g, "-") + ".db");
+        db.exec("VACUUM INTO '" + bfile.replace(/'/g, "''") + "'");
+        console.log("[migrate] резервна копія бази: " + bfile);
+        db.transaction(function () {
+          const created = new Date("2026-08-09T16:00:00Z").getTime();
+          const info = db.prepare(
+            "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at) VALUES (?,?,?,?,?,?,?)"
+          ).run(CLIENT, SERVICE, TOTAL, marked.length, 0, "Відновлено вручну (видалений абонемент): 10 сеансів, перший візит 09.08", created);
+          const subId = info.lastInsertRowid;
+          const log = db.prepare("INSERT INTO subscription_log (subscription_id, delta, kind, appointment_id, who, created_at) VALUES (?,?,?,?,?,?)");
+          const upd = db.prepare("UPDATE appointments SET subscription_session_total=? WHERE id=?");
+          marked.forEach(function (m) { upd.run(TOTAL, m.id); log.run(subId, 1, "visit", m.id, "авто (відновлення)", Date.now()); });
+          db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(FLAG);
+        })();
+        console.log("[migrate] відновлено абонемент Валерії: " + TOTAL + " сеансів, використано " + marked.length);
+      } else {
+        console.warn("[migrate] відновлення Валерії v2 пропущено: existing=" + existing + ", marked=" + marked.map(function (m) { return m.id; }).join(","));
+        db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'skipped')").run(FLAG);
+      }
+    }
+  }
+} catch (e) { console.error("[migrate] restore valeria v2:", e.message); }
 function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const name = String(serviceName || "");
   const isExpert = name.includes("(Експерт)");
