@@ -349,6 +349,48 @@ function sessionWho(session) {
   if (session.role === "owner") return "власник";
   return (db.prepare("SELECT name FROM masters WHERE id=?").get(session.masterId) || {}).name || "майстер";
 }
+/* Одноразово: виправлення абонемента №51 клієнтки Анна (+380931057201):
+   «Загально-оздоровчий масаж 60 хв (Топ Майстер)». Мало бути 10 сеансів: 1-й візит
+   11.11 (id 1113), 2-й — запланований 18.11 (id 1159). Скасований візит 15.11 (id 1148,
+   інша послуга) помилково був прив'язаний до абонемента — знімаємо відмітку.
+   Лише прямі зміни в БД: статуси/час візитів не чіпаємо, тож ніяких SMS клієнтці.
+   Виконується лише якщо стан збігається з очікуваним; перед змінами — копія бази. */
+try {
+  const FLAG = "mig_fix_anna7201_sub51_v1";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(FLAG)) {
+    const sub = db.prepare("SELECT id, client_id, service_id, total_sessions, used_sessions FROM subscriptions WHERE id=51").get();
+    const cl = db.prepare("SELECT id, name, phone FROM clients WHERE id=648").get();
+    if (sub && cl && /7201$/.test(String(cl.phone || "")) && sub.client_id === 648 && sub.service_id === 8) {
+      const ap = function (id) { return db.prepare("SELECT id, status, subscription_used, client_id FROM appointments WHERE id=?").get(id); };
+      const a1 = ap(1113), a2 = ap(1148), a3 = ap(1159);
+      const ok = a1 && a2 && a3 && a1.client_id === 648 && a2.client_id === 648 && a3.client_id === 648
+        && a1.status === "completed" && a1.subscription_used
+        && a2.status === "cancelled" && a2.subscription_used
+        && a3.status === "confirmed" && a3.subscription_used
+        && sub.total_sessions === 9 && sub.used_sessions === 1;
+      if (ok) {
+        const path = require("path");
+        const bdir = path.join(path.dirname(db.name), "backups");
+        require("fs").mkdirSync(bdir, { recursive: true });
+        const bfile = path.join(bdir, "oliva-before-fix-anna7201-" + new Date().toISOString().replace(/[:.]/g, "-") + ".db");
+        db.exec("VACUUM INTO '" + bfile.replace(/'/g, "''") + "'");
+        console.log("[migrate] резервна копія бази: " + bfile);
+        db.transaction(function () {
+          db.prepare("UPDATE appointments SET subscription_used=0, subscription_session_no=NULL, subscription_session_total=NULL WHERE id=1148").run();
+          db.prepare("UPDATE appointments SET subscription_used=1, subscription_session_no=1, subscription_session_total=10 WHERE id=1113").run();
+          db.prepare("UPDATE appointments SET subscription_used=1, subscription_session_no=2, subscription_session_total=10 WHERE id=1159").run();
+          db.prepare("UPDATE subscriptions SET total_sessions=10, used_sessions=2 WHERE id=51").run();
+          db.prepare("INSERT INTO subscription_log (subscription_id, delta, kind, appointment_id, who, created_at) VALUES (51,1,'visit',1159,'авто (виправлення)',?)").run(Date.now());
+          db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(FLAG);
+        })();
+        console.log("[migrate] абонемент №51 Анни виправлено: 10 сеансів, використано 2 (11.11 і 18.11)");
+      } else {
+        console.warn("[migrate] виправлення абонемента №51 Анни пропущено: стан не збігся");
+        db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'skipped')").run(FLAG);
+      }
+    }
+  }
+} catch (e) { console.error("[migrate] fix anna7201:", e.message); }
 function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const name = String(serviceName || "");
   const isExpert = name.includes("(Експерт)");
