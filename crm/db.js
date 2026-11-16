@@ -871,11 +871,13 @@ try { db.exec("ALTER TABLE certificates ADD COLUMN created_by TEXT"); } catch (e
 try {
   // студія зі старих замовлень «Отримаю у студії» (адреса = обрана студія)
   db.prepare("UPDATE certificates SET branch=address WHERE (branch IS NULL OR branch='') AND delivery='Отримаю у студії' AND address IS NOT NULL AND address!=''").run();
-  // замовлення з сайту мають номери з лічильника cert_order_seq (1000+); ручні — зі своїми номерами
-  const seq = db.prepare("SELECT value FROM app_settings WHERE key='cert_order_seq'").get();
-  const seqMax = seq ? parseInt(seq.value, 10) : 0;
-  if (seqMax >= 1000) {
-    db.prepare("UPDATE certificates SET created_by='Клієнт (замовлення на сайті)' WHERE created_by IS NULL AND status='ordered' AND code GLOB '[0-9][0-9][0-9][0-9]*' AND CAST(code AS INTEGER) BETWEEN 1000 AND ?").run(seqMax);
+  // Автора (created_by) для СТАРИХ записів не вгадуємо: точно відомий він лише для записів
+  // після появи поля. Раніше тут було припущення за номером — воно давало хибні мітки.
+  const CB_FLAG = "mig_certs_clear_guessed_creator_v1";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(CB_FLAG)) {
+    const r = db.prepare("UPDATE certificates SET created_by=NULL WHERE created_by='Клієнт (замовлення на сайті)' AND created_at < ?").run(1794866058000);
+    db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(CB_FLAG);
+    console.log("[migrate] прибрано припущену мітку автора у сертифікатах: " + r.changes);
   }
 } catch (e) { console.error("[db] certificates backfill:", e.message); }
 
