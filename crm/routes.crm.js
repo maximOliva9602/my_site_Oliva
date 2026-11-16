@@ -391,6 +391,21 @@ try {
     }
   }
 } catch (e) { console.error("[migrate] fix anna7201:", e.message); }
+/* Одноразово: сума абонемента №51 Анни (+380931057201) — 13 500 грн (10 сеансів).
+   12 825 було від перестворення на 9 сеансів (за словами студії). */
+try {
+  const FLAG = "mig_fix_anna7201_price_v1";
+  if (!db.prepare("SELECT 1 FROM app_settings WHERE key=?").get(FLAG)) {
+    const sub = db.prepare("SELECT s.id, s.price, c.phone FROM subscriptions s JOIN clients c ON c.id=s.client_id WHERE s.id=51").get();
+    if (sub && /7201$/.test(String(sub.phone || ""))) {
+      if (sub.price === 1282500) {
+        db.prepare("UPDATE subscriptions SET price=1350000 WHERE id=51").run();
+        console.log("[migrate] сума абонемента №51 Анни: 13500 грн");
+      }
+      db.prepare("INSERT OR REPLACE INTO app_settings (key,value) VALUES (?,'1')").run(FLAG);
+    }
+  }
+} catch (e) { console.error("[migrate] anna7201 price:", e.message); }
 function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const name = String(serviceName || "");
   const isExpert = name.includes("(Експерт)");
