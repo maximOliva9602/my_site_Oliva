@@ -589,13 +589,16 @@ app.post("/api/certificate", async function (req, res) {
       certCode = String(next);
       db.prepare(
         `INSERT INTO certificates
-           (code, buyer_name, buyer_phone, recipient, service_label, amount, cert_type, delivery, address, wishes, status, created_at, expires_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?, 'ordered', ?, ?)`
+           (code, buyer_name, buyer_phone, recipient, service_label, amount, cert_type, delivery, address, wishes, status, created_at, expires_at, branch, created_by)
+         VALUES (?,?,?,?,?,?,?,?,?,?, 'ordered', ?, ?, ?, ?)`
       ).run(
         certCode, name, phone, recipient,
         service2 ? `${service} + ${service2}` : service,
         Math.round(totalPriceNum * 100), certType, delivery, address || null, wishes || null,
-        now, now + TWO_MONTHS_MS
+        now, now + TWO_MONTHS_MS,
+        // студія: для «Отримаю у студії» адреса = обрана студія
+        (delivery === "Отримаю у студії" && address) ? address : null,
+        "Клієнт (замовлення на сайті)"
       );
     });
     txn();

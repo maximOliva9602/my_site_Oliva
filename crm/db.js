@@ -864,6 +864,21 @@ CREATE INDEX IF NOT EXISTS idx_certificates_phone ON certificates(buyer_phone);
 CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
 `);
 
+/* Сертифікати: студія (куди/де) і хто створив запис. Раніше студія лежала лише
+   у загальному полі «адреса», а автор не зберігався взагалі. */
+try { db.exec("ALTER TABLE certificates ADD COLUMN branch TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE certificates ADD COLUMN created_by TEXT"); } catch (e) {}
+try {
+  // студія зі старих замовлень «Отримаю у студії» (адреса = обрана студія)
+  db.prepare("UPDATE certificates SET branch=address WHERE (branch IS NULL OR branch='') AND delivery='Отримаю у студії' AND address IS NOT NULL AND address!=''").run();
+  // замовлення з сайту мають номери з лічильника cert_order_seq (1000+); ручні — зі своїми номерами
+  const seq = db.prepare("SELECT value FROM app_settings WHERE key='cert_order_seq'").get();
+  const seqMax = seq ? parseInt(seq.value, 10) : 0;
+  if (seqMax >= 1000) {
+    db.prepare("UPDATE certificates SET created_by='Клієнт (замовлення на сайті)' WHERE created_by IS NULL AND status='ordered' AND code GLOB '[0-9][0-9][0-9][0-9]*' AND CAST(code AS INTEGER) BETWEEN 1000 AND ?").run(seqMax);
+  }
+} catch (e) { console.error("[db] certificates backfill:", e.message); }
+
 /* ---------------- Seed початкових даних ---------------- */
 (function seed() {
   const now = Date.now();

@@ -4832,10 +4832,17 @@
       '<label>Спосіб отримання</label>' +
       '<select id="caDelivery"><option value="Отримаю у студії">Отримаю у студії</option><option value="Нова Пошта">Нова Пошта</option><option value="Таксі">Таксі</option></select>' +
       '<div id="caAddressWrap" style="display:none;"><label>Адреса</label><input type="text" id="caAddress" maxlength="200"></div>' +
+      '<label>Студія <span style="color:var(--text-dim);font-weight:400;">(необов\'язково)</span></label><select id="caBranch"><option value="">— не вказано —</option></select>' +
       '<label>Побажання</label><textarea id="caWishes" maxlength="500"></textarea>' +
       '<div class="err" id="caErr"></div>' +
       '<div class="modal-foot"><button class="btn btn-ghost" id="caCancel">Скасувати</button><button class="btn btn-primary" id="caSave">Додати</button></div>'
     );
+    api("GET", "/api/crm/branches").then(function(r) {
+      ((r.j && r.j.branches) || []).forEach(function(b) {
+        var lbl = String(b.address || b.name || "").replace(/^OLIVA\s*за\s*адресою:\s*/i, "").replace(/^м\.?\s*Київ,?\s*/i, "").trim() || b.name;
+        var o = document.createElement("option"); o.value = lbl; o.textContent = lbl; $("caBranch").appendChild(o);
+      });
+    });
     function syncAddr() { $("caAddressWrap").style.display = $("caDelivery").value === "Отримаю у студії" ? "none" : "block"; }
     $("caDelivery").addEventListener("change", syncAddr); syncAddr();
     $("caCancel").addEventListener("click", closeModal);
@@ -4853,6 +4860,7 @@
         cert_type: $("caType").value,
         delivery: $("caDelivery").value,
         address: $("caAddress") ? $("caAddress").value.trim() : "",
+        branch: $("caBranch") ? $("caBranch").value : "",
         wishes: $("caWishes").value.trim(),
       }).then(function(res) {
         $("caSave").disabled = false;
@@ -4972,11 +4980,14 @@
         var typeLine = [c.cert_type, c.delivery].filter(Boolean).join(" · ") + (c.address ? " — " + c.address : "");
         if (typeLine) subLines.push(typeLine);
         if (c.wishes) subLines.push("💬 " + c.wishes);
-        subLines.push("Замовлено: " + ddmm(ymdLocal(c.created_at)));
+        if (c.branch) subLines.push("📍 Студія: " + c.branch);
+        subLines.push("Замовлено: " + ddmm(ymdLocal(c.created_at)) + (c.created_by ? " · Створив: " + c.created_by : ""));
       } else {
         if (c.buyer_name && c.buyer_name !== "—") subLines.push(c.buyer_name + (c.buyer_phone ? " · " + c.buyer_phone : ""));
         if (c.service_label) subLines.push(c.service_label);
+        if (c.branch) subLines.push("📍 Студія: " + c.branch);
         subLines.push((c.status === "used" ? "Відпрацьовано: " : "Створено: ") + ddmm(ymdLocal(c.used_at || c.created_at)) + (c.used_note ? " · " + c.used_note : ""));
+        if (c.created_by) subLines.push("Створив запис: " + c.created_by);
       }
       subLines.forEach(function(line) { info.appendChild(el("div", "sub", line)); });
       row.appendChild(info); row.appendChild(el("span", "sp"));

@@ -343,6 +343,12 @@ try {
     }
   }
 } catch (e) { console.error("[migrate] restore valeria v3:", e.message); }
+/* Хто виконав дію: власник або ім'я майстра (для журналів і полів «створив»). */
+function sessionWho(session) {
+  if (!session) return "авто";
+  if (session.role === "owner") return "власник";
+  return (db.prepare("SELECT name FROM masters WHERE id=?").get(session.masterId) || {}).name || "майстер";
+}
 function serviceMatchesMasterLevel(serviceName, masterLevel) {
   const name = String(serviceName || "");
   const isExpert = name.includes("(Експерт)");
@@ -3650,15 +3656,16 @@ router.post("/certificates", any, function (req, res) {
   const delivery = clean(b.delivery, 50) || null;
   const address = clean(b.address, 200) || null;
   const wishes = clean(b.wishes, 500) || null;
+  const branch = clean(b.branch, 200) || null;
   const now = Date.now();
   const TWO_MONTHS_MS = 61 * 24 * 60 * 60 * 1000;
   try {
     const txn = db.transaction(function () {
       db.prepare(
         `INSERT INTO certificates
-           (code, buyer_name, buyer_phone, recipient, service_label, amount, cert_type, delivery, address, wishes, status, created_at, expires_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?, 'ordered', ?, ?)`
-      ).run(code, buyerName, buyerPhone, recipient, serviceLabel, amount, certType, delivery, address, wishes, now, now + TWO_MONTHS_MS);
+           (code, buyer_name, buyer_phone, recipient, service_label, amount, cert_type, delivery, address, wishes, status, created_at, expires_at, branch, created_by)
+         VALUES (?,?,?,?,?,?,?,?,?,?, 'ordered', ?, ?, ?, ?)`
+      ).run(code, buyerName, buyerPhone, recipient, serviceLabel, amount, certType, delivery, address, wishes, now, now + TWO_MONTHS_MS, branch, sessionWho(req.session));
     });
     txn();
     res.json({ ok: true, code: code });
@@ -3693,8 +3700,10 @@ router.post("/certificates/log", any, function (req, res) {
   if (!code) return res.status(400).json({ ok: false, error: "code required" });
 
   const a = appointmentId ? db.prepare(
-    `SELECT a.price, c.name client_name, c.phone client_phone, s.name service_name
+    `SELECT a.price, c.name client_name, c.phone client_phone, s.name service_name,
+            COALESCE(br.address, br.name) branch_label
        FROM appointments a JOIN clients c ON c.id=a.client_id JOIN services s ON s.id=a.service_id
+       LEFT JOIN branches br ON br.id=a.branch_id
       WHERE a.id=?`
   ).get(appointmentId) : null;
 
@@ -3716,15 +3725,17 @@ router.post("/certificates/log", any, function (req, res) {
     }
     const info = db.prepare(
       `INSERT INTO certificates
-         (code, buyer_name, buyer_phone, service_label, amount, status, used_at, used_by_appointment_id, used_note, created_at, expires_at)
-       VALUES (?,?,?,?,?, 'used', ?, ?, ?, ?, ?)`
+         (code, buyer_name, buyer_phone, service_label, amount, status, used_at, used_by_appointment_id, used_note, created_at, expires_at, branch, created_by)
+       VALUES (?,?,?,?,?, 'used', ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       code,
       a ? a.client_name : "—",
       a ? a.client_phone : "",
       a ? a.service_name : null,
       a ? a.price : 0,
-      now, appointmentId, who, now, now
+      now, appointmentId, who, now, now,
+      a && a.branch_label ? a.branch_label : null,
+      sessionWho(req.session)
     );
     res.json({ ok: true, id: info.lastInsertRowid });
   } catch (e) {
