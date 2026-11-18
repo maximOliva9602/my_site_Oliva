@@ -2679,15 +2679,19 @@ router.get("/dashboard/analytics", owner, function (req, res) {
   //    показників на цій вкладці — інакше цифри не збігаються з іншими
   //    картками при зміні дат) ─────────────────────────────────────
   const masters = db.prepare("SELECT id, name FROM masters WHERE active=1").all();
+  /* «Повторний» = справжній клієнт, який був у цього майстра в РІЗНІ дні (не двічі за один день).
+     Не рахуємо: «Гість» (спільний запис на всіх анонімних відвідувачів і на другого майстра в
+     парних процедурах — його візити виглядали «повторними»), записи-«двійники» парних процедур. */
+  const REAL_CLIENT_SQL = "client_id NOT IN (SELECT id FROM clients WHERE phone='guest' OR name IN ('Гість','гість')) AND pair_parent_id IS NULL";
   const masterLoyalty = masters.map(function(m) {
     const total = db.prepare(
-      `SELECT COUNT(DISTINCT client_id) v FROM appointments WHERE master_id=? AND status='completed' AND date>=? AND date<=?`
+      `SELECT COUNT(DISTINCT client_id) v FROM appointments WHERE master_id=? AND status='completed' AND date>=? AND date<=? AND ${REAL_CLIENT_SQL}`
     ).get(m.id, from, to).v;
     const returning = db.prepare(
       `SELECT COUNT(*) v FROM (
          SELECT client_id FROM appointments
-          WHERE master_id=? AND status='completed' AND date>=? AND date<=?
-          GROUP BY client_id HAVING COUNT(*)>1
+          WHERE master_id=? AND status='completed' AND date>=? AND date<=? AND ${REAL_CLIENT_SQL}
+          GROUP BY client_id HAVING COUNT(DISTINCT date)>1
        )`
     ).get(m.id, from, to).v;
     return { id: m.id, name: m.name, total_clients: total, returning: returning,
