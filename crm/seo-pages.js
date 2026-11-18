@@ -185,7 +185,7 @@ function renderCategoryHtml(slug, services, branches, pagesByKey) {
     '<div class="hero-eyebrow">Студія масажу Oliva · Київ</div>' +
     '<h1 class="hero-title">' + esc(cfg.h1) + "</h1>" +
     '<div class="hero-btns"><a href="/booking.html?group=' + cfg.group + '" class="btn btn-primary">Записатися онлайн →</a>' +
-    '<a href="/certificate.html" class="btn btn-secondary">🎁 Подарувати сертифікат</a></div>' +
+    '<a href="/certificate" class="btn btn-secondary">🎁 Подарувати сертифікат</a></div>' +
     "</div></div></section>";
   html += '<div class="hero-sub"><div class="hero-tagline">' + esc(cfg.tagline) + "</div></div>";
   html += '<nav class="crumbs" aria-label="Навігація"><div class="wrap"><a href="/">Головна</a><span>›</span><a href="/#services">Послуги</a><span>›</span><span class="crumbs-cur">' + esc(cfg.crumb) + "</span></div></nav>";
@@ -208,7 +208,7 @@ function renderCategoryHtml(slug, services, branches, pagesByKey) {
           (c.href ? '<a href="' + esc(c.href) + '" class="btn btn-secondary">Детальніше</a>' : "") +
           /* Сертифікат одразу на цю програму — окрему картку «Сертифікат на
              SPA» прибрано на прохання власника. */
-          '<a href="/certificate.html?service=' + encodeURIComponent(c.key) + '" class="btn btn-secondary">🎁 Сертифікат</a>' + "</div>" +
+          '<a href="/certificate?service=' + encodeURIComponent(c.key) + '" class="btn btn-secondary">🎁 Сертифікат</a>' + "</div>" +
         "</div></article>";
     }).join("") +
     "</div></div></section>";
@@ -360,7 +360,7 @@ function renderSpaComplexMain(cfg, slug, o) {
         '<div class="cx-card__body"><h3 class="cx-card__title">' + esc(shortTitle(c)) + "</h3>" +
         '<div class="cx-card__sub">' + esc(subOf(c)) + "</div>" +
         '<div class="cx-card__price">від ' + minPrice(c) + " грн · " + c.durs.map(function (d) { return esc(SP.fmtDur(d.dur)); }).join(" / ") + "</div>" +
-        '<div class="cx-card__btns">' + (c.href ? '<a href="' + esc(c.href) + '" class="btn btn--ghost">Детальніше</a>' : '<a href="/certificate.html?service=' + encodeURIComponent(c.key) + '" class="btn btn--ghost">🎁 Сертифікат</a>') +
+        '<div class="cx-card__btns">' + (c.href ? '<a href="' + esc(c.href) + '" class="btn btn--ghost">Детальніше</a>' : '<a href="/certificate?service=' + encodeURIComponent(c.key) + '" class="btn btn--ghost">🎁 Сертифікат</a>') +
         '<a href="' + c.book + '" class="btn">Записатися</a></div></div></article>';
     }).join("") + "</div></section>";
   m += '<section class="cx-about"><div class="cx-about__img">' + (aboutImg ? '<img src="' + esc(aboutImg) + '" alt="SPA-комплекси в студії Oliva" loading="lazy">' : "") + "</div>" +
@@ -424,7 +424,7 @@ function renderCategory(slug) {
         (c.where.length ? '<div class="p-card__where">📍 ' + esc(c.where.join(" · ")) + "</div>" : "") +
         '<div class="p-card__actions"><a href="' + c.book + '" class="btn">Записатися ' + A + "</a>" +
           (c.href ? '<a href="' + esc(c.href) + '" class="btn btn--ghost">Детальніше</a>' : "") +
-          '<a href="/certificate.html?service=' + encodeURIComponent(c.key) + '" class="btn btn--ghost">🎁 Сертифікат</a></div>' +
+          '<a href="/certificate?service=' + encodeURIComponent(c.key) + '" class="btn btn--ghost">🎁 Сертифікат</a></div>' +
       "</div></article>";
   }
   const panels = tabOrder.map(function (g) {

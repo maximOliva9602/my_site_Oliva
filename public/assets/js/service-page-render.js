@@ -118,7 +118,7 @@
     var cheapest = variants.slice().sort(function (a, b) { return a.price - b.price; })[0];
     var bookHref = cheapest ? "/booking.html?service=" + cheapest.id : "/booking.html";
     /* Сертифікат одразу на цю послугу (certificate.html?service=<назва>). */
-    var certHref = "/certificate.html" + (variants.length ? "?service=" + encodeURIComponent(key) : "");
+    var certHref = "/certificate" + (variants.length ? "?service=" + encodeURIComponent(key) : "");
 
     var abonGroups = parseAbonemenItems(p.abonement_items);
     var abonLevels = collectRealLevels(variants);

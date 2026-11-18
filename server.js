@@ -213,6 +213,15 @@ app.get("/sitemap.xml", function (req, res) {
   res.set("Content-Type", "application/xml; charset=utf-8").send(xml);
 });
 
+/* Одна адреса для сторінки сертифікатів: /certificate.html віддавала ту саму сторінку
+   (код 200) окремим URL, а всі внутрішні посилання вели саме на неї, тоді як canonical
+   і sitemap — на /certificate. Це розпорошувало вагу сторінки й плутало Google.
+   Тепер 301 на канонічну адресу (параметри на кшталт ?service=... зберігаються). */
+app.get("/certificate.html", function (req, res) {
+  var qi = req.url.indexOf("?");
+  res.redirect(301, "/certificate" + (qi >= 0 ? req.url.slice(qi) : ""));
+});
+
 app.use(express.static(path.join(__dirname, "public"), {
   setHeaders: function (res, filePath) {
     if (/\.(js|css|html|json)$/i.test(filePath)) {

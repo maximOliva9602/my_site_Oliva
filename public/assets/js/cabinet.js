@@ -6919,7 +6919,7 @@
       var pgHtml = ttl("📄 Топ сторінок · " + trafficPeriod.label);
       var PAGE_NAMES = { "/": "Головна", "/booking.html": "Запис", "/blog.html": "Блог",
         "/shop.html": "Магазин", "/training.html": "Навчання", "/tips.html": "Чайові",
-        "/certificate.html": "Сертифікати", "/share.html": "Поділитись" };
+        "/certificate.html": "Сертифікати", "/certificate": "Сертифікати", "/share.html": "Поділитись" };
       /* Шляхи на кшталт /service/SPA%20Ритуал... зберігаються в лозі
          трафіку URL-кодованими — без decodeURIComponent кирилиця
          показувалась як %D0%A0... замість тексту. Старі записи в базі
