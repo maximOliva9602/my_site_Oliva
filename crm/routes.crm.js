@@ -2683,17 +2683,20 @@ router.get("/dashboard/analytics", owner, function (req, res) {
      Не рахуємо: «Гість» (спільний запис на всіх анонімних відвідувачів і на другого майстра в
      парних процедурах — його візити виглядали «повторними»), записи-«двійники» парних процедур. */
   const REAL_CLIENT_SQL = "client_id NOT IN (SELECT id FROM clients WHERE phone='guest' OR name IN ('Гість','гість')) AND pair_parent_id IS NULL";
+  /* Тестові клієнти (в імені окреме слово «Тест»/«test», з перевірок системи) теж не рахуємо.
+     Фільтр робимо в JS: lower() в SQLite не вміє кирилицю. */
+  const testIds = {};
+  db.prepare("SELECT id, name FROM clients").all().forEach(function (c) {
+    if (/(^|[^а-яіїєґa-z])(тест|test)([^а-яіїєґa-z]|$)/i.test(String(c.name || ""))) testIds[c.id] = true;
+  });
   const masterLoyalty = masters.map(function(m) {
-    const total = db.prepare(
-      `SELECT COUNT(DISTINCT client_id) v FROM appointments WHERE master_id=? AND status='completed' AND date>=? AND date<=? AND ${REAL_CLIENT_SQL}`
-    ).get(m.id, from, to).v;
-    const returning = db.prepare(
-      `SELECT COUNT(*) v FROM (
-         SELECT client_id FROM appointments
-          WHERE master_id=? AND status='completed' AND date>=? AND date<=? AND ${REAL_CLIENT_SQL}
-          GROUP BY client_id HAVING COUNT(DISTINCT date)>1
-       )`
-    ).get(m.id, from, to).v;
+    const rows = db.prepare(
+      `SELECT client_id, COUNT(DISTINCT date) days FROM appointments
+        WHERE master_id=? AND status='completed' AND date>=? AND date<=? AND ${REAL_CLIENT_SQL}
+        GROUP BY client_id`
+    ).all(m.id, from, to).filter(function (r) { return !testIds[r.client_id]; });
+    const total = rows.length;
+    const returning = rows.filter(function (r) { return r.days > 1; }).length;
     return { id: m.id, name: m.name, total_clients: total, returning: returning,
              loyalty_pct: total > 0 ? Math.round(returning / total * 100) : 0 };
   });
