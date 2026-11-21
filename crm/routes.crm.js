@@ -2869,6 +2869,50 @@ router.get("/subscriptions", any, function (req, res) {
   res.json({ ok: true, subscriptions: rows });
 });
 
+/* Усі абонементи для вкладки «Абонементи» (власник): клієнт, послуга, залишок,
+   сума, хто оформив, які майстри відпрацювали сеанси. Відпрацьовано/залишок у
+   грошах — пропорційно: ціна абонемента × використано/всього. */
+router.get("/subscriptions/all", owner, function (req, res) {
+  const rows = db.prepare(
+    `SELECT sub.id, sub.client_id, sub.service_id, sub.total_sessions, sub.used_sessions, sub.price, sub.note,
+            sub.created_at, sub.created_by, c.name client_name, c.phone client_phone, s.name service_name
+       FROM subscriptions sub
+       JOIN clients c ON c.id=sub.client_id
+       JOIN services s ON s.id=sub.service_id
+      ORDER BY sub.created_at DESC`
+  ).all();
+  const flagged = db.prepare(
+    `SELECT a.client_id, a.service_id, a.master_id, m.name master_name, a.date
+       FROM appointments a JOIN masters m ON m.id=a.master_id
+      WHERE a.subscription_used=1 AND a.status NOT IN ('cancelled','no_show')`
+  ).all();
+  const idsCache = {};
+  const out = rows.map(function (r) {
+    const ids = idsCache[r.service_id] || (idsCache[r.service_id] = subServiceIds(r.service_id));
+    const idSet = {}; ids.forEach(function (i) { idSet[i] = true; });
+    const byMaster = {};
+    let lastVisit = null;
+    flagged.forEach(function (a) {
+      if (a.client_id !== r.client_id || !idSet[a.service_id]) return;
+      byMaster[a.master_name] = (byMaster[a.master_name] || 0) + 1;
+      if (!lastVisit || a.date > lastVisit) lastVisit = a.date;
+    });
+    let createdBy = r.created_by;
+    if (!createdBy) {
+      const lg = db.prepare("SELECT who FROM subscription_log WHERE subscription_id=? AND kind IN ('create','create_init') ORDER BY id LIMIT 1").get(r.id);
+      if (lg && lg.who && lg.who !== "авто") createdBy = lg.who;
+    }
+    return {
+      id: r.id, client_id: r.client_id, client_name: r.client_name, client_phone: r.client_phone,
+      service_name: r.service_name, total_sessions: r.total_sessions, used_sessions: r.used_sessions,
+      price: r.price, note: r.note, created_at: r.created_at, created_by: createdBy || null,
+      masters: Object.keys(byMaster).map(function (n) { return { name: n, count: byMaster[n] }; }),
+      last_visit: lastVisit,
+    };
+  });
+  res.json({ ok: true, subscriptions: out });
+});
+
 router.get("/subscriptions/check", any, function (req, res) {
   const clientId  = parseInt(req.query.client_id,  10);
   const serviceId = parseInt(req.query.service_id, 10);
@@ -2900,8 +2944,8 @@ router.post("/subscriptions", any, function (req, res) {
   let subId;
   db.transaction(function () {
     const info = db.prepare(
-      "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at) VALUES (?,?,?,?,?,?,?)"
-    ).run(clientId, serviceId, total, usedInit, price, note, Date.now());
+      "INSERT INTO subscriptions (client_id,service_id,total_sessions,used_sessions,price,note,created_at,created_by) VALUES (?,?,?,?,?,?,?,?)"
+    ).run(clientId, serviceId, total, usedInit, price, note, Date.now(), sessionWho(req.session));
     subId = info.lastInsertRowid;
     if (usedInit > 0) logSub(subId, usedInit, appointmentId ? "create" : "create_init", appointmentId, req.session);
     if (appointmentId && usedInit > 0) {
@@ -3809,6 +3853,26 @@ router.post("/certificates/log", any, function (req, res) {
     console.error("[certificates/log]", e.message);
     res.status(500).json({ ok: false });
   }
+});
+
+/* Редагування сертифіката (власник): контакти, послуга, сума, спосіб отримання, студія,
+   коментар (побажання). Оновлюються лише передані поля. */
+router.patch("/certificates/:id", owner, function (req, res) {
+  const id = parseInt(req.params.id, 10);
+  const c = db.prepare("SELECT id FROM certificates WHERE id=?").get(id);
+  if (!c) return res.status(404).json({ ok: false, error: "not found" });
+  const b = req.body || {};
+  const sets = [], args = [];
+  function str(key, col, max) { if (b[key] !== undefined) { sets.push(col + "=?"); args.push(clean(b[key], max) || null); } }
+  if (b.buyer_name !== undefined) { sets.push("buyer_name=?"); args.push(clean(b.buyer_name, 100) || "—"); }
+  str("buyer_phone", "buyer_phone", 30); str("recipient", "recipient", 100);
+  str("service_label", "service_label", 200); str("cert_type", "cert_type", 30); str("delivery", "delivery", 50);
+  str("address", "address", 200); str("wishes", "wishes", 500); str("branch", "branch", 200);
+  if (b.amount !== undefined) { sets.push("amount=?"); args.push(Math.max(0, Math.round((parseFloat(b.amount) || 0) * 100))); }
+  if (!sets.length) return res.json({ ok: true });
+  args.push(id);
+  db.prepare("UPDATE certificates SET " + sets.join(", ") + " WHERE id=?").run(...args);
+  res.json({ ok: true });
 });
 
 /* Прибрати помилковий запис у журналі — власник. */

@@ -354,6 +354,7 @@
     // але без плиток аналітики: statistic лише для власника, див. renderCertificates.
     TABS.push({ id: "certs",     name: "🎁 Сертифікати", render: renderCertificates });
     if (me.role === "owner") {
+      TABS.push({ id: "subs",      name: "🎟 Абонементи", render: renderSubscriptionsTab });
       TABS.push({ id: "dashboard", name: "📊 Дашборд",  render: renderDashboard });
       TABS.push({ id: "analytics", name: "📈 Аналітика", render: renderAnalytics });
       TABS.push({ id: "traffic",   name: "🌐 Трафік",   render: renderTraffic });
@@ -367,8 +368,8 @@
       TABS.push({ id: "filiyi",    name: "🏢 Філії",    render: renderBranchesTab });
     }
     /* ── Іконки і короткі назви для мобільного nav ── */
-    var TAB_ICOS  = { dashboard:"📊", podii:"📌", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", broadcast:"📣", filiyi:"🏢", hero:"🖼", certs:"🎁" };
-    var TAB_SHORT = { dashboard:"Дашборд", podii:"Події", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", mynotif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії", hero:"Головний екран", certs:"Сертифікати" };
+    var TAB_ICOS  = { dashboard:"📊", podii:"📌", zapysy:"📋", rozklad:"📅", grafik:"🗓", clients:"👤", analytics:"📈", traffic:"🌐", reviews:"⭐", services:"💆", masters:"👥", users:"🔐", notif:"🔔", broadcast:"📣", filiyi:"🏢", hero:"🖼", certs:"🎁", subs:"🎟" };
+    var TAB_SHORT = { dashboard:"Дашборд", podii:"Події", zapysy:"Записи", rozklad:"Розклад", grafik:"Графік", clients:"Клієнти", analytics:"Аналітика", traffic:"Трафік", reviews:"Відгуки", services:"Послуги", masters:"Майстри", users:"Доступи", notif:"Сповіщення", mynotif:"Сповіщення", broadcast:"Розсилка", filiyi:"Філії", hero:"Головний екран", certs:"Сертифікати", subs:"Абонементи" };
     var BOTTOM_COUNT = Math.min(4, TABS.length);
     var hasDrawer    = TABS.length > BOTTOM_COUNT;
 
@@ -4871,6 +4872,151 @@
     });
   }
 
+  /* Редагування запису сертифіката (власник): контакти, послуга, сума, спосіб отримання,
+     студія, коментар. Номер і статус не змінюються. */
+  function certEditModal(c, onDone) {
+    function esc(t) { return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+    var deliveries = ["Отримаю у студії", "Нова Пошта", "Таксі", "Месенджер", "E-mail"];
+    if (c.delivery && deliveries.indexOf(c.delivery) === -1) deliveries.push(c.delivery);
+    var types = ["Паперовий", "Електронний"];
+    if (c.cert_type && types.indexOf(c.cert_type) === -1) types.push(c.cert_type);
+    function opts(list, cur) { return list.map(function(v) { return '<option value="' + esc(v) + '"' + (v === cur ? " selected" : "") + ">" + esc(v) + "</option>"; }).join(""); }
+    openModal(
+      '<h3>✏️ Редагувати сертифікат № ' + esc(c.code) + '</h3>' +
+      '<label>Ім\'я покупця</label><input type="text" id="ceBuyer" maxlength="100" value="' + esc(c.buyer_name && c.buyer_name !== "—" ? c.buyer_name : "") + '">' +
+      '<label>Телефон покупця</label><input type="tel" id="cePhone" maxlength="30" value="' + esc(c.buyer_phone) + '">' +
+      '<label>Для кого (отримувач)</label><input type="text" id="ceRecipient" maxlength="100" value="' + esc(c.recipient) + '">' +
+      '<label>Послуга</label><input type="text" id="ceService" maxlength="200" value="' + esc(c.service_label) + '">' +
+      '<div class="grid2">' +
+        '<div><label>Сума (грн)</label><input type="number" id="ceAmount" min="0" step="10" value="' + esc(c.amount ? Math.round(c.amount / 100) : "") + '"></div>' +
+        '<div><label>Тип</label><select id="ceType"><option value=""></option>' + opts(types, c.cert_type) + '</select></div>' +
+      '</div>' +
+      '<label>Спосіб отримання</label><select id="ceDelivery"><option value=""></option>' + opts(deliveries, c.delivery) + '</select>' +
+      '<label>Адреса / контакт для надсилання</label><input type="text" id="ceAddress" maxlength="200" value="' + esc(c.address) + '">' +
+      '<label>Студія</label><select id="ceBranch"><option value="">— не вказано —</option></select>' +
+      '<label>Коментар (побажання)</label><textarea id="ceWishes" maxlength="500" style="min-height:90px;">' + esc(c.wishes) + '</textarea>' +
+      '<div class="err" id="ceErr"></div>' +
+      '<div class="modal-foot"><button class="btn btn-ghost" id="ceCancel">Скасувати</button><button class="btn btn-primary" id="ceSave">Зберегти</button></div>'
+    );
+    api("GET", "/api/crm/branches").then(function(r) {
+      var cur = c.branch || "", found = false;
+      ((r.j && r.j.branches) || []).forEach(function(b) {
+        var lbl = String(b.address || b.name || "").replace(/^OLIVA\s*за\s*адресою:\s*/i, "").replace(/^м\.?\s*Київ,?\s*/i, "").trim() || b.name;
+        var o = document.createElement("option"); o.value = lbl; o.textContent = lbl;
+        if (lbl === cur) { o.selected = true; found = true; }
+        $("ceBranch").appendChild(o);
+      });
+      if (cur && !found) { var o2 = document.createElement("option"); o2.value = cur; o2.textContent = cur; o2.selected = true; $("ceBranch").appendChild(o2); }
+    });
+    $("ceCancel").addEventListener("click", closeModal);
+    $("ceSave").addEventListener("click", function() {
+      $("ceSave").disabled = true;
+      api("PATCH", "/api/crm/certificates/" + c.id, {
+        buyer_name: $("ceBuyer").value.trim(), buyer_phone: $("cePhone").value.trim(),
+        recipient: $("ceRecipient").value.trim(), service_label: $("ceService").value.trim(),
+        amount: $("ceAmount").value, cert_type: $("ceType").value, delivery: $("ceDelivery").value,
+        address: $("ceAddress").value.trim(), branch: $("ceBranch").value, wishes: $("ceWishes").value.trim()
+      }).then(function(res) {
+        $("ceSave").disabled = false;
+        if (res.j && res.j.ok) { closeModal(); onDone(); }
+        else { $("ceErr").textContent = "Не вдалось зберегти: " + ((res.j && res.j.error) || res.code || "помилка"); }
+      });
+    });
+  }
+
+  /* ============================================================
+     ВКЛАДКА «АБОНЕМЕНТИ» (власник): усі абонементи, хто оформив, залишок,
+     сума, відпрацьовано / ще відпрацювати (пропорційно: ціна × використано / всього)
+     ============================================================ */
+  function renderSubscriptionsTab() {
+    var main = $("main"); main.innerHTML = "";
+    var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Абонементи"));
+    main.appendChild(bar);
+
+    var cards = el("div"); cards.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;";
+    main.appendChild(cards);
+
+    var tools = el("div"); tools.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;";
+    var q = document.createElement("input"); q.type = "text"; q.placeholder = "Пошук: клієнт, телефон, послуга"; q.style.cssText = "flex:1;min-width:180px;";
+    var statusSel = document.createElement("select");
+    statusSel.innerHTML = '<option value="active">Активні (є залишок)</option><option value="done">Завершені</option><option value="all">Усі</option>';
+    var masterSel = document.createElement("select");
+    masterSel.innerHTML = '<option value="">Усі майстри</option>';
+    tools.appendChild(q); tools.appendChild(statusSel); tools.appendChild(masterSel);
+    main.appendChild(tools);
+
+    var listEl = el("div"); main.appendChild(listEl);
+    listEl.appendChild(el("div", "empty", "Завантаження…"));
+
+    var all = [];
+    function pct(a, b) { return b > 0 ? Math.round(a / b * 100) : 0; }
+    function calc(s) {
+      var per = s.total_sessions > 0 ? s.price / s.total_sessions : 0;
+      var worked = Math.round(per * s.used_sessions);
+      return { worked: worked, left: Math.max(0, s.price - worked), remain: Math.max(0, s.total_sessions - s.used_sessions) };
+    }
+    function summary(list) {
+      var sold = 0, worked = 0, left = 0, active = 0;
+      list.forEach(function(s) { var c = calc(s); sold += s.price; worked += c.worked; left += c.left; if (c.remain > 0) active++; });
+      cards.innerHTML = "";
+      [["Абонементів", list.length + " (активних " + active + ")"], ["Продано на", money(sold)], ["Відпрацьовано", money(worked)], ["Ще відпрацювати", money(left)]].forEach(function(x) {
+        var d = el("div"); d.style.cssText = "background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;";
+        d.appendChild(el("div", "sub", x[0]));
+        var v = el("div", "t", x[1]); v.style.cssText = "font-size:1.05rem;margin-top:4px;"; d.appendChild(v);
+        cards.appendChild(d);
+      });
+    }
+    function render() {
+      var term = q.value.trim().toLowerCase(), st = statusSel.value, mf = masterSel.value;
+      var list = all.filter(function(s) {
+        var remain = s.total_sessions - s.used_sessions;
+        if (st === "active" && remain <= 0) return false;
+        if (st === "done" && remain > 0) return false;
+        if (mf && !s.masters.some(function(m) { return m.name === mf; })) return false;
+        if (term) {
+          var hay = ((s.client_name || "") + " " + (s.client_phone || "") + " " + (s.service_name || "")).toLowerCase();
+          if (hay.indexOf(term) === -1) return false;
+        }
+        return true;
+      });
+      summary(list);
+      listEl.innerHTML = "";
+      if (!list.length) { listEl.appendChild(el("div", "empty", "Абонементів за цими умовами немає")); return; }
+      list.forEach(function(s) {
+        var c = calc(s);
+        var item = el("div", "item");
+        var info = el("div"); info.style.flex = "1";
+        var t = el("div", "t", s.client_name + (s.client_phone && s.client_phone !== "guest" ? " · " + s.client_phone : ""));
+        info.appendChild(t);
+        info.appendChild(el("div", "sub", s.service_name));
+        var bw = el("div"); bw.style.cssText = "height:6px;background:var(--line);border-radius:3px;margin:8px 0 4px;overflow:hidden;";
+        var bf = el("div"); bf.style.cssText = "height:100%;width:" + pct(s.used_sessions, s.total_sessions) + "%;background:" + (c.remain > 0 ? "var(--olive-light)" : "var(--text-dim)") + ";";
+        bw.appendChild(bf); info.appendChild(bw);
+        info.appendChild(el("div", "sub", "Використано " + s.used_sessions + " з " + s.total_sessions + " · залишилось " + c.remain));
+        info.appendChild(el("div", "sub", s.price > 0
+          ? "Сума: " + money(s.price) + " · відпрацьовано " + money(c.worked) + " · ще відпрацювати " + money(c.left)
+          : "Сума не вказана"));
+        info.appendChild(el("div", "sub", "Оформив: " + (s.created_by || "не зафіксовано") + " · " + ddmm(ymdLocal(s.created_at))));
+        if (s.masters.length) info.appendChild(el("div", "sub", "Відпрацювали: " + s.masters.map(function(m) { return m.name + " ×" + m.count; }).join(", ")));
+        if (s.note) info.appendChild(el("div", "sub", "💬 " + s.note));
+        item.appendChild(info);
+        item.style.cursor = "pointer";
+        item.addEventListener("click", function() { if (window.__openClientCard) window.__openClientCard(s.client_id); });
+        listEl.appendChild(item);
+      });
+    }
+    api("GET", "/api/crm/subscriptions/all").then(function(res) {
+      all = (res.j && res.j.subscriptions) || [];
+      var names = {};
+      all.forEach(function(s) { s.masters.forEach(function(m) { names[m.name] = true; }); });
+      Object.keys(names).sort().forEach(function(n) { var o = document.createElement("option"); o.value = n; o.textContent = n; masterSel.appendChild(o); });
+      render();
+    });
+    var dt = null;
+    q.addEventListener("input", function() { clearTimeout(dt); dt = setTimeout(render, 200); });
+    statusSel.addEventListener("change", render); masterSel.addEventListener("change", render);
+  }
+
   function renderCertificates() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Сертифікати"));
@@ -4996,6 +5142,9 @@
       // кнопка, що завжди відповість 403, лише плутала б.
       if (ME.role === "owner") {
         var acts = el("div", "acts");
+        var editBtn = el("button", "btn btn-sm btn-ghost", "Редагувати");
+        editBtn.addEventListener("click", function() { certEditModal(c, load); });
+        acts.appendChild(editBtn);
         var delBtn = el("button", "btn btn-sm btn-ghost", "Видалити");
         delBtn.addEventListener("click", function() {
           if (!confirm("Прибрати запис №" + c.code + " з журналу?")) return;

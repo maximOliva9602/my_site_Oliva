@@ -864,6 +864,9 @@ CREATE INDEX IF NOT EXISTS idx_certificates_phone ON certificates(buyer_phone);
 CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
 `);
 
+/* Абонементи: хто оформив (для вкладки «Абонементи»; для старих записів невідомо). */
+try { db.exec("ALTER TABLE subscriptions ADD COLUMN created_by TEXT"); } catch (e) {}
+
 /* Сертифікати: студія (куди/де) і хто створив запис. Раніше студія лежала лише
    у загальному полі «адреса», а автор не зберігався взагалі. */
 try { db.exec("ALTER TABLE certificates ADD COLUMN branch TEXT"); } catch (e) {}
