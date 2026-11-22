@@ -4939,7 +4939,8 @@
     var tools = el("div"); tools.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;";
     var q = document.createElement("input"); q.type = "text"; q.placeholder = "Пошук: клієнт, телефон, послуга"; q.style.cssText = "flex:1;min-width:180px;";
     var statusSel = document.createElement("select");
-    statusSel.innerHTML = '<option value="active">Активні (є залишок)</option><option value="done">Завершені</option><option value="all">Усі</option>';
+    statusSel.innerHTML = '<option value="all">Усі абонементи</option><option value="active">Активні (є залишок)</option><option value="done">Завершені (вичерпані)</option>';
+    statusSel.value = "all";
     var masterSel = document.createElement("select");
     masterSel.innerHTML = '<option value="">Усі майстри</option>';
     tools.appendChild(q); tools.appendChild(statusSel); tools.appendChild(masterSel);
