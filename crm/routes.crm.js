@@ -3558,6 +3558,18 @@ const HERO_OPTIMIZED = {
   } catch (e) { console.error("[hero] міграція:", e.message); }
 })();
 
+/* Рейтинг Google на головній: цифри вписує власник */
+router.get("/google-rating", owner, function (req, res) {
+  res.json({ ok: true, rating: require("./google-rating").read() });
+});
+router.put("/google-rating", owner, function (req, res) {
+  const gr = require("./google-rating");
+  const v = gr.clean(req.body || {});
+  if (!v) return res.status(400).json({ ok: false, error: "bad value" });
+  gr.save(v);
+  res.json({ ok: true, rating: v });
+});
+
 router.get("/hero-media", owner, function (req, res) {
   res.json({ ok: true, photo: heroGet(HERO_KEYS.photo), video: heroGet(HERO_KEYS.video), pos: heroGet("hero_text_pos") });
 });

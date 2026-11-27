@@ -67,6 +67,11 @@ router.get("/branches", function (req, res) {
   res.json({ ok: true, enabled: enabled && branches.length > 1, branches: branches });
 });
 
+/* Рейтинг Google для головної (лише заповнені студії) */
+router.get("/google-rating", function (req, res) {
+  res.json({ ok: true, studios: require("./google-rating").publicList() });
+});
+
 /* Активні послуги */
 router.get("/services", function (req, res) {
   const rows = db.prepare(

@@ -291,6 +291,56 @@
   </div>
 </section>
 
+<!-- ============ РЕЙТИНГ GOOGLE (цифри з кабінету; без даних блок прихований) ============ -->
+<section id="gRating" class="g-rating" hidden></section>
+<style>
+  .g-rating { display:flex; flex-wrap:wrap; justify-content:center; gap:14px; padding:28px 16px; }
+  .g-rating[hidden] { display:none; }
+  .g-card { width:100%; max-width:360px; background:rgba(12,16,10,.88); border:1px solid rgba(122,145,86,.25); border-radius:14px; padding:18px; }
+  .g-top { display:flex; align-items:center; gap:14px; }
+  .g-ava { width:56px; height:56px; border-radius:50%; object-fit:cover; flex-shrink:0; background:#1c2520; }
+  .g-name { color:var(--cream); font-weight:600; font-size:14px; line-height:1.35; }
+  .g-line { display:flex; align-items:center; gap:8px; margin-top:4px; }
+  .g-num { color:#fbbc04; font-weight:700; font-size:18px; }
+  .g-stars { position:relative; display:inline-block; font-size:17px; letter-spacing:1px; line-height:1; color:rgba(212,207,198,.28); white-space:nowrap; }
+  .g-stars i { position:absolute; left:0; top:0; overflow:hidden; font-style:normal; color:#fbbc04; white-space:nowrap; }
+  .g-count { color:#9d9f97; font-size:12.5px; margin-top:3px; }
+  .g-btn { display:block; margin-top:14px; text-align:center; padding:12px; border-radius:50px; background:#a8b07f; color:#141d1a; font-size:13.6px; font-weight:500; text-decoration:none; }
+</style>
+<script>
+(function () {
+  var box = document.getElementById("gRating"), data = null;
+  var T = {
+    uk: { name: "Студія масажу Oliva", count: function (n) { var a = n % 10, b = n % 100; return n + " " + (a === 1 && b !== 11 ? "відгук" : (a >= 2 && a <= 4 && (b < 12 || b > 14) ? "відгуки" : "відгуків")) + " у Google"; }, btn: "Залишити відгук" },
+    en: { name: "Oliva Massage Studio", count: function (n) { return n + (n === 1 ? " review" : " reviews") + " on Google"; }, btn: "Leave a review" }
+  };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function render() {
+    if (!data || !data.length) return;
+    var lang = (window.OlivaI18n && window.OlivaI18n.get()) === "en" ? "en" : "uk", t = T[lang];
+    box.innerHTML = "";
+    data.forEach(function (s) {
+      var card = el("div", "g-card"), top = el("div", "g-top"), info = el("div");
+      var img = el("img", "g-ava"); img.src = s.photo || "assets/img/logo.png"; img.alt = t.name; img.loading = "lazy";
+      info.appendChild(el("div", "g-name", t.name + " · " + s.address));
+      var line = el("div", "g-line");
+      line.appendChild(el("span", "g-num", s.rating.toFixed(1)));
+      var stars = el("span", "g-stars", "★★★★★"), fill = el("i", null, "★★★★★");
+      fill.style.width = (s.rating / 5 * 100) + "%"; stars.appendChild(fill); line.appendChild(stars);
+      info.appendChild(line);
+      info.appendChild(el("div", "g-count", t.count(s.count)));
+      top.appendChild(img); top.appendChild(info); card.appendChild(top);
+      var a = el("a", "g-btn", t.btn); a.href = s.reviewUrl; a.target = "_blank"; a.rel = "noopener";
+      card.appendChild(a); box.appendChild(card);
+    });
+    box.hidden = false;
+  }
+  fetch("/api/public/google-rating").then(function (r) { return r.json(); })
+    .then(function (j) { data = j && j.studios; render(); }).catch(function () {});
+  document.addEventListener("langchange", render);
+})();
+</script>
+
 <!-- ============ MARQUEE ============ -->
 <div class="marquee-wrap">
   <div class="marquee-track">

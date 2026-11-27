@@ -5170,6 +5170,42 @@
      ============================================================ */
   var HERO_DEFAULTS = { photo: "/assets/img/main_photo.jpg", video: "/assets/video/certificate.mp4" };
 
+  /* Рейтинг Google на головній: власник вписує оцінку й кількість відгуків (без лімітів) */
+  function googleRatingCard() {
+    var studios = [["borshchahivska", "Борщагівська, 145"], ["uspishna", "Успішна, 8"]];
+    var card = el("div", "item"); card.style.marginBottom = "14px";
+    card.appendChild(el("div", "t", "⭐ Рейтинг Google на сайті"));
+    card.appendChild(el("div", "sub", "Впишіть цифри з картки Google. Зʼявляться одразу після головного екрана. Порожні поля — картка студії не показується. Міняти можна будь-коли."));
+    var inputs = {};
+    studios.forEach(function(s) {
+      var lbl = el("div", "sub", s[1]); lbl.style.marginTop = "10px"; card.appendChild(lbl);
+      var row = el("div"); row.style.cssText = "display:flex;gap:8px;";
+      var r = document.createElement("input"); r.type = "text"; r.inputMode = "decimal"; r.placeholder = "Оцінка, напр. 4.9"; r.style.cssText = "flex:1;min-width:0;";
+      var c = document.createElement("input"); c.type = "text"; c.inputMode = "numeric"; c.placeholder = "Кількість відгуків"; c.style.cssText = "flex:1;min-width:0;";
+      row.appendChild(r); row.appendChild(c); card.appendChild(row);
+      inputs[s[0]] = { rating: r, count: c };
+    });
+    var msg = el("div", "sub"); msg.style.marginTop = "8px";
+    var save = el("button", "btn btn-primary btn-sm", "Зберегти"); save.style.marginTop = "10px";
+    card.appendChild(save); card.appendChild(msg);
+    api("GET", "/api/crm/google-rating").then(function(res) {
+      var v = (res.j && res.j.rating) || {};
+      Object.keys(inputs).forEach(function(k) {
+        if (v[k]) { inputs[k].rating.value = v[k].rating || ""; inputs[k].count.value = v[k].count == null ? "" : v[k].count; }
+      });
+    });
+    save.addEventListener("click", function() {
+      var body = {};
+      Object.keys(inputs).forEach(function(k) { body[k] = { rating: inputs[k].rating.value.trim(), count: inputs[k].count.value.trim() }; });
+      save.disabled = true; msg.textContent = "";
+      api("PUT", "/api/crm/google-rating", body).then(function(res) {
+        save.disabled = false;
+        msg.textContent = res.j && res.j.ok ? "Збережено ✓ Оновіть сторінку сайту, щоб побачити." : "Перевірте значення: оцінка від 1 до 5, кількість — ціле число.";
+      });
+    });
+    return card;
+  }
+
   function renderHeroMedia() {
     var main = $("main"); main.innerHTML = "";
     var bar = el("div", "bar"); bar.appendChild(el("h2", null, "Головний екран сайту"));
@@ -5180,6 +5216,8 @@
     hint.innerHTML = "На комп'ютері у шапці сайту показується <b>фото</b>, на телефоні — <b>відео</b>. " +
       "Тут можна замінити будь-яке з них; зміни зʼявляться на сайті одразу після оновлення сторінки.";
     main.appendChild(hint);
+
+    main.appendChild(googleRatingCard());
 
     var box = el("div", "list"); main.appendChild(box);
     box.innerHTML = '<div class="empty">Завантаження…</div>';
